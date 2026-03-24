@@ -12,6 +12,7 @@ import StudentDashboard from "./pages/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ParentDashboard from "./pages/ParentDashboard";
+import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -34,10 +35,11 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/unauthorized" element={<Unauthorized />} />
                 <Route
                   path="/student/*"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["student"]}>
                       <ErrorBoundary>
                         <StudentDashboard />
                       </ErrorBoundary>
@@ -47,7 +49,7 @@ const App = () => (
                 <Route
                   path="/teacher/*"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["teacher"]}>
                       <ErrorBoundary>
                         <TeacherDashboard />
                       </ErrorBoundary>
@@ -57,7 +59,7 @@ const App = () => (
                 <Route
                   path="/admin/*"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["admin"]}>
                       <ErrorBoundary>
                         <AdminDashboard />
                       </ErrorBoundary>
@@ -67,7 +69,7 @@ const App = () => (
                 <Route
                   path="/parent/*"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["parent"]}>
                       <ErrorBoundary>
                         <ParentDashboard />
                       </ErrorBoundary>
