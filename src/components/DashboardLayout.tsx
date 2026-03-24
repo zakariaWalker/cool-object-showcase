@@ -61,10 +61,14 @@ const DashboardLayout = ({ children, title, navItems, accentColor, roleName }: D
             );
           })}
         </nav>
-        <div className="p-4 border-t border-sidebar-border">
-          <Link to="/" className="text-sidebar-foreground/50 text-xs hover:text-sidebar-foreground transition-colors">
-            ← العودة للرئيسية
-          </Link>
+        <div className="p-4 border-t border-sidebar-border space-y-2">
+          {profile && (
+            <p className="text-sidebar-foreground/70 text-xs truncate">{profile.full_name}</p>
+          )}
+          <button onClick={handleSignOut} className="text-sidebar-foreground/50 text-xs hover:text-sidebar-foreground transition-colors flex items-center gap-1.5">
+            <LogOut className="w-3.5 h-3.5" />
+            تسجيل الخروج
+          </button>
         </div>
       </aside>
 
