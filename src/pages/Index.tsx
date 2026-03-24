@@ -36,11 +36,11 @@ const Index = () => {
             <span className="text-xl font-bold text-foreground">رياضيات+</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/student" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/auth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               تسجيل الدخول
             </Link>
             <Link
-              to="/student"
+              to="/auth"
               className="text-sm bg-gradient-hero text-primary-foreground px-5 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity"
             >
               ابدأ مجاناً
