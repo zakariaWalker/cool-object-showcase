@@ -1,15 +1,20 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Enums } from '@/integrations/supabase/types';
 
 type AppRole = Enums<'app_role'>;
 
+interface Profile {
+  full_name: string;
+  avatar_url: string | null;
+}
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   role: AppRole | null;
-  profile: { full_name: string; avatar_url: string | null } | null;
+  profile: Profile | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, role: AppRole) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -24,64 +29,87 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
-  const [profile, setProfile] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserData = async (userId: string) => {
-    const [{ data: roles }, { data: prof }] = await Promise.all([
-      supabase.from('user_roles').select('role').eq('user_id', userId).limit(1).single(),
-      supabase.from('profiles').select('full_name, avatar_url').eq('user_id', userId).single(),
-    ]);
-    if (roles) setRole(roles.role as AppRole);
-    if (prof) setProfile(prof);
-  };
+  const fetchUserData = useCallback(async (userId: string) => {
+    try {
+      const [{ data: roles, error: roleErr }, { data: prof, error: profErr }] = await Promise.all([
+        supabase.from('user_roles').select('role').eq('user_id', userId).limit(1).maybeSingle(),
+        supabase.from('profiles').select('full_name, avatar_url').eq('user_id', userId).maybeSingle(),
+      ]);
+
+      if (roleErr) console.error('Role fetch error:', roleErr.message);
+      if (profErr) console.error('Profile fetch error:', profErr.message);
+
+      if (roles) setRole(roles.role as AppRole);
+      if (prof) setProfile(prof);
+    } catch (err) {
+      console.error('fetchUserData failed:', err);
+    }
+  }, []);
+
+  const clearAuthState = useCallback(() => {
+    setSession(null);
+    setUser(null);
+    setRole(null);
+    setProfile(null);
+  }, []);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        setTimeout(() => fetchUserData(session.user.id), 0);
-      } else {
-        setRole(null);
-        setProfile(null);
-      }
-      setLoading(false);
-    });
-
+    // Bootstrap: load existing session synchronously first
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserData(session.user.id);
+        fetchUserData(session.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
+    });
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        // Don't await here — Supabase docs discourage async calls inside this callback
+        fetchUserData(session.user.id);
+        setLoading(false);
+      } else {
+        clearAuthState();
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchUserData, clearAuthState]);
 
-  const signUp = async (email: string, password: string, fullName: string, role: AppRole) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName: string,
+    role: AppRole,
+  ): Promise<{ error: Error | null }> => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: fullName, role },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: `${window.location.origin}/auth`,
       },
     });
     return { error: error as Error | null };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<{ error: Error | null }> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error as Error | null };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setRole(null);
-    setProfile(null);
+    clearAuthState();
   };
 
   return (
