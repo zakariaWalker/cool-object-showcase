@@ -299,14 +299,44 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
   };
 
   const formatLabel: Record<string, string> = {
-    bem: "BEM", bac: "BAC", regular: "فرض", unknown: "غير محدد",
+    bem: "BEM", bac: "BAC", regular: "اختبار", devoir: "فرض", unknown: "غير محدد",
+  };
+
+  const categoryColors: Record<ExamCategory, string> = {
+    bac: "hsl(var(--destructive))",
+    bem: "hsl(var(--primary))",
+    regular: "hsl(var(--statistics))",
+    devoir: "hsl(var(--geometry))",
   };
 
   return (
     <div className="space-y-6" dir="rtl">
+      {/* Category Selector */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <h3 className="text-sm font-black text-foreground mb-3">📂 نوع الامتحان</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {CATEGORY_OPTIONS.map(cat => (
+            <button
+              key={cat.value}
+              onClick={() => setSelectedCategory(cat.value)}
+              className="p-4 rounded-xl border-2 transition-all text-center"
+              style={{
+                borderColor: selectedCategory === cat.value ? categoryColors[cat.value] : "hsl(var(--border))",
+                background: selectedCategory === cat.value ? categoryColors[cat.value] + "11" : "transparent",
+              }}
+            >
+              <div className="text-2xl mb-1">{cat.icon}</div>
+              <div className="text-sm font-black text-foreground">{cat.label}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">{cat.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Upload Zone */}
       <div
-        className="border-2 border-dashed border-border rounded-2xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors bg-card/50"
+        className="border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors bg-card/50"
+        style={{ borderColor: categoryColors[selectedCategory] + "55" }}
         onClick={() => fileInputRef.current?.click()}
         onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
@@ -320,9 +350,11 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
           onChange={e => handleFiles(e.target.files)}
         />
         <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-        <p className="text-lg font-bold text-foreground">اسحب ملفات PDF هنا أو اضغط للاختيار</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          يمكنك رفع عدة امتحانات دفعة واحدة • BEM, BAC, فروض
+        <p className="text-lg font-bold text-foreground">
+          اسحب ملفات PDF هنا أو اضغط للاختيار
+        </p>
+        <p className="text-sm mt-1" style={{ color: categoryColors[selectedCategory] }}>
+          سيتم تصنيفها كـ: {CATEGORY_OPTIONS.find(c => c.value === selectedCategory)?.label}
         </p>
       </div>
 
