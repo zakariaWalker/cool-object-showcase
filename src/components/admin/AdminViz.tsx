@@ -72,8 +72,8 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
       .sort((a, b) => b.usage - a.usage)
       .slice(0, 8);
 
-    // 5. AI vs manual deconstructions
-    const aiCount = deconstructions.filter(d => d.aiGenerated).length;
+    // 5. AI vs manual — check notes field for AI markers
+    const aiCount = deconstructions.filter(d => d.notes?.toLowerCase().includes("ai") || d.notes?.includes("آلي")).length;
     const manualCount = deconstructions.length - aiCount;
 
     // 6. Coverage heatmap: grade × type
