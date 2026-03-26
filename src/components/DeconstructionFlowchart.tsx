@@ -36,11 +36,11 @@ function MathBlock({ latex }: { latex: string }) {
 
 // Colors for different node types
 const NODE_COLORS = {
-  start: { fill: "#4F46E5", text: "#fff", border: "#3730A3", glow: "rgba(79,70,229,0.3)" },
-  step: { fill: "#F0F9FF", text: "#0C4A6E", border: "#7DD3FC", glow: "rgba(56,189,248,0.15)" },
-  end: { fill: "#059669", text: "#fff", border: "#047857", glow: "rgba(5,150,105,0.3)" },
-  need: { fill: "#FEF3C7", text: "#92400E", border: "#FCD34D", glow: "rgba(252,211,77,0.2)" },
-  concept: { fill: "#F3E8FF", text: "#6B21A8", border: "#C084FC", glow: "rgba(192,132,252,0.2)" },
+  start: { fill: "#1E1B4B", text: "#fff", border: "#312E81", glow: "rgba(30,27,75,0.4)" },
+  step: { fill: "#1F2937", text: "#F9FAFB", border: "#4B5563", glow: "rgba(31,41,55,0.3)" },
+  end: { fill: "#064E3B", text: "#fff", border: "#065F46", glow: "rgba(6,78,59,0.4)" },
+  need: { fill: "#292524", text: "#E7E5E4", border: "#57534E", glow: "rgba(41,37,36,0.3)" },
+  concept: { fill: "#1E1B4B", text: "#E0E7FF", border: "#4338CA", glow: "rgba(67,56,202,0.3)" },
 };
 
 const NODE_WIDTH = 260;
