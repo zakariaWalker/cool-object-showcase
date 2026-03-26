@@ -148,7 +148,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {currentPath !== "/" && <GamificationDashboard compact />}
 
       {/* Page content */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-auto">
         {children}
       </main>
     </div>

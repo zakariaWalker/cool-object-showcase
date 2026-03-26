@@ -205,7 +205,17 @@ export default function LearningPath() {
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 p-4 rounded-xl border border-border bg-card">
+                  <div className="flex-1 p-4 rounded-xl border border-border/50 shadow-sm"
+                    style={{
+                      background: [
+                        "linear-gradient(135deg, hsl(40 60% 96%), hsl(45 50% 92%))",
+                        "linear-gradient(135deg, hsl(200 50% 96%), hsl(210 40% 92%))",
+                        "linear-gradient(135deg, hsl(150 40% 96%), hsl(160 35% 92%))",
+                        "linear-gradient(135deg, hsl(280 40% 96%), hsl(290 35% 92%))",
+                        "linear-gradient(135deg, hsl(20 50% 96%), hsl(15 45% 92%))",
+                        "linear-gradient(135deg, hsl(340 40% 96%), hsl(350 35% 92%))",
+                      ][gi % 6],
+                    }}>
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <h3 className="text-sm font-bold text-foreground">{group.pattern.name}</h3>
