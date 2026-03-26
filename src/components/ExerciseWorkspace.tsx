@@ -455,10 +455,10 @@ export function ExerciseWorkspace({
                     cursor: "pointer",
                     transition: "all 0.2s",
                     background: inputMode === mode
-                      ? "linear-gradient(135deg, #4F46E5, #7C3AED)"
-                      : "white",
+                      ? "linear-gradient(135deg, hsl(var(--algebra)), hsl(var(--probability)))"
+                      : "hsl(var(--card))",
                     color: inputMode === mode ? "white" : "hsl(var(--muted-foreground))",
-                    boxShadow: inputMode === mode ? "0 2px 8px rgba(79,70,229,0.3)" : "none",
+                    boxShadow: inputMode === mode ? "0 2px 8px hsl(var(--algebra) / 0.3)" : "none",
                   }}
                 >
                   {mode === "library" ? "📚 المكتبة" : mode === "text" ? "✏️ نص حر" : mode === "dataset" ? "📁 ملف JSON" : mode === "deconstruct" ? "🔬 تفكيك" : "🧠 ذكاء"}
