@@ -14,306 +14,154 @@ export type Database = {
   }
   public: {
     Tables: {
-      exercise_breakdowns: {
+      exam_analytics: {
         Row: {
-          constraints: Json | null
+          concept_frequency: Json | null
           created_at: string
-          diagram_spec: Json | null
-          difficulty: number | null
-          domain: string | null
-          formulas_needed: Json | null
-          grade: string | null
+          difficulty_distribution: Json | null
           id: string
-          intent: Json | null
-          relations: Json | null
-          render_plan: Json | null
-          semantic_objects: Json | null
-          solution_tree: Json | null
-          source_language: string | null
-          source_origin: string | null
-          source_text: string
-          subdomain: string | null
+          metadata: Json | null
+          topic_frequency: Json | null
+          upload_id: string
+          user_id: string
         }
         Insert: {
-          constraints?: Json | null
+          concept_frequency?: Json | null
           created_at?: string
-          diagram_spec?: Json | null
-          difficulty?: number | null
-          domain?: string | null
-          formulas_needed?: Json | null
-          grade?: string | null
-          id: string
-          intent?: Json | null
-          relations?: Json | null
-          render_plan?: Json | null
-          semantic_objects?: Json | null
-          solution_tree?: Json | null
-          source_language?: string | null
-          source_origin?: string | null
-          source_text: string
-          subdomain?: string | null
+          difficulty_distribution?: Json | null
+          id?: string
+          metadata?: Json | null
+          topic_frequency?: Json | null
+          upload_id: string
+          user_id: string
         }
         Update: {
-          constraints?: Json | null
+          concept_frequency?: Json | null
           created_at?: string
-          diagram_spec?: Json | null
-          difficulty?: number | null
-          domain?: string | null
-          formulas_needed?: Json | null
-          grade?: string | null
+          difficulty_distribution?: Json | null
           id?: string
-          intent?: Json | null
-          relations?: Json | null
-          render_plan?: Json | null
-          semantic_objects?: Json | null
-          solution_tree?: Json | null
-          source_language?: string | null
-          source_origin?: string | null
-          source_text?: string
-          subdomain?: string | null
-        }
-        Relationships: []
-      }
-      kb_deconstructions: {
-        Row: {
-          ai_generated: boolean | null
-          created_at: string
-          exercise_id: string
-          id: string
-          needs: Json | null
-          notes: string | null
-          pattern_id: string
-          steps: Json | null
-        }
-        Insert: {
-          ai_generated?: boolean | null
-          created_at?: string
-          exercise_id: string
-          id?: string
-          needs?: Json | null
-          notes?: string | null
-          pattern_id: string
-          steps?: Json | null
-        }
-        Update: {
-          ai_generated?: boolean | null
-          created_at?: string
-          exercise_id?: string
-          id?: string
-          needs?: Json | null
-          notes?: string | null
-          pattern_id?: string
-          steps?: Json | null
+          metadata?: Json | null
+          topic_frequency?: Json | null
+          upload_id?: string
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "kb_deconstructions_exercise_id_fkey"
-            columns: ["exercise_id"]
+            foreignKeyName: "exam_analytics_upload_id_fkey"
+            columns: ["upload_id"]
             isOneToOne: false
-            referencedRelation: "kb_exercises"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "kb_deconstructions_pattern_id_fkey"
-            columns: ["pattern_id"]
-            isOneToOne: false
-            referencedRelation: "kb_patterns"
+            referencedRelation: "exam_uploads"
             referencedColumns: ["id"]
           },
         ]
       }
-      kb_exercises: {
+      exam_extracted_questions: {
         Row: {
-          ai_deconstructed: boolean | null
-          chapter: string | null
+          concepts: string[] | null
           created_at: string
-          grade: string | null
+          difficulty: string | null
           id: string
-          label: string | null
-          source: string | null
-          stream: string | null
+          linked_pattern_ids: string[] | null
+          points: number | null
+          question_number: number
+          raw_latex: string | null
+          section_label: string
+          sub_question: string | null
           text: string
           type: string | null
+          upload_id: string
+          user_id: string
         }
         Insert: {
-          ai_deconstructed?: boolean | null
-          chapter?: string | null
+          concepts?: string[] | null
           created_at?: string
-          grade?: string | null
-          id: string
-          label?: string | null
-          source?: string | null
-          stream?: string | null
+          difficulty?: string | null
+          id?: string
+          linked_pattern_ids?: string[] | null
+          points?: number | null
+          question_number: number
+          raw_latex?: string | null
+          section_label: string
+          sub_question?: string | null
           text: string
           type?: string | null
+          upload_id: string
+          user_id: string
         }
         Update: {
-          ai_deconstructed?: boolean | null
-          chapter?: string | null
+          concepts?: string[] | null
           created_at?: string
-          grade?: string | null
+          difficulty?: string | null
           id?: string
-          label?: string | null
-          source?: string | null
-          stream?: string | null
+          linked_pattern_ids?: string[] | null
+          points?: number | null
+          question_number?: number
+          raw_latex?: string | null
+          section_label?: string
+          sub_question?: string | null
           text?: string
           type?: string | null
-        }
-        Relationships: []
-      }
-      kb_patterns: {
-        Row: {
-          concepts: Json | null
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          steps: Json | null
-          type: string | null
-        }
-        Insert: {
-          concepts?: Json | null
-          created_at?: string
-          description?: string | null
-          id: string
-          name: string
-          steps?: Json | null
-          type?: string | null
-        }
-        Update: {
-          concepts?: Json | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          steps?: Json | null
-          type?: string | null
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          created_at: string
-          full_name: string
-          grade: string
-          id: string
-          stream: string
-          updated_at: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string
-          full_name?: string
-          grade?: string
-          id: string
-          stream?: string
-          updated_at?: string
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string
-          full_name?: string
-          grade?: string
-          id?: string
-          stream?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      student_activity_log: {
-        Row: {
-          action: string
-          created_at: string
-          id: string
-          metadata: Json | null
-          student_id: string
-          xp_earned: number
-        }
-        Insert: {
-          action: string
-          created_at?: string
-          id?: string
-          metadata?: Json | null
-          student_id: string
-          xp_earned?: number
-        }
-        Update: {
-          action?: string
-          created_at?: string
-          id?: string
-          metadata?: Json | null
-          student_id?: string
-          xp_earned?: number
-        }
-        Relationships: []
-      }
-      student_progress: {
-        Row: {
-          badges: Json
-          created_at: string
-          daily_challenge_completed: boolean
-          daily_challenge_date: string | null
-          id: string
-          last_active_date: string | null
-          level: number
-          mastery: Json
-          streak_days: number
-          student_id: string
-          total_correct: number
-          total_exercises: number
-          updated_at: string
-          xp: number
-        }
-        Insert: {
-          badges?: Json
-          created_at?: string
-          daily_challenge_completed?: boolean
-          daily_challenge_date?: string | null
-          id?: string
-          last_active_date?: string | null
-          level?: number
-          mastery?: Json
-          streak_days?: number
-          student_id: string
-          total_correct?: number
-          total_exercises?: number
-          updated_at?: string
-          xp?: number
-        }
-        Update: {
-          badges?: Json
-          created_at?: string
-          daily_challenge_completed?: boolean
-          daily_challenge_date?: string | null
-          id?: string
-          last_active_date?: string | null
-          level?: number
-          mastery?: Json
-          streak_days?: number
-          student_id?: string
-          total_correct?: number
-          total_exercises?: number
-          updated_at?: string
-          xp?: number
-        }
-        Relationships: []
-      }
-      user_roles: {
-        Row: {
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          upload_id?: string
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_extracted_questions_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "exam_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_uploads: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          format: string
+          grade: string | null
+          id: string
+          session: string | null
+          status: string
+          stream: string | null
+          updated_at: string
+          user_id: string
+          year: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          format?: string
+          grade?: string | null
+          id?: string
+          session?: string | null
+          status?: string
+          stream?: string | null
+          updated_at?: string
+          user_id: string
+          year?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          format?: string
+          grade?: string | null
+          id?: string
+          session?: string | null
+          status?: string
+          stream?: string | null
+          updated_at?: string
+          user_id?: string
+          year?: string | null
         }
         Relationships: []
       }
@@ -322,16 +170,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      app_role: "admin" | "student" | "teacher" | "parent"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -458,8 +300,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["admin", "student", "teacher", "parent"],
-    },
+    Enums: {},
   },
 } as const
