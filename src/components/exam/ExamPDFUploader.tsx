@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Upload, FileText, CheckCircle, XCircle, Loader2, Trash2, Eye, BarChart3, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { GRADE_OPTIONS } from "@/engine/exam-types";
 
 type ExamCategory = "bac" | "bem" | "regular" | "devoir";
 
@@ -14,6 +15,41 @@ const CATEGORY_OPTIONS: { value: ExamCategory; label: string; icon: string; desc
   { value: "regular", label: "اختبار", icon: "📝", desc: "اختبار فصلي أو شهري" },
   { value: "devoir", label: "فرض", icon: "📄", desc: "فرض منزلي أو محروس" },
 ];
+
+const STREAM_OPTIONS = [
+  { value: "", label: "— بدون شعبة —" },
+  { value: "sciences", label: "علوم تجريبية" },
+  { value: "math", label: "رياضيات" },
+  { value: "tech_math", label: "تقني رياضي" },
+  { value: "letters", label: "آداب وفلسفة" },
+  { value: "management", label: "تسيير واقتصاد" },
+  { value: "languages", label: "لغات أجنبية" },
+];
+
+const SESSION_OPTIONS = [
+  { value: "juin", label: "دورة جوان" },
+  { value: "septembre", label: "دورة سبتمبر" },
+  { value: "remplacement", label: "دورة استدراكية" },
+  { value: "trimester_1", label: "الفصل الأول" },
+  { value: "trimester_2", label: "الفصل الثاني" },
+  { value: "trimester_3", label: "الفصل الثالث" },
+];
+
+// Grade options filtered by category
+function getGradesForCategory(cat: ExamCategory) {
+  if (cat === "bem") return GRADE_OPTIONS.filter(g => g.value === "middle_4");
+  if (cat === "bac") return GRADE_OPTIONS.filter(g => g.value === "secondary_3");
+  return GRADE_OPTIONS;
+}
+
+function getSessionsForCategory(cat: ExamCategory) {
+  if (cat === "bac" || cat === "bem") return SESSION_OPTIONS.filter(s => ["juin", "septembre", "remplacement"].includes(s.value));
+  return SESSION_OPTIONS;
+}
+
+function needsStream(cat: ExamCategory): boolean {
+  return cat === "bac";
+}
 
 interface UploadItem {
   file: File;
@@ -68,6 +104,10 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
   const [showHistory, setShowHistory] = useState(false);
   const [importing, setImporting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ExamCategory>("bac");
+  const [selectedGrade, setSelectedGrade] = useState("secondary_3");
+  const [selectedStream, setSelectedStream] = useState("");
+  const [selectedSession, setSelectedSession] = useState("juin");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load upload history
