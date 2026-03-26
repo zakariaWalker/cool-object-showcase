@@ -54,7 +54,7 @@ export default function ExamKBPage() {
       </div>
 
       <div className="max-w-7xl mx-auto p-4">
-        {activeView === "pdf-upload" && <ExamPDFUploader />}
+        {activeView === "pdf-upload" && <ExamPDFUploader onQuestionsExtracted={() => store.reload()} />}
         {activeView === "exams" && <ExamKBImporter store={store} />}
         {activeView === "questions" && <ExamKBQuestions store={store} />}
         {activeView === "analytics" && <ExamKBAnalytics store={store} primaryPatterns={primaryKB.patterns} />}
