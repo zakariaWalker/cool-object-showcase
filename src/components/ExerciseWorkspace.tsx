@@ -63,6 +63,8 @@ export function ExerciseWorkspace({
   const [kb, setKB] = useState<KBType>(() => loadKB());
   const [highlightGapId, setHighlightGapId] = useState<string | null>(null);
   const [trainingGap, setTrainingGap] = useState<KnowledgeGap | null>(null);
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
 
   // Sync state if prop changes (e.g. from Index/URL)
   useEffect(() => {
@@ -390,14 +392,44 @@ export function ExerciseWorkspace({
 
         {/* Left panel — exercise input */}
         <div style={{
-          width: 380,
+          width: leftCollapsed ? 40 : 380,
           flexShrink: 0,
           borderLeft: "1px solid hsl(var(--border))",
           display: "flex",
           flexDirection: "column",
           background: "white",
           boxShadow: "2px 0 12px rgba(0,0,0,0.04)",
+          transition: "width 0.3s ease",
+          overflow: "hidden",
+          position: "relative",
         }}>
+          {/* Collapse toggle */}
+          <button
+            onClick={() => setLeftCollapsed(!leftCollapsed)}
+            style={{
+              position: "absolute",
+              top: 8,
+              left: 4,
+              zIndex: 10,
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              border: "1px solid hsl(var(--border))",
+              background: "hsl(var(--card))",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 14,
+              color: "hsl(var(--muted-foreground))",
+              transition: "all 0.2s",
+            }}
+            title={leftCollapsed ? "فتح اللوحة" : "طي اللوحة"}
+          >
+            {leftCollapsed ? "◀" : "▶"}
+          </button>
+          {!leftCollapsed && (
+          <>
           {/* Panel header */}
           <div style={{
             padding: "14px 16px 12px",
@@ -445,6 +477,8 @@ export function ExerciseWorkspace({
             <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px" }}>
               <FreeDeconstruct />
             </div>
+          )}
+          </>
           )}
         </div>
 
@@ -523,7 +557,41 @@ export function ExerciseWorkspace({
         </div>
 
         {/* Right — progress sidebar */}
-        <ProgressSidebar onSelectExercise={handleReviewExercise} />
+        <div style={{
+          width: rightCollapsed ? 40 : 220,
+          flexShrink: 0,
+          transition: "width 0.3s ease",
+          overflow: "hidden",
+          position: "relative",
+          borderRight: "1px solid hsl(var(--border))",
+          background: "white",
+        }}>
+          <button
+            onClick={() => setRightCollapsed(!rightCollapsed)}
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 4,
+              zIndex: 10,
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              border: "1px solid hsl(var(--border))",
+              background: "hsl(var(--card))",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 14,
+              color: "hsl(var(--muted-foreground))",
+              transition: "all 0.2s",
+            }}
+            title={rightCollapsed ? "فتح اللوحة" : "طي اللوحة"}
+          >
+            {rightCollapsed ? "▶" : "◀"}
+          </button>
+          {!rightCollapsed && <ProgressSidebar onSelectExercise={handleReviewExercise} />}
+        </div>
       </div>
       {/* GapFixWizard modal — rule training */}
       {trainingGap && (

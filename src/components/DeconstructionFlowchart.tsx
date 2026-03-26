@@ -13,6 +13,7 @@ interface FlowchartProps {
   concepts: string[];
   notes?: string;
   aiGenerated?: boolean;
+  exerciseSteps?: string[]; // corresponding exercise step text for each deconstruction step
 }
 
 // Colors for different node types
@@ -35,7 +36,7 @@ const PADDING_TOP = 30;
 
 export function DeconstructionFlowchart({
   patternName, patternType, patternDescription,
-  steps, needs, concepts, notes, aiGenerated,
+  steps, needs, concepts, notes, aiGenerated, exerciseSteps,
 }: FlowchartProps) {
   const [hoveredNode, setHoveredNode] = useState<number | null>(null);
 
@@ -46,7 +47,9 @@ export function DeconstructionFlowchart({
   const sideNodesMaxCount = Math.max(needs.length, concepts.length);
   const sideAreaHeight = sideNodesMaxCount * (SIDE_NODE_HEIGHT + 8);
   const svgHeight = Math.max(mainChainHeight, sideAreaHeight + 120) + 60;
-  const svgWidth = NODE_WIDTH + PADDING_X * 2 + (needs.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + (concepts.length > 0 ? SIDE_NODE_WIDTH + 60 : 0);
+  const hasExSteps = exerciseSteps && exerciseSteps.length > 0;
+  const EX_STEP_WIDTH = 180;
+  const svgWidth = NODE_WIDTH + PADDING_X * 2 + (needs.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + (concepts.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + (hasExSteps ? EX_STEP_WIDTH + 50 : 0);
   const centerX = (needs.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + PADDING_X + NODE_WIDTH / 2;
 
   // Y positions for main chain
@@ -324,7 +327,46 @@ export function DeconstructionFlowchart({
             );
           })}
 
-          {/* ── END node ── */}
+          {/* ── Exercise step annotations (left of main steps) ── */}
+          {hasExSteps && steps.map((_, i) => {
+            const y = stepYs[i];
+            const exText = exerciseSteps![i] || "";
+            if (!exText) return null;
+            const exX = centerX - NODE_WIDTH / 2 - 30 - EX_STEP_WIDTH - (needs.length > 0 ? SIDE_NODE_WIDTH + 60 : 0);
+            const exLines = wrapText(exText, 28);
+            const exH = Math.max(38, exLines.length * 16 + 12);
+            return (
+              <g key={`ex-step-${i}`}>
+                <line
+                  x1={exX + EX_STEP_WIDTH} y1={y + NODE_HEIGHT / 2}
+                  x2={centerX - NODE_WIDTH / 2} y2={y + NODE_HEIGHT / 2}
+                  stroke="#10B981" strokeWidth="1.5" strokeDasharray="4 2" opacity="0.5"
+                />
+                <rect
+                  x={exX} y={y + (NODE_HEIGHT - exH) / 2}
+                  width={EX_STEP_WIDTH} height={exH}
+                  rx={8} ry={8}
+                  fill="#ECFDF5"
+                  stroke="#6EE7B7"
+                  strokeWidth="1.5"
+                  filter="url(#nodeShadow)"
+                />
+                {exLines.map((line, li) => (
+                  <text key={li}
+                    x={exX + EX_STEP_WIDTH / 2}
+                    y={y + (NODE_HEIGHT - exH) / 2 + 14 + li * 16}
+                    textAnchor="middle" dominantBaseline="auto"
+                    fill="#065F46"
+                    fontSize="10" fontWeight="600"
+                    fontFamily="'Tajawal', sans-serif"
+                  >
+                    {li === 0 ? `📖 ${line}` : line}
+                  </text>
+                ))}
+              </g>
+            );
+          })}
+
           <g>
             <rect
               x={centerX - NODE_WIDTH / 2} y={endY}

@@ -24,9 +24,10 @@ interface DeconstructionData {
 interface Props {
   exerciseId: string;
   exerciseText?: string;
+  exerciseSteps?: string[];
 }
 
-export function KBDeconstructionView({ exerciseId }: Props) {
+export function KBDeconstructionView({ exerciseId, exerciseSteps }: Props) {
   const [deconstructions, setDeconstructions] = useState<DeconstructionData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -125,6 +126,7 @@ export function KBDeconstructionView({ exerciseId }: Props) {
             concepts={decon.pattern?.concepts || []}
             notes={decon.notes}
             aiGenerated={decon.ai_generated}
+            exerciseSteps={exerciseSteps}
           />
         );
       })}
