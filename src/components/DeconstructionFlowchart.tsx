@@ -307,13 +307,16 @@ export function DeconstructionFlowchart({
           {steps.map((step, i) => {
             const y = stepYs[i];
             const isHovered = hoveredNode === i;
+            const isExpanded = expandedStep === i;
             const lines = wrapText(step, 34);
             const nodeH = lines.length > 1 ? NODE_HEIGHT + 14 : NODE_HEIGHT;
+            const mathLatex = getMathForStep(i);
             return (
               <g key={`step-${i}`}
                 onMouseEnter={() => setHoveredNode(i)}
                 onMouseLeave={() => setHoveredNode(null)}
-                style={{ cursor: "default" }}
+                onClick={() => setExpandedStep(isExpanded ? null : i)}
+                style={{ cursor: "pointer" }}
               >
                 {/* Glow on hover */}
                 {isHovered && (
@@ -330,9 +333,9 @@ export function DeconstructionFlowchart({
                   x={centerX - NODE_WIDTH / 2} y={y}
                   width={NODE_WIDTH} height={nodeH}
                   rx={12} ry={12}
-                  fill={isHovered ? "#E0F2FE" : NODE_COLORS.step.fill}
-                  stroke={NODE_COLORS.step.border}
-                  strokeWidth={isHovered ? "2" : "1.5"}
+                  fill={isExpanded ? "#DBEAFE" : isHovered ? "#E0F2FE" : NODE_COLORS.step.fill}
+                  stroke={isExpanded ? "#3B82F6" : NODE_COLORS.step.border}
+                  strokeWidth={isExpanded || isHovered ? "2" : "1.5"}
                   filter="url(#nodeShadow)"
                 />
                 {/* Step number circle */}
@@ -363,6 +366,46 @@ export function DeconstructionFlowchart({
                     {line}
                   </text>
                 ))}
+                {/* Click hint icon */}
+                <text
+                  x={centerX + NODE_WIDTH / 2 - 18}
+                  y={y + nodeH / 2 + 1}
+                  textAnchor="middle" dominantBaseline="central"
+                  fontSize="12" opacity="0.5"
+                >
+                  {isExpanded ? "▲" : "▼"}
+                </text>
+                {/* ── Math panel (expanded) ── */}
+                {isExpanded && (
+                  <foreignObject
+                    x={centerX - NODE_WIDTH / 2}
+                    y={y + nodeH + 4}
+                    width={NODE_WIDTH}
+                    height={MATH_PANEL_HEIGHT}
+                  >
+                    <div
+                      style={{
+                        background: "linear-gradient(135deg, #EEF2FF, #E0E7FF)",
+                        border: "1.5px solid #818CF8",
+                        borderRadius: 10,
+                        padding: "6px 12px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%",
+                        boxShadow: "0 2px 8px rgba(99,102,241,0.15)",
+                      }}
+                    >
+                      {mathLatex ? (
+                        <MathBlock latex={mathLatex} />
+                      ) : (
+                        <span style={{ fontSize: 11, color: "#6366F1", fontFamily: "'Tajawal', sans-serif" }}>
+                          📐 لا توجد صيغة رياضية لهذه الخطوة
+                        </span>
+                      )}
+                    </div>
+                  </foreignObject>
+                )}
               </g>
             );
           })}
