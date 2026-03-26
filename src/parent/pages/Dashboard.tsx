@@ -23,7 +23,7 @@ const ParentHome = () => {
 
   useEffect(() => {
     if (!selectedChild) return;
-    supabase.from('student_progress').select('xp, total_exercises, total_correct, level, updated_at')
+    (supabase as any).from('student_progress').select('xp, total_exercises, total_correct, level, updated_at')
       .eq('student_id', selectedChild)
       .order('updated_at', { ascending: false })
       .limit(10)

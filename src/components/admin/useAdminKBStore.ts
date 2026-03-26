@@ -155,12 +155,12 @@ export function useAdminKBStore() {
 
   const classifyExercise = useCallback(async (id: string, type: string) => {
     setExercises(prev => prev.map(e => e.id === id ? { ...e, type } : e));
-    await supabase.from("kb_exercises").update({ type }).eq("id", id);
+    await (supabase as any).from("kb_exercises").update({ type }).eq("id", id);
   }, []);
 
   const addPattern = useCallback(async (pattern: Pattern) => {
     setPatterns(prev => [...prev, pattern]);
-    await supabase.from("kb_patterns").insert({
+    await (supabase as any).from("kb_patterns").insert({
       id: pattern.id,
       name: pattern.name,
       type: pattern.type,
@@ -178,17 +178,17 @@ export function useAdminKBStore() {
     if (updates.steps !== undefined) dbUpdates.steps = updates.steps;
     if (updates.description !== undefined) dbUpdates.description = updates.description;
     if (updates.concepts !== undefined) dbUpdates.concepts = updates.concepts;
-    await supabase.from("kb_patterns").update(dbUpdates).eq("id", id);
+    await (supabase as any).from("kb_patterns").update(dbUpdates).eq("id", id);
   }, []);
 
   const deletePattern = useCallback(async (id: string) => {
     setPatterns(prev => prev.filter(p => p.id !== id));
-    await supabase.from("kb_patterns").delete().eq("id", id);
+    await (supabase as any).from("kb_patterns").delete().eq("id", id);
   }, []);
 
   const addDeconstruction = useCallback(async (decon: Deconstruction) => {
     setDeconstructions(prev => [...prev, decon]);
-    await supabase.from("kb_deconstructions").insert({
+    await (supabase as any).from("kb_deconstructions").insert({
       exercise_id: decon.exerciseId,
       pattern_id: decon.patternId,
       steps: decon.steps || [],
@@ -204,12 +204,12 @@ export function useAdminKBStore() {
     if (updates.steps !== undefined) dbUpdates.steps = updates.steps;
     if (updates.needs !== undefined) dbUpdates.needs = updates.needs;
     if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
-    await supabase.from("kb_deconstructions").update(dbUpdates).eq("id", id);
+    await (supabase as any).from("kb_deconstructions").update(dbUpdates).eq("id", id);
   }, []);
 
   const deleteDeconstruction = useCallback(async (id: string) => {
     setDeconstructions(prev => prev.filter(d => d.id !== id));
-    await supabase.from("kb_deconstructions").delete().eq("id", id);
+    await (supabase as any).from("kb_deconstructions").delete().eq("id", id);
   }, []);
 
   const importData = useCallback((data: { exercises?: Exercise[]; patterns?: Pattern[]; deconstructions?: Deconstruction[] }) => {

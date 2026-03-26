@@ -12,7 +12,7 @@ const WeakAreas = () => {
     (supabase as any).from('parent_students').select('student_id').eq('parent_id', user.id).then(async ({ data: kids }: any) => {
       if (!kids || kids.length === 0) return;
       const ids = kids.map((k: any) => k.student_id);
-      const { data } = await supabase.from('student_progress')
+      const { data } = await (supabase as any).from('student_progress')
         .select('total_correct, total_exercises, mastery, student_id')
         .in('student_id', ids);
       

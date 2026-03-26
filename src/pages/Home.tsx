@@ -49,9 +49,9 @@ export default function Home() {
   useEffect(() => {
     async function load() {
       const [ex, pat, dec] = await Promise.all([
-        supabase.from("kb_exercises").select("id", { count: "exact", head: true }),
-        supabase.from("kb_patterns").select("id", { count: "exact", head: true }),
-        supabase.from("kb_deconstructions").select("id", { count: "exact", head: true }),
+        (supabase as any).from("kb_exercises").select("id", { count: "exact", head: true }),
+        (supabase as any).from("kb_patterns").select("id", { count: "exact", head: true }),
+        (supabase as any).from("kb_deconstructions").select("id", { count: "exact", head: true }),
       ]);
       setStats({
         exercises: ex.count || 0,

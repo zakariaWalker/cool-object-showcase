@@ -67,7 +67,7 @@ export default function GapDetector() {
     const allEx: any[] = [];
     let from = 0;
     while (true) {
-      const { data } = await supabase.from("kb_exercises").select("*").order("grade").range(from, from + PAGE - 1);
+      const { data } = await (supabase as any).from("kb_exercises").select("*").order("grade").range(from, from + PAGE - 1);
       if (!data || data.length === 0) break;
       allEx.push(...data);
       if (data.length < PAGE) break;
@@ -77,14 +77,14 @@ export default function GapDetector() {
     const allDecon: any[] = [];
     from = 0;
     while (true) {
-      const { data } = await supabase.from("kb_deconstructions").select("*").range(from, from + PAGE - 1);
+      const { data } = await (supabase as any).from("kb_deconstructions").select("*").range(from, from + PAGE - 1);
       if (!data || data.length === 0) break;
       allDecon.push(...data);
       if (data.length < PAGE) break;
       from += PAGE;
     }
 
-    const { data: pats } = await supabase.from("kb_patterns").select("*");
+    const { data: pats } = await (supabase as any).from("kb_patterns").select("*");
 
     setExercises(allEx.map((e: any) => ({ id: e.id, text: e.text, type: e.type || "", grade: e.grade || "", chapter: e.chapter || "" })));
     setPatterns((pats || []).map((p: any) => ({ id: p.id, name: p.name, type: p.type || "", steps: p.steps || [], concepts: p.concepts || [] })));
