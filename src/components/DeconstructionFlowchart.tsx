@@ -385,15 +385,15 @@ export function DeconstructionFlowchart({
                   >
                     <div
                       style={{
-                        background: "linear-gradient(135deg, #EEF2FF, #E0E7FF)",
-                        border: "1.5px solid #818CF8",
+                        background: "linear-gradient(135deg, #1E293B, #0F172A)",
+                        border: "1.5px solid #6366F1",
                         borderRadius: 10,
                         padding: "6px 12px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         height: "100%",
-                        boxShadow: "0 2px 8px rgba(99,102,241,0.15)",
+                        boxShadow: "0 2px 8px rgba(99,102,241,0.25)",
                       }}
                     >
                       {mathLatex ? (
