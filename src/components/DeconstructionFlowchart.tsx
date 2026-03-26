@@ -1,8 +1,10 @@
 // ===== Deconstruction Flowchart — Beautiful SVG Visualization =====
 // Renders exercise deconstruction steps as a connected flowchart
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 
 interface FlowchartProps {
   patternName: string;
@@ -14,6 +16,22 @@ interface FlowchartProps {
   notes?: string;
   aiGenerated?: boolean;
   exerciseSteps?: string[]; // corresponding exercise step text for each deconstruction step
+  mathExpressions?: string[]; // LaTeX math for each step
+}
+
+// Inline KaTeX renderer for foreignObject
+function MathBlock({ latex }: { latex: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (ref.current) {
+      try {
+        katex.render(latex, ref.current, { displayMode: true, throwOnError: false, trust: true });
+      } catch {
+        ref.current.textContent = latex;
+      }
+    }
+  }, [latex]);
+  return <div ref={ref} style={{ fontSize: 14, padding: "4px 0", direction: "ltr", textAlign: "center" }} />;
 }
 
 // Colors for different node types
@@ -27,6 +45,7 @@ const NODE_COLORS = {
 
 const NODE_WIDTH = 260;
 const NODE_HEIGHT = 52;
+const MATH_PANEL_HEIGHT = 50;
 const NODE_GAP = 28;
 const SIDE_NODE_WIDTH = 140;
 const SIDE_NODE_HEIGHT = 32;
@@ -36,14 +55,17 @@ const PADDING_TOP = 30;
 
 export function DeconstructionFlowchart({
   patternName, patternType, patternDescription,
-  steps, needs, concepts, notes, aiGenerated, exerciseSteps,
+  steps, needs, concepts, notes, aiGenerated, exerciseSteps, mathExpressions,
 }: FlowchartProps) {
   const [hoveredNode, setHoveredNode] = useState<number | null>(null);
+  const [expandedStep, setExpandedStep] = useState<number | null>(null);
 
   if (steps.length === 0) return null;
 
   const totalSteps = steps.length;
-  const mainChainHeight = PADDING_TOP + NODE_HEIGHT + (totalSteps * (NODE_HEIGHT + NODE_GAP)) + NODE_HEIGHT + 40;
+  // Calculate extra height for expanded math panels
+  const expandedExtra = expandedStep !== null ? MATH_PANEL_HEIGHT + 8 : 0;
+  const mainChainHeight = PADDING_TOP + NODE_HEIGHT + (totalSteps * (NODE_HEIGHT + NODE_GAP)) + NODE_HEIGHT + 40 + expandedExtra;
   const sideNodesMaxCount = Math.max(needs.length, concepts.length);
   const sideAreaHeight = sideNodesMaxCount * (SIDE_NODE_HEIGHT + 8);
   const svgHeight = Math.max(mainChainHeight, sideAreaHeight + 120) + 60;
@@ -52,10 +74,28 @@ export function DeconstructionFlowchart({
   const svgWidth = NODE_WIDTH + PADDING_X * 2 + (needs.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + (concepts.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + (hasExSteps ? EX_STEP_WIDTH + 50 : 0);
   const centerX = (needs.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + PADDING_X + NODE_WIDTH / 2;
 
-  // Y positions for main chain
+  // Y positions for main chain — shift down after expanded step
   const startY = PADDING_TOP;
-  const stepYs = steps.map((_, i) => startY + NODE_HEIGHT + NODE_GAP + i * (NODE_HEIGHT + NODE_GAP));
-  const endY = stepYs.length > 0 ? stepYs[stepYs.length - 1] + NODE_HEIGHT + NODE_GAP : startY + NODE_HEIGHT + NODE_GAP;
+  const stepYs: number[] = [];
+  for (let i = 0; i < steps.length; i++) {
+    const baseY = startY + NODE_HEIGHT + NODE_GAP + i * (NODE_HEIGHT + NODE_GAP);
+    const extraShift = (expandedStep !== null && i > expandedStep) ? MATH_PANEL_HEIGHT + 8 : 0;
+    stepYs.push(baseY + extraShift);
+  }
+  const lastStepExtra = (expandedStep !== null && expandedStep === steps.length - 1) ? MATH_PANEL_HEIGHT + 8 : 0;
+  const endY = stepYs.length > 0 ? stepYs[stepYs.length - 1] + NODE_HEIGHT + NODE_GAP + lastStepExtra : startY + NODE_HEIGHT + NODE_GAP;
+
+  // Generate fallback math expressions from step text
+  const getMathForStep = (i: number): string | null => {
+    if (mathExpressions && mathExpressions[i]) return mathExpressions[i];
+    // Try to extract math-like content from step text
+    const step = steps[i];
+    // If step contains parentheses with operators, wrap as latex
+    if (/[+\-×÷=^√∑∫]/.test(step) || /\d/.test(step)) {
+      return step.replace(/×/g, "\\times ").replace(/÷/g, "\\div ");
+    }
+    return null;
+  };
 
   // Wrap text helper
   const wrapText = (text: string, maxChars: number): string[] => {
@@ -267,13 +307,16 @@ export function DeconstructionFlowchart({
           {steps.map((step, i) => {
             const y = stepYs[i];
             const isHovered = hoveredNode === i;
+            const isExpanded = expandedStep === i;
             const lines = wrapText(step, 34);
             const nodeH = lines.length > 1 ? NODE_HEIGHT + 14 : NODE_HEIGHT;
+            const mathLatex = getMathForStep(i);
             return (
               <g key={`step-${i}`}
                 onMouseEnter={() => setHoveredNode(i)}
                 onMouseLeave={() => setHoveredNode(null)}
-                style={{ cursor: "default" }}
+                onClick={() => setExpandedStep(isExpanded ? null : i)}
+                style={{ cursor: "pointer" }}
               >
                 {/* Glow on hover */}
                 {isHovered && (
@@ -290,9 +333,9 @@ export function DeconstructionFlowchart({
                   x={centerX - NODE_WIDTH / 2} y={y}
                   width={NODE_WIDTH} height={nodeH}
                   rx={12} ry={12}
-                  fill={isHovered ? "#E0F2FE" : NODE_COLORS.step.fill}
-                  stroke={NODE_COLORS.step.border}
-                  strokeWidth={isHovered ? "2" : "1.5"}
+                  fill={isExpanded ? "#DBEAFE" : isHovered ? "#E0F2FE" : NODE_COLORS.step.fill}
+                  stroke={isExpanded ? "#3B82F6" : NODE_COLORS.step.border}
+                  strokeWidth={isExpanded || isHovered ? "2" : "1.5"}
                   filter="url(#nodeShadow)"
                 />
                 {/* Step number circle */}
@@ -323,6 +366,46 @@ export function DeconstructionFlowchart({
                     {line}
                   </text>
                 ))}
+                {/* Click hint icon */}
+                <text
+                  x={centerX + NODE_WIDTH / 2 - 18}
+                  y={y + nodeH / 2 + 1}
+                  textAnchor="middle" dominantBaseline="central"
+                  fontSize="12" opacity="0.5"
+                >
+                  {isExpanded ? "▲" : "▼"}
+                </text>
+                {/* ── Math panel (expanded) ── */}
+                {isExpanded && (
+                  <foreignObject
+                    x={centerX - NODE_WIDTH / 2}
+                    y={y + nodeH + 4}
+                    width={NODE_WIDTH}
+                    height={MATH_PANEL_HEIGHT}
+                  >
+                    <div
+                      style={{
+                        background: "linear-gradient(135deg, #EEF2FF, #E0E7FF)",
+                        border: "1.5px solid #818CF8",
+                        borderRadius: 10,
+                        padding: "6px 12px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%",
+                        boxShadow: "0 2px 8px rgba(99,102,241,0.15)",
+                      }}
+                    >
+                      {mathLatex ? (
+                        <MathBlock latex={mathLatex} />
+                      ) : (
+                        <span style={{ fontSize: 11, color: "#6366F1", fontFamily: "'Tajawal', sans-serif" }}>
+                          📐 لا توجد صيغة رياضية لهذه الخطوة
+                        </span>
+                      )}
+                    </div>
+                  </foreignObject>
+                )}
               </g>
             );
           })}
