@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="flex-shrink-0 border-b border-border bg-card"
         style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}
       >
-        <div className="flex items-center px-4 py-0 bg-popover-foreground text-destructive-foreground">
+        <div className="flex items-center px-4 py-0 bg-card">
           {/* Brand */}
           <Link to="/" className="flex-shrink-0 py-2">
             <QEDLogo size="sm" />
