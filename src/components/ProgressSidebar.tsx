@@ -5,12 +5,12 @@ import { getProgress, getDueForReview, clearProgress } from "@/engine/progress-s
 import { Domain } from "@/engine/types";
 import { motion } from "framer-motion";
 
-const DOMAIN_INFO: Record<Domain, { label: string; color: string; emoji: string }> = {
-  algebra:     { label: "الجبر",     color: "#4F46E5", emoji: "🔢" },
-  geometry:    { label: "الهندسة",   color: "#059669", emoji: "📐" },
-  statistics:  { label: "الإحصاء",   color: "#D97706", emoji: "📊" },
-  probability: { label: "الاحتمال",  color: "#7C3AED", emoji: "🎲" },
-  functions:   { label: "الدوال",    color: "#E11D48", emoji: "📈" },
+const DOMAIN_INFO: Record<Domain, { label: string; colorVar: string; emoji: string }> = {
+  algebra:     { label: "الجبر",     colorVar: "--algebra",     emoji: "🔢" },
+  geometry:    { label: "الهندسة",   colorVar: "--geometry",    emoji: "📐" },
+  statistics:  { label: "الإحصاء",   colorVar: "--statistics",  emoji: "📊" },
+  probability: { label: "الاحتمال",  colorVar: "--probability", emoji: "🎲" },
+  functions:   { label: "الدوال",    colorVar: "--functions",   emoji: "📈" },
 };
 
 interface Props {
