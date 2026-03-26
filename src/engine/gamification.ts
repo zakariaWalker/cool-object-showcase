@@ -256,7 +256,7 @@ export async function getDailyChallenge(): Promise<{ exerciseId: string; text: s
   const today = new Date().toISOString().slice(0, 10);
   const seed = today.split("-").reduce((a, b) => a + parseInt(b), 0);
 
-  const { count } = await supabase.from("kb_exercises").select("id", { count: "exact", head: true });
+  const { count } = await (supabase as any).from("kb_exercises").select("id", { count: "exact", head: true });
   if (!count || count === 0) return null;
 
   const offset = seed % count;
