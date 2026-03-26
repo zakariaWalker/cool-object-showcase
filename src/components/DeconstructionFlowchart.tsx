@@ -439,7 +439,7 @@ export function DeconstructionFlowchart({
                     x={exX + EX_STEP_WIDTH / 2}
                     y={y + (NODE_HEIGHT - exH) / 2 + 14 + li * 16}
                     textAnchor="middle" dominantBaseline="auto"
-                    fill="#065F46"
+                    fill="#A7F3D0"
                     fontSize="10" fontWeight="600"
                     fontFamily="'Tajawal', sans-serif"
                   >
