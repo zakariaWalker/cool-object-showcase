@@ -126,6 +126,7 @@ export function KBDeconstructionView({ exerciseId, exerciseSteps }: Props) {
             concepts={decon.pattern?.concepts || []}
             notes={decon.notes}
             aiGenerated={decon.ai_generated}
+            exerciseSteps={exerciseSteps}
           />
         );
       })}
