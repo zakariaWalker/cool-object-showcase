@@ -1,0 +1,382 @@
+// ===== Exam Builder Panel — Template selection + exercise management =====
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Exam, ExamSection, ExamExercise, ExamFormat,
+  ALL_TEMPLATES, GRADE_OPTIONS, TYPE_LABELS_AR,
+  generateExamId, generateSectionId,
+} from "@/engine/exam-types";
+import { ExamPreview } from "./ExamPreview";
+import { ExamKBPicker } from "./ExamKBPicker";
+
+interface Props {
+  exam: Exam | null;
+  onSave: (exam: Exam) => void;
+  onCancel: () => void;
+}
+
+type Step = "template" | "configure" | "exercises" | "preview";
+
+export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
+  const [step, setStep] = useState<Step>(exam ? "exercises" : "template");
+  const [format, setFormat] = useState<ExamFormat>(exam?.format || "regular");
+  const [grade, setGrade] = useState(exam?.grade || "middle_4");
+  const [title, setTitle] = useState(exam?.title || "");
+  const [duration, setDuration] = useState(exam?.duration || 60);
+  const [totalPoints, setTotalPoints] = useState(exam?.totalPoints || 20);
+  const [sections, setSections] = useState<ExamSection[]>(exam?.sections || []);
+  const [metadata, setMetadata] = useState(exam?.metadata || {});
+  const [showKBPicker, setShowKBPicker] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+
+  const template = ALL_TEMPLATES.find(t => t.id === format);
+
+  const applyTemplate = () => {
+    if (!template) return;
+    setDuration(template.duration);
+    setTotalPoints(template.totalPoints);
+    setSections(template.sections.map(s => ({
+      id: s.id,
+      title: s.titleAr,
+      points: s.points,
+      exercises: [],
+    })));
+    setStep("configure");
+  };
+
+  const currentPoints = sections.reduce((sum, s) => sum + s.exercises.reduce((es, e) => es + e.points, 0), 0);
+
+  const addExerciseToSection = (sectionId: string, exercise: ExamExercise) => {
+    setSections(prev => prev.map(s =>
+      s.id === sectionId ? { ...s, exercises: [...s.exercises, { ...exercise, sectionId }] } : s
+    ));
+  };
+
+  const removeExercise = (sectionId: string, exerciseId: string) => {
+    setSections(prev => prev.map(s =>
+      s.id === sectionId ? { ...s, exercises: s.exercises.filter(e => e.id !== exerciseId) } : s
+    ));
+  };
+
+  const updateExercisePoints = (sectionId: string, exerciseId: string, points: number) => {
+    setSections(prev => prev.map(s =>
+      s.id === sectionId ? {
+        ...s,
+        exercises: s.exercises.map(e => e.id === exerciseId ? { ...e, points } : e)
+      } : s
+    ));
+  };
+
+  const addSection = () => {
+    setSections(prev => [...prev, {
+      id: generateSectionId(),
+      title: `التمرين ${prev.length + 1}`,
+      points: 0,
+      exercises: [],
+    }]);
+  };
+
+  const removeSection = (id: string) => {
+    setSections(prev => prev.filter(s => s.id !== id));
+  };
+
+  const addManualExercise = (sectionId: string) => {
+    const ex: ExamExercise = {
+      id: `ex_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      sectionId,
+      text: "",
+      points: 2,
+      type: "algebra",
+      grade,
+      source: "manual",
+    };
+    addExerciseToSection(sectionId, ex);
+  };
+
+  const updateExerciseText = (sectionId: string, exerciseId: string, text: string) => {
+    setSections(prev => prev.map(s =>
+      s.id === sectionId ? {
+        ...s,
+        exercises: s.exercises.map(e => e.id === exerciseId ? { ...e, text } : e)
+      } : s
+    ));
+  };
+
+  const handleSave = () => {
+    const examData: Exam = {
+      id: exam?.id || generateExamId(),
+      title: title || `${template?.labelAr || "امتحان"} — ${GRADE_OPTIONS.find(g => g.value === grade)?.label || grade}`,
+      format,
+      grade,
+      duration,
+      totalPoints,
+      sections,
+      createdAt: exam?.createdAt || new Date().toISOString(),
+      status: "draft",
+      metadata,
+    };
+    onSave(examData);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* ── Step indicator ── */}
+      <div className="flex items-center gap-2">
+        {(["template", "configure", "exercises", "preview"] as Step[]).map((s, i) => {
+          const labels = ["القالب", "الإعدادات", "التمارين", "المعاينة"];
+          const icons = ["📋", "⚙️", "📝", "👁️"];
+          const isActive = s === step;
+          const isPast = ["template", "configure", "exercises", "preview"].indexOf(step) > i;
+          return (
+            <div key={s} className="flex items-center gap-1">
+              {i > 0 && <div className={`w-8 h-0.5 ${isPast ? "bg-primary" : "bg-border"}`} />}
+              <button onClick={() => isPast || isActive ? setStep(s) : null}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                  isActive ? "bg-primary text-primary-foreground" :
+                  isPast ? "bg-primary/10 text-primary cursor-pointer" :
+                  "bg-muted text-muted-foreground"
+                }`}>
+                <span>{icons[i]}</span> {labels[i]}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Step 1: Template ── */}
+      {step === "template" && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <h2 className="text-lg font-black text-foreground">اختر نوع الامتحان</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {ALL_TEMPLATES.map(t => (
+              <button key={t.id} onClick={() => { setFormat(t.format); }}
+                className={`p-6 rounded-xl border-2 text-right transition-all hover:shadow-lg ${
+                  format === t.format ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/30"
+                }`}>
+                <div className="text-2xl mb-2">{t.format === "bem" ? "🎓" : t.format === "bac" ? "🏆" : "📄"}</div>
+                <div className="text-sm font-black text-foreground">{t.labelAr}</div>
+                <div className="text-xs text-muted-foreground mt-1">{t.description}</div>
+                <div className="flex items-center gap-3 mt-3 text-[10px] text-muted-foreground">
+                  <span>⏱️ {t.duration} د</span>
+                  <span>📊 /{t.totalPoints}</span>
+                  <span>📝 {t.sections.length} أقسام</span>
+                </div>
+              </button>
+            ))}
+          </div>
+          <button onClick={applyTemplate}
+            className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 transition-all">
+            متابعة ←
+          </button>
+        </motion.div>
+      )}
+
+      {/* ── Step 2: Configure ── */}
+      {step === "configure" && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <h2 className="text-lg font-black text-foreground">⚙️ إعدادات الامتحان</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-foreground block mb-1">عنوان الامتحان</label>
+                <input value={title} onChange={e => setTitle(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm"
+                  placeholder="مثلاً: اختبار الفصل الأول في الرياضيات" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-foreground block mb-1">المستوى الدراسي</label>
+                <select value={grade} onChange={e => setGrade(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm">
+                  {GRADE_OPTIONS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-foreground block mb-1">المدة (دقيقة)</label>
+                  <input type="number" value={duration} onChange={e => setDuration(+e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-foreground block mb-1">مجموع النقاط</label>
+                  <input type="number" value={totalPoints} onChange={e => setTotalPoints(+e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm" />
+                </div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+              <h3 className="text-xs font-black text-foreground">📎 معلومات إضافية (اختياري)</h3>
+              <div>
+                <label className="text-xs font-bold text-muted-foreground block mb-1">اسم المؤسسة</label>
+                <input value={metadata.school || ""} onChange={e => setMetadata({ ...metadata, school: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-muted-foreground block mb-1">اسم الأستاذ</label>
+                <input value={metadata.teacher || ""} onChange={e => setMetadata({ ...metadata, teacher: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground block mb-1">الفصل</label>
+                  <select value={metadata.semester || ""} onChange={e => setMetadata({ ...metadata, semester: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm">
+                    <option value="">—</option>
+                    <option value="1">الفصل الأول</option>
+                    <option value="2">الفصل الثاني</option>
+                    <option value="3">الفصل الثالث</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground block mb-1">السنة</label>
+                  <input value={metadata.year || ""} onChange={e => setMetadata({ ...metadata, year: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm"
+                    placeholder="2024/2025" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => setStep("template")} className="px-4 py-2 rounded-lg border border-border text-sm font-bold text-muted-foreground hover:bg-muted">→ رجوع</button>
+            <button onClick={() => setStep("exercises")} className="px-6 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-sm">متابعة ←</button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── Step 3: Exercises ── */}
+      {step === "exercises" && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-black text-foreground">📝 التمارين</h2>
+            <div className="flex items-center gap-3">
+              <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                currentPoints === totalPoints ? "bg-green-500/10 text-green-600" :
+                currentPoints > totalPoints ? "bg-destructive/10 text-destructive" :
+                "bg-muted text-muted-foreground"
+              }`}>
+                {currentPoints} / {totalPoints} نقطة
+              </span>
+              <button onClick={addSection}
+                className="text-xs px-3 py-1.5 rounded-lg border border-dashed border-primary/50 text-primary font-bold hover:bg-primary/5">
+                + قسم جديد
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {sections.map((section, si) => (
+              <div key={section.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                {/* Section header */}
+                <div className="flex items-center justify-between px-5 py-3 bg-muted/30 border-b border-border">
+                  <div className="flex items-center gap-3">
+                    <span className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-black">{si + 1}</span>
+                    <input value={section.title}
+                      onChange={e => setSections(prev => prev.map(s => s.id === section.id ? { ...s, title: e.target.value } : s))}
+                      className="text-sm font-bold text-foreground bg-transparent border-none outline-none" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground">
+                      {section.exercises.reduce((s, e) => s + e.points, 0)} ن
+                    </span>
+                    {format === "regular" && (
+                      <button onClick={() => removeSection(section.id)}
+                        className="text-destructive/60 hover:text-destructive text-xs">✕</button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Exercises */}
+                <div className="p-4 space-y-3">
+                  {section.exercises.map((ex, ei) => (
+                    <div key={ex.id} className="p-3 rounded-lg border border-border bg-background">
+                      <div className="flex items-start gap-3">
+                        <span className="text-[10px] font-bold text-muted-foreground mt-2">{ei + 1})</span>
+                        <div className="flex-1 space-y-2">
+                          <textarea value={ex.text}
+                            onChange={e => updateExerciseText(section.id, ex.id, e.target.value)}
+                            className="w-full px-2 py-1.5 rounded border border-border bg-card text-sm text-foreground resize-none min-h-[60px]"
+                            placeholder="نص التمرين..." />
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
+                              <label className="text-[10px] text-muted-foreground">النقاط:</label>
+                              <input type="number" value={ex.points} min={0.5} step={0.5}
+                                onChange={e => updateExercisePoints(section.id, ex.id, +e.target.value)}
+                                className="w-14 px-1.5 py-0.5 rounded border border-border bg-card text-xs text-foreground" />
+                            </div>
+                            {ex.source && (
+                              <span className="text-[9px] px-2 py-0.5 rounded-full font-bold" style={{
+                                background: ex.source === "kb" ? "hsl(var(--geometry) / 0.1)" : "hsl(var(--muted))",
+                                color: ex.source === "kb" ? "hsl(var(--geometry))" : "hsl(var(--muted-foreground))",
+                              }}>
+                                {ex.source === "kb" ? "من KB" : ex.source === "ai" ? "AI" : "يدوي"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <button onClick={() => removeExercise(section.id, ex.id)}
+                          className="text-destructive/50 hover:text-destructive text-sm mt-1">✕</button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Add exercise buttons */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <button onClick={() => addManualExercise(section.id)}
+                      className="text-[11px] px-3 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all">
+                      ✏️ إضافة يدوية
+                    </button>
+                    <button onClick={() => setShowKBPicker(section.id)}
+                      className="text-[11px] px-3 py-1.5 rounded-lg border border-dashed border-primary/40 text-primary hover:bg-primary/5 transition-all">
+                      📚 اختيار من KB
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-3">
+            <button onClick={() => setStep("configure")} className="px-4 py-2 rounded-lg border border-border text-sm font-bold text-muted-foreground hover:bg-muted">→ رجوع</button>
+            <button onClick={() => setShowPreview(true)}
+              className="px-4 py-2 rounded-lg border border-border text-sm font-bold text-foreground hover:bg-muted">
+              👁️ معاينة
+            </button>
+            <button onClick={handleSave}
+              className="px-6 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-sm">
+              💾 حفظ الامتحان
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* KB Picker Modal */}
+      <AnimatePresence>
+        {showKBPicker && (
+          <ExamKBPicker
+            grade={grade}
+            sectionId={showKBPicker}
+            allowedTypes={template?.sections.find(s => s.id === showKBPicker)?.allowedTypes}
+            onSelect={(sectionId, exercise) => { addExerciseToSection(sectionId, exercise); setShowKBPicker(null); }}
+            onClose={() => setShowKBPicker(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Preview Modal */}
+      <AnimatePresence>
+        {showPreview && (
+          <ExamPreview
+            exam={{
+              id: exam?.id || "preview",
+              title: title || "امتحان",
+              format, grade, duration, totalPoints, sections,
+              createdAt: new Date().toISOString(),
+              status: "draft",
+              metadata,
+            }}
+            onClose={() => setShowPreview(false)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
