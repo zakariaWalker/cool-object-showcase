@@ -130,7 +130,7 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
       setLoading(true);
       setError(null);
       try {
-        let query = supabase
+        let query = (supabase as any)
           .from("kb_exercises")
           .select("*")
           .eq("grade", selectedGrade)

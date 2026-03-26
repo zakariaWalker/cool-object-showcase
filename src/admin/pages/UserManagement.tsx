@@ -5,7 +5,7 @@ const UserManagement = () => {
   const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
-    (supabase.from('profiles').select('id, full_name, created_at, user_roles(role)') as any)
+    ((supabase as any).from('profiles').select('id, full_name, created_at, user_roles(role)'))
       .order('created_at', { ascending: false })
       .then(({ data }: any) => setUsers(data || []));
   }, []);

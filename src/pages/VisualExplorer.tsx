@@ -386,8 +386,8 @@ function ConceptMapExplorer() {
 
   const loadPatterns = async () => {
     setLoading(true);
-    const { data: patterns } = await supabase.from("kb_patterns").select("*");
-    const { data: decons } = await supabase.from("kb_deconstructions").select("pattern_id");
+    const { data: patterns } = await (supabase as any).from("kb_patterns").select("*");
+    const { data: decons } = await (supabase as any).from("kb_deconstructions").select("pattern_id");
 
     if (patterns) {
       const countMap: Record<string, number> = {};

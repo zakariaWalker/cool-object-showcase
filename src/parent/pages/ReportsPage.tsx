@@ -11,7 +11,7 @@ const ReportsPage = () => {
     (supabase as any).from('parent_students').select('student_id, profiles:student_id(full_name)').eq('parent_id', user.id).then(async ({ data: kids }: any) => {
       if (!kids) return;
       const enriched = await Promise.all(kids.map(async (k: any) => {
-        const { data: prog } = await supabase.from('student_progress').select('xp, total_exercises, total_correct').eq('student_id', k.student_id);
+        const { data: prog } = await (supabase as any).from('student_progress').select('xp, total_exercises, total_correct').eq('student_id', k.student_id);
         const totalEx = (prog || []).reduce((s: number, p: any) => s + (p.total_exercises || 0), 0);
         const totalCorrect = (prog || []).reduce((s: number, p: any) => s + (p.total_correct || 0), 0);
         const avgPct = totalEx > 0 ? Math.round((totalCorrect / totalEx) * 100) : 0;

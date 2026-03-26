@@ -38,7 +38,7 @@ export default function AITutor() {
     const all: any[] = [];
     let from = 0;
     while (true) {
-      const { data } = await supabase.from("kb_exercises").select("id,text,type,grade").order("grade").range(from, from + PAGE - 1);
+      const { data } = await (supabase as any).from("kb_exercises").select("id,text,type,grade").order("grade").range(from, from + PAGE - 1);
       if (!data || data.length === 0) break;
       all.push(...data);
       if (data.length < PAGE) break;
