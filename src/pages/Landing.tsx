@@ -207,7 +207,7 @@ export default function Landing() {
         transition={{ delay: 1 }}
         className="fixed top-4 left-4 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full bg-foreground/90 text-background text-xs backdrop-blur-md"
       >
-        <div className="w-2 h-2 rounded-full bg-[hsl(158_64%_40%)] animate-pulse" />
+        <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "hsl(var(--geometry))" }} />
         <span className="font-mono font-bold">ميزات مكتشفة:</span>
         <span className="font-black">{displayCount}</span>
       </motion.div>
