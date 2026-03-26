@@ -141,7 +141,7 @@ export async function saveProgress(stats: StudentStats): Promise<void> {
   const studentId = getStudentId();
   const today = new Date().toISOString().slice(0, 10);
 
-  await supabase.from("student_progress").upsert({
+  await (supabase as any).from("student_progress").upsert({
     student_id: studentId,
     xp: stats.xp,
     level: stats.level,
