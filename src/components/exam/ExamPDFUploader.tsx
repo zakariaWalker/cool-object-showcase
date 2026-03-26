@@ -424,6 +424,18 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
                     {` · ${new Date(h.created_at).toLocaleDateString("ar-DZ")}`}
                   </p>
                 </div>
+                {h.status === "completed" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-[10px] px-2 py-1"
+                    disabled={importing}
+                    onClick={(e) => { e.stopPropagation(); importToKB(h.id); }}
+                  >
+                    {importing ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowLeftRight className="w-3 h-3 ml-1" />}
+                    نقل للأسئلة
+                  </Button>
+                )}
               </div>
             ))}
           </div>
