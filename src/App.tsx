@@ -45,6 +45,7 @@ const App = () => (
             <Route path="/explore" element={<VisualExplorer />} />
             <Route path="/whatif" element={<WhatIf />} />
             <Route path="/exams" element={<ExamBuilderPage />} />
+            <Route path="/exam-kb" element={<ExamKBPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppShell>
