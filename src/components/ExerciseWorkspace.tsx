@@ -478,6 +478,8 @@ export function ExerciseWorkspace({
               <FreeDeconstruct />
             </div>
           )}
+          </>
+          )}
         </div>
 
         {/* Center — results */}
