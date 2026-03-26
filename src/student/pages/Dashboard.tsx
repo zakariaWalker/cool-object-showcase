@@ -10,11 +10,11 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase
+    (supabase as any)
       .from("student_progress")
       .select("total_exercises, total_correct, xp, level")
       .eq("student_id", user.id)
-      .then(({ data }) => {
+      .then(({ data }: any) => {
         if (!data || data.length === 0) return;
         const d = data[0];
         setStats({

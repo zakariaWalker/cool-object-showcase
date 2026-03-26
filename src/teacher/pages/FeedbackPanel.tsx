@@ -6,12 +6,12 @@ const FeedbackPanel = () => {
   const [progress, setProgress] = useState<any[]>([]);
 
   useEffect(() => {
-    supabase
+    (supabase as any)
       .from("student_progress")
       .select("id, xp, total_exercises, total_correct, level, updated_at")
       .order("updated_at", { ascending: false })
       .limit(10)
-      .then(({ data }) => setProgress(data ?? []));
+      .then(({ data }: any) => setProgress(data ?? []));
   }, []);
 
   const sendFeedback = (type: string) => {

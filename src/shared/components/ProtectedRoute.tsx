@@ -21,12 +21,12 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
         return;
       }
       try {
-        const { data } = await supabase
+        const { data } = await (supabase as any)
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id)
           .maybeSingle();
-        setRole(data?.role || null);
+        setRole((data as any)?.role || null);
       } catch (err) {
         console.error("Error checking role:", err);
       } finally {

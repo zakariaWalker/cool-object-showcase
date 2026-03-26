@@ -6,12 +6,12 @@ const ClassMonitor = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase
+    (supabase as any)
       .from("student_progress")
       .select("xp, total_exercises, total_correct, level, updated_at, student_id")
       .order("updated_at", { ascending: false })
       .limit(20)
-      .then(({ data }) => {
+      .then(({ data }: any) => {
         setProgress(data ?? []);
         setLoading(false);
       });
