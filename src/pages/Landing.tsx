@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════════
 //  Landing.tsx — QED · رحلة الخلية العصبية
-//  Neural synapse storytelling — scroll builds connections in your brain
+//  Realistic neuron nodes + dendrite edges with scroll-driven storytelling
 // ═══════════════════════════════════════════════════════════════════════
 import { Link } from "react-router-dom";
-import { useEffect, useState, useRef, useCallback } from "react";
-import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { useEffect, useState, useRef } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 interface NeuronNode {
@@ -28,24 +28,26 @@ const SCENES = [
     id: "intro",
     title: "دماغك يبني مسارات جديدة الآن",
     subtitle: "كل مفهوم رياضي = عُقدة عصبية. كل وصلة = فهم حقيقي.",
-    description: "عندما تتعلم، دماغك يُنشئ وصلات عصبية (synapses) بين المفاهيم. كلما تدربت أكثر، الوصلات تصبح أقوى وأسرع.",
+    description: "عندما تتعلم، دماغك يُنشئ وصلات عصبية بين المفاهيم. كلما تدربت أكثر، الوصلات تصبح أقوى وأسرع.",
     visual: "network-grow",
     neurons: [
-      { id: "n1", label: "الاشتقاق", x: 20, y: 30 },
-      { id: "n2", label: "النهايات", x: 50, y: 20 },
-      { id: "n3", label: "التكامل", x: 80, y: 35 },
+      { id: "n1", label: "المعادلات", x: 15, y: 30 },
+      { id: "n2", label: "الدوال", x: 50, y: 15 },
+      { id: "n3", label: "التكامل", x: 85, y: 30 },
+      { id: "n4", label: "النهايات", x: 35, y: 55 },
+      { id: "n5", label: "الاشتقاق", x: 65, y: 55 },
     ],
   },
   {
     id: "gaps",
     title: "الثغرات = وصلات مقطوعة",
-    subtitle: "لهذا تضيع النقاط: ليس لأنك غبي، بل لأن وصلة واحدة مفقودة.",
+    subtitle: "ليس لأنك غبي، بل لأن وصلة واحدة مفقودة.",
     description: "عندما يكون مفهوم ناقص، الإشارة العصبية لا تصل. تبدأ تخسر نقاط في التمرين بدون ما تفهم ليش.",
     visual: "broken-synapse",
     neurons: [
-      { id: "g1", label: "المتتاليات", x: 15, y: 25 },
+      { id: "g1", label: "المتتاليات", x: 12, y: 25 },
       { id: "g2", label: "التزايد المقارن", x: 50, y: 45 },
-      { id: "g3", label: "الدوال الأسية", x: 85, y: 25 },
+      { id: "g3", label: "الدوال الأسية", x: 88, y: 25 },
     ],
   },
   {
@@ -55,10 +57,10 @@ const SCENES = [
     description: "بدل ما تضيع وقتك في مراجعة كل شيء، QED يحدد الأنماط الضعيفة والمفاهيم الغائبة — بدقة ٩٥٪.",
     visual: "scan-detect",
     neurons: [
-      { id: "d1", label: "نمط ١", x: 20, y: 20 },
+      { id: "d1", label: "نمط ١", x: 15, y: 20 },
       { id: "d2", label: "نمط ٢", x: 50, y: 50 },
-      { id: "d3", label: "نمط ٣", x: 80, y: 20 },
-      { id: "d4", label: "الثغرة", x: 50, y: 20 },
+      { id: "d3", label: "نمط ٣", x: 85, y: 20 },
+      { id: "d4", label: "الثغرة", x: 50, y: 18 },
     ],
   },
   {
@@ -68,10 +70,10 @@ const SCENES = [
     description: "بعد التشخيص، QED يرسم لك مسار تعلم مرتّب — يبدأ من الأساس ويصعد تدريجياً حتى تُتقن كل مفهوم.",
     visual: "reconnect",
     neurons: [
-      { id: "h1", label: "الأساس", x: 10, y: 50 },
-      { id: "h2", label: "البناء", x: 35, y: 25 },
-      { id: "h3", label: "التعمق", x: 60, y: 50 },
-      { id: "h4", label: "الإتقان", x: 85, y: 25 },
+      { id: "h1", label: "الأساس", x: 8, y: 50 },
+      { id: "h2", label: "البناء", x: 32, y: 22 },
+      { id: "h3", label: "التعمق", x: 62, y: 50 },
+      { id: "h4", label: "الإتقان", x: 88, y: 22 },
     ],
   },
   {
@@ -81,12 +83,62 @@ const SCENES = [
     description: "لا حاجة لانتظار النتائج النهائية. تابع التقدم يوماً بيوم، واعرف بالضبط أين يحتاج ابنك للمساعدة.",
     visual: "parent-view",
     neurons: [
-      { id: "p1", label: "التقييم", x: 15, y: 40 },
-      { id: "p2", label: "التقدم", x: 45, y: 20 },
-      { id: "p3", label: "التقرير", x: 75, y: 40 },
+      { id: "p1", label: "التقييم", x: 12, y: 40 },
+      { id: "p2", label: "التقدم", x: 45, y: 18 },
+      { id: "p3", label: "التقرير", x: 78, y: 40 },
     ],
   },
 ];
+
+// ─── Realistic Neuron Node SVG ──────────────────────────────────────────
+function NeuronBody({ cx, cy, active, healing }: { cx: number; cy: number; active: boolean; healing?: boolean }) {
+  const baseColor = active ? (healing ? "hsl(180 55% 38%)" : "hsl(45 90% 45%)") : "hsl(220 15% 75%)";
+  const bodyColor = active ? "hsl(0 0% 100%)" : "hsl(220 10% 94%)";
+  
+  return (
+    <g>
+      {/* Soma glow */}
+      {active && (
+        <motion.circle
+          cx={cx} cy={cy} r="7"
+          fill="none"
+          stroke={baseColor}
+          strokeWidth="0.3"
+          opacity={0.4}
+          initial={{ r: 5 }}
+          animate={{ r: [5, 8, 5] }}
+          transition={{ duration: 3, repeat: Infinity }}
+        />
+      )}
+      {/* Dendrite branches (small organic lines) */}
+      {[0, 60, 120, 180, 240, 300].map((angle, i) => {
+        const rad = (angle * Math.PI) / 180;
+        const len = 3.5 + (i % 2) * 1.5;
+        const ex = cx + Math.cos(rad) * len;
+        const ey = cy + Math.sin(rad) * len;
+        const mx = cx + Math.cos(rad) * (len * 0.5) + (i % 2 === 0 ? 0.5 : -0.5);
+        const my = cy + Math.sin(rad) * (len * 0.5) + (i % 2 === 0 ? -0.4 : 0.4);
+        return (
+          <motion.path
+            key={i}
+            d={`M${cx},${cy} Q${mx},${my} ${ex},${ey}`}
+            fill="none"
+            stroke={baseColor}
+            strokeWidth={active ? 0.4 : 0.2}
+            strokeLinecap="round"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: active ? 1 : 0.6 }}
+            transition={{ duration: 0.8, delay: i * 0.05 }}
+          />
+        );
+      })}
+      {/* Cell body (soma) */}
+      <circle cx={cx} cy={cy} r="3" fill={bodyColor} stroke={baseColor} strokeWidth={active ? 0.7 : 0.35} />
+      {/* Nucleus */}
+      <circle cx={cx} cy={cy} r="1" fill={baseColor} opacity={active ? 0.8 : 0.4} />
+    </g>
+  );
+}
 
 // ─── Neural Network SVG Component ───────────────────────────────────────
 function NeuralNetwork({
@@ -102,18 +154,9 @@ function NeuralNetwork({
 }) {
   return (
     <svg viewBox="0 0 100 70" className="w-full max-w-lg" style={{ overflow: "visible" }}>
-      {/* Background glow */}
       <defs>
-        <radialGradient id="nodeGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="hsl(45 90% 55%)" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="hsl(45 90% 55%)" stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id="nodeGlowCyan" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="hsl(180 60% 50%)" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="hsl(180 60% 50%)" stopOpacity="0" />
-        </radialGradient>
         <filter id="glow">
-          <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+          <feGaussianBlur stdDeviation="1.2" result="coloredBlur" />
           <feMerge>
             <feMergeNode in="coloredBlur" />
             <feMergeNode in="SourceGraphic" />
@@ -121,77 +164,69 @@ function NeuralNetwork({
         </filter>
       </defs>
 
-      {/* Synapses (connections) */}
+      {/* Axon connections (dendrite-style curved edges) */}
       {synapses.map((s, i) => {
         const from = neurons.find((n) => n.id === s.from);
         const to = neurons.find((n) => n.id === s.to);
         if (!from || !to) return null;
 
-        const midX = (from.x + to.x) / 2;
-        const midY = (from.y + to.y) / 2 - 8;
+        // Create organic curve with offset control point
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const mx = (from.x + to.x) / 2 + (i % 2 === 0 ? -5 : 5);
+        const my = (from.y + to.y) / 2 - Math.abs(dx) * 0.15;
+
+        const color = s.broken
+          ? "hsl(0 84% 60%)"
+          : s.active
+          ? healing
+            ? "hsl(180 55% 38%)"
+            : "hsl(45 90% 45%)"
+          : "hsl(220 15% 80%)";
 
         return (
-          <motion.path
-            key={`syn-${i}`}
-            d={`M${from.x},${from.y} Q${midX},${midY} ${to.x},${to.y}`}
-            fill="none"
-            stroke={s.broken ? "hsl(0 84% 60%)" : s.active ? "hsl(45 90% 45%)" : "hsl(220 15% 80%)"}
-            strokeWidth={s.active ? 0.8 : 0.4}
-            strokeDasharray={s.broken ? "2 2" : "none"}
-            filter={s.active && !s.broken ? "url(#glow)" : "none"}
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{
-              pathLength: s.active ? 1 : 0.3,
-              opacity: s.active ? 1 : 0.3,
-            }}
-            transition={{ duration: 1.2, delay: i * 0.2, ease: "easeInOut" }}
-          />
+          <g key={`syn-${i}`}>
+            <motion.path
+              d={`M${from.x},${from.y} Q${mx},${my} ${to.x},${to.y}`}
+              fill="none"
+              stroke={color}
+              strokeWidth={s.active ? 0.6 : 0.25}
+              strokeDasharray={s.broken ? "1.5 1.5" : "none"}
+              strokeLinecap="round"
+              filter={s.active && !s.broken ? "url(#glow)" : "none"}
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: s.active ? 1 : 0.4, opacity: s.active ? 1 : 0.35 }}
+              transition={{ duration: 1.4, delay: i * 0.2, ease: "easeInOut" }}
+            />
+            {/* Synaptic vesicle pulse */}
+            {s.active && !s.broken && (
+              <motion.circle
+                r="0.8"
+                fill={color}
+                filter="url(#glow)"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.4 }}
+              >
+                <animateMotion
+                  dur="2.5s"
+                  repeatCount="indefinite"
+                  path={`M${from.x},${from.y} Q${mx},${my} ${to.x},${to.y}`}
+                  begin={`${i * 0.4}s`}
+                />
+              </motion.circle>
+            )}
+          </g>
         );
       })}
-
-      {/* Pulse along active synapses */}
-      {synapses
-        .filter((s) => s.active && !s.broken)
-        .map((s, i) => {
-          const from = neurons.find((n) => n.id === s.from);
-          const to = neurons.find((n) => n.id === s.to);
-          if (!from || !to) return null;
-          const midX = (from.x + to.x) / 2;
-          const midY = (from.y + to.y) / 2 - 8;
-          return (
-            <motion.circle
-              key={`pulse-${i}`}
-              r="1"
-              fill="hsl(45 90% 70%)"
-              filter="url(#glow)"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 1, 0] }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                delay: i * 0.5,
-              }}
-            >
-              <animateMotion
-                dur="2s"
-                repeatCount="indefinite"
-                path={`M${from.x},${from.y} Q${midX},${midY} ${to.x},${to.y}`}
-                begin={`${i * 0.5}s`}
-              />
-            </motion.circle>
-          );
-        })}
 
       {/* Scanning line */}
       {scanning && (
         <motion.line
-          x1="0"
-          y1="0"
-          x2="100"
-          y2="0"
-          stroke="hsl(180 60% 50%)"
-          strokeWidth="0.3"
-          opacity="0.6"
+          x1="0" y1="0" x2="100" y2="0"
+          stroke="hsl(180 55% 38%)"
+          strokeWidth="0.2"
+          opacity="0.5"
           filter="url(#glow)"
           initial={{ y1: 0, y2: 0 }}
           animate={{ y1: [0, 70, 0], y2: [0, 70, 0] }}
@@ -205,44 +240,17 @@ function NeuralNetwork({
           key={n.id}
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.3 + i * 0.15, type: "spring", stiffness: 200 }}
+          transition={{ delay: 0.2 + i * 0.12, type: "spring", stiffness: 180 }}
           style={{ transformOrigin: `${n.x}px ${n.y}px` }}
         >
-          {/* Glow circle */}
-          {n.active && (
-            <motion.circle
-              cx={n.x}
-              cy={n.y}
-              r="8"
-              fill={healing ? "url(#nodeGlowCyan)" : "url(#nodeGlow)"}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0.3, 0.7, 0.3] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
-          )}
-          {/* Node */}
-          <circle
-            cx={n.x}
-            cy={n.y}
-            r="3.5"
-            fill={n.active ? "hsl(0 0% 100%)" : "hsl(220 15% 95%)"}
-            stroke={n.active ? "hsl(45 90% 45%)" : "hsl(220 15% 80%)"}
-            strokeWidth={n.active ? 0.8 : 0.4}
-          />
-          {/* Inner dot */}
-          <circle
-            cx={n.x}
-            cy={n.y}
-            r="1.2"
-            fill={n.active ? "hsl(45 90% 45%)" : "hsl(220 15% 70%)"}
-          />
+          <NeuronBody cx={n.x} cy={n.y} active={n.active} healing={healing} />
           {/* Label */}
           <text
             x={n.x}
-            y={n.y + 8}
+            y={n.y + 9}
             textAnchor="middle"
-            fill={n.active ? "hsl(45 90% 35%)" : "hsl(220 10% 55%)"}
-            fontSize="3.2"
+            fill={n.active ? "hsl(220 20% 25%)" : "hsl(220 10% 55%)"}
+            fontSize="2.8"
             fontFamily="Tajawal, sans-serif"
             fontWeight="700"
           >
@@ -267,22 +275,19 @@ function ScenePanel({
   const flip = index % 2 !== 0;
   const isParent = scene.id === "parent";
 
-  // Build neurons with active state
-  const neurons: NeuronNode[] = scene.neurons.map((n) => ({
-    ...n,
-    active: isActive,
-  }));
+  const neurons: NeuronNode[] = scene.neurons.map((n) => ({ ...n, active: isActive }));
 
-  // Build synapses based on scene type
   const synapses: Synapse[] = [];
+  // Create more connections for richer graph
   for (let i = 0; i < scene.neurons.length - 1; i++) {
     const isBroken = scene.visual === "broken-synapse" && i === 1;
-    synapses.push({
-      from: scene.neurons[i].id,
-      to: scene.neurons[i + 1].id,
-      active: isActive,
-      broken: isBroken,
-    });
+    synapses.push({ from: scene.neurons[i].id, to: scene.neurons[i + 1].id, active: isActive, broken: isBroken });
+  }
+  // Extra cross connections for intro scene
+  if (scene.id === "intro" && scene.neurons.length >= 5) {
+    synapses.push({ from: scene.neurons[0].id, to: scene.neurons[3].id, active: isActive, broken: false });
+    synapses.push({ from: scene.neurons[2].id, to: scene.neurons[4].id, active: isActive, broken: false });
+    synapses.push({ from: scene.neurons[3].id, to: scene.neurons[4].id, active: isActive, broken: false });
   }
 
   return (
@@ -305,29 +310,15 @@ function ScenePanel({
             👨‍👩‍👧 لولي الأمر
           </div>
         )}
-        <h2
-          className={`text-2xl lg:text-4xl font-black leading-tight mb-3 transition-colors duration-500 ${
-            isActive
-              ? isParent
-                ? "text-accent"
-                : "text-primary"
-              : "text-muted-foreground/30"
-          }`}
-        >
+        <h2 className={`text-2xl lg:text-4xl font-black leading-tight mb-3 transition-colors duration-500 ${
+          isActive ? (isParent ? "text-accent" : "text-primary") : "text-muted-foreground/30"
+        }`}>
           {scene.title}
         </h2>
-        <p
-          className={`text-sm lg:text-base font-bold mb-2 transition-colors duration-500 ${
-            isActive ? "text-foreground/80" : "text-foreground/10"
-          }`}
-        >
+        <p className={`text-sm lg:text-base font-bold mb-2 transition-colors duration-500 ${isActive ? "text-foreground/80" : "text-foreground/10"}`}>
           {scene.subtitle}
         </p>
-        <p
-          className={`text-sm leading-relaxed transition-colors duration-500 ${
-            isActive ? "text-muted-foreground" : "text-muted-foreground/10"
-          }`}
-        >
+        <p className={`text-sm leading-relaxed transition-colors duration-500 ${isActive ? "text-muted-foreground" : "text-muted-foreground/10"}`}>
           {scene.description}
         </p>
         {isActive && (
@@ -335,11 +326,7 @@ function ScenePanel({
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className={`h-px mt-6 origin-right ${
-              isParent
-                ? "bg-gradient-to-l from-accent/50 to-transparent"
-                : "bg-gradient-to-l from-primary/50 to-transparent"
-            }`}
+            className={`h-px mt-6 origin-right ${isParent ? "bg-gradient-to-l from-accent/50 to-transparent" : "bg-gradient-to-l from-primary/50 to-transparent"}`}
           />
         )}
       </div>
@@ -369,32 +356,27 @@ function StatBadge({ value, label }: { value: string; label: string }) {
 
 // ─── Background Neural Web ──────────────────────────────────────────────
 function BackgroundNeural() {
+  // Use deterministic positions for SSR compatibility
+  const nodes = [
+    [120, 80], [350, 150], [600, 90], [180, 400], [500, 350],
+    [750, 200], [900, 380], [100, 700], [400, 600], [650, 550],
+    [830, 100], [280, 250], [550, 480], [70, 500], [940, 600],
+    [200, 150], [450, 300], [700, 450], [350, 700], [800, 550],
+  ];
+  const edges = [
+    [0, 1], [1, 2], [0, 3], [2, 5], [3, 4], [4, 5], [5, 6], [3, 7], [4, 8], [8, 9],
+    [2, 10], [1, 11], [4, 12], [7, 13], [9, 14], [0, 15], [11, 16], [5, 17], [8, 18], [6, 19],
+  ];
+
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-[0.03]">
-      <svg viewBox="0 0 1000 1000" className="w-full h-full">
-        {Array.from({ length: 40 }, (_, i) => {
-          const x = Math.random() * 1000;
-          const y = Math.random() * 1000;
-          return <circle key={i} cx={x} cy={y} r="2" fill="hsl(45 90% 55%)" />;
-        })}
-        {Array.from({ length: 30 }, (_, i) => {
-          const x1 = Math.random() * 1000;
-          const y1 = Math.random() * 1000;
-          const x2 = x1 + (Math.random() - 0.5) * 300;
-          const y2 = y1 + (Math.random() - 0.5) * 300;
-          return (
-            <line
-              key={`l-${i}`}
-              x1={x1}
-              y1={y1}
-              x2={x2}
-              y2={y2}
-              stroke="hsl(45 90% 55%)"
-              strokeWidth="0.5"
-              opacity="0.3"
-            />
-          );
-        })}
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-[0.04]">
+      <svg viewBox="0 0 1000 800" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
+        {edges.map(([a, b], i) => (
+          <line key={`e-${i}`} x1={nodes[a][0]} y1={nodes[a][1]} x2={nodes[b][0]} y2={nodes[b][1]} stroke="hsl(45 90% 45%)" strokeWidth="1" opacity="0.5" />
+        ))}
+        {nodes.map(([cx, cy], i) => (
+          <circle key={i} cx={cx} cy={cy} r="3" fill="hsl(45 90% 45%)" opacity="0.6" />
+        ))}
       </svg>
     </div>
   );
@@ -406,30 +388,24 @@ function BackgroundNeural() {
 export default function Landing() {
   const [activeScene, setActiveScene] = useState(-1);
   const sceneRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const triggered = useRef<Set<number>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { scrollYProgress } = useScroll({ target: containerRef });
 
-  // Intersection observer for scenes
+  // Bidirectional intersection observer
   useEffect(() => {
     const obs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
           if (e.isIntersecting && e.intersectionRatio > 0.35) {
             const idx = Number((e.target as HTMLElement).dataset.idx);
-            if (!isNaN(idx) && !triggered.current.has(idx)) {
-              triggered.current.add(idx);
-              setActiveScene(idx);
-            }
+            if (!isNaN(idx)) setActiveScene(idx);
           }
         });
       },
       { threshold: 0.35 }
     );
-    sceneRefs.current.forEach((el) => {
-      if (el) obs.observe(el);
-    });
+    sceneRefs.current.forEach((el) => { if (el) obs.observe(el); });
     return () => obs.disconnect();
   }, []);
 
@@ -442,7 +418,7 @@ export default function Landing() {
   }, [synapseCount]);
 
   return (
-    <div ref={containerRef} className="light relative bg-background min-h-screen" dir="rtl">
+    <div ref={containerRef} className="relative bg-background min-h-screen" dir="rtl">
       <BackgroundNeural />
 
       {/* Progress bar (top) */}
@@ -459,9 +435,7 @@ export default function Landing() {
         className="fixed top-4 left-4 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur-md border border-border text-xs"
       >
         <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-        <span className="text-muted-foreground font-mono">
-          وصلات نشطة:
-        </span>
+        <span className="text-muted-foreground font-mono">وصلات نشطة:</span>
         <span className="text-primary font-black">{displayCount}</span>
       </motion.div>
 
@@ -472,7 +446,7 @@ export default function Landing() {
             key={i}
             className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${
               i <= activeScene
-                ? "bg-primary scale-150 shadow-[0_0_8px_hsl(45_90%_55%/0.6)]"
+                ? "bg-primary scale-150 shadow-[0_0_8px_hsl(45_90%_45%/0.5)]"
                 : "bg-muted-foreground/20"
             }`}
           />
@@ -484,58 +458,38 @@ export default function Landing() {
         {/* Hero neural animation */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 0.15, scale: 1 }}
+          animate={{ opacity: 0.12, scale: 1 }}
           transition={{ duration: 2 }}
           className="absolute inset-0 flex items-center justify-center pointer-events-none"
         >
           <svg viewBox="0 0 400 300" className="w-full max-w-3xl">
-            {/* Animated expanding neural web */}
             {[
-              [200, 150],
-              [120, 80],
-              [280, 80],
-              [80, 200],
-              [320, 200],
-              [160, 220],
-              [240, 220],
-              [200, 60],
-              [140, 150],
-              [260, 150],
+              [200, 150], [120, 80], [280, 80], [80, 200], [320, 200],
+              [160, 220], [240, 220], [200, 60], [140, 150], [260, 150],
             ].map(([cx, cy], i) => (
               <motion.circle
                 key={i}
-                cx={cx}
-                cy={cy}
-                r="4"
-                fill="hsl(45 90% 55%)"
+                cx={cx} cy={cy} r="4"
+                fill="hsl(45 90% 45%)"
                 initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 0.6, scale: 1 }}
+                animate={{ opacity: 0.5, scale: 1 }}
                 transition={{ delay: 0.5 + i * 0.15, duration: 0.8 }}
                 style={{ transformOrigin: `${cx}px ${cy}px` }}
               />
             ))}
             {[
-              [200, 150, 120, 80],
-              [200, 150, 280, 80],
-              [200, 150, 80, 200],
-              [200, 150, 320, 200],
-              [120, 80, 200, 60],
-              [280, 80, 200, 60],
-              [80, 200, 160, 220],
-              [320, 200, 240, 220],
-              [140, 150, 120, 80],
+              [200, 150, 120, 80], [200, 150, 280, 80], [200, 150, 80, 200],
+              [200, 150, 320, 200], [120, 80, 200, 60], [280, 80, 200, 60],
+              [80, 200, 160, 220], [320, 200, 240, 220], [140, 150, 120, 80],
               [260, 150, 280, 80],
             ].map(([x1, y1, x2, y2], i) => (
               <motion.line
                 key={`l-${i}`}
-                x1={x1}
-                y1={y1}
-                x2={x2}
-                y2={y2}
-                stroke="hsl(45 90% 55%)"
+                x1={x1} y1={y1} x2={x2} y2={y2}
+                stroke="hsl(45 90% 45%)"
                 strokeWidth="0.8"
                 initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 0.4 }}
+                animate={{ pathLength: 1, opacity: 0.35 }}
                 transition={{ delay: 1 + i * 0.1, duration: 1 }}
               />
             ))}
@@ -551,8 +505,8 @@ export default function Landing() {
           {/* Badge */}
           <div className="inline-flex items-center gap-3 mb-6">
             <div className="h-px w-10 bg-primary/30" />
-            <span className="font-mono text-[10px] tracking-[0.3em] text-primary/50 uppercase">
-              BAC 2025 · Neural Learning Engine
+            <span className="font-mono text-[10px] tracking-[0.3em] text-primary/60 uppercase">
+              Neural Learning Engine · محرك التعلم العصبي
             </span>
             <div className="h-px w-10 bg-primary/30" />
           </div>
@@ -586,7 +540,7 @@ export default function Landing() {
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
             <Link
               to="/home"
-              className="inline-block px-10 py-4 rounded-2xl bg-gradient-to-l from-primary to-amber-500 text-primary-foreground font-black text-lg shadow-[0_10px_40px_hsl(45_90%_55%/0.3)] hover:shadow-[0_14px_50px_hsl(45_90%_55%/0.5)] transition-shadow"
+              className="inline-block px-10 py-4 rounded-2xl bg-gradient-to-l from-primary to-accent text-primary-foreground font-black text-lg shadow-[0_10px_40px_hsl(45_90%_45%/0.2)] hover:shadow-[0_14px_50px_hsl(45_90%_45%/0.35)] transition-shadow"
             >
               ابدأ رحلة الاكتشاف ←
             </Link>
@@ -606,9 +560,7 @@ export default function Landing() {
               className="w-1 h-1 rounded-full bg-primary/40"
             />
           </div>
-          <span className="font-mono text-[8px] tracking-[0.2em] text-primary/25">
-            مرّر للأسفل
-          </span>
+          <span className="font-mono text-[8px] tracking-[0.2em] text-primary/25">مرّر للأسفل</span>
         </motion.div>
       </div>
 
@@ -659,7 +611,7 @@ export default function Landing() {
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
             <Link
               to="/home"
-              className="inline-block px-12 py-5 rounded-2xl bg-gradient-to-l from-primary to-amber-500 text-primary-foreground font-black text-xl shadow-[0_0_50px_hsl(45_90%_55%/0.4),0_16px_50px_rgba(0,0,0,0.5)] hover:shadow-[0_0_70px_hsl(45_90%_55%/0.6),0_20px_60px_rgba(0,0,0,0.6)] transition-shadow"
+              className="inline-block px-12 py-5 rounded-2xl bg-gradient-to-l from-primary to-accent text-primary-foreground font-black text-xl shadow-[0_0_50px_hsl(45_90%_45%/0.25),0_16px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_0_70px_hsl(45_90%_45%/0.4),0_20px_60px_rgba(0,0,0,0.15)] transition-shadow"
             >
               اكتشف ثغراتك الآن — مجاني ←
             </Link>

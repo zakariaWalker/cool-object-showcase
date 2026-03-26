@@ -4,7 +4,8 @@ import { ShieldAlert, ArrowRight, Home } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const Unauthorized = () => {
-  const { role } = useAuth();
+  const { roles } = useAuth();
+  const role = roles?.[0];
 
   const getDashboardPath = () => {
     switch (role) {
@@ -36,7 +37,7 @@ const Unauthorized = () => {
         <div className="space-y-4">
           <Link
             to={getDashboardPath()}
-            className="w-full bg-gradient-hero text-primary-foreground py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+            className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
           >
             <Home className="w-5 h-5" />
             العودة للوحة التحكم

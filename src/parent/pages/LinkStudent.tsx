@@ -15,8 +15,8 @@ const LinkStudent = () => {
     setLoading(true);
 
     try {
-      const { data: codeData, error: codeError } = await supabase
-        .from('student_join_codes' as any)
+      const { data: codeData, error: codeError } = await (supabase as any)
+        .from('student_join_codes')
         .select('student_id')
         .eq('code', code)
         .gt('expires_at', new Date().toISOString())
@@ -28,11 +28,11 @@ const LinkStudent = () => {
         return;
       }
 
-      const { error: linkError } = await supabase
+      const { error: linkError } = await (supabase as any)
         .from('parent_students')
         .insert({
           parent_id: user.id,
-          student_id: (codeData as any).student_id
+          student_id: codeData.student_id
         });
 
       if (linkError) {
@@ -42,7 +42,7 @@ const LinkStudent = () => {
         return;
       }
 
-      await supabase.from('student_join_codes' as any).delete().eq('code', code);
+      await (supabase as any).from('student_join_codes').delete().eq('code', code);
       toast.success("تم ربط الطالب بنجاح! 🎉");
       setCode("");
       setTimeout(() => window.location.href = '/parent', 1500);
@@ -53,15 +53,15 @@ const LinkStudent = () => {
   return (
     <div className="max-w-md mx-auto space-y-6">
       <div className="bg-card rounded-2xl border border-border p-8 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-6">
-          <ShieldCheck className="w-8 h-8 text-success" />
+        <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-6">
+          <ShieldCheck className="w-8 h-8 text-accent" />
         </div>
         <h2 className="text-xl font-bold mb-2">ربط حساب طالب جديد</h2>
         <p className="text-muted-foreground text-sm mb-10 leading-relaxed">أدخل الرمز المكون من 6 أرقام الذي يظهر في لوحة تحكم الطالب.</p>
         <form onSubmit={handleLink} className="space-y-6">
           <input type="text" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" className="w-full text-center text-3xl font-black tracking-[0.4em] py-5 rounded-2xl border-2 border-border bg-background focus:border-primary focus:ring-0 transition-all placeholder:text-muted/30" required autoFocus />
-          <button type="submit" disabled={loading || code.length !== 6} className="w-full bg-gradient-hero text-primary-foreground py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50">
-            {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Link2 className="w-5 h-5" /> تأكيد الربط </>}
+          <button type="submit" disabled={loading || code.length !== 6} className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50">
+            {loading ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : <><Link2 className="w-5 h-5" /> تأكيد الربط </>}
           </button>
         </form>
       </div>
