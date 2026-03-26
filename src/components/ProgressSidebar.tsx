@@ -145,7 +145,7 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
             <div style={{ display: "flex", gap: 6 }}>
               <button
                 onClick={() => onSelectExercise?.(card.input, card.domain)}
-                style={{ flex: 1, padding: "7px", borderRadius: 8, border: "none", background: "#4F46E5", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}
+                style={{ flex: 1, padding: "7px", borderRadius: 8, border: "none", background: "hsl(var(--algebra))", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}
               >
                 حلّه الآن ↗
               </button>
