@@ -6,9 +6,19 @@ import { Upload, FileText, CheckCircle, XCircle, Loader2, Trash2, Eye, BarChart3
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+type ExamCategory = "bac" | "bem" | "regular" | "devoir";
+
+const CATEGORY_OPTIONS: { value: ExamCategory; label: string; icon: string; desc: string }[] = [
+  { value: "bac", label: "BAC", icon: "🎓", desc: "امتحان شهادة البكالوريا" },
+  { value: "bem", label: "BEM", icon: "📜", desc: "امتحان شهادة التعليم المتوسط" },
+  { value: "regular", label: "اختبار", icon: "📝", desc: "اختبار فصلي أو شهري" },
+  { value: "devoir", label: "فرض", icon: "📄", desc: "فرض منزلي أو محروس" },
+];
+
 interface UploadItem {
   file: File;
   id?: string;
+  category: ExamCategory;
   status: "queued" | "uploading" | "analyzing" | "done" | "error";
   progress: number;
   result?: {
@@ -57,6 +67,7 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
   const [questions, setQuestions] = useState<ExtractedQuestion[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<ExamCategory>("bac");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load upload history
