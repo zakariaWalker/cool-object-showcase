@@ -36,11 +36,11 @@ function MathBlock({ latex }: { latex: string }) {
 
 // Colors for different node types
 const NODE_COLORS = {
-  start: { fill: "#4F46E5", text: "#fff", border: "#3730A3", glow: "rgba(79,70,229,0.3)" },
-  step: { fill: "#F0F9FF", text: "#0C4A6E", border: "#7DD3FC", glow: "rgba(56,189,248,0.15)" },
-  end: { fill: "#059669", text: "#fff", border: "#047857", glow: "rgba(5,150,105,0.3)" },
-  need: { fill: "#FEF3C7", text: "#92400E", border: "#FCD34D", glow: "rgba(252,211,77,0.2)" },
-  concept: { fill: "#F3E8FF", text: "#6B21A8", border: "#C084FC", glow: "rgba(192,132,252,0.2)" },
+  start: { fill: "#1E1B4B", text: "#fff", border: "#312E81", glow: "rgba(30,27,75,0.4)" },
+  step: { fill: "#1F2937", text: "#F9FAFB", border: "#4B5563", glow: "rgba(31,41,55,0.3)" },
+  end: { fill: "#064E3B", text: "#fff", border: "#065F46", glow: "rgba(6,78,59,0.4)" },
+  need: { fill: "#292524", text: "#E7E5E4", border: "#57534E", glow: "rgba(41,37,36,0.3)" },
+  concept: { fill: "#1E1B4B", text: "#E0E7FF", border: "#4338CA", glow: "rgba(67,56,202,0.3)" },
 };
 
 const NODE_WIDTH = 260;
@@ -118,7 +118,8 @@ export function DeconstructionFlowchart({
   return (
     <div dir="rtl" style={{ 
       borderTop: "1px solid hsl(var(--border))",
-      background: "linear-gradient(180deg, hsl(var(--card)), hsl(var(--background)))",
+      background: "linear-gradient(180deg, #0F172A, #1E293B)",
+      color: "#F1F5F9",
     }}>
       {/* Header */}
       <div style={{
@@ -185,7 +186,7 @@ export function DeconstructionFlowchart({
             </filter>
             {/* Arrow marker */}
             <marker id="arrowHead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-              <polygon points="0 0, 8 3, 0 6" fill="#94A3B8" />
+              <polygon points="0 0, 8 3, 0 6" fill="#64748B" />
             </marker>
           </defs>
 
@@ -194,7 +195,7 @@ export function DeconstructionFlowchart({
           <line
             x1={centerX} y1={startY + NODE_HEIGHT}
             x2={centerX} y2={stepYs[0]}
-            stroke="#94A3B8" strokeWidth="2" strokeDasharray="6 3"
+            stroke="#64748B" strokeWidth="2" strokeDasharray="6 3"
             markerEnd="url(#arrowHead)"
           />
           {/* Between steps */}
@@ -202,7 +203,7 @@ export function DeconstructionFlowchart({
             <line key={`conn-${i}`}
               x1={centerX} y1={y + NODE_HEIGHT}
               x2={centerX} y2={stepYs[i + 1]}
-              stroke="#94A3B8" strokeWidth="2" strokeDasharray="6 3"
+              stroke="#64748B" strokeWidth="2" strokeDasharray="6 3"
               markerEnd="url(#arrowHead)"
             />
           ) : null)}
@@ -210,7 +211,7 @@ export function DeconstructionFlowchart({
           <line
             x1={centerX} y1={stepYs[stepYs.length - 1] + NODE_HEIGHT}
             x2={centerX} y2={endY}
-            stroke="#94A3B8" strokeWidth="2" strokeDasharray="6 3"
+            stroke="#64748B" strokeWidth="2" strokeDasharray="6 3"
             markerEnd="url(#arrowHead)"
           />
 
@@ -333,7 +334,7 @@ export function DeconstructionFlowchart({
                   x={centerX - NODE_WIDTH / 2} y={y}
                   width={NODE_WIDTH} height={nodeH}
                   rx={12} ry={12}
-                  fill={isExpanded ? "#DBEAFE" : isHovered ? "#E0F2FE" : NODE_COLORS.step.fill}
+                  fill={isExpanded ? "#1E3A5F" : isHovered ? "#283548" : NODE_COLORS.step.fill}
                   stroke={isExpanded ? "#3B82F6" : NODE_COLORS.step.border}
                   strokeWidth={isExpanded || isHovered ? "2" : "1.5"}
                   filter="url(#nodeShadow)"
@@ -385,21 +386,21 @@ export function DeconstructionFlowchart({
                   >
                     <div
                       style={{
-                        background: "linear-gradient(135deg, #EEF2FF, #E0E7FF)",
-                        border: "1.5px solid #818CF8",
+                        background: "linear-gradient(135deg, #1E293B, #0F172A)",
+                        border: "1.5px solid #6366F1",
                         borderRadius: 10,
                         padding: "6px 12px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         height: "100%",
-                        boxShadow: "0 2px 8px rgba(99,102,241,0.15)",
+                        boxShadow: "0 2px 8px rgba(99,102,241,0.25)",
                       }}
                     >
                       {mathLatex ? (
                         <MathBlock latex={mathLatex} />
                       ) : (
-                        <span style={{ fontSize: 11, color: "#6366F1", fontFamily: "'Tajawal', sans-serif" }}>
+                        <span style={{ fontSize: 11, color: "#A5B4FC", fontFamily: "'Tajawal', sans-serif" }}>
                           📐 لا توجد صيغة رياضية لهذه الخطوة
                         </span>
                       )}
@@ -429,8 +430,8 @@ export function DeconstructionFlowchart({
                   x={exX} y={y + (NODE_HEIGHT - exH) / 2}
                   width={EX_STEP_WIDTH} height={exH}
                   rx={8} ry={8}
-                  fill="#ECFDF5"
-                  stroke="#6EE7B7"
+                  fill="#1C2B1F"
+                  stroke="#34D399"
                   strokeWidth="1.5"
                   filter="url(#nodeShadow)"
                 />
@@ -439,7 +440,7 @@ export function DeconstructionFlowchart({
                     x={exX + EX_STEP_WIDTH / 2}
                     y={y + (NODE_HEIGHT - exH) / 2 + 14 + li * 16}
                     textAnchor="middle" dominantBaseline="auto"
-                    fill="#065F46"
+                    fill="#A7F3D0"
                     fontSize="10" fontWeight="600"
                     fontFamily="'Tajawal', sans-serif"
                   >
