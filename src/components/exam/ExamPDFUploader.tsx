@@ -6,9 +6,19 @@ import { Upload, FileText, CheckCircle, XCircle, Loader2, Trash2, Eye, BarChart3
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+type ExamCategory = "bac" | "bem" | "regular" | "devoir";
+
+const CATEGORY_OPTIONS: { value: ExamCategory; label: string; icon: string; desc: string }[] = [
+  { value: "bac", label: "BAC", icon: "🎓", desc: "امتحان شهادة البكالوريا" },
+  { value: "bem", label: "BEM", icon: "📜", desc: "امتحان شهادة التعليم المتوسط" },
+  { value: "regular", label: "اختبار", icon: "📝", desc: "اختبار فصلي أو شهري" },
+  { value: "devoir", label: "فرض", icon: "📄", desc: "فرض منزلي أو محروس" },
+];
+
 interface UploadItem {
   file: File;
   id?: string;
+  category: ExamCategory;
   status: "queued" | "uploading" | "analyzing" | "done" | "error";
   progress: number;
   result?: {
@@ -57,6 +67,7 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
   const [questions, setQuestions] = useState<ExtractedQuestion[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<ExamCategory>("bac");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load upload history
@@ -172,7 +183,7 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
     if (!files) return;
     const newUploads: UploadItem[] = Array.from(files)
       .filter(f => f.type === "application/pdf")
-      .map(f => ({ file: f, status: "queued" as const, progress: 0 }));
+      .map(f => ({ file: f, category: selectedCategory, status: "queued" as const, progress: 0 }));
     
     if (newUploads.length === 0) {
       toast.error("يرجى اختيار ملفات PDF فقط");
@@ -208,7 +219,8 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
 
         setUploads(prev => prev.map((u, j) => j === i ? { ...u, progress: 40 } : u));
 
-        // Create upload record
+        // Create upload record with category
+        const formatValue = uploads[i].category === "devoir" ? "devoir" : uploads[i].category;
         const { data: uploadRecord, error: insertErr } = await supabase
           .from("exam_uploads")
           .insert({
@@ -217,6 +229,7 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
             file_path: filePath,
             file_size: file.size,
             status: "pending",
+            format: formatValue,
           })
           .select("id")
           .single() as any;
@@ -286,14 +299,44 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
   };
 
   const formatLabel: Record<string, string> = {
-    bem: "BEM", bac: "BAC", regular: "فرض", unknown: "غير محدد",
+    bem: "BEM", bac: "BAC", regular: "اختبار", devoir: "فرض", unknown: "غير محدد",
+  };
+
+  const categoryColors: Record<ExamCategory, string> = {
+    bac: "hsl(var(--destructive))",
+    bem: "hsl(var(--primary))",
+    regular: "hsl(var(--statistics))",
+    devoir: "hsl(var(--geometry))",
   };
 
   return (
     <div className="space-y-6" dir="rtl">
+      {/* Category Selector */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <h3 className="text-sm font-black text-foreground mb-3">📂 نوع الامتحان</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {CATEGORY_OPTIONS.map(cat => (
+            <button
+              key={cat.value}
+              onClick={() => setSelectedCategory(cat.value)}
+              className="p-4 rounded-xl border-2 transition-all text-center"
+              style={{
+                borderColor: selectedCategory === cat.value ? categoryColors[cat.value] : "hsl(var(--border))",
+                background: selectedCategory === cat.value ? categoryColors[cat.value] + "11" : "transparent",
+              }}
+            >
+              <div className="text-2xl mb-1">{cat.icon}</div>
+              <div className="text-sm font-black text-foreground">{cat.label}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">{cat.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Upload Zone */}
       <div
-        className="border-2 border-dashed border-border rounded-2xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors bg-card/50"
+        className="border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors bg-card/50"
+        style={{ borderColor: categoryColors[selectedCategory] + "55" }}
         onClick={() => fileInputRef.current?.click()}
         onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
@@ -307,9 +350,11 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
           onChange={e => handleFiles(e.target.files)}
         />
         <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-        <p className="text-lg font-bold text-foreground">اسحب ملفات PDF هنا أو اضغط للاختيار</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          يمكنك رفع عدة امتحانات دفعة واحدة • BEM, BAC, فروض
+        <p className="text-lg font-bold text-foreground">
+          اسحب ملفات PDF هنا أو اضغط للاختيار
+        </p>
+        <p className="text-sm mt-1" style={{ color: categoryColors[selectedCategory] }}>
+          سيتم تصنيفها كـ: {CATEGORY_OPTIONS.find(c => c.value === selectedCategory)?.label}
         </p>
       </div>
 
@@ -344,7 +389,13 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
               >
                 {statusIcon(u.status)}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{u.file.name}</p>
+                  <p className="text-sm font-medium text-foreground truncate">
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-2"
+                      style={{ background: categoryColors[u.category] + "22", color: categoryColors[u.category] }}>
+                      {formatLabel[u.category]}
+                    </span>
+                    {u.file.name}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {(u.file.size / 1024).toFixed(0)} KB · {statusLabel(u.status)}
                     {u.result && (

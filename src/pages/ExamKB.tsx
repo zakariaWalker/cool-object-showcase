@@ -7,9 +7,10 @@ import { ExamKBQuestions } from "@/components/exam/ExamKBQuestions";
 import { ExamKBAnalytics } from "@/components/exam/ExamKBAnalytics";
 import { ExamKBLinks } from "@/components/exam/ExamKBLinks";
 import { ExamPDFUploader } from "@/components/exam/ExamPDFUploader";
+import { ExamConfidenceAnalysis } from "@/components/exam/ExamConfidenceAnalysis";
 import type { ExamKBView } from "@/components/exam/useExamKBStore";
 
-type ExtendedView = ExamKBView | "pdf-upload";
+type ExtendedView = ExamKBView | "pdf-upload" | "confidence";
 
 export default function ExamKBPage() {
   const primaryKB = useAdminKBStore();
@@ -20,6 +21,7 @@ export default function ExamKBPage() {
     { id: "pdf-upload", label: "رفع PDF", icon: "📄" },
     { id: "exams", label: "استيراد يدوي", icon: "📥" },
     { id: "questions", label: "الأسئلة", icon: "📋" },
+    { id: "confidence", label: "كسر الرهبة", icon: "💪" },
     { id: "analytics", label: "تحليل شامل", icon: "📊" },
     { id: "links", label: "الربط مع KB", icon: "🔗" },
   ];
@@ -33,7 +35,7 @@ export default function ExamKBPage() {
           <div className="flex items-center gap-1 mr-4">
             {tabs.map(t => (
               <button key={t.id} onClick={() => {
-                if (t.id === "pdf-upload") setActiveView("pdf-upload");
+                if (t.id === "pdf-upload" || t.id === "confidence") setActiveView(t.id);
                 else { store.setView(t.id as ExamKBView); setActiveView(t.id); }
               }}
                 className="px-4 py-2 rounded-lg text-xs font-bold transition-all"
@@ -57,6 +59,13 @@ export default function ExamKBPage() {
         {activeView === "pdf-upload" && <ExamPDFUploader onQuestionsExtracted={() => store.reload()} />}
         {activeView === "exams" && <ExamKBImporter store={store} />}
         {activeView === "questions" && <ExamKBQuestions store={store} />}
+        {activeView === "confidence" && (
+          <ExamConfidenceAnalysis
+            exams={store.exams}
+            questions={store.questions}
+            analysis={store.analysis}
+          />
+        )}
         {activeView === "analytics" && <ExamKBAnalytics store={store} primaryPatterns={primaryKB.patterns} />}
         {activeView === "links" && <ExamKBLinks store={store} primaryKB={primaryKB} />}
       </div>
