@@ -14,7 +14,157 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      exam_analytics: {
+        Row: {
+          concept_frequency: Json | null
+          created_at: string
+          difficulty_distribution: Json | null
+          id: string
+          metadata: Json | null
+          topic_frequency: Json | null
+          upload_id: string
+          user_id: string
+        }
+        Insert: {
+          concept_frequency?: Json | null
+          created_at?: string
+          difficulty_distribution?: Json | null
+          id?: string
+          metadata?: Json | null
+          topic_frequency?: Json | null
+          upload_id: string
+          user_id: string
+        }
+        Update: {
+          concept_frequency?: Json | null
+          created_at?: string
+          difficulty_distribution?: Json | null
+          id?: string
+          metadata?: Json | null
+          topic_frequency?: Json | null
+          upload_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_analytics_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "exam_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_extracted_questions: {
+        Row: {
+          concepts: string[] | null
+          created_at: string
+          difficulty: string | null
+          id: string
+          linked_pattern_ids: string[] | null
+          points: number | null
+          question_number: number
+          raw_latex: string | null
+          section_label: string
+          sub_question: string | null
+          text: string
+          type: string | null
+          upload_id: string
+          user_id: string
+        }
+        Insert: {
+          concepts?: string[] | null
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          linked_pattern_ids?: string[] | null
+          points?: number | null
+          question_number: number
+          raw_latex?: string | null
+          section_label: string
+          sub_question?: string | null
+          text: string
+          type?: string | null
+          upload_id: string
+          user_id: string
+        }
+        Update: {
+          concepts?: string[] | null
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          linked_pattern_ids?: string[] | null
+          points?: number | null
+          question_number?: number
+          raw_latex?: string | null
+          section_label?: string
+          sub_question?: string | null
+          text?: string
+          type?: string | null
+          upload_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_extracted_questions_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "exam_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_uploads: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          format: string
+          grade: string | null
+          id: string
+          session: string | null
+          status: string
+          stream: string | null
+          updated_at: string
+          user_id: string
+          year: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          format?: string
+          grade?: string | null
+          id?: string
+          session?: string | null
+          status?: string
+          stream?: string | null
+          updated_at?: string
+          user_id: string
+          year?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          format?: string
+          grade?: string | null
+          id?: string
+          session?: string | null
+          status?: string
+          stream?: string | null
+          updated_at?: string
+          user_id?: string
+          year?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
