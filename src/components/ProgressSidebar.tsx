@@ -34,7 +34,7 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
       width: 220,
       flexShrink: 0,
       borderRight: "1px solid hsl(var(--border))",
-      background: "white",
+      background: "hsl(var(--card))",
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
