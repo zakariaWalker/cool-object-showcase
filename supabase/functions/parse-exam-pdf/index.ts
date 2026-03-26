@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface ExtractedQuestion {
@@ -37,7 +37,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get user from token
     const anonClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -59,7 +58,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get upload record
     const { data: upload, error: uploadErr } = await supabase
       .from("exam_uploads")
       .select("*")
@@ -74,13 +72,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update status to processing
     await supabase
       .from("exam_uploads")
       .update({ status: "processing" })
       .eq("id", upload_id);
 
-    // Download the PDF from storage
     const { data: fileData, error: dlErr } = await supabase.storage
       .from("exam-pdfs")
       .download(upload.file_path);
@@ -96,7 +92,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Convert PDF to base64 for Gemini
     const arrayBuffer = await fileData.arrayBuffer();
     const base64 = btoa(
       new Uint8Array(arrayBuffer).reduce(
@@ -105,12 +100,12 @@ Deno.serve(async (req) => {
       )
     );
 
-    // Call Gemini to extract exam content
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
+    // Use Lovable AI gateway
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
       await supabase
         .from("exam_uploads")
-        .update({ status: "failed", error_message: "GEMINI_API_KEY not set" })
+        .update({ status: "failed", error_message: "LOVABLE_API_KEY not set" })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "AI key not configured" }), {
         status: 500,
@@ -118,28 +113,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  inline_data: {
-                    mime_type: "application/pdf",
-                    data: base64,
-                  },
-                },
-                {
-                  text: `أنت محلل امتحانات رياضيات جزائرية. حلل هذا الامتحان واستخرج كل الأسئلة بالتنسيق التالي.
+    const prompt = `أنت محلل امتحانات رياضيات جزائرية. حلل هذا الامتحان واستخرج كل الأسئلة بالتنسيق التالي.
 
 لكل سؤال استخرج:
 - section_label: اسم القسم (التمرين الأول، التمرين الثاني، المسألة، إلخ)
 - question_number: رقم السؤال (1, 2, 3...)
-- sub_question: السؤال الفرعي إن وجد (1), 2.a), إلخ) أو null
+- sub_question: السؤال الفرعي إن وجد أو null
 - text: نص السؤال كاملاً مع الصيغ الرياضية
 - points: عدد النقاط (إن كان مذكوراً، وإلا قدّر)
 - type: نوع السؤال (algebra, equations, geometry, statistics, probability, functions, calculus, sequences, trigonometry, arithmetic, fractions, number_sets, proportionality, prove, factor, solve_equation, analytic_geometry, systems, transformations, solids, other)
@@ -160,25 +139,69 @@ Deno.serve(async (req) => {
   "session": "juin",
   "grade": "middle_4",
   "questions": [...]
-}`,
+}`;
+
+    const aiResponse = await fetch(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:application/pdf;base64,${base64}`,
+                  },
+                },
+                {
+                  type: "text",
+                  text: prompt,
                 },
               ],
             },
           ],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 8192,
-          },
+          temperature: 0.1,
+          max_tokens: 8192,
         }),
       }
     );
 
-    if (!geminiResponse.ok) {
-      const errText = await geminiResponse.text();
-      console.error("Gemini error:", errText);
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text();
+      console.error("AI gateway error:", aiResponse.status, errText);
+      
+      if (aiResponse.status === 429) {
+        await supabase
+          .from("exam_uploads")
+          .update({ status: "failed", error_message: "Rate limit exceeded, try again later" })
+          .eq("id", upload_id);
+        return new Response(JSON.stringify({ error: "Rate limit exceeded, please try again later" }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (aiResponse.status === 402) {
+        await supabase
+          .from("exam_uploads")
+          .update({ status: "failed", error_message: "AI credits exhausted" })
+          .eq("id", upload_id);
+        return new Response(JSON.stringify({ error: "AI credits exhausted" }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       await supabase
         .from("exam_uploads")
-        .update({ status: "failed", error_message: `AI error: ${geminiResponse.status}` })
+        .update({ status: "failed", error_message: `AI error: ${aiResponse.status}` })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "AI analysis failed" }), {
         status: 500,
@@ -186,9 +209,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const geminiData = await geminiResponse.json();
-    const aiText =
-      geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const aiData = await aiResponse.json();
+    const aiText = aiData?.choices?.[0]?.message?.content || "";
 
     // Parse JSON from AI response
     const jsonMatch = aiText.match(/\{[\s\S]*\}/);
@@ -206,7 +228,6 @@ Deno.serve(async (req) => {
     const parsed = JSON.parse(jsonMatch[0]);
     const questions: ExtractedQuestion[] = parsed.questions || [];
 
-    // Update upload with detected metadata
     await supabase
       .from("exam_uploads")
       .update({
@@ -218,7 +239,6 @@ Deno.serve(async (req) => {
       })
       .eq("id", upload_id);
 
-    // Insert extracted questions
     if (questions.length > 0) {
       const questionsToInsert = questions.map((q, i) => ({
         upload_id,
@@ -238,7 +258,6 @@ Deno.serve(async (req) => {
       await supabase.from("exam_extracted_questions").insert(questionsToInsert);
     }
 
-    // Generate analytics
     const topicFreq: Record<string, number> = {};
     const diffDist: Record<string, number> = { easy: 0, medium: 0, hard: 0 };
     const conceptFreq: Record<string, number> = {};
