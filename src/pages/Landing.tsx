@@ -355,7 +355,7 @@ export default function Landing() {
           <h2 className="text-3xl lg:text-5xl font-black text-foreground leading-tight mb-6">
             جاهز تبدأ؟
             <br />
-            <span className="bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)] bg-clip-text text-transparent">
+            <span style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               اكتشف ثغراتك الآن
             </span>
           </h2>
