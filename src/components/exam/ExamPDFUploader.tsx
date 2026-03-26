@@ -259,7 +259,7 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
 
         setUploads(prev => prev.map((u, j) => j === i ? { ...u, progress: 40 } : u));
 
-        // Create upload record with category
+        // Create upload record with category + metadata
         const formatValue = uploads[i].category === "devoir" ? "devoir" : uploads[i].category;
         const { data: uploadRecord, error: insertErr } = await supabase
           .from("exam_uploads")
@@ -270,6 +270,10 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
             file_size: file.size,
             status: "pending",
             format: formatValue,
+            grade: selectedGrade,
+            stream: needsStream(selectedCategory) ? selectedStream : null,
+            session: selectedSession,
+            year: selectedYear,
           })
           .select("id")
           .single() as any;
