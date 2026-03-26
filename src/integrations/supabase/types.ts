@@ -55,6 +55,51 @@ export type Database = {
           },
         ]
       }
+      built_exams: {
+        Row: {
+          created_at: string
+          duration: number
+          format: string
+          grade: string
+          id: string
+          metadata: Json | null
+          sections: Json
+          status: string
+          title: string
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration?: number
+          format?: string
+          grade?: string
+          id?: string
+          metadata?: Json | null
+          sections?: Json
+          status?: string
+          title: string
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration?: number
+          format?: string
+          grade?: string
+          id?: string
+          metadata?: Json | null
+          sections?: Json
+          status?: string
+          title?: string
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       class_enrollments: {
         Row: {
           class_id: string | null
@@ -193,6 +238,62 @@ export type Database = {
           },
         ]
       }
+      exam_corrections: {
+        Row: {
+          answers: Json
+          corrected_at: string
+          created_at: string
+          exam_id: string
+          grade: string
+          id: string
+          percentage: number
+          results: Json
+          status: string
+          student_name: string
+          total_possible: number
+          total_score: number
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          corrected_at?: string
+          created_at?: string
+          exam_id: string
+          grade?: string
+          id?: string
+          percentage?: number
+          results?: Json
+          status?: string
+          student_name?: string
+          total_possible?: number
+          total_score?: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          corrected_at?: string
+          created_at?: string
+          exam_id?: string
+          grade?: string
+          id?: string
+          percentage?: number
+          results?: Json
+          status?: string
+          student_name?: string
+          total_possible?: number
+          total_score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_corrections_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "built_exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_extracted_questions: {
         Row: {
           concepts: string[] | null
@@ -248,6 +349,98 @@ export type Database = {
             columns: ["upload_id"]
             isOneToOne: false
             referencedRelation: "exam_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_kb_entries: {
+        Row: {
+          created_at: string
+          format: string
+          grade: string
+          id: string
+          session: string
+          stream: string | null
+          user_id: string
+          year: string
+        }
+        Insert: {
+          created_at?: string
+          format?: string
+          grade?: string
+          id?: string
+          session?: string
+          stream?: string | null
+          user_id: string
+          year?: string
+        }
+        Update: {
+          created_at?: string
+          format?: string
+          grade?: string
+          id?: string
+          session?: string
+          stream?: string | null
+          user_id?: string
+          year?: string
+        }
+        Relationships: []
+      }
+      exam_kb_questions: {
+        Row: {
+          concepts: string[] | null
+          created_at: string
+          difficulty: string
+          exam_id: string
+          id: string
+          linked_exercise_ids: string[] | null
+          linked_pattern_ids: string[] | null
+          points: number
+          question_number: number
+          section_label: string
+          sub_question: string | null
+          text: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          concepts?: string[] | null
+          created_at?: string
+          difficulty?: string
+          exam_id: string
+          id?: string
+          linked_exercise_ids?: string[] | null
+          linked_pattern_ids?: string[] | null
+          points?: number
+          question_number?: number
+          section_label?: string
+          sub_question?: string | null
+          text: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          concepts?: string[] | null
+          created_at?: string
+          difficulty?: string
+          exam_id?: string
+          id?: string
+          linked_exercise_ids?: string[] | null
+          linked_pattern_ids?: string[] | null
+          points?: number
+          question_number?: number
+          section_label?: string
+          sub_question?: string | null
+          text?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_kb_questions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exam_kb_entries"
             referencedColumns: ["id"]
           },
         ]
