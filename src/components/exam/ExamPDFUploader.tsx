@@ -165,6 +165,7 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
 
     setProcessing(false);
     toast.success("تم معالجة جميع الملفات");
+    onQuestionsExtracted?.();
   };
 
   const removeUpload = (index: number) => {
