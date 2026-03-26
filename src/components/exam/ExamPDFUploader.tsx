@@ -2,7 +2,7 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Upload, FileText, CheckCircle, XCircle, Loader2, Trash2, Eye, BarChart3 } from "lucide-react";
+import { Upload, FileText, CheckCircle, XCircle, Loader2, Trash2, Eye, BarChart3, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
