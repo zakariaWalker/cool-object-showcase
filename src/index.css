@@ -1,5 +1,6 @@
-/* ── Google Fonts: Tajawal (Arabic) + Nunito (Latin) ─────────────────────── */
+/* ── Google Fonts: Tajawal (Arabic) + Nunito (Latin) + Branding ─────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Nunito:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,26 +9,41 @@
 /* ── Design Tokens ──────────────────────────────────────────────────────────── */
 @layer base {
   :root {
-    --background:   42 60% 97%;
-    --foreground:   220 25% 15%;
-    --card:         0 0% 100%;
-    --card-foreground: 220 25% 15%;
-    --popover:      0 0% 100%;
-    --popover-foreground: 220 25% 15%;
-    --primary:      243 75% 58%;
-    --primary-foreground: 0 0% 100%;
-    --secondary:    158 64% 40%;
-    --secondary-foreground: 0 0% 100%;
-    --accent:       38 92% 50%;
-    --accent-foreground: 0 0% 100%;
-    --muted:        220 15% 92%;
-    --muted-foreground: 220 12% 50%;
-    --destructive:  0 78% 58%;
-    --destructive-foreground: 0 0% 100%;
-    --border:       220 15% 88%;
-    --input:        220 15% 92%;
-    --ring:         243 75% 58%;
-    --radius:       0.75rem;
+    --background: 220 20% 4%;
+    --foreground: 0 0% 95%;
+
+    --card: 220 15% 8%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 220 15% 8%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 45 90% 55%;
+    --primary-foreground: 220 20% 4%;
+
+    --secondary: 220 15% 14%;
+    --secondary-foreground: 0 0% 80%;
+
+    --muted: 220 10% 12%;
+    --muted-foreground: 220 10% 50%;
+
+    --accent: 180 60% 50%;
+    --accent-foreground: 220 20% 4%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 15% 16%;
+    --input: 220 15% 16%;
+    --ring: 45 90% 55%;
+
+    --radius: 0.75rem;
+
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'Space Grotesk', sans-serif;
+
+    --glow-gold: 0 0 40px hsl(45 90% 55% / 0.3);
+    --glow-cyan: 0 0 40px hsl(180 60% 50% / 0.3);
 
     /* Domain palette */
     --algebra:      243 75% 58%;
@@ -36,15 +52,14 @@
     --probability:  277 65% 52%;
     --functions:    340 80% 52%;
 
-    /* Sidebar */
-    --sidebar-background: 220 25% 12%;
-    --sidebar-foreground: 0 0% 92%;
-    --sidebar-primary: 243 75% 65%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 18%;
-    --sidebar-accent-foreground: 0 0% 85%;
-    --sidebar-border: 220 20% 20%;
-    --sidebar-ring: 243 75% 65%;
+    --sidebar-background: 220 15% 6%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 45 90% 55%;
+    --sidebar-primary-foreground: 220 20% 4%;
+    --sidebar-accent: 220 15% 14%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 220 15% 16%;
+    --sidebar-ring: 45 90% 55%;
   }
 }
 
@@ -57,18 +72,16 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    font-family: 'Tajawal', 'Nunito', system-ui, sans-serif;
+    @apply bg-background text-foreground;
+    font-family: 'Tajawal', 'Nunito', var(--font-body), system-ui, sans-serif;
     font-size: 15px;
     line-height: 1.7;
     -webkit-font-smoothing: antialiased;
     direction: rtl;
   }
-  h1, h2, h3, h4 {
-    font-family: 'Tajawal', sans-serif;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Tajawal', var(--font-display), sans-serif;
     font-weight: 800;
-    color: hsl(var(--foreground));
   }
   .katex {
     font-size: 1.15em !important;
@@ -95,15 +108,18 @@
   .domain-statistics  { border-color: hsl(var(--statistics)); }
   .domain-probability { border-color: hsl(var(--probability)); }
   .domain-functions   { border-color: hsl(var(--functions)); }
+  
   .glass-card {
     background: rgba(255,255,255,0.85);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255,255,255,0.6);
     box-shadow: 0 2px 20px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
   }
+
   .btn-press:active {
     transform: scale(0.97) translateY(1px);
   }
+
   .card-hover {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
@@ -111,25 +127,47 @@
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0,0,0,0.10);
   }
-  @keyframes pulse-soft {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+  .text-glow-gold {
+    text-shadow: var(--glow-gold);
   }
+  .text-glow-cyan {
+    text-shadow: var(--glow-cyan);
+  }
+
   .pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
-  @keyframes slide-up {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
   .slide-up { animation: slide-up 0.3s ease forwards; }
-  @keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-  }
   .spin-slow { animation: spin-slow 2s linear infinite; }
-  .scroll-safe {
-    -webkit-overflow-scrolling: touch;
-    overflow-y: auto;
-  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-16px); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }

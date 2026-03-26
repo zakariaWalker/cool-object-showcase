@@ -1,3 +1,4 @@
+import tailwindcssAnimate from "tailwindcss-animate";
 import type { Config } from "tailwindcss";
 
 export default {
@@ -15,6 +16,9 @@ export default {
     extend: {
       fontFamily: {
         mono: ["'Geist Mono'", "monospace"],
+        display: ["Syne", "sans-serif"],
+        body: ["Space Grotesk", "sans-serif"],
+
       },
       colors: {
         border: "hsl(var(--border))",
@@ -87,13 +91,25 @@ export default {
           from: { opacity: "0", transform: "translateY(-4px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-16px)" },
+        },
+        "fade-up": {
+          from: { opacity: "0", transform: "translateY(40px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "cascade-in": "cascade-in 0.15s cubic-bezier(0.2, 1, 0.3, 1) forwards",
+        float: "float 6s ease-in-out infinite",
+        "fade-up": "fade-up 0.8s ease-out forwards",
+
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;
