@@ -45,6 +45,7 @@ const NODE_COLORS = {
 
 const NODE_WIDTH = 260;
 const NODE_HEIGHT = 52;
+const MATH_PANEL_HEIGHT = 50;
 const NODE_GAP = 28;
 const SIDE_NODE_WIDTH = 140;
 const SIDE_NODE_HEIGHT = 32;
