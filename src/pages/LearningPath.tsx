@@ -292,12 +292,6 @@ export default function LearningPath() {
         )}
       </div>
 
-      {/* Navigation */}
-      <div className="fixed bottom-4 left-4 flex gap-2 z-50">
-        <a href="/" className="px-4 py-2 rounded-lg text-xs font-bold bg-card border border-border text-foreground hover:bg-accent transition-all">🏠 الرئيسية</a>
-        <a href="/gaps" className="px-4 py-2 rounded-lg text-xs font-bold bg-card border border-border text-foreground hover:bg-accent transition-all">🔍 كاشف الثغرات</a>
-        <a href="/tutor" className="px-4 py-2 rounded-lg text-xs font-bold bg-card border border-border text-foreground hover:bg-accent transition-all">🤖 المدرّس الآلي</a>
-      </div>
     </div>
   );
 }
