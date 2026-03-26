@@ -27,7 +27,7 @@ interface Props {
   exerciseSteps?: string[];
 }
 
-export function KBDeconstructionView({ exerciseId }: Props) {
+export function KBDeconstructionView({ exerciseId, exerciseSteps }: Props) {
   const [deconstructions, setDeconstructions] = useState<DeconstructionData[]>([]);
   const [loading, setLoading] = useState(true);
 
