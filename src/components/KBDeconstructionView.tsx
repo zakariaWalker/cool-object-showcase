@@ -24,6 +24,7 @@ interface DeconstructionData {
 interface Props {
   exerciseId: string;
   exerciseText?: string;
+  exerciseSteps?: string[];
 }
 
 export function KBDeconstructionView({ exerciseId }: Props) {
