@@ -397,6 +397,8 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
