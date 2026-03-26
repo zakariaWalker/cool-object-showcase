@@ -353,6 +353,10 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
     devoir: "hsl(var(--geometry))",
   };
 
+  const currentGrades = getGradesForCategory(selectedCategory);
+  const currentSessions = getSessionsForCategory(selectedCategory);
+  const currentYears = Array.from({ length: 20 }, (_, i) => (new Date().getFullYear() - i).toString());
+
   return (
     <div className="space-y-6" dir="rtl">
       {/* Category Selector */}
@@ -362,7 +366,12 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
           {CATEGORY_OPTIONS.map(cat => (
             <button
               key={cat.value}
-              onClick={() => setSelectedCategory(cat.value)}
+              onClick={() => {
+                setSelectedCategory(cat.value);
+                // Auto-set grade for official exams
+                if (cat.value === "bem") setSelectedGrade("middle_4");
+                else if (cat.value === "bac") setSelectedGrade("secondary_3");
+              }}
               className="p-4 rounded-xl border-2 transition-all text-center"
               style={{
                 borderColor: selectedCategory === cat.value ? categoryColors[cat.value] : "hsl(var(--border))",
@@ -374,6 +383,70 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
               <div className="text-[10px] text-muted-foreground mt-0.5">{cat.desc}</div>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Metadata Selectors */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <h3 className="text-sm font-black text-foreground mb-3">📋 معلومات الامتحان</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* Grade */}
+          <div>
+            <label className="text-[10px] font-bold text-muted-foreground block mb-1">المستوى الدراسي</label>
+            <select
+              value={selectedGrade}
+              onChange={e => setSelectedGrade(e.target.value)}
+              disabled={selectedCategory === "bem" || selectedCategory === "bac"}
+              className="w-full text-xs px-3 py-2 rounded-lg border border-border bg-background text-foreground disabled:opacity-50"
+            >
+              {currentGrades.map(g => (
+                <option key={g.value} value={g.value}>{g.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Year */}
+          <div>
+            <label className="text-[10px] font-bold text-muted-foreground block mb-1">السنة</label>
+            <select
+              value={selectedYear}
+              onChange={e => setSelectedYear(e.target.value)}
+              className="w-full text-xs px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+            >
+              {currentYears.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Session */}
+          <div>
+            <label className="text-[10px] font-bold text-muted-foreground block mb-1">الدورة / الفصل</label>
+            <select
+              value={selectedSession}
+              onChange={e => setSelectedSession(e.target.value)}
+              className="w-full text-xs px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+            >
+              {currentSessions.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Stream (only for BAC) */}
+          <div>
+            <label className="text-[10px] font-bold text-muted-foreground block mb-1">الشعبة</label>
+            <select
+              value={selectedStream}
+              onChange={e => setSelectedStream(e.target.value)}
+              disabled={!needsStream(selectedCategory)}
+              className="w-full text-xs px-3 py-2 rounded-lg border border-border bg-background text-foreground disabled:opacity-50"
+            >
+              {STREAM_OPTIONS.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -398,7 +471,12 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
           اسحب ملفات PDF هنا أو اضغط للاختيار
         </p>
         <p className="text-sm mt-1" style={{ color: categoryColors[selectedCategory] }}>
-          سيتم تصنيفها كـ: {CATEGORY_OPTIONS.find(c => c.value === selectedCategory)?.label}
+          {CATEGORY_OPTIONS.find(c => c.value === selectedCategory)?.label}
+          {" · "}
+          {GRADE_OPTIONS.find(g => g.value === selectedGrade)?.label}
+          {" · "}
+          {selectedYear}
+          {selectedStream && ` · ${STREAM_OPTIONS.find(s => s.value === selectedStream)?.label}`}
         </p>
       </div>
 
