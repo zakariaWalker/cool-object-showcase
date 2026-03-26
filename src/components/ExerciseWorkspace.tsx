@@ -433,7 +433,7 @@ export function ExerciseWorkspace({
           {/* Panel header */}
           <div style={{
             padding: "14px 16px 12px",
-            background: "linear-gradient(135deg, #EEF2FF, #F0FDF4)",
+            background: "linear-gradient(135deg, hsl(var(--algebra) / 0.08), hsl(var(--geometry) / 0.08))",
             borderBottom: "1px solid hsl(var(--border))",
           }} dir="rtl">
             <h2 style={{ fontSize: 16, fontWeight: 800, color: "hsl(var(--foreground))", margin: 0, fontFamily: "'Tajawal', sans-serif" }}>
