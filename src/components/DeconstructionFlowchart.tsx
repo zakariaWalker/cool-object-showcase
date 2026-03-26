@@ -429,8 +429,8 @@ export function DeconstructionFlowchart({
                   x={exX} y={y + (NODE_HEIGHT - exH) / 2}
                   width={EX_STEP_WIDTH} height={exH}
                   rx={8} ry={8}
-                  fill="#ECFDF5"
-                  stroke="#6EE7B7"
+                  fill="#1C2B1F"
+                  stroke="#34D399"
                   strokeWidth="1.5"
                   filter="url(#nodeShadow)"
                 />
