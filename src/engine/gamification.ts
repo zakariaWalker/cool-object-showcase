@@ -260,7 +260,7 @@ export async function getDailyChallenge(): Promise<{ exerciseId: string; text: s
   if (!count || count === 0) return null;
 
   const offset = seed % count;
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from("kb_exercises")
     .select("id, text, grade, type")
     .range(offset, offset)

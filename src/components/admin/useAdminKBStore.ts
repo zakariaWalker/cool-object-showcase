@@ -89,7 +89,7 @@ export function useAdminKBStore() {
       }
 
       const [patRes] = await Promise.all([
-        supabase.from("kb_patterns").select("*").order("created_at"),
+        (supabase as any).from("kb_patterns").select("*").order("created_at"),
       ]);
 
       if (allExercises.length > 0) {
