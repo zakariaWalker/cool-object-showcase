@@ -56,6 +56,7 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
   const [selectedUpload, setSelectedUpload] = useState<string | null>(null);
   const [questions, setQuestions] = useState<ExtractedQuestion[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load upload history
