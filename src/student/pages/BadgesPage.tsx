@@ -8,12 +8,12 @@ const BadgesPage = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase
+    (supabase as any)
       .from("student_progress")
       .select("total_exercises")
       .eq("student_id", user.id)
-      .then(({ data }) => {
-        const total = (data || []).reduce((s, d) => s + (d.total_exercises || 0), 0);
+      .then(({ data }: any) => {
+        const total = (data || []).reduce((s: number, d: any) => s + (d.total_exercises || 0), 0);
         setTotalExercises(total);
       });
   }, [user]);

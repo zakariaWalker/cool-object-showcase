@@ -45,20 +45,20 @@ export function useAuth() {
     }
 
     const fetchProfile = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
-      if (data) setProfile(data as Profile);
+      if (data) setProfile(data as unknown as Profile);
     };
 
     const fetchRoles = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id);
-      if (data) setRoles((data as UserRole[]).map(r => r.role));
+      if (data) setRoles((data as unknown as UserRole[]).map(r => r.role));
     };
 
     fetchProfile();

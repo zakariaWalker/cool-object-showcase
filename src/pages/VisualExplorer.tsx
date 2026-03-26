@@ -413,7 +413,7 @@ function ConceptMapExplorer() {
 
   const selectNode = async (nodeId: string) => {
     setSelectedNode(nodeId);
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from("kb_deconstructions")
       .select("exercise_id, kb_exercises(id, text, grade, type)")
       .eq("pattern_id", nodeId)
