@@ -55,7 +55,7 @@ export function DynamicExerciseSuggestions({ onSelectExercise }: Props) {
 
       const results: SuggestedExercise[] = [];
       for (const offset of offsets) {
-        const { data } = await supabase
+        const { data } = await (supabase as any)
           .from("kb_exercises")
           .select("id, text, grade, chapter, type, source")
           .range(offset, offset)

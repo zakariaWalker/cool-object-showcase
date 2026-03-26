@@ -48,7 +48,7 @@ export function KBDeconstructionView({ exerciseId, exerciseSteps }: Props) {
         }
 
         const patternIds = [...new Set(decons.map(d => d.pattern_id))];
-        const { data: patterns } = await supabase
+        const { data: patterns } = await (supabase as any)
           .from("kb_patterns")
           .select("*")
           .in("id", patternIds);

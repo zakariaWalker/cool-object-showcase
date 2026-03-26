@@ -1,0 +1,294 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+interface ExtractedQuestion {
+  section_label: string;
+  question_number: number;
+  sub_question: string | null;
+  text: string;
+  points: number;
+  type: string;
+  difficulty: string;
+  concepts: string[];
+  raw_latex: string | null;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "No auth" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Get user from token
+    const anonClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user }, error: userError } = await anonClient.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { upload_id } = await req.json();
+    if (!upload_id) {
+      return new Response(JSON.stringify({ error: "Missing upload_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Get upload record
+    const { data: upload, error: uploadErr } = await supabase
+      .from("exam_uploads")
+      .select("*")
+      .eq("id", upload_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (uploadErr || !upload) {
+      return new Response(JSON.stringify({ error: "Upload not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Update status to processing
+    await supabase
+      .from("exam_uploads")
+      .update({ status: "processing" })
+      .eq("id", upload_id);
+
+    // Download the PDF from storage
+    const { data: fileData, error: dlErr } = await supabase.storage
+      .from("exam-pdfs")
+      .download(upload.file_path);
+
+    if (dlErr || !fileData) {
+      await supabase
+        .from("exam_uploads")
+        .update({ status: "failed", error_message: "Failed to download file" })
+        .eq("id", upload_id);
+      return new Response(JSON.stringify({ error: "File download failed" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Convert PDF to base64 for Gemini
+    const arrayBuffer = await fileData.arrayBuffer();
+    const base64 = btoa(
+      new Uint8Array(arrayBuffer).reduce(
+        (data, byte) => data + String.fromCharCode(byte),
+        ""
+      )
+    );
+
+    // Call Gemini to extract exam content
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      await supabase
+        .from("exam_uploads")
+        .update({ status: "failed", error_message: "GEMINI_API_KEY not set" })
+        .eq("id", upload_id);
+      return new Response(JSON.stringify({ error: "AI key not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  inline_data: {
+                    mime_type: "application/pdf",
+                    data: base64,
+                  },
+                },
+                {
+                  text: `أنت محلل امتحانات رياضيات جزائرية. حلل هذا الامتحان واستخرج كل الأسئلة بالتنسيق التالي.
+
+لكل سؤال استخرج:
+- section_label: اسم القسم (التمرين الأول، التمرين الثاني، المسألة، إلخ)
+- question_number: رقم السؤال (1, 2, 3...)
+- sub_question: السؤال الفرعي إن وجد (1), 2.a), إلخ) أو null
+- text: نص السؤال كاملاً مع الصيغ الرياضية
+- points: عدد النقاط (إن كان مذكوراً، وإلا قدّر)
+- type: نوع السؤال (algebra, equations, geometry, statistics, probability, functions, calculus, sequences, trigonometry, arithmetic, fractions, number_sets, proportionality, prove, factor, solve_equation, analytic_geometry, systems, transformations, solids, other)
+- difficulty: مستوى الصعوبة (easy, medium, hard)
+- concepts: قائمة المفاهيم الرياضية المستخدمة
+- raw_latex: الصيغة الرياضية بتنسيق LaTeX إن أمكن
+
+حدد أيضاً:
+- format: نوع الامتحان (bem, bac, regular)
+- year: السنة إن كانت مذكورة
+- session: الدورة (juin, septembre, remplacement) إن كانت مذكورة
+- grade: المستوى الدراسي
+
+أعد النتيجة كـ JSON فقط بهذا الشكل:
+{
+  "format": "bem|bac|regular",
+  "year": "2024",
+  "session": "juin",
+  "grade": "middle_4",
+  "questions": [...]
+}`,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 8192,
+          },
+        }),
+      }
+    );
+
+    if (!geminiResponse.ok) {
+      const errText = await geminiResponse.text();
+      console.error("Gemini error:", errText);
+      await supabase
+        .from("exam_uploads")
+        .update({ status: "failed", error_message: `AI error: ${geminiResponse.status}` })
+        .eq("id", upload_id);
+      return new Response(JSON.stringify({ error: "AI analysis failed" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const geminiData = await geminiResponse.json();
+    const aiText =
+      geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    // Parse JSON from AI response
+    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      await supabase
+        .from("exam_uploads")
+        .update({ status: "failed", error_message: "Could not parse AI response" })
+        .eq("id", upload_id);
+      return new Response(JSON.stringify({ error: "Parse failed", raw: aiText }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    const questions: ExtractedQuestion[] = parsed.questions || [];
+
+    // Update upload with detected metadata
+    await supabase
+      .from("exam_uploads")
+      .update({
+        format: parsed.format || upload.format,
+        year: parsed.year || upload.year,
+        session: parsed.session || upload.session,
+        grade: parsed.grade || upload.grade,
+        status: "completed",
+      })
+      .eq("id", upload_id);
+
+    // Insert extracted questions
+    if (questions.length > 0) {
+      const questionsToInsert = questions.map((q, i) => ({
+        upload_id,
+        user_id: user.id,
+        section_label: q.section_label || `سؤال ${i + 1}`,
+        question_number: q.question_number || i + 1,
+        sub_question: q.sub_question,
+        text: q.text,
+        points: q.points || 0,
+        type: q.type || "unclassified",
+        difficulty: q.difficulty || "medium",
+        concepts: q.concepts || [],
+        raw_latex: q.raw_latex,
+        linked_pattern_ids: [],
+      }));
+
+      await supabase.from("exam_extracted_questions").insert(questionsToInsert);
+    }
+
+    // Generate analytics
+    const topicFreq: Record<string, number> = {};
+    const diffDist: Record<string, number> = { easy: 0, medium: 0, hard: 0 };
+    const conceptFreq: Record<string, number> = {};
+
+    questions.forEach((q) => {
+      topicFreq[q.type] = (topicFreq[q.type] || 0) + 1;
+      diffDist[q.difficulty] = (diffDist[q.difficulty] || 0) + 1;
+      (q.concepts || []).forEach((c) => {
+        conceptFreq[c] = (conceptFreq[c] || 0) + 1;
+      });
+    });
+
+    await supabase.from("exam_analytics").insert({
+      user_id: user.id,
+      upload_id,
+      topic_frequency: topicFreq,
+      difficulty_distribution: diffDist,
+      concept_frequency: conceptFreq,
+      metadata: {
+        format: parsed.format,
+        year: parsed.year,
+        session: parsed.session,
+        grade: parsed.grade,
+        total_questions: questions.length,
+        total_points: questions.reduce((s, q) => s + (q.points || 0), 0),
+      },
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        upload_id,
+        questions_count: questions.length,
+        format: parsed.format,
+        year: parsed.year,
+        grade: parsed.grade,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  } catch (err) {
+    console.error("Parse exam error:", err);
+    return new Response(
+      JSON.stringify({ error: (err as Error).message }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  }
+});

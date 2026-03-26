@@ -5,7 +5,7 @@ const PlatformAnalytics = () => {
   const [stats, setStats] = useState({ totalProgress: 0, avgXp: 0, totalStudents: 0 });
 
   useEffect(() => {
-    supabase.from('student_progress').select('xp, total_exercises, total_correct').then(({ data }) => {
+    (supabase as any).from('student_progress').select('xp, total_exercises, total_correct').then(({ data }: any) => {
       if (!data) return;
       const avgXp = data.length > 0 ? Math.round(data.reduce((s, d) => s + (d.xp || 0), 0) / data.length) : 0;
       setStats({ totalProgress: data.length, avgXp, totalStudents: data.length });

@@ -10,11 +10,11 @@ const AdminHome = () => {
   useEffect(() => {
     const load = async () => {
       const [{ count: uCount }, { count: tCount }, cRes, lRes, { data: recent }] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'teacher'),
+        (supabase as any).from('profiles').select('*', { count: 'exact', head: true }),
+        (supabase as any).from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'teacher'),
         (supabase as any).from('curricula').select('*', { count: 'exact', head: true }).eq('is_published', true),
         (supabase as any).from('lessons').select('*', { count: 'exact', head: true }),
-        supabase.from('profiles').select('full_name, created_at, user_roles(role)').order('created_at', { ascending: false }).limit(5) as any,
+        (supabase as any).from('profiles').select('full_name, created_at, user_roles(role)').order('created_at', { ascending: false }).limit(5),
       ]);
       setStats({ users: uCount || 0, teachers: tCount || 0, curricula: cRes?.count || 0, lessons: lRes?.count || 0 });
       setRecentUsers(recent || []);
