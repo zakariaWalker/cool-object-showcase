@@ -86,7 +86,7 @@ function FeatureCard({ feature, index, isVisible }: { feature: typeof FEATURES[n
       transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}
       className={`flex flex-col ${flip ? "lg:flex-row-reverse" : "lg:flex-row"} items-stretch gap-8 lg:gap-12 rounded-3xl overflow-hidden transition-all duration-700`}
       style={{
-        background: isVisible ? feature.bgGlow : "transparent",
+        background: isVisible ? `hsl(var(${feature.colorVar}) / 0.06)` : "transparent",
         border: isVisible ? "1px solid hsl(var(--border))" : "1px solid transparent",
       }}
     >
