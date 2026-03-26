@@ -150,11 +150,11 @@ function FeatureCard({ feature, index, isVisible }: { feature: typeof FEATURES[n
 
 // ─── Domain Tags ────────────────────────────────────────────────────────
 const DOMAINS = [
-  { name: "الجبر", color: "hsl(243 75% 58%)", icon: "📐" },
-  { name: "الهندسة", color: "hsl(158 64% 40%)", icon: "📏" },
-  { name: "الدوال", color: "hsl(340 80% 52%)", icon: "📈" },
-  { name: "الإحصاء", color: "hsl(38 92% 50%)", icon: "📊" },
-  { name: "الاحتمالات", color: "hsl(277 65% 52%)", icon: "🎲" },
+  { name: "الجبر", colorVar: "--algebra", icon: "📐" },
+  { name: "الهندسة", colorVar: "--geometry", icon: "📏" },
+  { name: "الدوال", colorVar: "--functions", icon: "📈" },
+  { name: "الإحصاء", colorVar: "--statistics", icon: "📊" },
+  { name: "الاحتمالات", colorVar: "--probability", icon: "🎲" },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════
