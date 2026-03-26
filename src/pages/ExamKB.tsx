@@ -6,14 +6,19 @@ import { ExamKBImporter } from "@/components/exam/ExamKBImporter";
 import { ExamKBQuestions } from "@/components/exam/ExamKBQuestions";
 import { ExamKBAnalytics } from "@/components/exam/ExamKBAnalytics";
 import { ExamKBLinks } from "@/components/exam/ExamKBLinks";
+import { ExamPDFUploader } from "@/components/exam/ExamPDFUploader";
 import type { ExamKBView } from "@/components/exam/useExamKBStore";
+
+type ExtendedView = ExamKBView | "pdf-upload";
 
 export default function ExamKBPage() {
   const primaryKB = useAdminKBStore();
   const store = useExamKBStore(primaryKB.patterns);
+  const [activeView, setActiveView] = useState<ExtendedView>("pdf-upload");
 
-  const tabs: { id: ExamKBView; label: string; icon: string }[] = [
-    { id: "exams", label: "استيراد الامتحانات", icon: "📥" },
+  const tabs: { id: ExtendedView; label: string; icon: string }[] = [
+    { id: "pdf-upload", label: "رفع PDF", icon: "📄" },
+    { id: "exams", label: "استيراد يدوي", icon: "📥" },
     { id: "questions", label: "الأسئلة", icon: "📋" },
     { id: "analytics", label: "تحليل شامل", icon: "📊" },
     { id: "links", label: "الربط مع KB", icon: "🔗" },
@@ -27,11 +32,14 @@ export default function ExamKBPage() {
           <h1 className="text-sm font-black text-foreground ml-4">📚 قاعدة معرفة الامتحانات</h1>
           <div className="flex items-center gap-1 mr-4">
             {tabs.map(t => (
-              <button key={t.id} onClick={() => store.setView(t.id)}
+              <button key={t.id} onClick={() => {
+                if (t.id === "pdf-upload") setActiveView("pdf-upload");
+                else { store.setView(t.id as ExamKBView); setActiveView(t.id); }
+              }}
                 className="px-4 py-2 rounded-lg text-xs font-bold transition-all"
                 style={{
-                  background: store.view === t.id ? "hsl(var(--primary))" : "transparent",
-                  color: store.view === t.id ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
+                  background: activeView === t.id ? "hsl(var(--primary))" : "transparent",
+                  color: activeView === t.id ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
                 }}>
                 {t.icon} {t.label}
               </button>
@@ -46,10 +54,11 @@ export default function ExamKBPage() {
       </div>
 
       <div className="max-w-7xl mx-auto p-4">
-        {store.view === "exams" && <ExamKBImporter store={store} />}
-        {store.view === "questions" && <ExamKBQuestions store={store} />}
-        {store.view === "analytics" && <ExamKBAnalytics store={store} primaryPatterns={primaryKB.patterns} />}
-        {store.view === "links" && <ExamKBLinks store={store} primaryKB={primaryKB} />}
+        {activeView === "pdf-upload" && <ExamPDFUploader />}
+        {activeView === "exams" && <ExamKBImporter store={store} />}
+        {activeView === "questions" && <ExamKBQuestions store={store} />}
+        {activeView === "analytics" && <ExamKBAnalytics store={store} primaryPatterns={primaryKB.patterns} />}
+        {activeView === "links" && <ExamKBLinks store={store} primaryKB={primaryKB} />}
       </div>
     </div>
   );
