@@ -205,7 +205,7 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
                     background: r.correct ? "#34D399" : "#F87171",
                     flexShrink: 0,
                   }} />
-                  <span style={{ fontSize: 11, color: info.color, fontWeight: 700 }}>
+                  <span style={{ fontSize: 11, color: `hsl(var(${info.colorVar}))`, fontWeight: 700 }}>
                     {info.emoji} {info.label}
                   </span>
                 </div>
