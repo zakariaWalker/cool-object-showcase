@@ -1,8 +1,10 @@
 // ===== Deconstruction Flowchart — Beautiful SVG Visualization =====
 // Renders exercise deconstruction steps as a connected flowchart
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 
 interface FlowchartProps {
   patternName: string;
