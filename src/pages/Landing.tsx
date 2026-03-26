@@ -127,7 +127,7 @@ function FeatureCard({ feature, index, isVisible }: { feature: typeof FEATURES[n
       </div>
 
       {/* Visual side — gradient block */}
-      <div className={`flex-shrink-0 w-full lg:w-[320px] flex items-center justify-center p-8 bg-gradient-to-br ${feature.gradient} relative overflow-hidden`}>
+      <div className="flex-shrink-0 w-full lg:w-[320px] flex items-center justify-center p-8 relative overflow-hidden" style={{ background: `linear-gradient(135deg, hsl(var(${feature.colorVar})), hsl(var(${feature.colorVar}) / 0.7))` }}>
         <div className="absolute inset-0 opacity-10">
           <svg viewBox="0 0 200 200" className="w-full h-full">
             {/* Grid pattern */}
