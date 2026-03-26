@@ -80,6 +80,23 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
     // "Surprise factor" - types in official but not in regular
     const surpriseTypes = [...officialTypes].filter(t => !regularTypes.has(t));
 
+    // Difficulty over years
+    const years = [...new Set(exams.map(e => e.year))].filter(Boolean).sort();
+    const diffOverYears: Record<string, { easy: number; medium: number; hard: number; total: number; official: boolean }> = {};
+    years.forEach(year => {
+      const yearExams = exams.filter(e => e.year === year);
+      const yearQs = questions.filter(q => yearExams.some(e => e.id === q.examId));
+      const total = yearQs.length || 1;
+      const isOfficial = yearExams.some(e => classifyFormat(e.format) === "official");
+      diffOverYears[year] = {
+        easy: Math.round((yearQs.filter(q => q.difficulty === "easy").length / total) * 100),
+        medium: Math.round((yearQs.filter(q => q.difficulty === "medium").length / total) * 100),
+        hard: Math.round((yearQs.filter(q => q.difficulty === "hard").length / total) * 100),
+        total: yearQs.length,
+        official: isOfficial,
+      };
+    });
+
     return {
       officialExams, regularExams, officialQs, regularQs,
       commonTypes, overlapPct,
@@ -88,6 +105,7 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
       regularAvgPts: avgPoints(regularQs),
       conceptOverlapPct, commonConcepts,
       topRepeated, surpriseTypes,
+      diffOverYears, years,
     };
   }, [exams, questions]);
 
@@ -286,6 +304,98 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Difficulty Over Years */}
+      {stats.years.length > 1 && (
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h3 className="text-sm font-black text-foreground mb-2">📈 تطور الصعوبة عبر السنوات</h3>
+          <p className="text-[10px] text-muted-foreground mb-4">
+            هل الامتحانات تزداد صعوبة حقاً؟ الأرقام تتكلم.
+          </p>
+          
+          {/* Chart-like visualization */}
+          <div className="overflow-x-auto">
+            <div className="flex items-end gap-2 min-w-fit" style={{ minHeight: 180 }}>
+              {stats.years.map(year => {
+                const d = stats.diffOverYears[year];
+                if (!d) return null;
+                return (
+                  <div key={year} className="flex flex-col items-center gap-1" style={{ minWidth: 50 }}>
+                    {/* Stacked bars */}
+                    <div className="flex flex-col-reverse w-10 rounded-t-lg overflow-hidden" style={{ height: 120 }}>
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${d.easy * 1.2}px` }}
+                        transition={{ duration: 0.6 }}
+                        style={{ background: "hsl(var(--geometry))" }}
+                      />
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${d.medium * 1.2}px` }}
+                        transition={{ duration: 0.6, delay: 0.1 }}
+                        style={{ background: "hsl(var(--statistics))" }}
+                      />
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${d.hard * 1.2}px` }}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                        style={{ background: "hsl(var(--destructive))" }}
+                      />
+                    </div>
+                    {/* Labels */}
+                    <span className="text-[9px] font-black text-foreground">{year}</span>
+                    <span className="text-[8px] text-muted-foreground">{d.total}ق</span>
+                    {d.official && (
+                      <span className="text-[7px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">رسمي</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-4 mt-4">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded" style={{ background: "hsl(var(--geometry))" }} />
+              <span className="text-[9px] text-muted-foreground">سهل</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded" style={{ background: "hsl(var(--statistics))" }} />
+              <span className="text-[9px] text-muted-foreground">متوسط</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded" style={{ background: "hsl(var(--destructive))" }} />
+              <span className="text-[9px] text-muted-foreground">صعب</span>
+            </div>
+          </div>
+
+          {/* Verdict */}
+          {(() => {
+            const firstYear = stats.years[0];
+            const lastYear = stats.years[stats.years.length - 1];
+            const firstHard = stats.diffOverYears[firstYear]?.hard || 0;
+            const lastHard = stats.diffOverYears[lastYear]?.hard || 0;
+            const trend = lastHard - firstHard;
+            return (
+              <div className="mt-4 p-3 rounded-lg text-center" style={{ background: "hsl(var(--muted) / 0.5)" }}>
+                <p className="text-xs font-bold text-foreground">
+                  {trend > 10
+                    ? `⚠️ نسبة الأسئلة الصعبة ارتفعت بـ ${trend}% منذ ${firstYear}`
+                    : trend < -10
+                    ? `✅ نسبة الأسئلة الصعبة انخفضت بـ ${Math.abs(trend)}% منذ ${firstYear}`
+                    : `📊 مستوى الصعوبة مستقر تقريباً منذ ${firstYear}`}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {trend <= 10
+                    ? "لا داعي للقلق — الصعوبة لم تتغير كثيراً عبر السنوات"
+                    : "ركّز على التمارين الصعبة في تحضيرك"}
+                </p>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
