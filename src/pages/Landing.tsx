@@ -442,7 +442,7 @@ export default function Landing() {
   }, [synapseCount]);
 
   return (
-    <div ref={containerRef} className="relative bg-background min-h-screen" dir="rtl">
+    <div ref={containerRef} className="light relative bg-background min-h-screen" dir="rtl">
       <BackgroundNeural />
 
       {/* Progress bar (top) */}
