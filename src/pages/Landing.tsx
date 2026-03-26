@@ -275,7 +275,7 @@ export default function Landing() {
           {/* Domain tags */}
           <div className="flex flex-wrap justify-center gap-2 mb-8">
             {DOMAINS.map((d) => (
-              <span key={d.name} className="text-xs font-bold px-3 py-1.5 rounded-full border border-border bg-card" style={{ color: d.color }}>
+              <span key={d.name} className="text-xs font-bold px-3 py-1.5 rounded-full border border-border bg-card" style={{ color: `hsl(var(${d.colorVar}))` }}>
                 {d.icon} {d.name}
               </span>
             ))}
