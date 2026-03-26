@@ -63,7 +63,9 @@ export function DeconstructionFlowchart({
   if (steps.length === 0) return null;
 
   const totalSteps = steps.length;
-  const mainChainHeight = PADDING_TOP + NODE_HEIGHT + (totalSteps * (NODE_HEIGHT + NODE_GAP)) + NODE_HEIGHT + 40;
+  // Calculate extra height for expanded math panels
+  const expandedExtra = expandedStep !== null ? MATH_PANEL_HEIGHT + 8 : 0;
+  const mainChainHeight = PADDING_TOP + NODE_HEIGHT + (totalSteps * (NODE_HEIGHT + NODE_GAP)) + NODE_HEIGHT + 40 + expandedExtra;
   const sideNodesMaxCount = Math.max(needs.length, concepts.length);
   const sideAreaHeight = sideNodesMaxCount * (SIDE_NODE_HEIGHT + 8);
   const svgHeight = Math.max(mainChainHeight, sideAreaHeight + 120) + 60;
@@ -72,10 +74,28 @@ export function DeconstructionFlowchart({
   const svgWidth = NODE_WIDTH + PADDING_X * 2 + (needs.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + (concepts.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + (hasExSteps ? EX_STEP_WIDTH + 50 : 0);
   const centerX = (needs.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + PADDING_X + NODE_WIDTH / 2;
 
-  // Y positions for main chain
+  // Y positions for main chain — shift down after expanded step
   const startY = PADDING_TOP;
-  const stepYs = steps.map((_, i) => startY + NODE_HEIGHT + NODE_GAP + i * (NODE_HEIGHT + NODE_GAP));
-  const endY = stepYs.length > 0 ? stepYs[stepYs.length - 1] + NODE_HEIGHT + NODE_GAP : startY + NODE_HEIGHT + NODE_GAP;
+  const stepYs: number[] = [];
+  for (let i = 0; i < steps.length; i++) {
+    const baseY = startY + NODE_HEIGHT + NODE_GAP + i * (NODE_HEIGHT + NODE_GAP);
+    const extraShift = (expandedStep !== null && i > expandedStep) ? MATH_PANEL_HEIGHT + 8 : 0;
+    stepYs.push(baseY + extraShift);
+  }
+  const lastStepExtra = (expandedStep !== null && expandedStep === steps.length - 1) ? MATH_PANEL_HEIGHT + 8 : 0;
+  const endY = stepYs.length > 0 ? stepYs[stepYs.length - 1] + NODE_HEIGHT + NODE_GAP + lastStepExtra : startY + NODE_HEIGHT + NODE_GAP;
+
+  // Generate fallback math expressions from step text
+  const getMathForStep = (i: number): string | null => {
+    if (mathExpressions && mathExpressions[i]) return mathExpressions[i];
+    // Try to extract math-like content from step text
+    const step = steps[i];
+    // If step contains parentheses with operators, wrap as latex
+    if (/[+\-×÷=^√∑∫]/.test(step) || /\d/.test(step)) {
+      return step.replace(/×/g, "\\times ").replace(/÷/g, "\\div ");
+    }
+    return null;
+  };
 
   // Wrap text helper
   const wrapText = (text: string, maxChars: number): string[] => {
