@@ -73,7 +73,7 @@ export function ExamPreview({ exam, onClose }: Props) {
                       )}
                       <div className="flex-1">
                         <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                          <LatexRenderer content={ex.text} />
+                          <LatexRenderer latex={ex.text} />
                         </div>
                         <div className="text-[10px] text-gray-400 mt-1 print:hidden">
                           ({ex.points} ن)
