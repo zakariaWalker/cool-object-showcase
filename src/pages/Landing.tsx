@@ -225,8 +225,8 @@ function NeuralNetwork({
             cx={n.x}
             cy={n.y}
             r="3.5"
-            fill={n.active ? "hsl(220 15% 8%)" : "hsl(220 15% 12%)"}
-            stroke={n.active ? "hsl(45 90% 55%)" : "hsl(220 15% 25%)"}
+            fill={n.active ? "hsl(0 0% 100%)" : "hsl(220 15% 95%)"}
+            stroke={n.active ? "hsl(45 90% 45%)" : "hsl(220 15% 80%)"}
             strokeWidth={n.active ? 0.8 : 0.4}
           />
           {/* Inner dot */}
@@ -234,7 +234,7 @@ function NeuralNetwork({
             cx={n.x}
             cy={n.y}
             r="1.2"
-            fill={n.active ? "hsl(45 90% 55%)" : "hsl(220 15% 30%)"}
+            fill={n.active ? "hsl(45 90% 45%)" : "hsl(220 15% 70%)"}
           />
           {/* Label */}
           <text
