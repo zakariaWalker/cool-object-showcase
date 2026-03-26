@@ -37,7 +37,7 @@ export function DynamicExerciseSuggestions({ onSelectExercise }: Props) {
     setLoading(true);
     try {
       // Get total count
-      const { count } = await supabase
+      const { count } = await (supabase as any)
         .from("kb_exercises")
         .select("*", { count: "exact", head: true });
 
