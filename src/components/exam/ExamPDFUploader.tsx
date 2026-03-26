@@ -1,8 +1,8 @@
-// ===== Exam PDF Bulk Uploader — Upload, analyze, extract =====
+// ===== Exam PDF Bulk Uploader — Per-file metadata, auto-detect, parallel processing =====
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Upload, FileText, CheckCircle, XCircle, Loader2, Trash2, Eye, BarChart3, ArrowLeftRight } from "lucide-react";
+import { Upload, FileText, CheckCircle, XCircle, Loader2, Trash2, Eye, BarChart3, ArrowLeftRight, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { GRADE_OPTIONS } from "@/engine/exam-types";
@@ -35,34 +35,70 @@ const SESSION_OPTIONS = [
   { value: "trimester_3", label: "الفصل الثالث" },
 ];
 
-// Grade options filtered by category
-function getGradesForCategory(cat: ExamCategory) {
-  if (cat === "bem") return GRADE_OPTIONS.filter(g => g.value === "middle_4");
-  if (cat === "bac") return GRADE_OPTIONS.filter(g => g.value === "secondary_3");
-  return GRADE_OPTIONS;
-}
-
-function getSessionsForCategory(cat: ExamCategory) {
-  if (cat === "bac" || cat === "bem") return SESSION_OPTIONS.filter(s => ["juin", "septembre", "remplacement"].includes(s.value));
-  return SESSION_OPTIONS;
-}
+const YEARS = Array.from({ length: 20 }, (_, i) => (new Date().getFullYear() - i).toString());
 
 function needsStream(cat: ExamCategory): boolean {
   return cat === "bac";
+}
+
+// ── Auto-detect metadata from filename ──
+function detectFromFilename(name: string): { category?: ExamCategory; year?: string; session?: string; grade?: string; stream?: string } {
+  const n = name.toLowerCase().replace(/[_\-\.]/g, " ");
+  const result: ReturnType<typeof detectFromFilename> = {};
+
+  // Category
+  if (/\bbac\b/.test(n)) result.category = "bac";
+  else if (/\bbem\b/.test(n)) result.category = "bem";
+  else if (/\bdevoir\b|\bفرض\b/.test(n)) result.category = "devoir";
+  else if (/\bexam\b|\bاختبار\b|\btest\b/.test(n)) result.category = "regular";
+
+  // Year (4 digits between 2000-2099)
+  const yearMatch = name.match(/\b(20\d{2})\b/);
+  if (yearMatch) result.year = yearMatch[1];
+
+  // Session
+  if (/\bjuin\b|\bjune\b|\bجوان\b/.test(n)) result.session = "juin";
+  else if (/\bsept\b|\bسبتمبر\b/.test(n)) result.session = "septembre";
+  else if (/\bremp\b|\bاستدراك\b/.test(n)) result.session = "remplacement";
+  else if (/\btrim\s*1\b|\bفصل\s*1\b/.test(n)) result.session = "trimester_1";
+  else if (/\btrim\s*2\b|\bفصل\s*2\b/.test(n)) result.session = "trimester_2";
+  else if (/\btrim\s*3\b|\bفصل\s*3\b/.test(n)) result.session = "trimester_3";
+
+  // Grade
+  if (/\b4am\b|\b4\s*am\b/.test(n)) result.grade = "middle_4";
+  else if (/\b3am\b/.test(n)) result.grade = "middle_3";
+  else if (/\b2am\b/.test(n)) result.grade = "middle_2";
+  else if (/\b1am\b/.test(n)) result.grade = "middle_1";
+  else if (/\b3as\b|\b3\s*as\b/.test(n)) result.grade = "secondary_3";
+  else if (/\b2as\b/.test(n)) result.grade = "secondary_2";
+  else if (/\b1as\b/.test(n)) result.grade = "secondary_1";
+
+  // Stream
+  if (/\bscience\b|\bعلوم\b/.test(n)) result.stream = "sciences";
+  else if (/\bmath\b|\bرياضي\b/.test(n)) result.stream = "math";
+  else if (/\btech\b|\bتقني\b/.test(n)) result.stream = "tech_math";
+  else if (/\blettre\b|\bآداب\b/.test(n)) result.stream = "letters";
+  else if (/\bgestion\b|\bتسيير\b/.test(n)) result.stream = "management";
+
+  // Auto-set grade for official exams
+  if (result.category === "bem" && !result.grade) result.grade = "middle_4";
+  if (result.category === "bac" && !result.grade) result.grade = "secondary_3";
+
+  return result;
 }
 
 interface UploadItem {
   file: File;
   id?: string;
   category: ExamCategory;
+  grade: string;
+  year: string;
+  session: string;
+  stream: string;
   status: "queued" | "uploading" | "analyzing" | "done" | "error";
   progress: number;
-  result?: {
-    questions_count: number;
-    format: string;
-    year: string;
-    grade: string;
-  };
+  expanded: boolean;
+  result?: { questions_count: number; format: string; year: string; grade: string };
   error?: string;
 }
 
@@ -94,6 +130,8 @@ interface ExamPDFUploaderProps {
   onQuestionsExtracted?: () => void;
 }
 
+const CONCURRENCY = 3; // Max parallel uploads
+
 export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) {
   const { user } = useAuth();
   const [uploads, setUploads] = useState<UploadItem[]>([]);
@@ -103,11 +141,7 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
   const [questions, setQuestions] = useState<ExtractedQuestion[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<ExamCategory>("bac");
-  const [selectedGrade, setSelectedGrade] = useState("secondary_3");
-  const [selectedStream, setSelectedStream] = useState("");
-  const [selectedSession, setSelectedSession] = useState("juin");
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [defaultCategory, setDefaultCategory] = useState<ExamCategory>("bac");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load upload history
@@ -121,7 +155,6 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
     setShowHistory(true);
   }, [user]);
 
-  // Load questions for a specific upload
   const loadQuestions = useCallback(async (uploadId: string) => {
     const { data } = await supabase
       .from("exam_extracted_questions")
@@ -132,37 +165,29 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
     setSelectedUpload(uploadId);
   }, []);
 
-  // Import extracted questions into exam KB (Questions tab)
   const importToKB = useCallback(async (uploadId: string) => {
     if (!user) return;
     setImporting(true);
     try {
-      // Find the upload record for metadata
       const upload = history.find(h => h.id === uploadId);
-      
-      // Check if already imported by looking for existing exam_kb_entries with matching data
       const { data: existing } = await (supabase as any)
-        .from("exam_kb_entries")
-        .select("id")
+        .from("exam_kb_entries").select("id")
         .eq("user_id", user.id)
         .eq("year", upload?.year || "")
         .eq("format", upload?.format || "unknown")
         .eq("session", upload?.session || "juin");
-      
+
       if (existing && existing.length > 0) {
         toast.info("هذا الامتحان مستورد مسبقاً في تبويب الأسئلة");
         setImporting(false);
         return;
       }
 
-      // Load extracted questions if not already loaded
       let qs = questions;
       if (selectedUpload !== uploadId || qs.length === 0) {
         const { data } = await supabase
-          .from("exam_extracted_questions")
-          .select("*")
-          .eq("upload_id", uploadId)
-          .order("question_number") as any;
+          .from("exam_extracted_questions").select("*")
+          .eq("upload_id", uploadId).order("question_number") as any;
         qs = (data as ExtractedQuestion[]) || [];
       }
 
@@ -172,25 +197,18 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
         return;
       }
 
-      // Create exam_kb_entry
       const { data: kbEntry, error: entryErr } = await (supabase as any)
-        .from("exam_kb_entries")
-        .insert({
+        .from("exam_kb_entries").insert({
           user_id: user.id,
           year: upload?.year || "",
           session: upload?.session || "juin",
           format: upload?.format || "unknown",
           grade: upload?.grade || "",
           stream: null,
-        })
-        .select("id")
-        .single();
+        }).select("id").single();
 
-      if (entryErr || !kbEntry) {
-        throw new Error(entryErr?.message || "Failed to create KB entry");
-      }
+      if (entryErr || !kbEntry) throw new Error(entryErr?.message || "Failed to create KB entry");
 
-      // Insert questions into exam_kb_questions
       const kbQuestions = qs.map(q => ({
         user_id: user.id,
         exam_id: kbEntry.id,
@@ -207,7 +225,6 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
       }));
 
       await (supabase as any).from("exam_kb_questions").insert(kbQuestions);
-
       toast.success(`✅ تم استيراد ${qs.length} سؤال إلى تبويب الأسئلة`);
       onQuestionsExtracted?.();
     } catch (err: any) {
@@ -218,21 +235,108 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
     }
   }, [user, history, questions, selectedUpload, onQuestionsExtracted]);
 
-  // Handle file selection
+  // Handle file selection — auto-detect metadata per file
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
     const newUploads: UploadItem[] = Array.from(files)
       .filter(f => f.type === "application/pdf")
-      .map(f => ({ file: f, category: selectedCategory, status: "queued" as const, progress: 0 }));
-    
+      .map(f => {
+        const detected = detectFromFilename(f.name);
+        const cat = detected.category || defaultCategory;
+        return {
+          file: f,
+          category: cat,
+          grade: detected.grade || (cat === "bem" ? "middle_4" : cat === "bac" ? "secondary_3" : "middle_4"),
+          year: detected.year || new Date().getFullYear().toString(),
+          session: detected.session || "juin",
+          stream: detected.stream || "",
+          status: "queued" as const,
+          progress: 0,
+          expanded: false,
+        };
+      });
+
     if (newUploads.length === 0) {
       toast.error("يرجى اختيار ملفات PDF فقط");
       return;
     }
+
+    // Show auto-detect summary
+    const autoDetected = newUploads.filter(u => {
+      const d = detectFromFilename(u.file.name);
+      return d.category || d.year || d.session;
+    }).length;
+    if (autoDetected > 0) {
+      toast.success(`🔍 تم اكتشاف معلومات ${autoDetected} ملف تلقائياً من اسم الملف`);
+    }
+
     setUploads(prev => [...prev, ...newUploads]);
   };
 
-  // Process all queued uploads
+  // Update a specific upload's metadata
+  const updateUpload = (index: number, updates: Partial<UploadItem>) => {
+    setUploads(prev => prev.map((u, i) => {
+      if (i !== index) return u;
+      const updated = { ...u, ...updates };
+      // Auto-set grade for official exams
+      if (updates.category === "bem") updated.grade = "middle_4";
+      if (updates.category === "bac") updated.grade = "secondary_3";
+      return updated;
+    }));
+  };
+
+  // Process single upload
+  const processSingle = async (index: number) => {
+    if (!user) return;
+    const u = uploads[index];
+    if (u.status !== "queued") return;
+
+    setUploads(prev => prev.map((item, j) => j === index ? { ...item, status: "uploading", progress: 20 } : item));
+
+    try {
+      const file = u.file;
+      const filePath = `${user.id}/${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${file.name}`;
+
+      const { error: storageErr } = await supabase.storage.from("exam-pdfs").upload(filePath, file);
+      if (storageErr) throw new Error(storageErr.message);
+
+      setUploads(prev => prev.map((item, j) => j === index ? { ...item, progress: 40 } : item));
+
+      const { data: uploadRecord, error: insertErr } = await supabase
+        .from("exam_uploads")
+        .insert({
+          user_id: user.id,
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+          status: "pending",
+          format: u.category,
+          grade: u.grade,
+          stream: needsStream(u.category) ? u.stream : null,
+          session: u.session,
+          year: u.year,
+        })
+        .select("id").single() as any;
+
+      if (insertErr) throw new Error(insertErr.message);
+
+      setUploads(prev => prev.map((item, j) => j === index ? { ...item, id: uploadRecord.id, status: "analyzing", progress: 60 } : item));
+
+      const { data: result, error: fnErr } = await supabase.functions.invoke(
+        "parse-exam-pdf",
+        { body: { upload_id: uploadRecord.id } }
+      );
+
+      if (fnErr) throw new Error(fnErr.message);
+
+      setUploads(prev => prev.map((item, j) => j === index ? { ...item, status: "done", progress: 100, result } : item));
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      setUploads(prev => prev.map((item, j) => j === index ? { ...item, status: "error", error: err.message || "خطأ" } : item));
+    }
+  };
+
+  // Process all with concurrency
   const processAll = async () => {
     if (!user) {
       toast.error("يجب تسجيل الدخول أولاً");
@@ -240,71 +344,12 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
     }
     setProcessing(true);
 
-    for (let i = 0; i < uploads.length; i++) {
-      if (uploads[i].status !== "queued") continue;
+    const queued = uploads.map((u, i) => ({ index: i, u })).filter(x => x.u.status === "queued");
 
-      // Update status to uploading
-      setUploads(prev => prev.map((u, j) => j === i ? { ...u, status: "uploading", progress: 20 } : u));
-
-      try {
-        const file = uploads[i].file;
-        const filePath = `${user.id}/${Date.now()}_${file.name}`;
-
-        // Upload to storage
-        const { error: storageErr } = await supabase.storage
-          .from("exam-pdfs")
-          .upload(filePath, file);
-
-        if (storageErr) throw new Error(storageErr.message);
-
-        setUploads(prev => prev.map((u, j) => j === i ? { ...u, progress: 40 } : u));
-
-        // Create upload record with category + metadata
-        const formatValue = uploads[i].category === "devoir" ? "devoir" : uploads[i].category;
-        const { data: uploadRecord, error: insertErr } = await supabase
-          .from("exam_uploads")
-          .insert({
-            user_id: user.id,
-            file_name: file.name,
-            file_path: filePath,
-            file_size: file.size,
-            status: "pending",
-            format: formatValue,
-            grade: selectedGrade,
-            stream: needsStream(selectedCategory) ? selectedStream : null,
-            session: selectedSession,
-            year: selectedYear,
-          })
-          .select("id")
-          .single() as any;
-
-        if (insertErr) throw new Error(insertErr.message);
-
-        setUploads(prev => prev.map((u, j) => j === i ? { ...u, id: uploadRecord.id, status: "analyzing", progress: 60 } : u));
-
-        // Call edge function for analysis
-        const { data: result, error: fnErr } = await supabase.functions.invoke(
-          "parse-exam-pdf",
-          { body: { upload_id: uploadRecord.id } }
-        );
-
-        if (fnErr) throw new Error(fnErr.message);
-
-        setUploads(prev => prev.map((u, j) => j === i ? {
-          ...u,
-          status: "done",
-          progress: 100,
-          result: result,
-        } : u));
-
-      } catch (err: any) {
-        console.error("Upload error:", err);
-        setUploads(prev => prev.map((u, j) => j === i ? {
-          ...u,
-          status: "error",
-          error: err.message || "خطأ غير متوقع",
-        } : u));
-      }
+    // Process in batches of CONCURRENCY
+    for (let batch = 0; batch < queued.length; batch += CONCURRENCY) {
+      const chunk = queued.slice(batch, batch + CONCURRENCY);
+      await Promise.allSettled(chunk.map(({ index }) => processSingle(index)));
     }
 
     setProcessing(false);
@@ -326,8 +371,8 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
     switch (status) {
       case "queued": return <FileText className="w-4 h-4 text-muted-foreground" />;
       case "uploading": return <Loader2 className="w-4 h-4 text-primary animate-spin" />;
-      case "analyzing": return <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />;
-      case "done": return <CheckCircle className="w-4 h-4 text-emerald-500" />;
+      case "analyzing": return <Loader2 className="w-4 h-4 animate-spin" style={{ color: "hsl(var(--statistics))" }} />;
+      case "done": return <CheckCircle className="w-4 h-4" style={{ color: "hsl(var(--geometry))" }} />;
       case "error": return <XCircle className="w-4 h-4 text-destructive" />;
     }
   };
@@ -346,114 +391,47 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
     bem: "BEM", bac: "BAC", regular: "اختبار", devoir: "فرض", unknown: "غير محدد",
   };
 
-  const categoryColors: Record<ExamCategory, string> = {
+  const categoryColors: Record<string, string> = {
     bac: "hsl(var(--destructive))",
     bem: "hsl(var(--primary))",
     regular: "hsl(var(--statistics))",
     devoir: "hsl(var(--geometry))",
   };
 
-  const currentGrades = getGradesForCategory(selectedCategory);
-  const currentSessions = getSessionsForCategory(selectedCategory);
-  const currentYears = Array.from({ length: 20 }, (_, i) => (new Date().getFullYear() - i).toString());
+  const queuedCount = uploads.filter(u => u.status === "queued").length;
+  const doneCount = uploads.filter(u => u.status === "done").length;
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* Category Selector */}
+      {/* Default Category Selector */}
       <div className="rounded-2xl border border-border bg-card p-5">
-        <h3 className="text-sm font-black text-foreground mb-3">📂 نوع الامتحان</h3>
+        <h3 className="text-sm font-black text-foreground mb-3">📂 النوع الافتراضي للملفات الجديدة</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {CATEGORY_OPTIONS.map(cat => (
             <button
               key={cat.value}
-              onClick={() => {
-                setSelectedCategory(cat.value);
-                // Auto-set grade for official exams
-                if (cat.value === "bem") setSelectedGrade("middle_4");
-                else if (cat.value === "bac") setSelectedGrade("secondary_3");
-              }}
-              className="p-4 rounded-xl border-2 transition-all text-center"
+              onClick={() => setDefaultCategory(cat.value)}
+              className="p-3 rounded-xl border-2 transition-all text-center"
               style={{
-                borderColor: selectedCategory === cat.value ? categoryColors[cat.value] : "hsl(var(--border))",
-                background: selectedCategory === cat.value ? categoryColors[cat.value] + "11" : "transparent",
+                borderColor: defaultCategory === cat.value ? categoryColors[cat.value] : "hsl(var(--border))",
+                background: defaultCategory === cat.value ? categoryColors[cat.value] + "11" : "transparent",
               }}
             >
-              <div className="text-2xl mb-1">{cat.icon}</div>
-              <div className="text-sm font-black text-foreground">{cat.label}</div>
-              <div className="text-[10px] text-muted-foreground mt-0.5">{cat.desc}</div>
+              <div className="text-xl mb-0.5">{cat.icon}</div>
+              <div className="text-xs font-black text-foreground">{cat.label}</div>
+              <div className="text-[9px] text-muted-foreground">{cat.desc}</div>
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Metadata Selectors */}
-      <div className="rounded-2xl border border-border bg-card p-5">
-        <h3 className="text-sm font-black text-foreground mb-3">📋 معلومات الامتحان</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {/* Grade */}
-          <div>
-            <label className="text-[10px] font-bold text-muted-foreground block mb-1">المستوى الدراسي</label>
-            <select
-              value={selectedGrade}
-              onChange={e => setSelectedGrade(e.target.value)}
-              disabled={selectedCategory === "bem" || selectedCategory === "bac"}
-              className="w-full text-xs px-3 py-2 rounded-lg border border-border bg-background text-foreground disabled:opacity-50"
-            >
-              {currentGrades.map(g => (
-                <option key={g.value} value={g.value}>{g.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Year */}
-          <div>
-            <label className="text-[10px] font-bold text-muted-foreground block mb-1">السنة</label>
-            <select
-              value={selectedYear}
-              onChange={e => setSelectedYear(e.target.value)}
-              className="w-full text-xs px-3 py-2 rounded-lg border border-border bg-background text-foreground"
-            >
-              {currentYears.map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Session */}
-          <div>
-            <label className="text-[10px] font-bold text-muted-foreground block mb-1">الدورة / الفصل</label>
-            <select
-              value={selectedSession}
-              onChange={e => setSelectedSession(e.target.value)}
-              className="w-full text-xs px-3 py-2 rounded-lg border border-border bg-background text-foreground"
-            >
-              {currentSessions.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Stream (only for BAC) */}
-          <div>
-            <label className="text-[10px] font-bold text-muted-foreground block mb-1">الشعبة</label>
-            <select
-              value={selectedStream}
-              onChange={e => setSelectedStream(e.target.value)}
-              disabled={!needsStream(selectedCategory)}
-              className="w-full text-xs px-3 py-2 rounded-lg border border-border bg-background text-foreground disabled:opacity-50"
-            >
-              {STREAM_OPTIONS.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <p className="text-[10px] text-muted-foreground mt-2">
+          💡 النظام يكتشف النوع تلقائياً من اسم الملف (مثلاً: BAC_2023_juin.pdf)
+        </p>
       </div>
 
       {/* Upload Zone */}
       <div
         className="border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors bg-card/50"
-        style={{ borderColor: categoryColors[selectedCategory] + "55" }}
+        style={{ borderColor: categoryColors[defaultCategory] + "55" }}
         onClick={() => fileInputRef.current?.click()}
         onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
@@ -470,34 +448,27 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
         <p className="text-lg font-bold text-foreground">
           اسحب ملفات PDF هنا أو اضغط للاختيار
         </p>
-        <p className="text-sm mt-1" style={{ color: categoryColors[selectedCategory] }}>
-          {CATEGORY_OPTIONS.find(c => c.value === selectedCategory)?.label}
-          {" · "}
-          {GRADE_OPTIONS.find(g => g.value === selectedGrade)?.label}
-          {" · "}
-          {selectedYear}
-          {selectedStream && ` · ${STREAM_OPTIONS.find(s => s.value === selectedStream)?.label}`}
+        <p className="text-sm text-muted-foreground mt-1">
+          رفع جماعي مع معالجة متوازية ({CONCURRENCY} ملفات في نفس الوقت)
         </p>
       </div>
 
-      {/* Upload Queue */}
+      {/* Upload Queue with per-file metadata */}
       {uploads.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-foreground">
               📄 الملفات ({uploads.length})
+              {doneCount > 0 && <span className="text-[10px] mr-2" style={{ color: "hsl(var(--geometry))" }}>✓ {doneCount} مكتمل</span>}
+              {queuedCount > 0 && <span className="text-[10px] mr-2 text-muted-foreground">⏳ {queuedCount} في الانتظار</span>}
             </h3>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={clearAll}>مسح الكل</Button>
-              <Button
-                size="sm"
-                onClick={processAll}
-                disabled={processing || uploads.every(u => u.status !== "queued")}
-              >
+              <Button size="sm" onClick={processAll} disabled={processing || queuedCount === 0}>
                 {processing ? (
-                  <><Loader2 className="w-4 h-4 animate-spin ml-1" /> جاري المعالجة...</>
+                  <><Loader2 className="w-4 h-4 animate-spin ml-1" /> معالجة متوازية...</>
                 ) : (
-                  "🚀 تحليل الكل"
+                  `🚀 تحليل الكل (${queuedCount})`
                 )}
               </Button>
             </div>
@@ -505,58 +476,109 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
 
           <div className="space-y-2">
             {uploads.map((u, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border"
-              >
-                {statusIcon(u.status)}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-2"
-                      style={{ background: categoryColors[u.category] + "22", color: categoryColors[u.category] }}>
-                      {formatLabel[u.category]}
-                    </span>
-                    {u.file.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {(u.file.size / 1024).toFixed(0)} KB · {statusLabel(u.status)}
-                    {u.result && (
-                      <span className="text-emerald-600 mr-2">
-                        {u.result.questions_count} سؤال · {formatLabel[u.result.format] || u.result.format}
-                        {u.result.year && ` · ${u.result.year}`}
+              <div key={i} className="rounded-xl bg-card border border-border overflow-hidden">
+                {/* File header row */}
+                <div className="flex items-center gap-3 p-3">
+                  {statusIcon(u.status)}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-2"
+                        style={{ background: (categoryColors[u.category] || "hsl(var(--muted))") + "22", color: categoryColors[u.category] || "hsl(var(--muted-foreground))" }}>
+                        {formatLabel[u.category] || u.category}
                       </span>
+                      <span className="text-[9px] text-muted-foreground ml-1">
+                        {u.year} · {GRADE_OPTIONS.find(g => g.value === u.grade)?.label?.split("—")[0] || u.grade}
+                        {u.stream && ` · ${STREAM_OPTIONS.find(s => s.value === u.stream)?.label || u.stream}`}
+                      </span>
+                      <span className="mr-2">{u.file.name}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {(u.file.size / 1024).toFixed(0)} KB · {statusLabel(u.status)}
+                      {u.result && (
+                        <span className="mr-2" style={{ color: "hsl(var(--geometry))" }}>
+                          {u.result.questions_count} سؤال
+                        </span>
+                      )}
+                      {u.error && <span className="text-destructive mr-2">{u.error}</span>}
+                    </p>
+                    {(u.status === "uploading" || u.status === "analyzing") && (
+                      <div className="mt-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${u.progress}%` }} />
+                      </div>
                     )}
-                    {u.error && <span className="text-destructive mr-2">{u.error}</span>}
-                  </p>
-                  {/* Progress bar */}
-                  {(u.status === "uploading" || u.status === "analyzing") && (
-                    <div className="mt-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary rounded-full transition-all duration-500"
-                        style={{ width: `${u.progress}%` }}
-                      />
+                  </div>
+                  <div className="flex gap-1">
+                    {u.status === "done" && u.id && (
+                      <button onClick={() => loadQuestions(u.id!)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="عرض الأسئلة">
+                        <Eye className="w-4 h-4 text-primary" />
+                      </button>
+                    )}
+                    {u.status === "queued" && (
+                      <>
+                        <button
+                          onClick={() => updateUpload(i, { expanded: !u.expanded })}
+                          className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                          title="تعديل المعلومات"
+                        >
+                          {u.expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <Settings2 className="w-4 h-4 text-muted-foreground" />}
+                        </button>
+                        <button onClick={() => removeUpload(i)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                          <Trash2 className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Per-file metadata editor (expanded) */}
+                {u.expanded && u.status === "queued" && (
+                  <div className="px-3 pb-3 pt-0 border-t border-border bg-muted/20">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-2">
+                      {/* Category */}
+                      <div>
+                        <label className="text-[9px] font-bold text-muted-foreground block mb-0.5">النوع</label>
+                        <select value={u.category} onChange={e => updateUpload(i, { category: e.target.value as ExamCategory })}
+                          className="w-full text-[10px] px-2 py-1.5 rounded border border-border bg-background text-foreground">
+                          {CATEGORY_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                        </select>
+                      </div>
+                      {/* Grade */}
+                      <div>
+                        <label className="text-[9px] font-bold text-muted-foreground block mb-0.5">المستوى</label>
+                        <select value={u.grade} onChange={e => updateUpload(i, { grade: e.target.value })}
+                          disabled={u.category === "bem" || u.category === "bac"}
+                          className="w-full text-[10px] px-2 py-1.5 rounded border border-border bg-background text-foreground disabled:opacity-50">
+                          {GRADE_OPTIONS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
+                        </select>
+                      </div>
+                      {/* Year */}
+                      <div>
+                        <label className="text-[9px] font-bold text-muted-foreground block mb-0.5">السنة</label>
+                        <select value={u.year} onChange={e => updateUpload(i, { year: e.target.value })}
+                          className="w-full text-[10px] px-2 py-1.5 rounded border border-border bg-background text-foreground">
+                          {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                      </div>
+                      {/* Session */}
+                      <div>
+                        <label className="text-[9px] font-bold text-muted-foreground block mb-0.5">الدورة</label>
+                        <select value={u.session} onChange={e => updateUpload(i, { session: e.target.value })}
+                          className="w-full text-[10px] px-2 py-1.5 rounded border border-border bg-background text-foreground">
+                          {SESSION_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select>
+                      </div>
+                      {/* Stream */}
+                      <div>
+                        <label className="text-[9px] font-bold text-muted-foreground block mb-0.5">الشعبة</label>
+                        <select value={u.stream} onChange={e => updateUpload(i, { stream: e.target.value })}
+                          disabled={!needsStream(u.category)}
+                          className="w-full text-[10px] px-2 py-1.5 rounded border border-border bg-background text-foreground disabled:opacity-50">
+                          {STREAM_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select>
+                      </div>
                     </div>
-                  )}
-                </div>
-                <div className="flex gap-1">
-                  {u.status === "done" && u.id && (
-                    <button
-                      onClick={() => loadQuestions(u.id!)}
-                      className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                      title="عرض الأسئلة"
-                    >
-                      <Eye className="w-4 h-4 text-primary" />
-                    </button>
-                  )}
-                  {u.status === "queued" && (
-                    <button
-                      onClick={() => removeUpload(i)}
-                      className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4 text-muted-foreground" />
-                    </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -576,18 +598,12 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
           <h3 className="font-bold text-foreground">📁 الامتحانات المرفوعة سابقاً</h3>
           <div className="space-y-2 max-h-60 overflow-y-auto">
             {history.map(h => (
-              <div
-                key={h.id}
+              <div key={h.id}
                 className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => loadQuestions(h.id)}
-              >
-                {h.status === "completed" ? (
-                  <CheckCircle className="w-4 h-4 text-emerald-500" />
-                ) : h.status === "failed" ? (
-                  <XCircle className="w-4 h-4 text-destructive" />
-                ) : (
-                  <Loader2 className="w-4 h-4 text-muted-foreground" />
-                )}
+                onClick={() => loadQuestions(h.id)}>
+                {h.status === "completed" ? <CheckCircle className="w-4 h-4" style={{ color: "hsl(var(--geometry))" }} />
+                  : h.status === "failed" ? <XCircle className="w-4 h-4 text-destructive" />
+                  : <Loader2 className="w-4 h-4 text-muted-foreground" />}
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">{h.file_name}</p>
                   <p className="text-xs text-muted-foreground">
@@ -598,13 +614,8 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
                   </p>
                 </div>
                 {h.status === "completed" && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-[10px] px-2 py-1"
-                    disabled={importing}
-                    onClick={(e) => { e.stopPropagation(); importToKB(h.id); }}
-                  >
+                  <Button size="sm" variant="outline" className="text-[10px] px-2 py-1" disabled={importing}
+                    onClick={(e) => { e.stopPropagation(); importToKB(h.id); }}>
                     {importing ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowLeftRight className="w-3 h-3 ml-1" />}
                     نقل للأسئلة
                   </Button>
@@ -619,47 +630,26 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
       {selectedUpload && questions.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-foreground">
-              📋 الأسئلة المستخرجة ({questions.length})
-            </h3>
-            <Button
-              size="sm"
-              onClick={() => importToKB(selectedUpload!)}
-              disabled={importing}
-            >
+            <h3 className="font-bold text-foreground">📋 الأسئلة المستخرجة ({questions.length})</h3>
+            <Button size="sm" onClick={() => importToKB(selectedUpload!)} disabled={importing}>
               {importing ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <ArrowLeftRight className="w-4 h-4 ml-1" />}
               نقل الكل إلى تبويب الأسئلة
             </Button>
           </div>
           <div className="space-y-2">
             {questions.map(q => (
-              <div
-                key={q.id}
-                className="p-4 rounded-xl bg-card border border-border"
-              >
+              <div key={q.id} className="p-4 rounded-xl bg-card border border-border">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                    {q.section_label}
-                  </span>
-                  <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                    {q.type}
-                  </span>
-                  <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                    {q.difficulty}
-                  </span>
-                  <span className="text-xs font-bold text-foreground mr-auto">
-                    {q.points} نقطة
-                  </span>
+                  <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{q.section_label}</span>
+                  <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{q.type}</span>
+                  <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{q.difficulty}</span>
+                  <span className="text-xs font-bold text-foreground mr-auto">{q.points} نقطة</span>
                 </div>
-                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                  {q.text}
-                </p>
+                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{q.text}</p>
                 {q.concepts.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {q.concepts.map((c, i) => (
-                      <span key={i} className="text-[10px] bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded">
-                        {c}
-                      </span>
+                    {q.concepts.map((c, ci) => (
+                      <span key={ci} className="text-[10px] bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded">{c}</span>
                     ))}
                   </div>
                 )}
