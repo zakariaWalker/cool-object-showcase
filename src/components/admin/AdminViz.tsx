@@ -113,6 +113,30 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
 
   return (
     <div className="space-y-5" dir="rtl">
+      {/* ── Tab Switcher ── */}
+      <div className="flex items-center gap-2 mb-2">
+        <button onClick={() => setTab("analytics")}
+          className="text-xs px-4 py-2 rounded-lg font-bold transition-all"
+          style={{
+            background: tab === "analytics" ? "hsl(var(--algebra))" : "hsl(var(--muted))",
+            color: tab === "analytics" ? "#fff" : "hsl(var(--muted-foreground))",
+          }}>
+          📊 تحليلات
+        </button>
+        <button onClick={() => setTab("network")}
+          className="text-xs px-4 py-2 rounded-lg font-bold transition-all"
+          style={{
+            background: tab === "network" ? "hsl(var(--algebra))" : "hsl(var(--muted))",
+            color: tab === "network" ? "#fff" : "hsl(var(--muted-foreground))",
+          }}>
+          🕸️ شبكة المعرفة
+        </button>
+      </div>
+
+      {tab === "network" ? (
+        <KBNetworkGraph exercises={exercises} patterns={patterns} deconstructions={deconstructions} />
+      ) : (
+      <>
       {/* ── KPI Row ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard
