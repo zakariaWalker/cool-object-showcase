@@ -16,6 +16,22 @@ interface FlowchartProps {
   notes?: string;
   aiGenerated?: boolean;
   exerciseSteps?: string[]; // corresponding exercise step text for each deconstruction step
+  mathExpressions?: string[]; // LaTeX math for each step
+}
+
+// Inline KaTeX renderer for foreignObject
+function MathBlock({ latex }: { latex: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (ref.current) {
+      try {
+        katex.render(latex, ref.current, { displayMode: true, throwOnError: false, trust: true });
+      } catch {
+        ref.current.textContent = latex;
+      }
+    }
+  }, [latex]);
+  return <div ref={ref} style={{ fontSize: 14, padding: "4px 0", direction: "ltr", textAlign: "center" }} />;
 }
 
 // Colors for different node types
