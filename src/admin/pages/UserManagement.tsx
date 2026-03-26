@@ -5,9 +5,9 @@ const UserManagement = () => {
   const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
-    supabase.from('profiles').select('user_id, full_name, created_at, user_roles(role)')
+    (supabase.from('profiles').select('id, full_name, created_at, user_roles(role)') as any)
       .order('created_at', { ascending: false })
-      .then(({ data }) => setUsers(data || []));
+      .then(({ data }: any) => setUsers(data || []));
   }, []);
 
   const roleLabel = (role: string) => {
@@ -33,7 +33,7 @@ const UserManagement = () => {
                 <td className="p-4 text-sm font-medium">{u.full_name || 'بدون اسم'}</td>
                 <td className="p-4">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                    {roleLabel((u.user_roles as any)?.[0]?.role || 'student')}
+                    {roleLabel(u.user_roles?.[0]?.role || 'student')}
                   </span>
                 </td>
                 <td className="p-4 text-sm text-muted-foreground">{new Date(u.created_at).toLocaleDateString('ar')}</td>

@@ -1,4 +1,5 @@
 import "katex/dist/katex.min.css";
+// @ts-ignore - react-katex has no type declarations
 import { InlineMath, BlockMath } from "react-katex";
 
 interface MathTextProps {
