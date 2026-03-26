@@ -14,6 +14,7 @@ import AITutor from "./pages/AITutor";
 import LearningPath from "./pages/LearningPath";
 import VisualExplorer from "./pages/VisualExplorer";
 import WhatIf from "./pages/WhatIf";
+import ExamBuilderPage from "./pages/ExamBuilder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/learn" element={<LearningPath />} />
             <Route path="/explore" element={<VisualExplorer />} />
             <Route path="/whatif" element={<WhatIf />} />
+            <Route path="/exams" element={<ExamBuilderPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppShell>
