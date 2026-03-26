@@ -1,224 +1,272 @@
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { GraduationCap, BookOpen, Users, Star, LogIn, UserPlus, ArrowRight } from 'lucide-react';
-import { useAuth, type AppRole } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { QEDLogo } from "@/components/QEDLogo";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
 
-const roleOptions: { value: AppRole; label: string; icon: typeof GraduationCap; color: string }[] = [
-  { value: 'student', label: 'طالب', icon: GraduationCap, color: 'bg-primary' },
-  { value: 'teacher', label: 'معلم', icon: BookOpen, color: 'bg-secondary' },
-  { value: 'admin', label: 'مدير', icon: Users, color: 'bg-accent' },
-  { value: 'parent', label: 'ولي أمر', icon: Star, color: 'bg-success' },
+const GRADE_LEVELS = [
+  { id: "middle", label: "المتوسط", grades: [
+    { id: "middle_1", label: "1AM", sub: "أولى متوسط" },
+    { id: "middle_2", label: "2AM", sub: "ثانية متوسط" },
+    { id: "middle_3", label: "3AM", sub: "ثالثة متوسط" },
+    { id: "middle_4", label: "4AM", sub: "رابعة متوسط (BEM)" },
+  ]},
+  { id: "secondary", label: "الثانوي", grades: [
+    { id: "secondary_1", label: "1AS", sub: "أولى ثانوي" },
+    { id: "secondary_2", label: "2AS", sub: "ثانية ثانوي" },
+    { id: "secondary_3", label: "3AS", sub: "ثالثة ثانوي (BAC)" },
+  ]},
 ];
 
-const roleRedirects: Record<AppRole, string> = {
-  student: '/student',
-  teacher: '/teacher',
-  admin: '/admin',
-  parent: '/parent',
+const STREAMS: Record<string, { id: string; label: string }[]> = {
+  secondary_1: [
+    { id: "S", label: "علوم" }, { id: "L", label: "آداب" },
+  ],
+  secondary_2: [
+    { id: "S", label: "علوم تجريبية" }, { id: "M", label: "رياضيات" },
+    { id: "MT", label: "تقني رياضي" }, { id: "GE", label: "تسيير و اقتصاد" },
+  ],
+  secondary_3: [
+    { id: "S", label: "علوم تجريبية" }, { id: "M", label: "رياضيات" },
+    { id: "MT", label: "تقني رياضي" }, { id: "GE", label: "تسيير و اقتصاد" },
+  ],
 };
 
-const Auth = () => {
-  const { user, role, loading, signIn, signUp } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [selectedRole, setSelectedRole] = useState<AppRole>('student');
-  const [submitting, setSubmitting] = useState(false);
+const ROLES = [
+  { id: "student", label: "تلميذ", emoji: "🎓", desc: "أحل التمارين وأتعلم" },
+  { id: "teacher", label: "أستاذ", emoji: "👨‍🏫", desc: "أتابع تلاميذي" },
+  { id: "parent", label: "ولي أمر", emoji: "👨‍👧", desc: "أتابع ابني/ابنتي" },
+];
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+export default function Auth() {
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState("student");
+  const [grade, setGrade] = useState("middle_4");
+  const [stream, setStream] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1); // signup steps
 
-  if (user && role) {
-    return <Navigate to={roleRedirects[role]} replace />;
-  }
+  // Redirect if already logged in
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) navigate("/home");
+    });
+  }, [navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
+  const hasStreams = grade.startsWith("secondary_") && STREAMS[grade];
 
-    if (isLogin) {
-      const { error } = await signIn(email, password);
-      if (error) {
-        toast.error(error.message === 'Invalid login credentials' ? 'بيانات الدخول غير صحيحة' : error.message);
-      }
+  const handleLogin = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) {
+      toast({ title: "خطأ في الدخول", description: error.message, variant: "destructive" });
     } else {
-      if (!fullName.trim()) {
-        toast.error('الرجاء إدخال الاسم الكامل');
-        setSubmitting(false);
-        return;
-      }
-      const { error } = await signUp(email, password, fullName, selectedRole);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success('تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن');
-        setIsLogin(true);
-      }
+      navigate("/home");
     }
-    setSubmitting(false);
   };
 
+  const handleSignup = async () => {
+    if (!fullName.trim()) {
+      toast({ title: "أدخل اسمك الكامل", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName, role, grade, stream },
+        emailRedirectTo: window.location.origin,
+      },
+    });
+    setLoading(false);
+    if (error) {
+      toast({ title: "خطأ في التسجيل", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "تم التسجيل! تحقق من بريدك الإلكتروني لتفعيل حسابك.", description: "ستصلك رسالة تأكيد." });
+    }
+  };
+
+  const currentLevel = GRADE_LEVELS.find(l => l.grades.some(g => g.id === grade));
+
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Right decorative panel */}
-      <div className="hidden lg:flex flex-1 bg-gradient-hero items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full bg-white"
-              style={{
-                width: Math.random() * 80 + 20,
-                height: Math.random() * 80 + 20,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                opacity: Math.random() * 0.3,
-              }}
-            />
-          ))}
+    <div className="min-h-screen bg-[#F8F5EE] flex items-center justify-center p-4" dir="rtl">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <QEDLogo size="xl" />
         </div>
-        <div className="text-center text-white relative z-10 p-12">
-          <div className="w-20 h-20 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-6">
-            <span className="text-4xl font-black">ر+</span>
-          </div>
-          <h2 className="text-4xl font-black mb-4">رياضيات+</h2>
-          <p className="text-white/80 text-lg max-w-sm">منصة تعليم الرياضيات التفاعلية بالذكاء الاصطناعي</p>
-        </div>
-      </div>
 
-      {/* Auth form */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="w-full max-w-md"
-        >
-          <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-            <div className="w-10 h-10 rounded-xl bg-gradient-hero flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">ر+</span>
-            </div>
-            <span className="text-xl font-bold">رياضيات+</span>
-          </div>
-
-          <h1 className="text-2xl font-black mb-2">{isLogin ? 'تسجيل الدخول' : 'إنشاء حساب جديد'}</h1>
-          <p className="text-muted-foreground mb-8">
-            {isLogin ? 'أدخل بياناتك للوصول إلى المنصة' : 'انضم إلى مجتمع رياضيات+ التعليمي'}
-          </p>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {!isLogin && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium mb-2">الاسم الكامل</label>
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    placeholder="أدخل اسمك الكامل"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">اختر دورك</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {roleOptions.map((r) => (
-                      <button
-                        key={r.value}
-                        type="button"
-                        onClick={() => setSelectedRole(r.value)}
-                        className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
-                          selectedRole === r.value
-                            ? 'border-primary bg-primary/5 text-primary'
-                            : 'border-border hover:border-muted-foreground/30'
-                        }`}
-                      >
-                        <div className={`w-8 h-8 rounded-lg ${r.color} flex items-center justify-center`}>
-                          <r.icon className="w-4 h-4 text-primary-foreground" />
-                        </div>
-                        {r.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium mb-2">البريد الإلكتروني</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                placeholder="example@email.com"
-                dir="ltr"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">كلمة المرور</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                placeholder="••••••••"
-                dir="ltr"
-                required
-                minLength={6}
-              />
-            </div>
-
+        <div className="bg-white rounded-2xl shadow-xl border border-[#E8E4DC] p-8">
+          {/* Tabs */}
+          <div className="flex gap-2 mb-6">
             <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-gradient-hero text-primary-foreground py-3.5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+              onClick={() => { setMode("login"); setStep(1); }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                mode === "login"
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
             >
-              {submitting ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : isLogin ? (
+              تسجيل الدخول
+            </button>
+            <button
+              onClick={() => { setMode("signup"); setStep(1); }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                mode === "signup"
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              حساب جديد
+            </button>
+          </div>
+
+          {mode === "login" ? (
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-muted-foreground mb-1 block">البريد الإلكتروني</label>
+                <Input
+                  type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="email@example.com" dir="ltr" className="text-left"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-muted-foreground mb-1 block">كلمة المرور</label>
+                <Input
+                  type="password" value={password} onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••" dir="ltr" className="text-left"
+                />
+              </div>
+              <Button onClick={handleLogin} disabled={loading || !email || !password} className="w-full h-12 text-base font-bold">
+                {loading ? "جاري الدخول..." : "دخول"}
+              </Button>
+            </div>
+          ) : step === 1 ? (
+            /* Signup Step 1: Role & Grade */
+            <div className="space-y-5">
+              {/* Role Selection */}
+              <div>
+                <label className="text-xs font-bold text-muted-foreground mb-2 block">أنا...</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {ROLES.map(r => (
+                    <button
+                      key={r.id}
+                      onClick={() => setRole(r.id)}
+                      className={`p-3 rounded-xl border-2 text-center transition-all ${
+                        role === r.id
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-border hover:border-primary/30"
+                      }`}
+                    >
+                      <div className="text-2xl mb-1">{r.emoji}</div>
+                      <div className="text-xs font-bold">{r.label}</div>
+                      <div className="text-[9px] text-muted-foreground">{r.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Grade selection (for students) */}
+              {role === "student" && (
                 <>
-                  <LogIn className="w-5 h-5" />
-                  دخول
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-5 h-5" />
-                  إنشاء حساب
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground mb-2 block">المستوى الدراسي</label>
+                    <div className="flex gap-2 mb-2">
+                      {GRADE_LEVELS.map(level => (
+                        <button
+                          key={level.id}
+                          onClick={() => { setGrade(level.grades[0].id); setStream(""); }}
+                          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${
+                            currentLevel?.id === level.id
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-card text-muted-foreground border-border hover:border-primary/40"
+                          }`}
+                        >
+                          {level.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {currentLevel?.grades.map(g => (
+                        <button
+                          key={g.id}
+                          onClick={() => { setGrade(g.id); if (STREAMS[g.id]) setStream(STREAMS[g.id][0].id); else setStream(""); }}
+                          className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                            grade === g.id
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-card text-muted-foreground border-border hover:border-primary/50"
+                          }`}
+                        >
+                          {g.label} — {g.sub}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {hasStreams && (
+                    <div>
+                      <label className="text-xs font-bold text-muted-foreground mb-2 block">🎯 الشعبة</label>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {STREAMS[grade].map(s => (
+                          <button
+                            key={s.id}
+                            onClick={() => setStream(s.id)}
+                            className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                              stream === s.id
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-card text-muted-foreground border-border hover:border-primary/50"
+                            }`}
+                          >
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
-            </button>
-          </form>
 
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {isLogin ? 'ليس لديك حساب؟ أنشئ حساباً جديداً' : 'لديك حساب؟ سجل الدخول'}
-            </button>
-          </div>
+              <Button onClick={() => setStep(2)} className="w-full h-11 text-sm font-bold">
+                التالي ←
+              </Button>
+            </div>
+          ) : (
+            /* Signup Step 2: Credentials */
+            <div className="space-y-4">
+              <button onClick={() => setStep(1)} className="text-xs text-primary font-bold hover:underline">
+                → رجوع
+              </button>
+              <div>
+                <label className="text-xs font-bold text-muted-foreground mb-1 block">الاسم الكامل</label>
+                <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="محمد أحمد" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-muted-foreground mb-1 block">البريد الإلكتروني</label>
+                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" dir="ltr" className="text-left" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-muted-foreground mb-1 block">كلمة المرور</label>
+                <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="6 أحرف على الأقل" dir="ltr" className="text-left" />
+              </div>
+              <Button onClick={handleSignup} disabled={loading || !email || !password || !fullName} className="w-full h-12 text-base font-bold">
+                {loading ? "جاري التسجيل..." : "إنشاء حساب"}
+              </Button>
+            </div>
+          )}
+        </div>
 
-          <div className="mt-4 text-center">
-            <a href="/" className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-              <ArrowRight className="w-3 h-3" />
-              العودة للرئيسية
-            </a>
-          </div>
-        </motion.div>
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          أول قاعدة معرفة رياضية عربية 🇩🇿
+        </p>
       </div>
     </div>
   );
-};
-
-export default Auth;
+}

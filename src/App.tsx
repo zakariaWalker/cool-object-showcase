@@ -1,89 +1,53 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { ThemeProvider } from "next-themes";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/useAuth";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import ProtectedRoute from "@/shared/components/ProtectedRoute";
-import Index from "./pages/Index";
+import { AppShell } from "@/components/AppShell";
+import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
-import StudentApp from "./student/StudentApp";
-import TeacherApp from "./teacher/TeacherApp";
-import AdminApp from "./admin/AdminApp";
-import ParentApp from "./parent/ParentApp";
-import Unauthorized from "./pages/Unauthorized";
+import Home from "./pages/Home";
+import ExercisePage from "./pages/Exercise";
+import AdminKBPage from "./pages/AdminKB";
+import GapDetector from "./pages/GapDetector";
+import AITutor from "./pages/AITutor";
+import LearningPath from "./pages/LearningPath";
+import VisualExplorer from "./pages/VisualExplorer";
+import WhatIf from "./pages/WhatIf";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 1000 * 60 * 5, // 5 minutes
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 const App = () => (
-  <ErrorBoundary>
-    <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Sonner richColors closeButton />
-          <BrowserRouter>
-            <AuthProvider>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/unauthorized" element={<Unauthorized />} />
-                <Route
-                  path="/student/*"
-                  element={
-                    <ProtectedRoute allowedRoles={["student"]}>
-                      <ErrorBoundary>
-                        <StudentApp />
-                      </ErrorBoundary>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/teacher/*"
-                  element={
-                    <ProtectedRoute allowedRoles={["teacher"]}>
-                      <ErrorBoundary>
-                        <TeacherApp />
-                      </ErrorBoundary>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/*"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <ErrorBoundary>
-                        <AdminApp />
-                      </ErrorBoundary>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/parent/*"
-                  element={
-                    <ProtectedRoute allowedRoles={["parent"]}>
-                      <ErrorBoundary>
-                        <ParentApp />
-                      </ErrorBoundary>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
-  </ErrorBoundary>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AppShell>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/exercises" element={<ExercisePage />} />
+            <Route path="/tma/:questionId" element={<ExercisePage />} />
+            <Route path="/algebra" element={<ExercisePage />} />
+            <Route path="/geometry" element={<ExercisePage />} />
+            <Route path="/statistics" element={<ExercisePage />} />
+            <Route path="/probability" element={<ExercisePage />} />
+            <Route path="/functions" element={<ExercisePage />} />
+            <Route path="/admin" element={<AdminKBPage />} />
+            <Route path="/gaps" element={<GapDetector />} />
+            <Route path="/tutor" element={<AITutor />} />
+            <Route path="/learn" element={<LearningPath />} />
+            <Route path="/explore" element={<VisualExplorer />} />
+            <Route path="/whatif" element={<WhatIf />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AppShell>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;

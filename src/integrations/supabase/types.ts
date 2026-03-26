@@ -14,107 +14,180 @@ export type Database = {
   }
   public: {
     Tables: {
-      curricula: {
+      exercise_breakdowns: {
         Row: {
+          constraints: Json | null
           created_at: string
-          description: string | null
-          grade_level: string | null
+          diagram_spec: Json | null
+          difficulty: number | null
+          domain: string | null
+          formulas_needed: Json | null
+          grade: string | null
           id: string
-          is_published: boolean
-          subject: string
-          teacher_id: string
-          title: string
-          updated_at: string
+          intent: Json | null
+          relations: Json | null
+          render_plan: Json | null
+          semantic_objects: Json | null
+          solution_tree: Json | null
+          source_language: string | null
+          source_origin: string | null
+          source_text: string
+          subdomain: string | null
         }
         Insert: {
+          constraints?: Json | null
           created_at?: string
-          description?: string | null
-          grade_level?: string | null
-          id?: string
-          is_published?: boolean
-          subject?: string
-          teacher_id: string
-          title: string
-          updated_at?: string
+          diagram_spec?: Json | null
+          difficulty?: number | null
+          domain?: string | null
+          formulas_needed?: Json | null
+          grade?: string | null
+          id: string
+          intent?: Json | null
+          relations?: Json | null
+          render_plan?: Json | null
+          semantic_objects?: Json | null
+          solution_tree?: Json | null
+          source_language?: string | null
+          source_origin?: string | null
+          source_text: string
+          subdomain?: string | null
         }
         Update: {
+          constraints?: Json | null
           created_at?: string
-          description?: string | null
-          grade_level?: string | null
+          diagram_spec?: Json | null
+          difficulty?: number | null
+          domain?: string | null
+          formulas_needed?: Json | null
+          grade?: string | null
           id?: string
-          is_published?: boolean
-          subject?: string
-          teacher_id?: string
-          title?: string
-          updated_at?: string
+          intent?: Json | null
+          relations?: Json | null
+          render_plan?: Json | null
+          semantic_objects?: Json | null
+          solution_tree?: Json | null
+          source_language?: string | null
+          source_origin?: string | null
+          source_text?: string
+          subdomain?: string | null
         }
         Relationships: []
       }
-      lessons: {
+      kb_deconstructions: {
         Row: {
-          content: string | null
+          ai_generated: boolean | null
           created_at: string
-          curriculum_id: string
+          exercise_id: string
           id: string
-          is_published: boolean
-          lesson_type: string
-          order_index: number
-          title: string
-          updated_at: string
-          video_url: string | null
+          needs: Json | null
+          notes: string | null
+          pattern_id: string
+          steps: Json | null
         }
         Insert: {
-          content?: string | null
+          ai_generated?: boolean | null
           created_at?: string
-          curriculum_id: string
+          exercise_id: string
           id?: string
-          is_published?: boolean
-          lesson_type?: string
-          order_index?: number
-          title: string
-          updated_at?: string
-          video_url?: string | null
+          needs?: Json | null
+          notes?: string | null
+          pattern_id: string
+          steps?: Json | null
         }
         Update: {
-          content?: string | null
+          ai_generated?: boolean | null
           created_at?: string
-          curriculum_id?: string
+          exercise_id?: string
           id?: string
-          is_published?: boolean
-          lesson_type?: string
-          order_index?: number
-          title?: string
-          updated_at?: string
-          video_url?: string | null
+          needs?: Json | null
+          notes?: string | null
+          pattern_id?: string
+          steps?: Json | null
         }
         Relationships: [
           {
-            foreignKeyName: "lessons_curriculum_id_fkey"
-            columns: ["curriculum_id"]
+            foreignKeyName: "kb_deconstructions_exercise_id_fkey"
+            columns: ["exercise_id"]
             isOneToOne: false
-            referencedRelation: "curricula"
+            referencedRelation: "kb_exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kb_deconstructions_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "kb_patterns"
             referencedColumns: ["id"]
           },
         ]
       }
-      parent_students: {
+      kb_exercises: {
         Row: {
+          ai_deconstructed: boolean | null
+          chapter: string | null
           created_at: string
+          grade: string | null
           id: string
-          parent_id: string
-          student_id: string
+          label: string | null
+          source: string | null
+          stream: string | null
+          text: string
+          type: string | null
         }
         Insert: {
+          ai_deconstructed?: boolean | null
+          chapter?: string | null
           created_at?: string
-          id?: string
-          parent_id: string
-          student_id: string
+          grade?: string | null
+          id: string
+          label?: string | null
+          source?: string | null
+          stream?: string | null
+          text: string
+          type?: string | null
         }
         Update: {
+          ai_deconstructed?: boolean | null
+          chapter?: string | null
           created_at?: string
+          grade?: string | null
           id?: string
-          parent_id?: string
-          student_id?: string
+          label?: string | null
+          source?: string | null
+          stream?: string | null
+          text?: string
+          type?: string | null
+        }
+        Relationships: []
+      }
+      kb_patterns: {
+        Row: {
+          concepts: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          steps: Json | null
+          type: string | null
+        }
+        Insert: {
+          concepts?: Json | null
+          created_at?: string
+          description?: string | null
+          id: string
+          name: string
+          steps?: Json | null
+          type?: string | null
+        }
+        Update: {
+          concepts?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          steps?: Json | null
+          type?: string | null
         }
         Relationships: []
       }
@@ -123,170 +196,108 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           full_name: string
+          grade: string
           id: string
+          stream: string
           updated_at: string
-          user_id: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           full_name?: string
-          id?: string
+          grade?: string
+          id: string
+          stream?: string
           updated_at?: string
-          user_id: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           full_name?: string
+          grade?: string
           id?: string
+          stream?: string
           updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
-      quiz_questions: {
+      student_activity_log: {
         Row: {
-          correct_answer: string
-          id: string
-          options: Json
-          order_index: number
-          points: number
-          question_text: string
-          quiz_id: string
-        }
-        Insert: {
-          correct_answer: string
-          id?: string
-          options?: Json
-          order_index?: number
-          points?: number
-          question_text: string
-          quiz_id: string
-        }
-        Update: {
-          correct_answer?: string
-          id?: string
-          options?: Json
-          order_index?: number
-          points?: number
-          question_text?: string
-          quiz_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quiz_questions_quiz_id_fkey"
-            columns: ["quiz_id"]
-            isOneToOne: false
-            referencedRelation: "quizzes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      quizzes: {
-        Row: {
+          action: string
           created_at: string
-          curriculum_id: string
-          description: string | null
           id: string
-          is_published: boolean
-          lesson_id: string | null
-          time_limit_minutes: number | null
-          title: string
-          updated_at: string
+          metadata: Json | null
+          student_id: string
+          xp_earned: number
         }
         Insert: {
+          action: string
           created_at?: string
-          curriculum_id: string
-          description?: string | null
           id?: string
-          is_published?: boolean
-          lesson_id?: string | null
-          time_limit_minutes?: number | null
-          title: string
-          updated_at?: string
+          metadata?: Json | null
+          student_id: string
+          xp_earned?: number
         }
         Update: {
+          action?: string
           created_at?: string
-          curriculum_id?: string
-          description?: string | null
           id?: string
-          is_published?: boolean
-          lesson_id?: string | null
-          time_limit_minutes?: number | null
-          title?: string
-          updated_at?: string
+          metadata?: Json | null
+          student_id?: string
+          xp_earned?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "quizzes_curriculum_id_fkey"
-            columns: ["curriculum_id"]
-            isOneToOne: false
-            referencedRelation: "curricula"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quizzes_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       student_progress: {
         Row: {
-          completed_at: string | null
+          badges: Json
           created_at: string
+          daily_challenge_completed: boolean
+          daily_challenge_date: string | null
           id: string
-          lesson_id: string | null
-          quiz_id: string | null
-          score: number | null
-          status: string
+          last_active_date: string | null
+          level: number
+          mastery: Json
+          streak_days: number
           student_id: string
-          time_spent_seconds: number | null
+          total_correct: number
+          total_exercises: number
           updated_at: string
+          xp: number
         }
         Insert: {
-          completed_at?: string | null
+          badges?: Json
           created_at?: string
+          daily_challenge_completed?: boolean
+          daily_challenge_date?: string | null
           id?: string
-          lesson_id?: string | null
-          quiz_id?: string | null
-          score?: number | null
-          status?: string
+          last_active_date?: string | null
+          level?: number
+          mastery?: Json
+          streak_days?: number
           student_id: string
-          time_spent_seconds?: number | null
+          total_correct?: number
+          total_exercises?: number
           updated_at?: string
+          xp?: number
         }
         Update: {
-          completed_at?: string | null
+          badges?: Json
           created_at?: string
+          daily_challenge_completed?: boolean
+          daily_challenge_date?: string | null
           id?: string
-          lesson_id?: string | null
-          quiz_id?: string | null
-          score?: number | null
-          status?: string
+          last_active_date?: string | null
+          level?: number
+          mastery?: Json
+          streak_days?: number
           student_id?: string
-          time_spent_seconds?: number | null
+          total_correct?: number
+          total_exercises?: number
           updated_at?: string
+          xp?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "student_progress_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "student_progress_quiz_id_fkey"
-            columns: ["quiz_id"]
-            isOneToOne: false
-            referencedRelation: "quizzes"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -320,7 +331,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "student" | "teacher" | "admin" | "parent"
+      app_role: "admin" | "student" | "teacher" | "parent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -448,7 +459,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["student", "teacher", "admin", "parent"],
+      app_role: ["admin", "student", "teacher", "parent"],
     },
   },
 } as const
