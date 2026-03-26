@@ -36,7 +36,7 @@ export function KBDeconstructionView({ exerciseId, exerciseSteps }: Props) {
     setLoading(true);
     (async () => {
       try {
-        const { data: decons, error: deconErr } = await supabase
+        const { data: decons, error: deconErr } = await (supabase as any)
           .from("kb_deconstructions")
           .select("*")
           .eq("exercise_id", exerciseId);
