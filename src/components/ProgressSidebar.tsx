@@ -5,12 +5,12 @@ import { getProgress, getDueForReview, clearProgress } from "@/engine/progress-s
 import { Domain } from "@/engine/types";
 import { motion } from "framer-motion";
 
-const DOMAIN_INFO: Record<Domain, { label: string; color: string; emoji: string }> = {
-  algebra:     { label: "الجبر",     color: "#4F46E5", emoji: "🔢" },
-  geometry:    { label: "الهندسة",   color: "#059669", emoji: "📐" },
-  statistics:  { label: "الإحصاء",   color: "#D97706", emoji: "📊" },
-  probability: { label: "الاحتمال",  color: "#7C3AED", emoji: "🎲" },
-  functions:   { label: "الدوال",    color: "#E11D48", emoji: "📈" },
+const DOMAIN_INFO: Record<Domain, { label: string; colorVar: string; emoji: string }> = {
+  algebra:     { label: "الجبر",     colorVar: "--algebra",     emoji: "🔢" },
+  geometry:    { label: "الهندسة",   colorVar: "--geometry",    emoji: "📐" },
+  statistics:  { label: "الإحصاء",   colorVar: "--statistics",  emoji: "📊" },
+  probability: { label: "الاحتمال",  colorVar: "--probability", emoji: "🎲" },
+  functions:   { label: "الدوال",    colorVar: "--functions",   emoji: "📈" },
 };
 
 interface Props {
@@ -34,7 +34,7 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
       width: 220,
       flexShrink: 0,
       borderRight: "1px solid hsl(var(--border))",
-      background: "white",
+      background: "hsl(var(--card))",
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
@@ -71,7 +71,7 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
           display: "flex",
           alignItems: "center",
           gap: 10,
-          background: "white",
+          background: "hsl(var(--card))",
           borderRadius: 10,
           padding: "10px 12px",
           border: "1px solid #FDE68A",
@@ -99,14 +99,14 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
             return (
               <div key={domain} style={{ marginBottom: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, fontFamily: "'Tajawal', sans-serif", color: info.color, fontWeight: 600 }}>
+                  <span style={{ fontSize: 12, fontFamily: "'Tajawal', sans-serif", color: `hsl(var(${info.colorVar}))`, fontWeight: 600 }}>
                     {info.emoji} {info.label}
                   </span>
                   <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{count}</span>
                 </div>
                 <div style={{ height: 5, background: "hsl(var(--muted))", borderRadius: 99, overflow: "hidden" }}>
                   <motion.div
-                    style={{ height: "100%", background: info.color, borderRadius: 99 }}
+                    style={{ height: "100%", background: `hsl(var(${info.colorVar}))`, borderRadius: 99 }}
                     initial={{ width: 0 }}
                     animate={{ width: `${pct}%` }}
                     transition={{ duration: 0.5 }}
@@ -135,7 +135,7 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
               <span style={{ fontSize: 10, color: "#6b7280" }}>SM-2</span>
             </div>
             <div style={{ background: "#fff", borderRadius: 10, padding: "10px 12px", border: "1px solid #FDA4AF", marginBottom: 8 }}>
-              <div style={{ fontSize: 11, color: info.color, fontWeight: 700, marginBottom: 4 }}>
+              <div style={{ fontSize: 11, color: `hsl(var(${info.colorVar}))`, fontWeight: 700, marginBottom: 4 }}>
                 {info.emoji} {info.label}
               </div>
               <div style={{ fontSize: 12, color: "#374151", lineHeight: 1.6, fontFamily: "'Tajawal', sans-serif" }}>
@@ -145,7 +145,7 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
             <div style={{ display: "flex", gap: 6 }}>
               <button
                 onClick={() => onSelectExercise?.(card.input, card.domain)}
-                style={{ flex: 1, padding: "7px", borderRadius: 8, border: "none", background: "#4F46E5", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}
+                style={{ flex: 1, padding: "7px", borderRadius: 8, border: "none", background: "hsl(var(--algebra))", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}
               >
                 حلّه الآن ↗
               </button>
@@ -205,7 +205,7 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
                     background: r.correct ? "#34D399" : "#F87171",
                     flexShrink: 0,
                   }} />
-                  <span style={{ fontSize: 11, color: info.color, fontWeight: 700 }}>
+                  <span style={{ fontSize: 11, color: `hsl(var(${info.colorVar}))`, fontWeight: 700 }}>
                     {info.emoji} {info.label}
                   </span>
                 </div>

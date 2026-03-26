@@ -7,8 +7,8 @@ export function QEDLogo({ size = "md", className = "" }: { size?: "sm" | "md" | 
         className="relative flex items-center justify-center rounded-lg"
         style={{
           width: dims.box, height: dims.box,
-          background: "linear-gradient(135deg, hsl(243 75% 58%), hsl(277 65% 52%))",
-          boxShadow: "0 2px 12px rgba(99,67,196,.35)",
+          background: "linear-gradient(135deg, hsl(var(--algebra)), hsl(var(--probability)))",
+          boxShadow: "0 2px 12px hsl(var(--algebra) / 0.35)",
         }}
       >
         <span
@@ -18,18 +18,25 @@ export function QEDLogo({ size = "md", className = "" }: { size?: "sm" | "md" | 
           Q
         </span>
         <span
-          className="absolute rounded-full bg-accent"
+          className="absolute rounded-full"
           style={{
             width: dims.dot, height: dims.dot,
             bottom: dims.dot, right: dims.dot,
-            boxShadow: "0 0 6px hsl(38 92% 50% / .6)",
+            background: "hsl(var(--accent))",
+            boxShadow: "0 0 6px hsl(var(--accent) / 0.6)",
           }}
         />
       </div>
       <div className="flex flex-col leading-none">
         <span
-          className="font-black tracking-tight bg-gradient-to-l from-primary to-purple-500 bg-clip-text text-transparent"
-          style={{ fontSize: dims.font, fontFamily: "'Nunito', sans-serif" }}
+          className="font-black tracking-tight"
+          style={{
+            fontSize: dims.font,
+            fontFamily: "'Nunito', sans-serif",
+            background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--probability)))",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}
         >
           QED
         </span>

@@ -397,7 +397,7 @@ export function ExerciseWorkspace({
           borderLeft: "1px solid hsl(var(--border))",
           display: "flex",
           flexDirection: "column",
-          background: "white",
+          background: "hsl(var(--card))",
           boxShadow: "2px 0 12px rgba(0,0,0,0.04)",
           transition: "width 0.3s ease",
           overflow: "hidden",
@@ -433,7 +433,7 @@ export function ExerciseWorkspace({
           {/* Panel header */}
           <div style={{
             padding: "14px 16px 12px",
-            background: "linear-gradient(135deg, #EEF2FF, #F0FDF4)",
+            background: "linear-gradient(135deg, hsl(var(--algebra) / 0.08), hsl(var(--geometry) / 0.08))",
             borderBottom: "1px solid hsl(var(--border))",
           }} dir="rtl">
             <h2 style={{ fontSize: 16, fontWeight: 800, color: "hsl(var(--foreground))", margin: 0, fontFamily: "'Tajawal', sans-serif" }}>
@@ -455,10 +455,10 @@ export function ExerciseWorkspace({
                     cursor: "pointer",
                     transition: "all 0.2s",
                     background: inputMode === mode
-                      ? "linear-gradient(135deg, #4F46E5, #7C3AED)"
-                      : "white",
+                      ? "linear-gradient(135deg, hsl(var(--algebra)), hsl(var(--probability)))"
+                      : "hsl(var(--card))",
                     color: inputMode === mode ? "white" : "hsl(var(--muted-foreground))",
-                    boxShadow: inputMode === mode ? "0 2px 8px rgba(79,70,229,0.3)" : "none",
+                    boxShadow: inputMode === mode ? "0 2px 8px hsl(var(--algebra) / 0.3)" : "none",
                   }}
                 >
                   {mode === "library" ? "📚 المكتبة" : mode === "text" ? "✏️ نص حر" : mode === "dataset" ? "📁 ملف JSON" : mode === "deconstruct" ? "🔬 تفكيك" : "🧠 ذكاء"}
@@ -564,7 +564,7 @@ export function ExerciseWorkspace({
           overflow: "hidden",
           position: "relative",
           borderRight: "1px solid hsl(var(--border))",
-          background: "white",
+          background: "hsl(var(--card))",
         }}>
           <button
             onClick={() => setRightCollapsed(!rightCollapsed)}

@@ -5,6 +5,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { QEDLogo } from "@/components/QEDLogo";
 
 // ─── Feature Sections ───────────────────────────────────────────────────
 const FEATURES = [
@@ -15,8 +16,7 @@ const FEATURES = [
     subtitle: "أنماط حل مصنّفة ومنظّمة — جاهزة لتفكيك أي تمرين",
     description: "قاعدة المعرفة (KB) تحتوي على مئات الأنماط الرياضية المصنّفة: جبر، هندسة، دوال، احتمالات. كل نمط فيه خطوات الحل، المفاهيم المطلوبة، والأخطاء الشائعة.",
     details: ["أنماط مصنّفة حسب المنهج الجزائري", "خطوات حل واضحة لكل نمط", "ربط المفاهيم ببعضها"],
-    gradient: "from-[hsl(243_75%_58%)] to-[hsl(277_65%_52%)]",
-    bgGlow: "hsl(243 75% 58% / 0.08)",
+    colorVar: "--algebra",
   },
   {
     id: "solve",
@@ -25,8 +25,7 @@ const FEATURES = [
     subtitle: "أدخل أي تمرين واحصل على الحل كاملاً مع الشرح",
     description: "محرك SOTA يحل التمارين محلياً — جبر، هندسة، إحصاء، احتمالات، دوال. يكشف الأخطاء المفاهيمية ويشرح كل خطوة بالتفصيل.",
     details: ["حل محلي بدون إنترنت", "كشف الأخطاء المفاهيمية", "شرح كل خطوة بالعربية"],
-    gradient: "from-[hsl(158_64%_40%)] to-[hsl(180_55%_38%)]",
-    bgGlow: "hsl(158 64% 40% / 0.08)",
+    colorVar: "--geometry",
   },
   {
     id: "gaps",
@@ -35,8 +34,7 @@ const FEATURES = [
     subtitle: "يحلل إجاباتك ويحدد بالضبط أين الخلل في فهمك",
     description: "بدل ما تضيع وقتك في مراجعة كل شيء، الكاشف يحدد الأنماط الضعيفة والمفاهيم الغائبة — ويقترح تمارين مستهدفة لسد كل ثغرة.",
     details: ["تحليل أنماط الأخطاء", "خريطة ثغرات بصرية", "تمارين مستهدفة لكل ثغرة"],
-    gradient: "from-[hsl(340_80%_52%)] to-[hsl(0_84%_55%)]",
-    bgGlow: "hsl(340 80% 52% / 0.08)",
+    colorVar: "--functions",
   },
   {
     id: "path",
@@ -45,8 +43,7 @@ const FEATURES = [
     subtitle: "تسلسل تمارين مرتّب من الأسهل إلى الأصعب",
     description: "بعد التشخيص، QED يرسم لك مسار تعلم مرتّب حسب التعقيد — يبدأ من الأساسيات ويصعد تدريجياً حتى تُتقن كل مفهوم في المنهج.",
     details: ["ترتيب حسب المتطلبات المسبقة", "تتبع التقدم في كل مفهوم", "تمارين متدرجة الصعوبة"],
-    gradient: "from-[hsl(38_92%_50%)] to-[hsl(45_90%_45%)]",
-    bgGlow: "hsl(38 92% 50% / 0.08)",
+    colorVar: "--statistics",
   },
   {
     id: "deconstruct",
@@ -55,8 +52,7 @@ const FEATURES = [
     subtitle: "تفكيك بصري يربط كل خطوة بالمفهوم الرياضي المناسب من KB",
     description: "اكتب أي تمرين وشاهد تفكيكه البصري: مخطط تدفق يوضح كل خطوة حل مع القانون المستخدم والسبب — مباشرة من قاعدة المعرفة.",
     details: ["مخطط تدفق بصري تفاعلي", "ربط كل خطوة بنمط KB", "عرض الصيغ الرياضية بـ LaTeX"],
-    gradient: "from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)]",
-    bgGlow: "hsl(243 75% 58% / 0.06)",
+    colorVar: "--probability",
   },
   {
     id: "parent",
@@ -65,8 +61,7 @@ const FEATURES = [
     subtitle: "تابع تقدّم ابنك بشفافية كاملة — بدون انتظار النتائج",
     description: "تقارير واضحة عن التقدم اليومي، خريطة الثغرات، مؤشر التحسن الأسبوعي. اعرف بالضبط أين يحتاج ابنك للمساعدة.",
     details: ["تقارير يومية وأسبوعية", "خريطة ثغرات بصرية", "مقارنة التقدم عبر الزمن"],
-    gradient: "from-[hsl(180_55%_38%)] to-[hsl(158_64%_40%)]",
-    bgGlow: "hsl(180 55% 38% / 0.08)",
+    colorVar: "--accent",
   },
 ];
 
@@ -91,7 +86,7 @@ function FeatureCard({ feature, index, isVisible }: { feature: typeof FEATURES[n
       transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}
       className={`flex flex-col ${flip ? "lg:flex-row-reverse" : "lg:flex-row"} items-stretch gap-8 lg:gap-12 rounded-3xl overflow-hidden transition-all duration-700`}
       style={{
-        background: isVisible ? feature.bgGlow : "transparent",
+        background: isVisible ? `hsl(var(${feature.colorVar}) / 0.06)` : "transparent",
         border: isVisible ? "1px solid hsl(var(--border))" : "1px solid transparent",
       }}
     >
@@ -132,7 +127,7 @@ function FeatureCard({ feature, index, isVisible }: { feature: typeof FEATURES[n
       </div>
 
       {/* Visual side — gradient block */}
-      <div className={`flex-shrink-0 w-full lg:w-[320px] flex items-center justify-center p-8 bg-gradient-to-br ${feature.gradient} relative overflow-hidden`}>
+      <div className="flex-shrink-0 w-full lg:w-[320px] flex items-center justify-center p-8 relative overflow-hidden" style={{ background: `linear-gradient(135deg, hsl(var(${feature.colorVar})), hsl(var(${feature.colorVar}) / 0.7))` }}>
         <div className="absolute inset-0 opacity-10">
           <svg viewBox="0 0 200 200" className="w-full h-full">
             {/* Grid pattern */}
@@ -155,11 +150,11 @@ function FeatureCard({ feature, index, isVisible }: { feature: typeof FEATURES[n
 
 // ─── Domain Tags ────────────────────────────────────────────────────────
 const DOMAINS = [
-  { name: "الجبر", color: "hsl(243 75% 58%)", icon: "📐" },
-  { name: "الهندسة", color: "hsl(158 64% 40%)", icon: "📏" },
-  { name: "الدوال", color: "hsl(340 80% 52%)", icon: "📈" },
-  { name: "الإحصاء", color: "hsl(38 92% 50%)", icon: "📊" },
-  { name: "الاحتمالات", color: "hsl(277 65% 52%)", icon: "🎲" },
+  { name: "الجبر", colorVar: "--algebra", icon: "📐" },
+  { name: "الهندسة", colorVar: "--geometry", icon: "📏" },
+  { name: "الدوال", colorVar: "--functions", icon: "📈" },
+  { name: "الإحصاء", colorVar: "--statistics", icon: "📊" },
+  { name: "الاحتمالات", colorVar: "--probability", icon: "🎲" },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -201,8 +196,8 @@ export default function Landing() {
 
       {/* Progress bar */}
       <motion.div
-        className="fixed top-0 left-0 right-0 h-1 z-50 origin-right bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)]"
-        style={{ scaleX: scrollYProgress }}
+        className="fixed top-0 left-0 right-0 h-1 z-50 origin-right"
+        style={{ scaleX: scrollYProgress, background: `linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))` }}
       />
 
       {/* Feature counter */}
@@ -212,7 +207,7 @@ export default function Landing() {
         transition={{ delay: 1 }}
         className="fixed top-4 left-4 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full bg-foreground/90 text-background text-xs backdrop-blur-md"
       >
-        <div className="w-2 h-2 rounded-full bg-[hsl(158_64%_40%)] animate-pulse" />
+        <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "hsl(var(--geometry))" }} />
         <span className="font-mono font-bold">ميزات مكتشفة:</span>
         <span className="font-black">{displayCount}</span>
       </motion.div>
@@ -229,6 +224,11 @@ export default function Landing() {
             }`}
           />
         ))}
+      </div>
+
+      {/* ── Fixed top bar with QED logo ── */}
+      <div className="fixed top-0 right-0 z-40 p-4">
+        <QEDLogo size="md" />
       </div>
 
       {/* ── Hero ── */}
@@ -261,7 +261,7 @@ export default function Landing() {
           <h1 className="text-4xl lg:text-6xl font-black text-foreground leading-[1.1] mb-6">
             تعلّم الرياضيات
             <br />
-            <span className="bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)] bg-clip-text text-transparent">
+            <span style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               بطريقة ذكية
             </span>
           </h1>
@@ -275,7 +275,7 @@ export default function Landing() {
           {/* Domain tags */}
           <div className="flex flex-wrap justify-center gap-2 mb-8">
             {DOMAINS.map((d) => (
-              <span key={d.name} className="text-xs font-bold px-3 py-1.5 rounded-full border border-border bg-card" style={{ color: d.color }}>
+              <span key={d.name} className="text-xs font-bold px-3 py-1.5 rounded-full border border-border bg-card" style={{ color: `hsl(var(${d.colorVar}))` }}>
                 {d.icon} {d.name}
               </span>
             ))}
@@ -283,17 +283,18 @@ export default function Landing() {
 
           {/* Stats */}
           <div className="flex items-center justify-center gap-1 mb-10">
-            <StatBadge value="+٥٠٠" label="نمط في KB" color="hsl(243 75% 58%)" />
+            <StatBadge value="+٥٠٠" label="نمط في KB" color="hsl(var(--algebra))" />
             <div className="w-px h-8 bg-border mx-2" />
-            <StatBadge value="٥ مجالات" label="رياضية" color="hsl(158 64% 40%)" />
+            <StatBadge value="٥ مجالات" label="رياضية" color="hsl(var(--geometry))" />
             <div className="w-px h-8 bg-border mx-2" />
-            <StatBadge value="مجاني" label="بالكامل" color="hsl(340 80% 52%)" />
+            <StatBadge value="مجاني" label="بالكامل" color="hsl(var(--functions))" />
           </div>
 
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
             <Link
               to="/home"
-              className="inline-block px-10 py-4 rounded-2xl font-black text-lg text-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] hover:shadow-[0_14px_50px_rgba(0,0,0,0.25)] transition-shadow bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)]"
+              className="inline-block px-10 py-4 rounded-2xl font-black text-lg text-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] hover:shadow-[0_14px_50px_rgba(0,0,0,0.25)] transition-shadow"
+              style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))" }}
             >
               ابدأ الآن — مجاني ←
             </Link>
@@ -354,7 +355,7 @@ export default function Landing() {
           <h2 className="text-3xl lg:text-5xl font-black text-foreground leading-tight mb-6">
             جاهز تبدأ؟
             <br />
-            <span className="bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)] bg-clip-text text-transparent">
+            <span style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               اكتشف ثغراتك الآن
             </span>
           </h2>
@@ -366,7 +367,8 @@ export default function Landing() {
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
             <Link
               to="/home"
-              className="inline-block px-12 py-5 rounded-2xl font-black text-xl text-white shadow-[0_0_50px_rgba(79,70,229,0.2),0_16px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_0_70px_rgba(79,70,229,0.35),0_20px_60px_rgba(0,0,0,0.15)] transition-shadow bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)]"
+              className="inline-block px-12 py-5 rounded-2xl font-black text-xl text-white shadow-[0_0_50px_hsl(var(--algebra)/0.2),0_16px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_0_70px_hsl(var(--algebra)/0.35),0_20px_60px_rgba(0,0,0,0.15)] transition-shadow"
+              style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))" }}
             >
               ابدأ الآن — مجاني ←
             </Link>
