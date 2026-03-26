@@ -15,6 +15,7 @@ import LearningPath from "./pages/LearningPath";
 import VisualExplorer from "./pages/VisualExplorer";
 import WhatIf from "./pages/WhatIf";
 import ExamBuilderPage from "./pages/ExamBuilder";
+import ExamKBPage from "./pages/ExamKB";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/explore" element={<VisualExplorer />} />
             <Route path="/whatif" element={<WhatIf />} />
             <Route path="/exams" element={<ExamBuilderPage />} />
+            <Route path="/exam-kb" element={<ExamKBPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppShell>
