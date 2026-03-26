@@ -397,7 +397,7 @@ export function ExerciseWorkspace({
           borderLeft: "1px solid hsl(var(--border))",
           display: "flex",
           flexDirection: "column",
-          background: "white",
+          background: "hsl(var(--card))",
           boxShadow: "2px 0 12px rgba(0,0,0,0.04)",
           transition: "width 0.3s ease",
           overflow: "hidden",
