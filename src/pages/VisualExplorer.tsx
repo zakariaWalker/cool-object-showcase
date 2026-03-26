@@ -16,7 +16,7 @@ export default function VisualExplorer() {
   return (
     <div className="h-full flex flex-col overflow-hidden" dir="rtl">
       {/* Tab bar */}
-      <div className="flex-shrink-0 border-b border-border bg-card px-4 py-2 flex gap-2">
+      <div className="flex-shrink-0 border-b border-rose-200/30 bg-gradient-to-l from-rose-500/10 via-pink-500/5 to-background px-4 py-2 flex gap-2">
         {TABS.map(t => (
           <button
             key={t.id}

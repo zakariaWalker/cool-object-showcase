@@ -110,7 +110,7 @@ export default function AITutor() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-l from-accent/30 via-background to-background border-b border-border px-6 py-8">
+      <div className="bg-gradient-to-l from-amber-500/10 via-orange-500/5 to-background border-b border-amber-200/30 px-6 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-3xl">🤖</span>
