@@ -130,7 +130,7 @@ export default function LearningPath() {
   return (
     <div className="bg-background" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-l from-emerald-500/10 via-teal-500/5 to-background border-b border-emerald-200/30 px-6 py-8">
+      <div className="bg-gradient-to-l from-emerald-400/25 via-teal-300/15 to-background border-b border-emerald-300/40 px-6 py-8">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-3xl">📚</span>
@@ -208,12 +208,12 @@ export default function LearningPath() {
                   <div className="flex-1 p-4 rounded-xl border border-border/50 shadow-sm"
                     style={{
                       background: [
-                        "linear-gradient(135deg, hsl(40 60% 96%), hsl(45 50% 92%))",
-                        "linear-gradient(135deg, hsl(200 50% 96%), hsl(210 40% 92%))",
-                        "linear-gradient(135deg, hsl(150 40% 96%), hsl(160 35% 92%))",
-                        "linear-gradient(135deg, hsl(280 40% 96%), hsl(290 35% 92%))",
-                        "linear-gradient(135deg, hsl(20 50% 96%), hsl(15 45% 92%))",
-                        "linear-gradient(135deg, hsl(340 40% 96%), hsl(350 35% 92%))",
+                        "linear-gradient(135deg, hsl(40 70% 92%), hsl(45 65% 85%))",
+                        "linear-gradient(135deg, hsl(200 65% 92%), hsl(215 55% 85%))",
+                        "linear-gradient(135deg, hsl(150 55% 92%), hsl(165 50% 85%))",
+                        "linear-gradient(135deg, hsl(280 55% 92%), hsl(295 50% 85%))",
+                        "linear-gradient(135deg, hsl(20 65% 92%), hsl(10 60% 85%))",
+                        "linear-gradient(135deg, hsl(340 55% 92%), hsl(355 50% 85%))",
                       ][gi % 6],
                     }}>
                     <div className="flex items-center justify-between mb-3">
