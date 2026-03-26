@@ -45,12 +45,12 @@ export function useAuth() {
     }
 
     const fetchProfile = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
-      if (data) setProfile(data as Profile);
+      if (data) setProfile(data as unknown as Profile);
     };
 
     const fetchRoles = async () => {
