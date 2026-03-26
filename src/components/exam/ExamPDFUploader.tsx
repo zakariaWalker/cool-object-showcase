@@ -81,6 +81,92 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
     setSelectedUpload(uploadId);
   }, []);
 
+  // Import extracted questions into exam KB (Questions tab)
+  const importToKB = useCallback(async (uploadId: string) => {
+    if (!user) return;
+    setImporting(true);
+    try {
+      // Find the upload record for metadata
+      const upload = history.find(h => h.id === uploadId);
+      
+      // Check if already imported by looking for existing exam_kb_entries with matching data
+      const { data: existing } = await (supabase as any)
+        .from("exam_kb_entries")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("year", upload?.year || "")
+        .eq("format", upload?.format || "unknown")
+        .eq("session", upload?.session || "juin");
+      
+      if (existing && existing.length > 0) {
+        toast.info("هذا الامتحان مستورد مسبقاً في تبويب الأسئلة");
+        setImporting(false);
+        return;
+      }
+
+      // Load extracted questions if not already loaded
+      let qs = questions;
+      if (selectedUpload !== uploadId || qs.length === 0) {
+        const { data } = await supabase
+          .from("exam_extracted_questions")
+          .select("*")
+          .eq("upload_id", uploadId)
+          .order("question_number") as any;
+        qs = (data as ExtractedQuestion[]) || [];
+      }
+
+      if (qs.length === 0) {
+        toast.error("لا توجد أسئلة مستخرجة لهذا الامتحان");
+        setImporting(false);
+        return;
+      }
+
+      // Create exam_kb_entry
+      const { data: kbEntry, error: entryErr } = await (supabase as any)
+        .from("exam_kb_entries")
+        .insert({
+          user_id: user.id,
+          year: upload?.year || "",
+          session: upload?.session || "juin",
+          format: upload?.format || "unknown",
+          grade: upload?.grade || "",
+          stream: null,
+        })
+        .select("id")
+        .single();
+
+      if (entryErr || !kbEntry) {
+        throw new Error(entryErr?.message || "Failed to create KB entry");
+      }
+
+      // Insert questions into exam_kb_questions
+      const kbQuestions = qs.map(q => ({
+        user_id: user.id,
+        exam_id: kbEntry.id,
+        section_label: q.section_label,
+        question_number: q.question_number,
+        sub_question: (q as any).sub_question || null,
+        text: q.text,
+        points: q.points || 0,
+        type: q.type || "unclassified",
+        difficulty: q.difficulty || "medium",
+        concepts: q.concepts || [],
+        linked_pattern_ids: [],
+        linked_exercise_ids: [],
+      }));
+
+      await (supabase as any).from("exam_kb_questions").insert(kbQuestions);
+
+      toast.success(`✅ تم استيراد ${qs.length} سؤال إلى تبويب الأسئلة`);
+      onQuestionsExtracted?.();
+    } catch (err: any) {
+      console.error("Import to KB error:", err);
+      toast.error("فشل استيراد الأسئلة: " + (err.message || "خطأ"));
+    } finally {
+      setImporting(false);
+    }
+  }, [user, history, questions, selectedUpload, onQuestionsExtracted]);
+
   // Handle file selection
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
