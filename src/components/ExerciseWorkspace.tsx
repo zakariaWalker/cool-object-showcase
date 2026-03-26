@@ -392,14 +392,44 @@ export function ExerciseWorkspace({
 
         {/* Left panel — exercise input */}
         <div style={{
-          width: 380,
+          width: leftCollapsed ? 40 : 380,
           flexShrink: 0,
           borderLeft: "1px solid hsl(var(--border))",
           display: "flex",
           flexDirection: "column",
           background: "white",
           boxShadow: "2px 0 12px rgba(0,0,0,0.04)",
+          transition: "width 0.3s ease",
+          overflow: "hidden",
+          position: "relative",
         }}>
+          {/* Collapse toggle */}
+          <button
+            onClick={() => setLeftCollapsed(!leftCollapsed)}
+            style={{
+              position: "absolute",
+              top: 8,
+              left: 4,
+              zIndex: 10,
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              border: "1px solid hsl(var(--border))",
+              background: "hsl(var(--card))",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 14,
+              color: "hsl(var(--muted-foreground))",
+              transition: "all 0.2s",
+            }}
+            title={leftCollapsed ? "فتح اللوحة" : "طي اللوحة"}
+          >
+            {leftCollapsed ? "◀" : "▶"}
+          </button>
+          {!leftCollapsed && (
+          <>
           {/* Panel header */}
           <div style={{
             padding: "14px 16px 12px",
