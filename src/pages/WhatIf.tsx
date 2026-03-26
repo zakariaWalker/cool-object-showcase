@@ -15,7 +15,7 @@ export default function WhatIf() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden" dir="rtl">
-      <div className="flex-shrink-0 border-b border-border bg-card px-4 py-2 flex gap-2">
+      <div className="flex-shrink-0 border-b border-violet-200/30 bg-gradient-to-l from-violet-500/10 via-purple-500/5 to-background px-4 py-2 flex gap-2">
         {TABS.map(t => (
           <button
             key={t.id}
