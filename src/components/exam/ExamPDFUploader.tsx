@@ -183,7 +183,7 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
     if (!files) return;
     const newUploads: UploadItem[] = Array.from(files)
       .filter(f => f.type === "application/pdf")
-      .map(f => ({ file: f, status: "queued" as const, progress: 0 }));
+      .map(f => ({ file: f, category: selectedCategory, status: "queued" as const, progress: 0 }));
     
     if (newUploads.length === 0) {
       toast.error("يرجى اختيار ملفات PDF فقط");
