@@ -333,7 +333,7 @@ export function DeconstructionFlowchart({
                   x={centerX - NODE_WIDTH / 2} y={y}
                   width={NODE_WIDTH} height={nodeH}
                   rx={12} ry={12}
-                  fill={isExpanded ? "#DBEAFE" : isHovered ? "#E0F2FE" : NODE_COLORS.step.fill}
+                  fill={isExpanded ? "#1E3A5F" : isHovered ? "#283548" : NODE_COLORS.step.fill}
                   stroke={isExpanded ? "#3B82F6" : NODE_COLORS.step.border}
                   strokeWidth={isExpanded || isHovered ? "2" : "1.5"}
                   filter="url(#nodeShadow)"
