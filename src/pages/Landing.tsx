@@ -293,7 +293,8 @@ export default function Landing() {
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
             <Link
               to="/home"
-              className="inline-block px-10 py-4 rounded-2xl font-black text-lg text-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] hover:shadow-[0_14px_50px_rgba(0,0,0,0.25)] transition-shadow bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)]"
+              className="inline-block px-10 py-4 rounded-2xl font-black text-lg text-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] hover:shadow-[0_14px_50px_rgba(0,0,0,0.25)] transition-shadow"
+              style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))" }}
             >
               ابدأ الآن — مجاني ←
             </Link>
