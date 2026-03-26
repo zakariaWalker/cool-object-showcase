@@ -399,7 +399,7 @@ export function DeconstructionFlowchart({
                       {mathLatex ? (
                         <MathBlock latex={mathLatex} />
                       ) : (
-                        <span style={{ fontSize: 11, color: "#6366F1", fontFamily: "'Tajawal', sans-serif" }}>
+                        <span style={{ fontSize: 11, color: "#A5B4FC", fontFamily: "'Tajawal', sans-serif" }}>
                           📐 لا توجد صيغة رياضية لهذه الخطوة
                         </span>
                       )}
