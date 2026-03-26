@@ -241,7 +241,7 @@ function NeuralNetwork({
             x={n.x}
             y={n.y + 8}
             textAnchor="middle"
-            fill={n.active ? "hsl(45 90% 70%)" : "hsl(220 10% 40%)"}
+            fill={n.active ? "hsl(45 90% 35%)" : "hsl(220 10% 55%)"}
             fontSize="3.2"
             fontFamily="Tajawal, sans-serif"
             fontWeight="700"
