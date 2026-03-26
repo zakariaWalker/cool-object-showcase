@@ -186,7 +186,7 @@ export function DeconstructionFlowchart({
             </filter>
             {/* Arrow marker */}
             <marker id="arrowHead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-              <polygon points="0 0, 8 3, 0 6" fill="#94A3B8" />
+              <polygon points="0 0, 8 3, 0 6" fill="#64748B" />
             </marker>
           </defs>
 
