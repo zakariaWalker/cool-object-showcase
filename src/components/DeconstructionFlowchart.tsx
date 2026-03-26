@@ -118,7 +118,8 @@ export function DeconstructionFlowchart({
   return (
     <div dir="rtl" style={{ 
       borderTop: "1px solid hsl(var(--border))",
-      background: "linear-gradient(180deg, hsl(var(--card)), hsl(var(--background)))",
+      background: "linear-gradient(180deg, #0F172A, #1E293B)",
+      color: "#F1F5F9",
     }}>
       {/* Header */}
       <div style={{
