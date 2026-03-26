@@ -130,7 +130,7 @@ export default function LearningPath() {
   return (
     <div className="bg-background" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-l from-emerald-500/10 via-teal-500/5 to-background border-b border-emerald-200/30 px-6 py-8">
+      <div className="bg-gradient-to-l from-emerald-400/25 via-teal-300/15 to-background border-b border-emerald-300/40 px-6 py-8">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-3xl">📚</span>
