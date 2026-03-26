@@ -256,6 +256,34 @@ Deno.serve(async (req) => {
       }));
 
       await supabase.from("exam_extracted_questions").insert(questionsToInsert);
+
+      // Also insert into exam_kb_entries + exam_kb_questions so they appear in the Questions tab
+      const { data: kbEntry } = await supabase.from("exam_kb_entries").insert({
+        user_id: user.id,
+        year: parsed.year || "",
+        session: parsed.session || "juin",
+        format: parsed.format || "unknown",
+        grade: parsed.grade || "",
+        stream: null,
+      }).select("id").single();
+
+      if (kbEntry) {
+        const kbQuestions = questions.map((q, i) => ({
+          user_id: user.id,
+          exam_id: kbEntry.id,
+          section_label: q.section_label || `سؤال ${i + 1}`,
+          question_number: q.question_number || i + 1,
+          sub_question: q.sub_question || null,
+          text: q.text,
+          points: q.points || 0,
+          type: q.type || "unclassified",
+          difficulty: q.difficulty || "medium",
+          concepts: q.concepts || [],
+          linked_pattern_ids: [],
+          linked_exercise_ids: [],
+        }));
+        await supabase.from("exam_kb_questions").insert(kbQuestions);
+      }
     }
 
     const topicFreq: Record<string, number> = {};

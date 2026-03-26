@@ -44,7 +44,11 @@ interface ExtractedQuestion {
   concepts: string[];
 }
 
-export function ExamPDFUploader() {
+interface ExamPDFUploaderProps {
+  onQuestionsExtracted?: () => void;
+}
+
+export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) {
   const { user } = useAuth();
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [processing, setProcessing] = useState(false);
