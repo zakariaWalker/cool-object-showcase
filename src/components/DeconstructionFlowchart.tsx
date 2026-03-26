@@ -13,6 +13,7 @@ interface FlowchartProps {
   concepts: string[];
   notes?: string;
   aiGenerated?: boolean;
+  exerciseSteps?: string[]; // corresponding exercise step text for each deconstruction step
 }
 
 // Colors for different node types
