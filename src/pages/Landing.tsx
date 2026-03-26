@@ -5,6 +5,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { QEDLogo } from "@/components/QEDLogo";
 
 // ─── Feature Sections ───────────────────────────────────────────────────
 const FEATURES = [

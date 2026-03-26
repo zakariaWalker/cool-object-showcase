@@ -12,9 +12,7 @@ const WORKFLOW = [
     subtitle: "حدد مستواك واكتشف ثغراتك",
     description: "تقييم تكيّفي يعرض عليك تمارين من قاعدة المعرفة ويحلل إجاباتك لتحديد المفاهيم الغائبة والأنماط الضعيفة.",
     emoji: "🔍",
-    color: "from-blue-500 to-indigo-600",
-    borderColor: "border-blue-500/20",
-    bgColor: "bg-blue-500/5",
+    colorVar: "--algebra",
   },
   {
     step: 2,
@@ -23,9 +21,7 @@ const WORKFLOW = [
     subtitle: "خطة مخصصة حسب ثغراتك",
     description: "مسار تعليمي مرتّب من الأسهل للأصعب، مبني على التفكيك والأنماط — يركّز على المفاهيم التي تحتاج تقويتها.",
     emoji: "🗺️",
-    color: "from-emerald-500 to-teal-600",
-    borderColor: "border-emerald-500/20",
-    bgColor: "bg-emerald-500/5",
+    colorVar: "--geometry",
   },
   {
     step: 3,
@@ -34,9 +30,7 @@ const WORKFLOW = [
     subtitle: "تدرّب باستخدام المحررات التفاعلية",
     description: "مكتبة تمارين مع محرر جبر (خطوات + رموز رياضية) ومحرر هندسة (رسم SVG تفاعلي) — حل واحصل على التفكيك فوراً.",
     emoji: "📝",
-    color: "from-violet-500 to-purple-600",
-    borderColor: "border-violet-500/20",
-    bgColor: "bg-violet-500/5",
+    colorVar: "--probability",
   },
   {
     step: 4,
@@ -45,9 +39,7 @@ const WORKFLOW = [
     subtitle: "شرح مخصص بالذكاء الاصطناعي",
     description: "اطلب تلميحاً، حلاً كاملاً، أو تحليل أخطائك — المدرّس يتكيّف مع مستواك ويشرح بأسلوب يناسبك.",
     emoji: "🤖",
-    color: "from-amber-500 to-orange-600",
-    borderColor: "border-amber-500/20",
-    bgColor: "bg-amber-500/5",
+    colorVar: "--functions",
   },
 ];
 
