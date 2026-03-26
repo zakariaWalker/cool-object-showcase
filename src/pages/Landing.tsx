@@ -1,452 +1,230 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  Landing.tsx — QED · رحلة الخلية العصبية
-//  Realistic neuron nodes + dendrite edges with scroll-driven storytelling
+//  Landing.tsx — QED · صفحة الهبوط
+//  Real platform features: KB, math solving, gap detection, learning path
 // ═══════════════════════════════════════════════════════════════════════
 import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 
-// ─── Types ──────────────────────────────────────────────────────────────
-interface NeuronNode {
-  id: string;
-  label: string;
-  x: number;
-  y: number;
-  active: boolean;
-}
-
-interface Synapse {
-  from: string;
-  to: string;
-  active: boolean;
-  broken: boolean;
-}
-
-// ─── Scene Data ─────────────────────────────────────────────────────────
-const SCENES = [
+// ─── Feature Sections ───────────────────────────────────────────────────
+const FEATURES = [
   {
-    id: "intro",
-    title: "دماغك يبني مسارات جديدة الآن",
-    subtitle: "كل مفهوم رياضي = عُقدة عصبية. كل وصلة = فهم حقيقي.",
-    description: "عندما تتعلم، دماغك يُنشئ وصلات عصبية بين المفاهيم. كلما تدربت أكثر، الوصلات تصبح أقوى وأسرع.",
-    visual: "network-grow",
-    neurons: [
-      { id: "n1", label: "المعادلات", x: 15, y: 30 },
-      { id: "n2", label: "الدوال", x: 50, y: 15 },
-      { id: "n3", label: "التكامل", x: 85, y: 30 },
-      { id: "n4", label: "النهايات", x: 35, y: 55 },
-      { id: "n5", label: "الاشتقاق", x: 65, y: 55 },
-    ],
+    id: "kb",
+    emoji: "🧩",
+    title: "قاعدة معرفة رياضية ذكية",
+    subtitle: "أنماط حل مصنّفة ومنظّمة — جاهزة لتفكيك أي تمرين",
+    description: "قاعدة المعرفة (KB) تحتوي على مئات الأنماط الرياضية المصنّفة: جبر، هندسة، دوال، احتمالات. كل نمط فيه خطوات الحل، المفاهيم المطلوبة، والأخطاء الشائعة.",
+    details: ["أنماط مصنّفة حسب المنهج الجزائري", "خطوات حل واضحة لكل نمط", "ربط المفاهيم ببعضها"],
+    gradient: "from-[hsl(243_75%_58%)] to-[hsl(277_65%_52%)]",
+    bgGlow: "hsl(243 75% 58% / 0.08)",
+  },
+  {
+    id: "solve",
+    emoji: "⚡",
+    title: "محرك حل التمارين",
+    subtitle: "أدخل أي تمرين واحصل على الحل كاملاً مع الشرح",
+    description: "محرك SOTA يحل التمارين محلياً — جبر، هندسة، إحصاء، احتمالات، دوال. يكشف الأخطاء المفاهيمية ويشرح كل خطوة بالتفصيل.",
+    details: ["حل محلي بدون إنترنت", "كشف الأخطاء المفاهيمية", "شرح كل خطوة بالعربية"],
+    gradient: "from-[hsl(158_64%_40%)] to-[hsl(180_55%_38%)]",
+    bgGlow: "hsl(158 64% 40% / 0.08)",
   },
   {
     id: "gaps",
-    title: "الثغرات = وصلات مقطوعة",
-    subtitle: "ليس لأنك غبي، بل لأن وصلة واحدة مفقودة.",
-    description: "عندما يكون مفهوم ناقص، الإشارة العصبية لا تصل. تبدأ تخسر نقاط في التمرين بدون ما تفهم ليش.",
-    visual: "broken-synapse",
-    neurons: [
-      { id: "g1", label: "المتتاليات", x: 12, y: 25 },
-      { id: "g2", label: "التزايد المقارن", x: 50, y: 45 },
-      { id: "g3", label: "الدوال الأسية", x: 88, y: 25 },
-    ],
+    emoji: "🔍",
+    title: "كاشف الثغرات الذكي",
+    subtitle: "يحلل إجاباتك ويحدد بالضبط أين الخلل في فهمك",
+    description: "بدل ما تضيع وقتك في مراجعة كل شيء، الكاشف يحدد الأنماط الضعيفة والمفاهيم الغائبة — ويقترح تمارين مستهدفة لسد كل ثغرة.",
+    details: ["تحليل أنماط الأخطاء", "خريطة ثغرات بصرية", "تمارين مستهدفة لكل ثغرة"],
+    gradient: "from-[hsl(340_80%_52%)] to-[hsl(0_84%_55%)]",
+    bgGlow: "hsl(340 80% 52% / 0.08)",
   },
   {
-    id: "diagnose",
-    title: "QED يكتشف الوصلات المقطوعة",
-    subtitle: "تقييم تشخيصي ذكي يحلل إجاباتك ويحدد بالضبط أين الخلل.",
-    description: "بدل ما تضيع وقتك في مراجعة كل شيء، QED يحدد الأنماط الضعيفة والمفاهيم الغائبة — بدقة ٩٥٪.",
-    visual: "scan-detect",
-    neurons: [
-      { id: "d1", label: "نمط ١", x: 15, y: 20 },
-      { id: "d2", label: "نمط ٢", x: 50, y: 50 },
-      { id: "d3", label: "نمط ٣", x: 85, y: 20 },
-      { id: "d4", label: "الثغرة", x: 50, y: 18 },
-    ],
+    id: "path",
+    emoji: "📚",
+    title: "مسار تعلّم مخصص",
+    subtitle: "تسلسل تمارين مرتّب من الأسهل إلى الأصعب",
+    description: "بعد التشخيص، QED يرسم لك مسار تعلم مرتّب حسب التعقيد — يبدأ من الأساسيات ويصعد تدريجياً حتى تُتقن كل مفهوم في المنهج.",
+    details: ["ترتيب حسب المتطلبات المسبقة", "تتبع التقدم في كل مفهوم", "تمارين متدرجة الصعوبة"],
+    gradient: "from-[hsl(38_92%_50%)] to-[hsl(45_90%_45%)]",
+    bgGlow: "hsl(38 92% 50% / 0.08)",
   },
   {
-    id: "heal",
-    title: "الوصلات تتصل من جديد",
-    subtitle: "مسار تعلم مخصص يبني الوصلات المفقودة خطوة بخطوة.",
-    description: "بعد التشخيص، QED يرسم لك مسار تعلم مرتّب — يبدأ من الأساس ويصعد تدريجياً حتى تُتقن كل مفهوم.",
-    visual: "reconnect",
-    neurons: [
-      { id: "h1", label: "الأساس", x: 8, y: 50 },
-      { id: "h2", label: "البناء", x: 32, y: 22 },
-      { id: "h3", label: "التعمق", x: 62, y: 50 },
-      { id: "h4", label: "الإتقان", x: 88, y: 22 },
-    ],
+    id: "deconstruct",
+    emoji: "🔬",
+    title: "تفكيك التمارين خطوة بخطوة",
+    subtitle: "تفكيك بصري يربط كل خطوة بالمفهوم الرياضي المناسب من KB",
+    description: "اكتب أي تمرين وشاهد تفكيكه البصري: مخطط تدفق يوضح كل خطوة حل مع القانون المستخدم والسبب — مباشرة من قاعدة المعرفة.",
+    details: ["مخطط تدفق بصري تفاعلي", "ربط كل خطوة بنمط KB", "عرض الصيغ الرياضية بـ LaTeX"],
+    gradient: "from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)]",
+    bgGlow: "hsl(243 75% 58% / 0.06)",
   },
   {
     id: "parent",
-    title: "لولي الأمر: تابع تقدّم ابنك بشفافية",
-    subtitle: "تقارير واضحة، خريطة ثغرات، ومؤشر تقدم أسبوعي.",
-    description: "لا حاجة لانتظار النتائج النهائية. تابع التقدم يوماً بيوم، واعرف بالضبط أين يحتاج ابنك للمساعدة.",
-    visual: "parent-view",
-    neurons: [
-      { id: "p1", label: "التقييم", x: 12, y: 40 },
-      { id: "p2", label: "التقدم", x: 45, y: 18 },
-      { id: "p3", label: "التقرير", x: 78, y: 40 },
-    ],
+    emoji: "👨‍👩‍👧",
+    title: "لوحة ولي الأمر",
+    subtitle: "تابع تقدّم ابنك بشفافية كاملة — بدون انتظار النتائج",
+    description: "تقارير واضحة عن التقدم اليومي، خريطة الثغرات، مؤشر التحسن الأسبوعي. اعرف بالضبط أين يحتاج ابنك للمساعدة.",
+    details: ["تقارير يومية وأسبوعية", "خريطة ثغرات بصرية", "مقارنة التقدم عبر الزمن"],
+    gradient: "from-[hsl(180_55%_38%)] to-[hsl(158_64%_40%)]",
+    bgGlow: "hsl(180 55% 38% / 0.08)",
   },
 ];
 
-// ─── Realistic Neuron Node SVG ──────────────────────────────────────────
-function NeuronBody({ cx, cy, active, healing }: { cx: number; cy: number; active: boolean; healing?: boolean }) {
-  const baseColor = active ? (healing ? "hsl(180 55% 38%)" : "hsl(45 90% 45%)") : "hsl(220 15% 75%)";
-  const bodyColor = active ? "hsl(0 0% 100%)" : "hsl(220 10% 94%)";
-  
+// ─── Stat component ─────────────────────────────────────────────────────
+function StatBadge({ value, label, color }: { value: string; label: string; color: string }) {
   return (
-    <g>
-      {/* Soma glow */}
-      {active && (
-        <motion.circle
-          cx={cx} cy={cy} r="7"
-          fill="none"
-          stroke={baseColor}
-          strokeWidth="0.3"
-          opacity={0.4}
-          initial={{ r: 5 }}
-          animate={{ r: [5, 8, 5] }}
-          transition={{ duration: 3, repeat: Infinity }}
-        />
-      )}
-      {/* Dendrite branches (small organic lines) */}
-      {[0, 60, 120, 180, 240, 300].map((angle, i) => {
-        const rad = (angle * Math.PI) / 180;
-        const len = 3.5 + (i % 2) * 1.5;
-        const ex = cx + Math.cos(rad) * len;
-        const ey = cy + Math.sin(rad) * len;
-        const mx = cx + Math.cos(rad) * (len * 0.5) + (i % 2 === 0 ? 0.5 : -0.5);
-        const my = cy + Math.sin(rad) * (len * 0.5) + (i % 2 === 0 ? -0.4 : 0.4);
-        return (
-          <motion.path
-            key={i}
-            d={`M${cx},${cy} Q${mx},${my} ${ex},${ey}`}
-            fill="none"
-            stroke={baseColor}
-            strokeWidth={active ? 0.4 : 0.2}
-            strokeLinecap="round"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: active ? 1 : 0.6 }}
-            transition={{ duration: 0.8, delay: i * 0.05 }}
-          />
-        );
-      })}
-      {/* Cell body (soma) */}
-      <circle cx={cx} cy={cy} r="3" fill={bodyColor} stroke={baseColor} strokeWidth={active ? 0.7 : 0.35} />
-      {/* Nucleus */}
-      <circle cx={cx} cy={cy} r="1" fill={baseColor} opacity={active ? 0.8 : 0.4} />
-    </g>
+    <div className="text-center px-5">
+      <div className="text-2xl lg:text-3xl font-black" style={{ color }}>{value}</div>
+      <div className="text-[10px] text-muted-foreground mt-1 font-semibold">{label}</div>
+    </div>
   );
 }
 
-// ─── Neural Network SVG Component ───────────────────────────────────────
-function NeuralNetwork({
-  neurons,
-  synapses,
-  scanning,
-  healing,
-}: {
-  neurons: NeuronNode[];
-  synapses: Synapse[];
-  scanning?: boolean;
-  healing?: boolean;
-}) {
-  return (
-    <svg viewBox="0 0 100 70" className="w-full max-w-lg" style={{ overflow: "visible" }}>
-      <defs>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="1.2" result="coloredBlur" />
-          <feMerge>
-            <feMergeNode in="coloredBlur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-
-      {/* Axon connections (dendrite-style curved edges) */}
-      {synapses.map((s, i) => {
-        const from = neurons.find((n) => n.id === s.from);
-        const to = neurons.find((n) => n.id === s.to);
-        if (!from || !to) return null;
-
-        // Create organic curve with offset control point
-        const dx = to.x - from.x;
-        const dy = to.y - from.y;
-        const mx = (from.x + to.x) / 2 + (i % 2 === 0 ? -5 : 5);
-        const my = (from.y + to.y) / 2 - Math.abs(dx) * 0.15;
-
-        const color = s.broken
-          ? "hsl(0 84% 60%)"
-          : s.active
-          ? healing
-            ? "hsl(180 55% 38%)"
-            : "hsl(45 90% 45%)"
-          : "hsl(220 15% 80%)";
-
-        return (
-          <g key={`syn-${i}`}>
-            <motion.path
-              d={`M${from.x},${from.y} Q${mx},${my} ${to.x},${to.y}`}
-              fill="none"
-              stroke={color}
-              strokeWidth={s.active ? 0.6 : 0.25}
-              strokeDasharray={s.broken ? "1.5 1.5" : "none"}
-              strokeLinecap="round"
-              filter={s.active && !s.broken ? "url(#glow)" : "none"}
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: s.active ? 1 : 0.4, opacity: s.active ? 1 : 0.35 }}
-              transition={{ duration: 1.4, delay: i * 0.2, ease: "easeInOut" }}
-            />
-            {/* Synaptic vesicle pulse */}
-            {s.active && !s.broken && (
-              <motion.circle
-                r="0.8"
-                fill={color}
-                filter="url(#glow)"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 1, 0] }}
-                transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.4 }}
-              >
-                <animateMotion
-                  dur="2.5s"
-                  repeatCount="indefinite"
-                  path={`M${from.x},${from.y} Q${mx},${my} ${to.x},${to.y}`}
-                  begin={`${i * 0.4}s`}
-                />
-              </motion.circle>
-            )}
-          </g>
-        );
-      })}
-
-      {/* Scanning line */}
-      {scanning && (
-        <motion.line
-          x1="0" y1="0" x2="100" y2="0"
-          stroke="hsl(180 55% 38%)"
-          strokeWidth="0.2"
-          opacity="0.5"
-          filter="url(#glow)"
-          initial={{ y1: 0, y2: 0 }}
-          animate={{ y1: [0, 70, 0], y2: [0, 70, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-        />
-      )}
-
-      {/* Neuron nodes */}
-      {neurons.map((n, i) => (
-        <motion.g
-          key={n.id}
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.2 + i * 0.12, type: "spring", stiffness: 180 }}
-          style={{ transformOrigin: `${n.x}px ${n.y}px` }}
-        >
-          <NeuronBody cx={n.x} cy={n.y} active={n.active} healing={healing} />
-          {/* Label */}
-          <text
-            x={n.x}
-            y={n.y + 9}
-            textAnchor="middle"
-            fill={n.active ? "hsl(220 20% 25%)" : "hsl(220 10% 55%)"}
-            fontSize="2.8"
-            fontFamily="Tajawal, sans-serif"
-            fontWeight="700"
-          >
-            {n.label}
-          </text>
-        </motion.g>
-      ))}
-    </svg>
-  );
-}
-
-// ─── Scene Component ────────────────────────────────────────────────────
-function ScenePanel({
-  scene,
-  index,
-  isActive,
-}: {
-  scene: (typeof SCENES)[number];
-  index: number;
-  isActive: boolean;
-}) {
+// ─── Feature Card ───────────────────────────────────────────────────────
+function FeatureCard({ feature, index, isVisible }: { feature: typeof FEATURES[number]; index: number; isVisible: boolean }) {
   const flip = index % 2 !== 0;
-  const isParent = scene.id === "parent";
-
-  const neurons: NeuronNode[] = scene.neurons.map((n) => ({ ...n, active: isActive }));
-
-  const synapses: Synapse[] = [];
-  // Create more connections for richer graph
-  for (let i = 0; i < scene.neurons.length - 1; i++) {
-    const isBroken = scene.visual === "broken-synapse" && i === 1;
-    synapses.push({ from: scene.neurons[i].id, to: scene.neurons[i + 1].id, active: isActive, broken: isBroken });
-  }
-  // Extra cross connections for intro scene
-  if (scene.id === "intro" && scene.neurons.length >= 5) {
-    synapses.push({ from: scene.neurons[0].id, to: scene.neurons[3].id, active: isActive, broken: false });
-    synapses.push({ from: scene.neurons[2].id, to: scene.neurons[4].id, active: isActive, broken: false });
-    synapses.push({ from: scene.neurons[3].id, to: scene.neurons[4].id, active: isActive, broken: false });
-  }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 60 }}
-      animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0.15, y: 30 }}
-      transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
-      className={`flex flex-col ${flip ? "lg:flex-row-reverse" : "lg:flex-row"} items-center gap-8 lg:gap-16 rounded-3xl p-6 lg:p-10 transition-all duration-700 ${
-        isActive
-          ? isParent
-            ? "bg-accent/5 border border-accent/15"
-            : "bg-primary/5 border border-primary/10"
-          : "bg-transparent border border-transparent"
-      }`}
+      initial={{ opacity: 0, y: 50 }}
+      animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0.1, y: 30 }}
+      transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}
+      className={`flex flex-col ${flip ? "lg:flex-row-reverse" : "lg:flex-row"} items-stretch gap-8 lg:gap-12 rounded-3xl overflow-hidden transition-all duration-700`}
+      style={{
+        background: isVisible ? feature.bgGlow : "transparent",
+        border: isVisible ? "1px solid hsl(var(--border))" : "1px solid transparent",
+      }}
     >
-      {/* Text */}
-      <div className="flex-1 min-w-0 text-right" dir="rtl">
-        {isParent && (
-          <div className="inline-block px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-bold mb-4">
-            👨‍👩‍👧 لولي الأمر
-          </div>
-        )}
-        <h2 className={`text-2xl lg:text-4xl font-black leading-tight mb-3 transition-colors duration-500 ${
-          isActive ? (isParent ? "text-accent" : "text-primary") : "text-muted-foreground/30"
+      {/* Text side */}
+      <div className="flex-1 min-w-0 p-8 lg:p-10 text-right" dir="rtl">
+        <div className="text-4xl mb-4">{feature.emoji}</div>
+        <h2 className={`text-2xl lg:text-3xl font-black leading-tight mb-3 transition-colors duration-500 ${
+          isVisible ? "text-foreground" : "text-muted-foreground/20"
         }`}>
-          {scene.title}
+          {feature.title}
         </h2>
-        <p className={`text-sm lg:text-base font-bold mb-2 transition-colors duration-500 ${isActive ? "text-foreground/80" : "text-foreground/10"}`}>
-          {scene.subtitle}
+        <p className={`text-sm lg:text-base font-bold mb-3 transition-colors duration-500 ${
+          isVisible ? "text-foreground/70" : "text-foreground/10"
+        }`}>
+          {feature.subtitle}
         </p>
-        <p className={`text-sm leading-relaxed transition-colors duration-500 ${isActive ? "text-muted-foreground" : "text-muted-foreground/10"}`}>
-          {scene.description}
+        <p className={`text-sm leading-relaxed mb-6 transition-colors duration-500 ${
+          isVisible ? "text-muted-foreground" : "text-muted-foreground/10"
+        }`}>
+          {feature.description}
         </p>
-        {isActive && (
+
+        {/* Detail chips */}
+        {isVisible && (
           <motion.div
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className={`h-px mt-6 origin-right ${isParent ? "bg-gradient-to-l from-accent/50 to-transparent" : "bg-gradient-to-l from-primary/50 to-transparent"}`}
-          />
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="flex flex-wrap gap-2"
+          >
+            {feature.details.map((d, i) => (
+              <span key={i} className="text-xs font-bold px-3 py-1.5 rounded-full bg-foreground/5 text-foreground/70 border border-border">
+                ✓ {d}
+              </span>
+            ))}
+          </motion.div>
         )}
       </div>
 
-      {/* Neural Visual */}
-      <div className="flex-shrink-0 w-full lg:w-[380px] flex justify-center items-center">
-        <NeuralNetwork
-          neurons={neurons}
-          synapses={synapses}
-          scanning={scene.visual === "scan-detect" && isActive}
-          healing={scene.visual === "reconnect" && isActive}
-        />
+      {/* Visual side — gradient block */}
+      <div className={`flex-shrink-0 w-full lg:w-[320px] flex items-center justify-center p-8 bg-gradient-to-br ${feature.gradient} relative overflow-hidden`}>
+        <div className="absolute inset-0 opacity-10">
+          <svg viewBox="0 0 200 200" className="w-full h-full">
+            {/* Grid pattern */}
+            {Array.from({ length: 8 }).map((_, i) => (
+              <g key={i}>
+                <line x1={i * 28} y1="0" x2={i * 28} y2="200" stroke="white" strokeWidth="0.5" opacity="0.3" />
+                <line x1="0" y1={i * 28} x2="200" y2={i * 28} stroke="white" strokeWidth="0.5" opacity="0.3" />
+              </g>
+            ))}
+          </svg>
+        </div>
+        <div className="relative text-center text-white z-10">
+          <div className="text-6xl mb-3">{feature.emoji}</div>
+          <div className="text-sm font-black opacity-90">{feature.title.split(" ").slice(0, 3).join(" ")}</div>
+        </div>
       </div>
     </motion.div>
   );
 }
 
-// ─── Stats Badge ────────────────────────────────────────────────────────
-function StatBadge({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="text-center px-4">
-      <div className="text-2xl lg:text-3xl font-black text-primary">{value}</div>
-      <div className="text-[10px] text-muted-foreground mt-1">{label}</div>
-    </div>
-  );
-}
-
-// ─── Background Neural Web ──────────────────────────────────────────────
-function BackgroundNeural() {
-  // Use deterministic positions for SSR compatibility
-  const nodes = [
-    [120, 80], [350, 150], [600, 90], [180, 400], [500, 350],
-    [750, 200], [900, 380], [100, 700], [400, 600], [650, 550],
-    [830, 100], [280, 250], [550, 480], [70, 500], [940, 600],
-    [200, 150], [450, 300], [700, 450], [350, 700], [800, 550],
-  ];
-  const edges = [
-    [0, 1], [1, 2], [0, 3], [2, 5], [3, 4], [4, 5], [5, 6], [3, 7], [4, 8], [8, 9],
-    [2, 10], [1, 11], [4, 12], [7, 13], [9, 14], [0, 15], [11, 16], [5, 17], [8, 18], [6, 19],
-  ];
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-[0.04]">
-      <svg viewBox="0 0 1000 800" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
-        {edges.map(([a, b], i) => (
-          <line key={`e-${i}`} x1={nodes[a][0]} y1={nodes[a][1]} x2={nodes[b][0]} y2={nodes[b][1]} stroke="hsl(45 90% 45%)" strokeWidth="1" opacity="0.5" />
-        ))}
-        {nodes.map(([cx, cy], i) => (
-          <circle key={i} cx={cx} cy={cy} r="3" fill="hsl(45 90% 45%)" opacity="0.6" />
-        ))}
-      </svg>
-    </div>
-  );
-}
+// ─── Domain Tags ────────────────────────────────────────────────────────
+const DOMAINS = [
+  { name: "الجبر", color: "hsl(243 75% 58%)", icon: "📐" },
+  { name: "الهندسة", color: "hsl(158 64% 40%)", icon: "📏" },
+  { name: "الدوال", color: "hsl(340 80% 52%)", icon: "📈" },
+  { name: "الإحصاء", color: "hsl(38 92% 50%)", icon: "📊" },
+  { name: "الاحتمالات", color: "hsl(277 65% 52%)", icon: "🎲" },
+];
 
 // ═══════════════════════════════════════════════════════════════════════
 //  Main Landing Component
 // ═══════════════════════════════════════════════════════════════════════
 export default function Landing() {
-  const [activeScene, setActiveScene] = useState(-1);
-  const sceneRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [activeFeature, setActiveFeature] = useState(-1);
+  const featureRefs = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { scrollYProgress } = useScroll({ target: containerRef });
 
-  // Bidirectional intersection observer
+  // Intersection observer for features
   useEffect(() => {
     const obs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (e.isIntersecting && e.intersectionRatio > 0.35) {
+          if (e.isIntersecting && e.intersectionRatio > 0.3) {
             const idx = Number((e.target as HTMLElement).dataset.idx);
-            if (!isNaN(idx)) setActiveScene(idx);
+            if (!isNaN(idx)) setActiveFeature(idx);
           }
         });
       },
-      { threshold: 0.35 }
+      { threshold: 0.3 }
     );
-    sceneRefs.current.forEach((el) => { if (el) obs.observe(el); });
+    featureRefs.current.forEach((el) => { if (el) obs.observe(el); });
     return () => obs.disconnect();
   }, []);
 
-  // Global synapse count based on scroll
-  const synapseCount = useTransform(scrollYProgress, [0, 1], [0, 47]);
+  const featureCount = useTransform(scrollYProgress, [0, 1], [0, FEATURES.length]);
   const [displayCount, setDisplayCount] = useState(0);
   useEffect(() => {
-    const unsub = synapseCount.on("change", (v) => setDisplayCount(Math.round(v)));
+    const unsub = featureCount.on("change", (v) => setDisplayCount(Math.round(v)));
     return unsub;
-  }, [synapseCount]);
+  }, [featureCount]);
 
   return (
     <div ref={containerRef} className="relative bg-background min-h-screen" dir="rtl">
-      <BackgroundNeural />
 
-      {/* Progress bar (top) */}
+      {/* Progress bar */}
       <motion.div
-        className="fixed top-0 left-0 right-0 h-0.5 bg-primary z-50 origin-right"
+        className="fixed top-0 left-0 right-0 h-1 z-50 origin-right bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)]"
         style={{ scaleX: scrollYProgress }}
       />
 
-      {/* Synapse counter (fixed) */}
+      {/* Feature counter */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
-        className="fixed top-4 left-4 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur-md border border-border text-xs"
+        className="fixed top-4 left-4 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full bg-foreground/90 text-background text-xs backdrop-blur-md"
       >
-        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-        <span className="text-muted-foreground font-mono">وصلات نشطة:</span>
-        <span className="text-primary font-black">{displayCount}</span>
+        <div className="w-2 h-2 rounded-full bg-[hsl(158_64%_40%)] animate-pulse" />
+        <span className="font-mono font-bold">ميزات مكتشفة:</span>
+        <span className="font-black">{displayCount}</span>
       </motion.div>
 
-      {/* Progress dots (side) */}
-      <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-40">
-        {SCENES.map((_, i) => (
+      {/* Progress dots */}
+      <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2.5 z-40">
+        {FEATURES.map((_, i) => (
           <div
             key={i}
-            className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${
-              i <= activeScene
-                ? "bg-primary scale-150 shadow-[0_0_8px_hsl(45_90%_45%/0.5)]"
+            className={`w-2 h-2 rounded-full transition-all duration-500 ${
+              i <= activeFeature
+                ? "bg-foreground scale-125"
                 : "bg-muted-foreground/20"
             }`}
           />
@@ -455,46 +233,13 @@ export default function Landing() {
 
       {/* ── Hero ── */}
       <div className="relative min-h-screen flex flex-col justify-center items-center px-6 text-center">
-        {/* Hero neural animation */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 0.12, scale: 1 }}
-          transition={{ duration: 2 }}
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-        >
-          <svg viewBox="0 0 400 300" className="w-full max-w-3xl">
-            {[
-              [200, 150], [120, 80], [280, 80], [80, 200], [320, 200],
-              [160, 220], [240, 220], [200, 60], [140, 150], [260, 150],
-            ].map(([cx, cy], i) => (
-              <motion.circle
-                key={i}
-                cx={cx} cy={cy} r="4"
-                fill="hsl(45 90% 45%)"
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 0.5, scale: 1 }}
-                transition={{ delay: 0.5 + i * 0.15, duration: 0.8 }}
-                style={{ transformOrigin: `${cx}px ${cy}px` }}
-              />
-            ))}
-            {[
-              [200, 150, 120, 80], [200, 150, 280, 80], [200, 150, 80, 200],
-              [200, 150, 320, 200], [120, 80, 200, 60], [280, 80, 200, 60],
-              [80, 200, 160, 220], [320, 200, 240, 220], [140, 150, 120, 80],
-              [260, 150, 280, 80],
-            ].map(([x1, y1, x2, y2], i) => (
-              <motion.line
-                key={`l-${i}`}
-                x1={x1} y1={y1} x2={x2} y2={y2}
-                stroke="hsl(45 90% 45%)"
-                strokeWidth="0.8"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 0.35 }}
-                transition={{ delay: 1 + i * 0.1, duration: 1 }}
-              />
-            ))}
-          </svg>
-        </motion.div>
+        {/* Background math symbols */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03]">
+          <div className="absolute text-[200px] font-black text-foreground -top-10 -right-10 rotate-12">∑</div>
+          <div className="absolute text-[180px] font-black text-foreground bottom-20 -left-10 -rotate-12">∫</div>
+          <div className="absolute text-[150px] font-black text-foreground top-1/3 left-1/4 rotate-6">π</div>
+          <div className="absolute text-[120px] font-black text-foreground bottom-1/3 right-1/4 -rotate-6">√</div>
+        </div>
 
         <motion.div
           initial={{ opacity: 0, y: 40 }}
@@ -504,45 +249,53 @@ export default function Landing() {
         >
           {/* Badge */}
           <div className="inline-flex items-center gap-3 mb-6">
-            <div className="h-px w-10 bg-primary/30" />
-            <span className="font-mono text-[10px] tracking-[0.3em] text-primary/60 uppercase">
-              Neural Learning Engine · محرك التعلم العصبي
+            <div className="h-px w-10 bg-foreground/20" />
+            <span className="font-mono text-[10px] tracking-[0.3em] text-foreground/50 uppercase font-bold">
+              QED · محرك الرياضيات الذكي
             </span>
-            <div className="h-px w-10 bg-primary/30" />
+            <div className="h-px w-10 bg-foreground/20" />
           </div>
 
-          {/* Neural emoji cluster */}
-          <div className="text-5xl mb-4">🧬</div>
+          <div className="text-5xl mb-4">🧠</div>
 
           <h1 className="text-4xl lg:text-6xl font-black text-foreground leading-[1.1] mb-6">
-            دماغك يبني مسارات
+            تعلّم الرياضيات
             <br />
-            <span className="bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
-              جديدة الآن
+            <span className="bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)] bg-clip-text text-transparent">
+              بطريقة ذكية
             </span>
           </h1>
 
-          <p className="text-muted-foreground text-sm lg:text-base max-w-md mx-auto leading-relaxed mb-8">
-            كل مفهوم رياضي = عُقدة عصبية. كل فهم = وصلة جديدة.
+          <p className="text-foreground/60 text-sm lg:text-base max-w-lg mx-auto leading-relaxed mb-6">
+            قاعدة معرفة رياضية + محرك حل ذكي + كاشف ثغرات + مسار تعلّم مخصص.
             <br />
-            QED يكتشف الوصلات المقطوعة ويساعدك على إعادة بنائها.
+            كل ما تحتاجه لإتقان الرياضيات في مكان واحد.
           </p>
+
+          {/* Domain tags */}
+          <div className="flex flex-wrap justify-center gap-2 mb-8">
+            {DOMAINS.map((d) => (
+              <span key={d.name} className="text-xs font-bold px-3 py-1.5 rounded-full border border-border bg-card" style={{ color: d.color }}>
+                {d.icon} {d.name}
+              </span>
+            ))}
+          </div>
 
           {/* Stats */}
           <div className="flex items-center justify-center gap-1 mb-10">
-            <StatBadge value="٤٧" label="وصلة عصبية" />
+            <StatBadge value="+٥٠٠" label="نمط في KB" color="hsl(243 75% 58%)" />
             <div className="w-px h-8 bg-border mx-2" />
-            <StatBadge value="٥ دق" label="للتشخيص" />
+            <StatBadge value="٥ مجالات" label="رياضية" color="hsl(158 64% 40%)" />
             <div className="w-px h-8 bg-border mx-2" />
-            <StatBadge value="٩٥٪" label="دقة التحليل" />
+            <StatBadge value="مجاني" label="بالكامل" color="hsl(340 80% 52%)" />
           </div>
 
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
             <Link
               to="/home"
-              className="inline-block px-10 py-4 rounded-2xl bg-gradient-to-l from-primary to-accent text-primary-foreground font-black text-lg shadow-[0_10px_40px_hsl(45_90%_45%/0.2)] hover:shadow-[0_14px_50px_hsl(45_90%_45%/0.35)] transition-shadow"
+              className="inline-block px-10 py-4 rounded-2xl font-black text-lg text-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] hover:shadow-[0_14px_50px_rgba(0,0,0,0.25)] transition-shadow bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)]"
             >
-              ابدأ رحلة الاكتشاف ←
+              ابدأ الآن — مجاني ←
             </Link>
           </motion.div>
         </motion.div>
@@ -553,35 +306,35 @@ export default function Landing() {
           transition={{ repeat: Infinity, duration: 2.5 }}
           className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
         >
-          <div className="w-5 h-8 rounded-full border-2 border-primary/20 flex items-start justify-center p-1">
+          <div className="w-5 h-8 rounded-full border-2 border-foreground/15 flex items-start justify-center p-1">
             <motion.div
               animate={{ y: [0, 12, 0] }}
               transition={{ repeat: Infinity, duration: 2.5 }}
-              className="w-1 h-1 rounded-full bg-primary/40"
+              className="w-1 h-1 rounded-full bg-foreground/30"
             />
           </div>
-          <span className="font-mono text-[8px] tracking-[0.2em] text-primary/25">مرّر للأسفل</span>
+          <span className="font-mono text-[8px] tracking-[0.2em] text-foreground/20 font-bold">اكتشف الميزات</span>
         </motion.div>
       </div>
 
-      {/* ── Scene Panels ── */}
+      {/* ── Feature Sections ── */}
       <div className="max-w-5xl mx-auto px-6 pb-20">
-        {SCENES.map((scene, idx) => (
+        {FEATURES.map((feature, idx) => (
           <div
-            key={scene.id}
-            ref={(el) => { sceneRefs.current[idx] = el; }}
+            key={feature.id}
+            ref={(el) => { featureRefs.current[idx] = el; }}
             data-idx={idx}
-            className="min-h-[80vh] flex flex-col justify-center py-12"
+            className="min-h-[70vh] flex flex-col justify-center py-10"
           >
-            <ScenePanel scene={scene} index={idx} isActive={activeScene >= idx} />
+            <FeatureCard feature={feature} index={idx} isVisible={activeFeature >= idx} />
 
-            {idx < SCENES.length - 1 && (
-              <div className="flex justify-center my-8">
+            {idx < FEATURES.length - 1 && (
+              <div className="flex justify-center my-6">
                 <motion.div
                   initial={{ height: 0 }}
-                  animate={activeScene >= idx ? { height: 60 } : { height: 0 }}
+                  animate={activeFeature >= idx ? { height: 50 } : { height: 0 }}
                   transition={{ duration: 1, delay: 0.5 }}
-                  className="w-px bg-gradient-to-b from-primary/40 to-transparent"
+                  className="w-px bg-gradient-to-b from-foreground/20 to-transparent"
                 />
               </div>
             )}
@@ -590,30 +343,32 @@ export default function Landing() {
       </div>
 
       {/* ── Final CTA ── */}
-      <div className="min-h-[70vh] flex flex-col justify-center items-center text-center px-6 pb-20">
+      <div className="min-h-[60vh] flex flex-col justify-center items-center text-center px-6 pb-20">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           className="max-w-xl"
         >
-          <div className="text-4xl mb-4">🧠</div>
+          <div className="text-4xl mb-4">🚀</div>
           <h2 className="text-3xl lg:text-5xl font-black text-foreground leading-tight mb-6">
-            دماغك جاهز
+            جاهز تبدأ؟
             <br />
-            <span className="text-primary">ابنِ الوصلات الآن</span>
+            <span className="bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)] bg-clip-text text-transparent">
+              اكتشف ثغراتك الآن
+            </span>
           </h2>
           <p className="text-muted-foreground text-sm lg:text-base mb-10 leading-relaxed">
-            ٥ دقائق تكفي لتكتشف خريطة ثغراتك وتبدأ بناء وصلات جديدة.
+            قاعدة معرفة + محرك حل + كاشف ثغرات + مسار تعلّم — كلها مجانية.
             <br />
             بدون حساب · بدون بطاقة بنكية · نتائج فورية.
           </p>
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
             <Link
               to="/home"
-              className="inline-block px-12 py-5 rounded-2xl bg-gradient-to-l from-primary to-accent text-primary-foreground font-black text-xl shadow-[0_0_50px_hsl(45_90%_45%/0.25),0_16px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_0_70px_hsl(45_90%_45%/0.4),0_20px_60px_rgba(0,0,0,0.15)] transition-shadow"
+              className="inline-block px-12 py-5 rounded-2xl font-black text-xl text-white shadow-[0_0_50px_rgba(79,70,229,0.2),0_16px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_0_70px_rgba(79,70,229,0.35),0_20px_60px_rgba(0,0,0,0.15)] transition-shadow bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)]"
             >
-              اكتشف ثغراتك الآن — مجاني ←
+              ابدأ الآن — مجاني ←
             </Link>
           </motion.div>
           <div className="mt-4 text-[10px] text-muted-foreground/40 font-mono tracking-wider">
@@ -624,8 +379,8 @@ export default function Landing() {
 
       {/* Footer */}
       <div className="text-center py-8 border-t border-border">
-        <p className="text-[10px] text-muted-foreground/30 font-mono tracking-[0.15em]">
-          © 2025 QED ALGERIA · NEURAL LEARNING ENGINE · مبني بحب للطالب الجزائري 🇩🇿
+        <p className="text-[10px] text-muted-foreground/40 font-mono tracking-[0.15em]">
+          © 2025 QED ALGERIA · MATH LEARNING ENGINE · مبني بحب للطالب الجزائري 🇩🇿
         </p>
       </div>
     </div>
