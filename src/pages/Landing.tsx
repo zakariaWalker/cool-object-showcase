@@ -232,6 +232,11 @@ export default function Landing() {
         ))}
       </div>
 
+      {/* ── Fixed top bar with QED logo ── */}
+      <div className="fixed top-0 right-0 z-40 p-4">
+        <QEDLogo size="md" />
+      </div>
+
       {/* ── Hero ── */}
       <div className="relative min-h-screen flex flex-col justify-center items-center px-6 text-center">
         {/* Background math symbols */}
