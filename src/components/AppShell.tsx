@@ -12,6 +12,7 @@ const WORKFLOW_STEPS = [
   { path: "/tutor",  label: "المدرّس الذكي",  emoji: "🤖", step: 4 },
   { path: "/explore", label: "الاستكشاف",    emoji: "🔭", step: 5 },
   { path: "/whatif", label: "ماذا لو؟",       emoji: "🔬", step: 6 },
+  { path: "/exams", label: "الامتحانات",     emoji: "🏗️", step: 7 },
 ];
 
 const ADMIN_LINK = { path: "/admin", label: "لوحة الإدارة", emoji: "⚙️" };

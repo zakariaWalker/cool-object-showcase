@@ -43,6 +43,7 @@ const App = () => (
             <Route path="/learn" element={<LearningPath />} />
             <Route path="/explore" element={<VisualExplorer />} />
             <Route path="/whatif" element={<WhatIf />} />
+            <Route path="/exams" element={<ExamBuilderPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppShell>
