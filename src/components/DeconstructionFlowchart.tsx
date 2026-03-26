@@ -47,7 +47,9 @@ export function DeconstructionFlowchart({
   const sideNodesMaxCount = Math.max(needs.length, concepts.length);
   const sideAreaHeight = sideNodesMaxCount * (SIDE_NODE_HEIGHT + 8);
   const svgHeight = Math.max(mainChainHeight, sideAreaHeight + 120) + 60;
-  const svgWidth = NODE_WIDTH + PADDING_X * 2 + (needs.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + (concepts.length > 0 ? SIDE_NODE_WIDTH + 60 : 0);
+  const hasExSteps = exerciseSteps && exerciseSteps.length > 0;
+  const EX_STEP_WIDTH = 180;
+  const svgWidth = NODE_WIDTH + PADDING_X * 2 + (needs.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + (concepts.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + (hasExSteps ? EX_STEP_WIDTH + 50 : 0);
   const centerX = (needs.length > 0 ? SIDE_NODE_WIDTH + 60 : 0) + PADDING_X + NODE_WIDTH / 2;
 
   // Y positions for main chain
