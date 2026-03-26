@@ -15,6 +15,7 @@ import LearningPath from "./pages/LearningPath";
 import VisualExplorer from "./pages/VisualExplorer";
 import WhatIf from "./pages/WhatIf";
 import ExamBuilderPage from "./pages/ExamBuilder";
+import ExamKBPage from "./pages/ExamKB";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
