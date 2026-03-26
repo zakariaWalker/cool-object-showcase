@@ -4,6 +4,7 @@
 import { useMemo, useState } from "react";
 import { Exercise, Pattern, Deconstruction } from "./useAdminKBStore";
 import { motion } from "framer-motion";
+import { KBNetworkGraph } from "./KBNetworkGraph";
 
 interface Props {
   exercises: Exercise[];
