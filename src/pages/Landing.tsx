@@ -135,7 +135,7 @@ function NeuralNetwork({
             key={`syn-${i}`}
             d={`M${from.x},${from.y} Q${midX},${midY} ${to.x},${to.y}`}
             fill="none"
-            stroke={s.broken ? "hsl(0 84% 60%)" : s.active ? "hsl(45 90% 55%)" : "hsl(220 15% 20%)"}
+            stroke={s.broken ? "hsl(0 84% 60%)" : s.active ? "hsl(45 90% 45%)" : "hsl(220 15% 80%)"}
             strokeWidth={s.active ? 0.8 : 0.4}
             strokeDasharray={s.broken ? "2 2" : "none"}
             filter={s.active && !s.broken ? "url(#glow)" : "none"}
@@ -225,8 +225,8 @@ function NeuralNetwork({
             cx={n.x}
             cy={n.y}
             r="3.5"
-            fill={n.active ? "hsl(220 15% 8%)" : "hsl(220 15% 12%)"}
-            stroke={n.active ? "hsl(45 90% 55%)" : "hsl(220 15% 25%)"}
+            fill={n.active ? "hsl(0 0% 100%)" : "hsl(220 15% 95%)"}
+            stroke={n.active ? "hsl(45 90% 45%)" : "hsl(220 15% 80%)"}
             strokeWidth={n.active ? 0.8 : 0.4}
           />
           {/* Inner dot */}
@@ -234,14 +234,14 @@ function NeuralNetwork({
             cx={n.x}
             cy={n.y}
             r="1.2"
-            fill={n.active ? "hsl(45 90% 55%)" : "hsl(220 15% 30%)"}
+            fill={n.active ? "hsl(45 90% 45%)" : "hsl(220 15% 70%)"}
           />
           {/* Label */}
           <text
             x={n.x}
             y={n.y + 8}
             textAnchor="middle"
-            fill={n.active ? "hsl(45 90% 70%)" : "hsl(220 10% 40%)"}
+            fill={n.active ? "hsl(45 90% 35%)" : "hsl(220 10% 55%)"}
             fontSize="3.2"
             fontFamily="Tajawal, sans-serif"
             fontWeight="700"
@@ -442,7 +442,7 @@ export default function Landing() {
   }, [synapseCount]);
 
   return (
-    <div ref={containerRef} className="relative bg-background min-h-screen" dir="rtl">
+    <div ref={containerRef} className="light relative bg-background min-h-screen" dir="rtl">
       <BackgroundNeural />
 
       {/* Progress bar (top) */}
