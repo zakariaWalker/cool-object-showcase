@@ -211,7 +211,7 @@ export function DeconstructionFlowchart({
           <line
             x1={centerX} y1={stepYs[stepYs.length - 1] + NODE_HEIGHT}
             x2={centerX} y2={endY}
-            stroke="#94A3B8" strokeWidth="2" strokeDasharray="6 3"
+            stroke="#64748B" strokeWidth="2" strokeDasharray="6 3"
             markerEnd="url(#arrowHead)"
           />
 
