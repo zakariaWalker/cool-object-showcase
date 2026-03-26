@@ -55,9 +55,10 @@ const PADDING_TOP = 30;
 
 export function DeconstructionFlowchart({
   patternName, patternType, patternDescription,
-  steps, needs, concepts, notes, aiGenerated, exerciseSteps,
+  steps, needs, concepts, notes, aiGenerated, exerciseSteps, mathExpressions,
 }: FlowchartProps) {
   const [hoveredNode, setHoveredNode] = useState<number | null>(null);
+  const [expandedStep, setExpandedStep] = useState<number | null>(null);
 
   if (steps.length === 0) return null;
 
