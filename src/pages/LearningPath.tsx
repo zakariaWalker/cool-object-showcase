@@ -128,7 +128,7 @@ export default function LearningPath() {
   }
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="bg-background" dir="rtl">
       {/* Header */}
       <div className="bg-gradient-to-l from-primary/5 via-background to-background border-b border-border px-6 py-8">
         <div className="max-w-5xl mx-auto">
