@@ -389,7 +389,13 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
               >
                 {statusIcon(u.status)}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{u.file.name}</p>
+                  <p className="text-sm font-medium text-foreground truncate">
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-2"
+                      style={{ background: categoryColors[u.category] + "22", color: categoryColors[u.category] }}>
+                      {formatLabel[u.category]}
+                    </span>
+                    {u.file.name}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {(u.file.size / 1024).toFixed(0)} KB · {statusLabel(u.status)}
                     {u.result && (
