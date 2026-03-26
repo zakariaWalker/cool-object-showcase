@@ -564,7 +564,7 @@ export function ExerciseWorkspace({
           overflow: "hidden",
           position: "relative",
           borderRight: "1px solid hsl(var(--border))",
-          background: "white",
+          background: "hsl(var(--card))",
         }}>
           <button
             onClick={() => setRightCollapsed(!rightCollapsed)}
