@@ -106,7 +106,7 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
                 </div>
                 <div style={{ height: 5, background: "hsl(var(--muted))", borderRadius: 99, overflow: "hidden" }}>
                   <motion.div
-                    style={{ height: "100%", background: info.color, borderRadius: 99 }}
+                    style={{ height: "100%", background: `hsl(var(${info.colorVar}))`, borderRadius: 99 }}
                     initial={{ width: 0 }}
                     animate={{ width: `${pct}%` }}
                     transition={{ duration: 0.5 }}
