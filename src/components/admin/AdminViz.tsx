@@ -31,6 +31,7 @@ const TYPE_LABELS_AR: Record<string, string> = {
 
 export function AdminViz({ exercises, patterns, deconstructions }: Props) {
   const [activePanel, setActivePanel] = useState<string | null>(null);
+  const [tab, setTab] = useState<"analytics" | "network">("analytics");
 
   const insights = useMemo(() => {
     // 1. Coverage: exercises with vs without deconstruction
