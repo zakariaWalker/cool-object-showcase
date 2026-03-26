@@ -283,11 +283,11 @@ export default function Landing() {
 
           {/* Stats */}
           <div className="flex items-center justify-center gap-1 mb-10">
-            <StatBadge value="+٥٠٠" label="نمط في KB" color="hsl(243 75% 58%)" />
+            <StatBadge value="+٥٠٠" label="نمط في KB" color="hsl(var(--algebra))" />
             <div className="w-px h-8 bg-border mx-2" />
-            <StatBadge value="٥ مجالات" label="رياضية" color="hsl(158 64% 40%)" />
+            <StatBadge value="٥ مجالات" label="رياضية" color="hsl(var(--geometry))" />
             <div className="w-px h-8 bg-border mx-2" />
-            <StatBadge value="مجاني" label="بالكامل" color="hsl(340 80% 52%)" />
+            <StatBadge value="مجاني" label="بالكامل" color="hsl(var(--functions))" />
           </div>
 
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
