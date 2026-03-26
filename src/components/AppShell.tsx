@@ -9,9 +9,9 @@ const WORKFLOW_STEPS = [
   { path: "/gaps",   label: "التقييم التشخيصي", emoji: "🔍", step: 1 },
   { path: "/learn",  label: "مسار التعلم",    emoji: "🗺️", step: 2 },
   { path: "/exercises", label: "التمارين",    emoji: "📝", step: 3 },
-  { path: "/explore", label: "الاستكشاف",    emoji: "🔭", step: 4 },
-  { path: "/whatif", label: "ماذا لو؟",       emoji: "🔬", step: 5 },
-  { path: "/tutor",  label: "المدرّس الذكي",  emoji: "🤖", step: 6 },
+  { path: "/tutor",  label: "المدرّس الذكي",  emoji: "🤖", step: 4 },
+  { path: "/explore", label: "الاستكشاف",    emoji: "🔭", step: 5 },
+  { path: "/whatif", label: "ماذا لو؟",       emoji: "🔬", step: 6 },
 ];
 
 const ADMIN_LINK = { path: "/admin", label: "لوحة الإدارة", emoji: "⚙️" };
