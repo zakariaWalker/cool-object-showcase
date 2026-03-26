@@ -203,7 +203,7 @@ export function DeconstructionFlowchart({
             <line key={`conn-${i}`}
               x1={centerX} y1={y + NODE_HEIGHT}
               x2={centerX} y2={stepYs[i + 1]}
-              stroke="#94A3B8" strokeWidth="2" strokeDasharray="6 3"
+              stroke="#64748B" strokeWidth="2" strokeDasharray="6 3"
               markerEnd="url(#arrowHead)"
             />
           ) : null)}
