@@ -196,8 +196,8 @@ export default function Landing() {
 
       {/* Progress bar */}
       <motion.div
-        className="fixed top-0 left-0 right-0 h-1 z-50 origin-right bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)]"
-        style={{ scaleX: scrollYProgress }}
+        className="fixed top-0 left-0 right-0 h-1 z-50 origin-right"
+        style={{ scaleX: scrollYProgress, background: `linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))` }}
       />
 
       {/* Feature counter */}
