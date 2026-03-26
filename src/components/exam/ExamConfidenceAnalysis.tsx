@@ -80,6 +80,23 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
     // "Surprise factor" - types in official but not in regular
     const surpriseTypes = [...officialTypes].filter(t => !regularTypes.has(t));
 
+    // Difficulty over years
+    const years = [...new Set(exams.map(e => e.year))].filter(Boolean).sort();
+    const diffOverYears: Record<string, { easy: number; medium: number; hard: number; total: number; official: boolean }> = {};
+    years.forEach(year => {
+      const yearExams = exams.filter(e => e.year === year);
+      const yearQs = questions.filter(q => yearExams.some(e => e.id === q.examId));
+      const total = yearQs.length || 1;
+      const isOfficial = yearExams.some(e => classifyFormat(e.format) === "official");
+      diffOverYears[year] = {
+        easy: Math.round((yearQs.filter(q => q.difficulty === "easy").length / total) * 100),
+        medium: Math.round((yearQs.filter(q => q.difficulty === "medium").length / total) * 100),
+        hard: Math.round((yearQs.filter(q => q.difficulty === "hard").length / total) * 100),
+        total: yearQs.length,
+        official: isOfficial,
+      };
+    });
+
     return {
       officialExams, regularExams, officialQs, regularQs,
       commonTypes, overlapPct,
@@ -88,6 +105,7 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
       regularAvgPts: avgPoints(regularQs),
       conceptOverlapPct, commonConcepts,
       topRepeated, surpriseTypes,
+      diffOverYears, years,
     };
   }, [exams, questions]);
 
