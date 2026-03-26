@@ -63,6 +63,8 @@ export function ExerciseWorkspace({
   const [kb, setKB] = useState<KBType>(() => loadKB());
   const [highlightGapId, setHighlightGapId] = useState<string | null>(null);
   const [trainingGap, setTrainingGap] = useState<KnowledgeGap | null>(null);
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
 
   // Sync state if prop changes (e.g. from Index/URL)
   useEffect(() => {
