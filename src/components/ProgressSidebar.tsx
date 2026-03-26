@@ -99,7 +99,7 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
             return (
               <div key={domain} style={{ marginBottom: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, fontFamily: "'Tajawal', sans-serif", color: info.color, fontWeight: 600 }}>
+                  <span style={{ fontSize: 12, fontFamily: "'Tajawal', sans-serif", color: `hsl(var(${info.colorVar}))`, fontWeight: 600 }}>
                     {info.emoji} {info.label}
                   </span>
                   <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{count}</span>
