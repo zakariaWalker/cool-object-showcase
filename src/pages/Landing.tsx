@@ -135,7 +135,7 @@ function NeuralNetwork({
             key={`syn-${i}`}
             d={`M${from.x},${from.y} Q${midX},${midY} ${to.x},${to.y}`}
             fill="none"
-            stroke={s.broken ? "hsl(0 84% 60%)" : s.active ? "hsl(45 90% 55%)" : "hsl(220 15% 20%)"}
+            stroke={s.broken ? "hsl(0 84% 60%)" : s.active ? "hsl(45 90% 45%)" : "hsl(220 15% 80%)"}
             strokeWidth={s.active ? 0.8 : 0.4}
             strokeDasharray={s.broken ? "2 2" : "none"}
             filter={s.active && !s.broken ? "url(#glow)" : "none"}
