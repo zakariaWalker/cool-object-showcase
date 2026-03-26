@@ -108,11 +108,18 @@ export default function Home() {
             <Link
               key={item.step}
               to={item.path}
-              className={`block rounded-2xl border ${item.borderColor} ${item.bgColor} p-6 hover:shadow-lg transition-all group`}
+              className="block rounded-2xl border p-6 hover:shadow-lg transition-all group"
+              style={{
+                borderColor: `hsl(var(${item.colorVar}) / 0.2)`,
+                background: `hsl(var(${item.colorVar}) / 0.04)`,
+              }}
             >
               <div className="flex items-start gap-5">
                 {/* Step number */}
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-white text-lg font-black flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform`}>
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-lg font-black flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform"
+                  style={{ background: `linear-gradient(135deg, hsl(var(${item.colorVar})), hsl(var(${item.colorVar}) / 0.7))` }}
+                >
                   {item.step}
                 </div>
 
@@ -121,7 +128,7 @@ export default function Home() {
                     <span className="text-lg">{item.emoji}</span>
                     <h3 className="text-base font-black text-foreground">{item.title}</h3>
                   </div>
-                  <p className="text-xs font-bold text-primary mb-1">{item.subtitle}</p>
+                  <p className="text-xs font-bold mb-1" style={{ color: `hsl(var(${item.colorVar}))` }}>{item.subtitle}</p>
                   <p className="text-xs text-muted-foreground leading-relaxed">{item.description}</p>
                 </div>
 
