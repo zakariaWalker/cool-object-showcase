@@ -157,7 +157,7 @@ export async function saveProgress(stats: StudentStats): Promise<void> {
 
 // ── Record activity ────────────────────────────────
 export async function logActivity(action: string, xpEarned: number, metadata: Record<string, any> = {}): Promise<void> {
-  await supabase.from("student_activity_log").insert({
+  await (supabase as any).from("student_activity_log").insert({
     student_id: getStudentId(),
     action,
     xp_earned: xpEarned,
