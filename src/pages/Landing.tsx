@@ -261,7 +261,7 @@ export default function Landing() {
           <h1 className="text-4xl lg:text-6xl font-black text-foreground leading-[1.1] mb-6">
             تعلّم الرياضيات
             <br />
-            <span className="bg-gradient-to-l from-[hsl(243_75%_58%)] to-[hsl(158_64%_40%)] bg-clip-text text-transparent">
+            <span style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               بطريقة ذكية
             </span>
           </h1>
