@@ -102,7 +102,7 @@ export function getStudentId(): string {
 // ── Load / Save progress ───────────────────────────
 export async function loadProgress(): Promise<StudentStats> {
   const studentId = getStudentId();
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from("student_progress")
     .select("*")
     .eq("student_id", studentId)
