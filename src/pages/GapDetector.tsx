@@ -260,7 +260,7 @@ export default function GapDetector() {
   if (quizState === "setup") {
     return (
       <div className="h-full overflow-y-auto bg-background" dir="rtl">
-        <div className="bg-gradient-to-l from-primary/10 via-background to-background border-b border-border px-6 py-8">
+        <div className="bg-gradient-to-l from-blue-500/10 via-indigo-500/5 to-background border-b border-blue-200/30 px-6 py-8">
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-3xl">🔍</span>
