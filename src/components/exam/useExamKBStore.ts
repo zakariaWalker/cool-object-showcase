@@ -7,7 +7,7 @@ export interface ExamEntry {
   id: string;
   year: string;
   session: string;
-  format: "bem" | "bac" | "regular";
+  format: "bem" | "bac" | "regular" | "devoir";
   grade: string;
   stream?: string;
 }
