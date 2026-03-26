@@ -445,9 +445,19 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
       {/* Extracted Questions Preview */}
       {selectedUpload && questions.length > 0 && (
         <div className="space-y-3">
-          <h3 className="font-bold text-foreground">
-            📋 الأسئلة المستخرجة ({questions.length})
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-foreground">
+              📋 الأسئلة المستخرجة ({questions.length})
+            </h3>
+            <Button
+              size="sm"
+              onClick={() => importToKB(selectedUpload!)}
+              disabled={importing}
+            >
+              {importing ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <ArrowLeftRight className="w-4 h-4 ml-1" />}
+              نقل الكل إلى تبويب الأسئلة
+            </Button>
+          </div>
           <div className="space-y-2">
             {questions.map(q => (
               <div
