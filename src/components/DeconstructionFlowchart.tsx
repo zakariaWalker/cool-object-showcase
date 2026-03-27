@@ -36,11 +36,11 @@ function MathBlock({ latex }: { latex: string }) {
 
 // Colors for different node types
 const NODE_COLORS = {
-  start: { fill: "#1E1B4B", text: "#fff", border: "#312E81", glow: "rgba(30,27,75,0.4)" },
-  step: { fill: "#1F2937", text: "#F9FAFB", border: "#4B5563", glow: "rgba(31,41,55,0.3)" },
-  end: { fill: "#064E3B", text: "#fff", border: "#065F46", glow: "rgba(6,78,59,0.4)" },
-  need: { fill: "#292524", text: "#E7E5E4", border: "#57534E", glow: "rgba(41,37,36,0.3)" },
-  concept: { fill: "#1E1B4B", text: "#E0E7FF", border: "#4338CA", glow: "rgba(67,56,202,0.3)" },
+  start: { fill: "hsl(var(--primary))", text: "hsl(var(--primary-foreground))", border: "hsl(var(--primary))", glow: "var(--glow-primary)" },
+  step: { fill: "hsl(var(--card))", text: "hsl(var(--foreground))", border: "hsl(var(--primary) / 0.5)", glow: "rgba(0,0,0,0.05)" },
+  end: { fill: "hsl(var(--geometry))", text: "hsl(var(--primary-foreground))", border: "hsl(var(--geometry))", glow: "rgba(6,78,59,0.2)" },
+  need: { fill: "transparent", text: "hsl(var(--muted-foreground))", border: "hsl(var(--border))", glow: "none" },
+  concept: { fill: "transparent", text: "hsl(var(--muted-foreground))", border: "hsl(var(--border))", glow: "none" },
 };
 
 const NODE_WIDTH = 260;
@@ -118,8 +118,8 @@ export function DeconstructionFlowchart({
   return (
     <div dir="rtl" style={{ 
       borderTop: "1px solid hsl(var(--border))",
-      background: "linear-gradient(180deg, #0F172A, #1E293B)",
-      color: "#F1F5F9",
+      background: "hsl(var(--background))",
+      color: "hsl(var(--foreground))",
     }}>
       {/* Header */}
       <div style={{
@@ -129,9 +129,9 @@ export function DeconstructionFlowchart({
       }}>
         <div style={{
           width: 36, height: 36, borderRadius: 10,
-          background: "linear-gradient(135deg, #4F46E5, #7C3AED)",
+          background: "hsl(var(--primary) / 0.1)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          color: "#fff", fontSize: 18,
+          color: "hsl(var(--primary))", fontSize: 18,
         }}>
           🧩
         </div>
@@ -234,7 +234,7 @@ export function DeconstructionFlowchart({
                   fill={NODE_COLORS.need.fill}
                   stroke={NODE_COLORS.need.border}
                   strokeWidth="1.5"
-                  filter="url(#nodeShadow)"
+                  strokeDasharray="4 4"
                 />
                 <text
                   x={nx + SIDE_NODE_WIDTH / 2} y={ny + SIDE_NODE_HEIGHT / 2 + 1}
@@ -267,7 +267,7 @@ export function DeconstructionFlowchart({
                   fill={NODE_COLORS.concept.fill}
                   stroke={NODE_COLORS.concept.border}
                   strokeWidth="1.5"
-                  filter="url(#nodeShadow)"
+                  strokeDasharray="4 4"
                 />
                 <text
                   x={cx + SIDE_NODE_WIDTH / 2} y={cy + SIDE_NODE_HEIGHT / 2 + 1}
@@ -334,8 +334,8 @@ export function DeconstructionFlowchart({
                   x={centerX - NODE_WIDTH / 2} y={y}
                   width={NODE_WIDTH} height={nodeH}
                   rx={12} ry={12}
-                  fill={isExpanded ? "#1E3A5F" : isHovered ? "#283548" : NODE_COLORS.step.fill}
-                  stroke={isExpanded ? "#3B82F6" : NODE_COLORS.step.border}
+                  fill={isExpanded ? "hsl(var(--primary) / 0.05)" : NODE_COLORS.step.fill}
+                  stroke={isExpanded ? "hsl(var(--primary))" : isHovered ? "hsl(var(--primary) / 0.8)" : NODE_COLORS.step.border}
                   strokeWidth={isExpanded || isHovered ? "2" : "1.5"}
                   filter="url(#nodeShadow)"
                 />
@@ -350,7 +350,7 @@ export function DeconstructionFlowchart({
                   x={centerX - NODE_WIDTH / 2 + 22}
                   y={y + nodeH / 2 + 1}
                   textAnchor="middle" dominantBaseline="central"
-                  fill="#fff" fontSize="10" fontWeight="800"
+                  fill="hsl(var(--primary-foreground))" fontSize="10" fontWeight="800"
                 >
                   {i + 1}
                 </text>
@@ -386,21 +386,20 @@ export function DeconstructionFlowchart({
                   >
                     <div
                       style={{
-                        background: "linear-gradient(135deg, #1E293B, #0F172A)",
-                        border: "1.5px solid #6366F1",
+                        background: "hsl(var(--muted))",
+                        border: "1px dashed hsl(var(--primary) / 0.4)",
                         borderRadius: 10,
                         padding: "6px 12px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         height: "100%",
-                        boxShadow: "0 2px 8px rgba(99,102,241,0.25)",
                       }}
                     >
                       {mathLatex ? (
                         <MathBlock latex={mathLatex} />
                       ) : (
-                        <span style={{ fontSize: 11, color: "#A5B4FC", fontFamily: "'Tajawal', sans-serif" }}>
+                        <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontFamily: "'Tajawal', sans-serif" }}>
                           📐 لا توجد صيغة رياضية لهذه الخطوة
                         </span>
                       )}
@@ -430,17 +429,17 @@ export function DeconstructionFlowchart({
                   x={exX} y={y + (NODE_HEIGHT - exH) / 2}
                   width={EX_STEP_WIDTH} height={exH}
                   rx={8} ry={8}
-                  fill="#1C2B1F"
-                  stroke="#34D399"
+                  fill="hsl(var(--background))"
+                  stroke="hsl(var(--geometry) / 0.5)"
+                  strokeDasharray="4 4"
                   strokeWidth="1.5"
-                  filter="url(#nodeShadow)"
                 />
                 {exLines.map((line, li) => (
                   <text key={li}
                     x={exX + EX_STEP_WIDTH / 2}
                     y={y + (NODE_HEIGHT - exH) / 2 + 14 + li * 16}
                     textAnchor="middle" dominantBaseline="auto"
-                    fill="#A7F3D0"
+                    fill="hsl(var(--geometry))"
                     fontSize="10" fontWeight="600"
                     fontFamily="'Tajawal', sans-serif"
                   >
