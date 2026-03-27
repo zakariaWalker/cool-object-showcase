@@ -275,7 +275,11 @@ export function useAdminKBStore() {
             label: e.label,
             source: e.source,
           }));
-          await (supabase as any).from("kb_exercises").upsert(batch, { onConflict: "id" });
+          const { error } = await (supabase as any).from("kb_exercises").upsert(batch, { onConflict: "id" });
+          if (error) {
+            console.error("kb_exercises upsert error:", error);
+            throw error;
+          }
         }
       }
 
