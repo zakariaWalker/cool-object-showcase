@@ -257,6 +257,68 @@ export function useAdminKBStore() {
     if (data.deconstructions) setDeconstructions(prev => [...prev, ...data.deconstructions!]);
   }, []);
 
+  const saveAllToDB = useCallback(async () => {
+    setLoading(true);
+    try {
+      const BATCH = 500;
+
+      // Upsert exercises in batches
+      if (exercises.length > 0) {
+        for (let i = 0; i < exercises.length; i += BATCH) {
+          const batch = exercises.slice(i, i + BATCH).map(e => ({
+            id: e.id,
+            text: e.text,
+            type: e.type,
+            chapter: e.chapter,
+            grade: e.grade,
+            stream: e.stream,
+            label: e.label,
+            source: e.source,
+          }));
+          await (supabase as any).from("kb_exercises").upsert(batch, { onConflict: "id" });
+        }
+      }
+
+      // Upsert patterns in batches
+      if (patterns.length > 0) {
+        for (let i = 0; i < patterns.length; i += BATCH) {
+          const batch = patterns.slice(i, i + BATCH).map(p => ({
+            id: p.id,
+            name: p.name,
+            type: p.type,
+            description: p.description || "",
+            steps: p.steps,
+            concepts: p.concepts || [],
+          }));
+          await (supabase as any).from("kb_patterns").upsert(batch, { onConflict: "id" });
+        }
+      }
+
+      // Upsert deconstructions in batches
+      if (deconstructions.length > 0) {
+        for (let i = 0; i < deconstructions.length; i += BATCH) {
+          const batch = deconstructions.slice(i, i + BATCH).map(d => ({
+            id: d.id,
+            exercise_id: d.exerciseId,
+            pattern_id: d.patternId,
+            steps: d.steps || [],
+            needs: d.needs,
+            notes: d.notes,
+          }));
+          await (supabase as any).from("kb_deconstructions").upsert(batch, { onConflict: "id" });
+        }
+      }
+
+      console.log("✅ All KB data saved to DB");
+      return true;
+    } catch (err) {
+      console.error("Failed to save KB to DB:", err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [exercises, patterns, deconstructions]);
+
   const exportData = useCallback(() => {
     return { exercises, patterns, deconstructions };
   }, [exercises, patterns, deconstructions]);
