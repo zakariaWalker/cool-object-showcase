@@ -59,15 +59,15 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center"
-      style={{ background: "linear-gradient(135deg, hsl(213 50% 20%) 0%, hsl(220 60% 10%) 100%)", direction: "rtl" }}>
+      style={{ background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(210 55% 18%) 100%)", direction: "rtl" }}>
       <motion.div
         animate={shake ? { x: [-10, 10, -10, 10, 0] } : { x: 0 }}
         transition={{ duration: 0.4 }}
         className="glass-card rounded-3xl p-12 text-center min-w-[320px]"
-        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)" }}>
+        style={{ background: "hsl(var(--primary) / 0.15)", border: "1px solid hsl(var(--primary-foreground) / 0.12)" }}>
         <div className="text-5xl mb-4">🔐</div>
         <h2 className="text-xl font-black text-primary-foreground mb-1">لوحة الإدارة</h2>
-        <p className="text-xs mb-8" style={{ color: "rgba(255,255,255,0.5)" }}>أدخل الـ PIN للوصول إلى قاعدة المعرفة</p>
+        <p className="text-xs mb-8" style={{ color: "hsl(var(--primary-foreground) / 0.55)" }}>أدخل الـ PIN للوصول إلى قاعدة المعرفة</p>
         <div className="flex gap-3 justify-center mb-6" style={{ direction: "ltr" }}>
           {digits.map((d, i) => (
             <input key={i} ref={el => { inputs.current[i] = el; }}
@@ -75,18 +75,18 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
               value={d} onChange={e => handleDigit(i, e.target.value)} onKeyDown={e => handleKey(i, e)}
               className="w-14 h-16 text-center text-3xl font-black rounded-xl outline-none transition-all"
               style={{
-                border: `2px solid ${error ? "#EF4444" : d ? "#60A5FA" : "rgba(255,255,255,0.2)"}`,
-                background: d ? "rgba(96,165,250,0.15)" : "rgba(255,255,255,0.07)",
-                color: "#fff",
+                border: `2px solid ${error ? "hsl(var(--destructive))" : d ? "hsl(var(--accent))" : "hsl(var(--primary-foreground) / 0.2)"}`,
+                background: d ? "hsl(var(--accent) / 0.15)" : "hsl(var(--primary-foreground) / 0.07)",
+                color: "hsl(var(--primary-foreground))",
               }} />
           ))}
         </div>
         {error && (
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs mb-4" style={{ color: "#F87171" }}>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs mb-4" style={{ color: "hsl(var(--destructive))" }}>
             ❌ PIN غير صحيح
           </motion.p>
         )}
-        <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.3)" }}>الجلسة تنتهي بعد 4 ساعات</p>
+        <p className="text-[11px]" style={{ color: "hsl(var(--primary-foreground) / 0.35)" }}>الجلسة تنتهي بعد 4 ساعات</p>
       </motion.div>
     </div>
   );
@@ -170,12 +170,12 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
           </button>
           <button onClick={handleSaveToDB} disabled={store.loading}
             className="text-xs px-3 py-1.5 rounded font-bold text-primary-foreground btn-press"
-            style={{ background: "hsl(38 92% 50%)" }}>
+            style={{ background: "hsl(var(--accent))" }}>
             {store.loading ? "جاري الحفظ..." : "💾 حفظ في DB"}
           </button>
           <button onClick={() => { try { sessionStorage.removeItem(PIN_STORAGE_KEY); } catch {} onLogout(); }}
             className="text-xs px-3 py-1.5 rounded border font-bold"
-            style={{ background: "rgba(239,68,68,0.1)", color: "#F87171", borderColor: "rgba(239,68,68,0.3)" }}>
+            style={{ background: "hsl(var(--destructive) / 0.12)", color: "hsl(var(--destructive))", borderColor: "hsl(var(--destructive) / 0.3)" }}>
             تسجيل الخروج ↩
           </button>
         </div>

@@ -20,7 +20,7 @@ const ObjectCard = ({ image, title, subtitle, index }: ObjectCardProps) => {
       <div className="relative overflow-hidden rounded-lg border border-border bg-card transition-all duration-500 hover:border-primary/40">
         <div
           className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-          style={{ boxShadow: "inset 0 0 60px hsl(45 90% 55% / 0.08)" }}
+          style={{ boxShadow: "inset 0 0 60px hsl(var(--primary) / 0.08)" }}
         />
         <img
           src={image}

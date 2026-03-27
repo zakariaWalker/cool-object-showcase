@@ -61,7 +61,7 @@ export function AdminDashboard({
         {[
           { label: "مجموع التمارين", value: stats.total, sub: loaded ? `${stats.middleCount} متوسط + ${stats.secondaryCount} ثانوي` : "اضغط تحميل التمارين", color: "hsl(var(--primary))", onClick: () => setView("classify") },
           { label: "مصنّف", value: stats.classified, sub: "الخطوة 1", color: "hsl(var(--secondary))", onClick: () => setView("classify") },
-          { label: "مفكَّك", value: stats.deconstructed, sub: "الخطوة 3", color: "hsl(38 92% 50%)", onClick: () => setView("deconstruct") },
+          { label: "مفكَّك", value: stats.deconstructed, sub: "الخطوة 3", color: "hsl(var(--accent))", onClick: () => setView("deconstruct") },
           { label: "نمط في المكتبة", value: stats.patternCount, sub: "الخطوة 2", color: "hsl(var(--probability))", onClick: () => setView("patterns") },
         ].map((card, i) => (
           <div key={i} onClick={card.onClick}

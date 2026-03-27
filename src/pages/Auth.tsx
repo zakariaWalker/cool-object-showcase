@@ -97,14 +97,14 @@ export default function Auth() {
   const currentLevel = GRADE_LEVELS.find(l => l.grades.some(g => g.id === grade));
 
   return (
-    <div className="min-h-screen bg-[#F8F5EE] flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4" dir="rtl">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <QEDLogo size="xl" />
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-[#E8E4DC] p-8">
+        <div className="bg-card rounded-2xl shadow-xl border border-border p-8">
           {/* Tabs */}
           <div className="flex gap-2 mb-6">
             <button

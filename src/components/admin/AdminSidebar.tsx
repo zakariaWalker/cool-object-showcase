@@ -26,26 +26,26 @@ const NAV_ITEMS: { id: AdminView; icon: string; label: string; badge?: keyof Pro
 export function AdminSidebar({ view, setView, stats, onImport, onExport }: Props) {
   return (
     <aside className="w-[260px] flex-shrink-0 flex flex-col overflow-hidden"
-      style={{ background: "hsl(213 35% 28%)" }}>
+      style={{ background: "hsl(var(--primary))" }}>
       {/* Logo */}
-      <div className="p-5 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+      <div className="p-5 pb-4" style={{ borderBottom: "1px solid hsl(var(--primary-foreground) / 0.15)" }}>
         <div className="text-lg font-bold text-primary-foreground tracking-tight">
           📐 قاعدة معرفة الرياضيات
         </div>
-        <div className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.5)" }}>
+        <div className="text-xs mt-1" style={{ color: "hsl(var(--primary-foreground) / 0.55)" }}>
           المنهاج الجزائري الكامل
         </div>
       </div>
 
       {/* Progress */}
-      <div className="px-5 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <div className="flex justify-between text-xs mb-2" style={{ color: "rgba(255,255,255,0.6)" }}>
+      <div className="px-5 py-3" style={{ borderBottom: "1px solid hsl(var(--primary-foreground) / 0.1)" }}>
+        <div className="flex justify-between text-xs mb-2" style={{ color: "hsl(var(--primary-foreground) / 0.65)" }}>
           <span>تقدم التفكيك</span>
           <span>{stats.progress}%</span>
         </div>
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "hsl(var(--primary-foreground) / 0.18)" }}>
           <div className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${stats.progress}%`, background: "linear-gradient(90deg, #60a5fa, #3b82f6)" }} />
+            style={{ width: `${stats.progress}%`, background: "hsl(var(--accent))" }} />
         </div>
       </div>
 
@@ -55,7 +55,7 @@ export function AdminSidebar({ view, setView, stats, onImport, onExport }: Props
           <div key={item.id}>
             {item.section && (
               <div className="px-5 py-2 text-[11px] uppercase tracking-wider font-semibold"
-                style={{ color: "rgba(255,255,255,0.35)" }}>
+                style={{ color: "hsl(var(--primary-foreground) / 0.4)" }}>
                 {item.section}
               </div>
             )}
@@ -63,9 +63,9 @@ export function AdminSidebar({ view, setView, stats, onImport, onExport }: Props
               onClick={() => setView(item.id)}
               className="flex items-center gap-3 px-5 py-2.5 cursor-pointer text-sm font-medium transition-all"
               style={{
-                color: view === item.id ? "#fff" : "rgba(255,255,255,0.7)",
-                background: view === item.id ? "hsl(213 35% 35%)" : "transparent",
-                borderRight: view === item.id ? "3px solid #60a5fa" : "3px solid transparent",
+                color: view === item.id ? "hsl(var(--primary-foreground))" : "hsl(var(--primary-foreground) / 0.72)",
+                background: view === item.id ? "hsl(var(--primary-foreground) / 0.12)" : "transparent",
+                borderRight: view === item.id ? "3px solid hsl(var(--accent))" : "3px solid transparent",
               }}
             >
               <span className="text-base w-5 text-center">{item.icon}</span>
@@ -73,8 +73,8 @@ export function AdminSidebar({ view, setView, stats, onImport, onExport }: Props
               {item.badge && (
                 <span className="text-[11px] px-2 py-0.5 rounded-full min-w-[24px] text-center font-semibold"
                   style={{
-                    background: view === item.id ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.15)",
-                    color: view === item.id ? "#fff" : "rgba(255,255,255,0.8)",
+                    background: view === item.id ? "hsl(var(--primary-foreground) / 0.25)" : "hsl(var(--primary-foreground) / 0.15)",
+                    color: view === item.id ? "hsl(var(--primary-foreground))" : "hsl(var(--primary-foreground) / 0.8)",
                   }}>
                   {stats[item.badge]}
                 </span>
@@ -85,16 +85,16 @@ export function AdminSidebar({ view, setView, stats, onImport, onExport }: Props
 
         {/* Tools section */}
         <div className="px-5 py-2 text-[11px] uppercase tracking-wider font-semibold"
-          style={{ color: "rgba(255,255,255,0.35)" }}>أدوات</div>
+          style={{ color: "hsl(var(--primary-foreground) / 0.4)" }}>أدوات</div>
         <div onClick={onImport}
           className="flex items-center gap-3 px-5 py-2.5 cursor-pointer text-sm font-medium transition-all"
-          style={{ color: "rgba(255,255,255,0.7)" }}>
+          style={{ color: "hsl(var(--primary-foreground) / 0.72)" }}>
           <span className="text-base w-5 text-center">↑</span>
           <span>استيراد JSON</span>
         </div>
         <div onClick={onExport}
           className="flex items-center gap-3 px-5 py-2.5 cursor-pointer text-sm font-medium transition-all"
-          style={{ color: "rgba(255,255,255,0.7)" }}>
+          style={{ color: "hsl(var(--primary-foreground) / 0.72)" }}>
           <span className="text-base w-5 text-center">↓</span>
           <span>تصدير الكل</span>
         </div>
@@ -102,7 +102,7 @@ export function AdminSidebar({ view, setView, stats, onImport, onExport }: Props
 
       {/* Footer */}
       <div className="px-5 py-3 text-xs leading-relaxed"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" }}>
+        style={{ borderTop: "1px solid hsl(var(--primary-foreground) / 0.1)", color: "hsl(var(--primary-foreground) / 0.45)" }}>
         {stats.total || 2711} تمرين — 18 مستوى/شعبة<br />
         من 1AM إلى 3AS — منهاج DZ<br />
         الأنماط أولاً ← ثم الذكاء الاصطناعي

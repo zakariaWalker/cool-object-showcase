@@ -318,23 +318,23 @@ export function ExerciseWorkspace({
           fontFamily: "'Tajawal', sans-serif",
           direction: "rtl",
           minHeight: "100dvh",
-          background: "#F8FAFC",
+          background: "hsl(var(--background))",
         }}>
           {/* Header */}
           <div style={{
-            background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4F46E5 100%)",
+            background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.85) 100%)",
             padding: "20px 16px 24px",
             position: "relative",
             overflow: "hidden",
           }}>
-            <div style={{ position: "absolute", top: -30, left: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
-            <div style={{ position: "absolute", bottom: -20, right: -10, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
+            <div style={{ position: "absolute", top: -30, left: -20, width: 120, height: 120, borderRadius: "50%", background: "hsla(0,0%,100%,0.05)" }} />
+            <div style={{ position: "absolute", bottom: -20, right: -10, width: 80, height: 80, borderRadius: "50%", background: "hsla(0,0%,100%,0.04)" }} />
             <div style={{ position: "relative" }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>🎓</div>
-              <h1 style={{ fontSize: 22, fontWeight: 900, color: "#fff", margin: "0 0 4px 0" }}>
+              <h1 style={{ fontSize: 22, fontWeight: 900, color: "hsl(var(--primary-foreground))", margin: "0 0 4px 0" }}>
                 محرك التمارين SOTA
               </h1>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", margin: 0 }}>
+              <p style={{ fontSize: 12, color: "hsla(0,0%,100%,0.65)", margin: 0 }}>
                 حل محلي كامل • كشف الأخطاء المفاهيمية • مراجعة متباعدة
               </p>
             </div>
@@ -347,15 +347,15 @@ export function ExerciseWorkspace({
 
             {/* Exercise library embedded */}
             <div style={{
-              background: "#fff",
+              background: "hsl(var(--card))",
               borderRadius: 16,
               boxShadow: "0 2px 14px rgba(0,0,0,0.07)",
               overflow: "hidden",
             }}>
               <div style={{
-                background: "linear-gradient(135deg, #EEF2FF, #F0FDF4)",
+                background: "linear-gradient(135deg, hsl(var(--algebra) / 0.08), hsl(var(--geometry) / 0.08))",
                 padding: "14px 16px",
-                borderBottom: "1px solid #E5E7EB",
+                borderBottom: "1px solid hsl(var(--border))",
               }}>
                 <h2 style={{ fontSize: 15, fontWeight: 800, color: "#1e293b", margin: 0 }}>
                   📚 مكتبة التمارين

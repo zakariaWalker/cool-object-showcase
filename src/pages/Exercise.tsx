@@ -55,10 +55,10 @@ const ExercisePage = () => {
       <div style={{
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        height: "100vh", background: "#FFFBEB", gap: 12,
+        height: "100vh", background: "hsl(var(--background))", gap: 12,
       }}>
         <div style={{ fontSize: 36, animation: "spin 1s linear infinite" }}>⚙️</div>
-        <p style={{ fontSize: 14, color: "#92400E", fontWeight: 600 }} dir="rtl">
+        <p style={{ fontSize: 14, color: "hsl(var(--foreground))", fontWeight: 600 }} dir="rtl">
           جارٍ تحميل التمرين…
         </p>
         <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
@@ -72,22 +72,22 @@ const ExercisePage = () => {
       <div style={{
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        height: "100vh", background: "#FFFBEB",
+        height: "100vh", background: "hsl(var(--background))",
         padding: "0 24px", gap: 16, textAlign: "center",
       }} dir="rtl">
         <span style={{ fontSize: 48 }}>⚠️</span>
-        <h2 style={{ fontSize: 18, fontWeight: 800, color: "#92400E", margin: 0 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: "hsl(var(--foreground))", margin: 0 }}>
           تعذّر تحميل التمرين
         </h2>
-        <p style={{ fontSize: 14, color: "#B45309", maxWidth: 280, lineHeight: 1.7, margin: 0 }}>
+        <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", maxWidth: 280, lineHeight: 1.7, margin: 0 }}>
           {fetchError}
         </p>
         <button
           onClick={() => window.location.reload()}
           style={{
             marginTop: 8, padding: "12px 28px",
-            background: "linear-gradient(135deg,#D97706,#EA580C)",
-            color: "#fff", border: "none", borderRadius: 12,
+            background: "hsl(var(--accent))",
+            color: "hsl(var(--accent-foreground))", border: "none", borderRadius: 12,
             fontSize: 15, fontWeight: 700, cursor: "pointer",
           }}
         >

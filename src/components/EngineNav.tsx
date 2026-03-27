@@ -4,12 +4,12 @@ import { ApiKeyModal } from "./ApiKeyModal";
 import { getApiKey } from "@/engine/ai-layer";
 
 const NAV_ITEMS = [
-  { path: "/",           label: "التمارين",  emoji: "📝", color: "#7B75CC" },
-  { path: "/algebra",    label: "الجبر",     emoji: "🔢", color: "#7B75CC" },
-  { path: "/geometry",   label: "الهندسة",   emoji: "📐", color: "#4DA88D" },
-  { path: "/statistics", label: "الإحصاء",   emoji: "📊", color: "#C49A4A" },
-  { path: "/probability",label: "الاحتمال",  emoji: "🎲", color: "#9B7BC4" },
-  { path: "/functions",  label: "الدوال",    emoji: "📈", color: "#C46B7E" },
+  { path: "/",           label: "التمارين",  emoji: "📝", colorVar: "--algebra" },
+  { path: "/algebra",    label: "الجبر",     emoji: "🔢", colorVar: "--algebra" },
+  { path: "/geometry",   label: "الهندسة",   emoji: "📐", colorVar: "--geometry" },
+  { path: "/statistics", label: "الإحصاء",   emoji: "📊", colorVar: "--statistics" },
+  { path: "/probability",label: "الاحتمال",  emoji: "🎲", colorVar: "--probability" },
+  { path: "/functions",  label: "الدوال",    emoji: "📈", colorVar: "--functions" },
 ];
 
 export function EngineNav() {
@@ -21,41 +21,27 @@ export function EngineNav() {
     <>
       <nav
         dir="rtl"
+        className="flex items-center gap-1 px-3 py-2 overflow-x-auto border-b border-border bg-card"
         style={{
-          background: "linear-gradient(135deg, #2D2A50 0%, #3D3A6A 100%)",
-          boxShadow: "0 2px 16px rgba(79,70,229,0.12)",
+          boxShadow: "0 1px 8px rgba(0,0,0,0.06)",
           flexShrink: 0,
         }}
-        className="flex items-center gap-1 px-3 py-2 overflow-x-auto"
       >
         {/* Brand */}
         <div className="flex items-center gap-2 ml-3 flex-shrink-0">
-          <span style={{
-            background: "linear-gradient(135deg, #9BA3E0, #C9A8E0)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            fontSize: 18,
-            fontWeight: 900,
+          <span className="text-lg font-black text-primary" style={{
             fontFamily: "'Tajawal', sans-serif",
             letterSpacing: "-0.5px",
           }}>
             QED
           </span>
-          <span style={{
-            fontSize: 10,
-            background: "rgba(255,255,255,0.12)",
-            color: "rgba(255,255,255,0.6)",
-            padding: "2px 6px",
-            borderRadius: 99,
-            fontWeight: 600,
-            flexShrink: 0,
-          }}>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold flex-shrink-0">
             SOTA v2
           </span>
         </div>
 
         {/* Divider */}
-        <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.12)", margin: "0 4px", flexShrink: 0 }} />
+        <div className="w-px h-5 bg-border mx-1 flex-shrink-0" />
 
         {/* Nav items */}
         {NAV_ITEMS.map((item) => {
@@ -74,11 +60,11 @@ export function EngineNav() {
                 fontSize: 13,
                 fontWeight: isActive ? 700 : 500,
                 fontFamily: "'Tajawal', sans-serif",
-                color: isActive ? "#fff" : "rgba(255,255,255,0.6)",
+                color: isActive ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
                 background: isActive
-                  ? `linear-gradient(135deg, ${item.color}cc, ${item.color}99)`
+                  ? `hsl(var(${item.colorVar}))`
                   : "transparent",
-                border: isActive ? `1px solid ${item.color}88` : "1px solid transparent",
+                border: isActive ? `1px solid hsl(var(${item.colorVar}) / 0.5)` : "1px solid transparent",
                 transition: "all 0.2s ease",
                 textDecoration: "none",
                 whiteSpace: "nowrap",
@@ -101,9 +87,9 @@ export function EngineNav() {
             fontSize: 11,
             padding: "5px 10px",
             borderRadius: 8,
-            border: hasKey ? "1px solid rgba(52,211,153,0.4)" : "1px dashed rgba(255,255,255,0.25)",
-            background: hasKey ? "rgba(52,211,153,0.12)" : "transparent",
-            color: hasKey ? "#34D399" : "rgba(255,255,255,0.4)",
+            border: hasKey ? "1px solid hsl(var(--geometry) / 0.4)" : "1px dashed hsl(var(--border))",
+            background: hasKey ? "hsl(var(--geometry) / 0.12)" : "transparent",
+            color: hasKey ? "hsl(var(--geometry))" : "hsl(var(--muted-foreground))",
             cursor: "pointer",
             fontFamily: "'Nunito', sans-serif",
             fontWeight: 600,

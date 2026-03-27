@@ -6,11 +6,11 @@ interface SoundAuraProps {
 }
 
 const DOMAIN_COLORS: Record<Domain, string> = {
-  algebra: "#8B5CF6",
-  geometry: "#10B981",
-  statistics: "#F59E0B",
-  probability: "#A855F7",
-  functions: "#3B82F6",
+  algebra: "#7A85C4",
+  geometry: "#4A9B82",
+  statistics: "#C4964C",
+  probability: "#8671B4",
+  functions: "#BD6B7D",
 };
 
 export function SoundAura({ domain }: SoundAuraProps) {

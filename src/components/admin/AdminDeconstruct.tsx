@@ -176,8 +176,8 @@ export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, 
         {[
           { label: "المجموع", value: stats.total, color: "hsl(var(--foreground))", filter: "all" as DeconFilter },
           { label: "مفكّك ✓", value: stats.deconstructed, color: "hsl(var(--primary))", filter: "deconstructed" as DeconFilter },
-          { label: "غير مفكّك", value: stats.notDeconstructed, color: "#F59E0B", filter: "not_deconstructed" as DeconFilter },
-          { label: "التقدم", value: `${stats.percentage}%`, color: "#10B981", filter: "all" as DeconFilter },
+          { label: "غير مفكّك", value: stats.notDeconstructed, color: "hsl(var(--accent))", filter: "not_deconstructed" as DeconFilter },
+          { label: "التقدم", value: `${stats.percentage}%`, color: "hsl(var(--geometry))", filter: "all" as DeconFilter },
         ].map((c, i) => (
           <div key={i} className="glass-card rounded-lg p-3 text-center cursor-pointer border transition-all hover:border-primary/30"
             style={{ borderColor: deconFilter === c.filter && i < 3 ? "hsl(var(--primary))" : undefined }}
@@ -186,7 +186,7 @@ export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, 
             <div className="text-[10px] text-muted-foreground">{c.label}</div>
             {i === 3 && (
               <div className="h-1.5 bg-muted rounded-full mt-1.5 overflow-hidden">
-                <div className="h-full rounded-full transition-all" style={{ width: `${stats.percentage}%`, background: "#10B981" }} />
+                <div className="h-full rounded-full transition-all" style={{ width: `${stats.percentage}%`, background: "hsl(var(--geometry))" }} />
               </div>
             )}
           </div>

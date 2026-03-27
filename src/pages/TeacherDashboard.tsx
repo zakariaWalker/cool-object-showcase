@@ -24,8 +24,8 @@ interface DashboardData {
 }
 
 const STATUS = { ok:"🟢", warn:"🟡", danger:"🔴" } as const;
-const RATE_COLOR = (r: number) => r >= 65 ? "#166534" : r >= 40 ? "#713f12" : "#881337";
-const RATE_BG    = (r: number) => r >= 65 ? "#f0fdf4" : r >= 40 ? "#fefce8" : "#fff1f2";
+const RATE_COLOR = (r: number) => r >= 65 ? "hsl(162 38% 38%)" : r >= 40 ? "hsl(34 55% 42%)" : "hsl(4 50% 45%)";
+const RATE_BG    = (r: number) => r >= 65 ? "hsl(162 38% 96%)" : r >= 40 ? "hsl(34 55% 96%)" : "hsl(4 50% 96%)";
 
 export default function TeacherDashboard() {
   const [data, setData]       = useState<DashboardData | null>(null);
@@ -114,7 +114,7 @@ export default function TeacherDashboard() {
                 {(["overview","students","gaps"] as const).map(t => (
                   <button key={t} onClick={()=>setTab(t)}
                     style={{padding:"6px 14px",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600,
-                      background:tab===t?"#7c3aed":"var(--color-background-secondary)",
+                      background:tab===t?"hsl(var(--primary))":"var(--color-background-secondary)",
                       color:tab===t?"#fff":"var(--color-text-secondary)"}}>
                     {t==="overview"?"📊 نظرة عامة":t==="students"?"👥 الطلاب":"🧠 الثغرات"}
                   </button>
@@ -143,13 +143,13 @@ function OverviewTab({ cls }: { cls: ClassData }) {
         {weak.length===0 ? <p style={{color:"var(--color-text-secondary)",fontSize:13}}>✅ لا توجد ثغرات جماعية مكتشفة</p> :
         weak.map((w,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:i<weak.length-1?"1px solid var(--color-border-tertiary)":"none"}}>
-            <div style={{minWidth:24,height:24,borderRadius:"50%",background:"#7c3aed",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700}}>{i+1}</div>
+            <div style={{minWidth:24,height:24,borderRadius:"50%",background:"hsl(var(--primary))",color:"hsl(var(--primary-foreground))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700}}>{i+1}</div>
             <div style={{flex:1}}>
               <div style={{fontSize:13,fontWeight:600}}>{w.concept.replace(/_/g," ")}</div>
               {w.pattern_name && <div style={{fontSize:11,color:"var(--color-text-secondary)"}}>{w.pattern_name}</div>}
             </div>
             <div style={{textAlign:"left"}}>
-              <div style={{fontSize:12,fontWeight:600,color:"#dc2626"}}>{w.students_affected} طالب</div>
+              <div style={{fontSize:12,fontWeight:600,color:"hsl(var(--destructive))"}}>{w.students_affected} طالب</div>
               <div style={{fontSize:10,color:"var(--color-text-secondary)"}}>متوسط {(w.avg_frequency||0).toFixed(1)}× إخفاق</div>
             </div>
           </div>
@@ -161,7 +161,7 @@ function OverviewTab({ cls }: { cls: ClassData }) {
           {danger.map(s=>(
             <div key={s.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid var(--color-border-tertiary)"}}>
               <span style={{fontSize:13,fontWeight:600}}>{s.name}</span>
-              <span style={{fontSize:12,color:"#dc2626"}}>{s.rate}% · {s.gap_count} ثغرة</span>
+              <span style={{fontSize:12,color:"hsl(var(--destructive))"}}>{s.rate}% · {s.gap_count} ثغرة</span>
             </div>
           ))}
         </Card>
@@ -180,7 +180,7 @@ function StudentsTab({ students }: { students: Student[] }) {
         <div key={s.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"1px solid var(--color-border-tertiary)"}}>
           <span style={{flex:2,fontSize:13}}>{STATUS[s.status]} {s.name}</span>
           <span style={{width:60,textAlign:"center",fontSize:12,fontWeight:700,color:RATE_COLOR(s.rate),background:RATE_BG(s.rate),padding:"2px 6px",borderRadius:8}}>{s.rate}%</span>
-          <span style={{width:50,textAlign:"center",fontSize:12,color:s.gap_count>3?"#dc2626":"var(--color-text-secondary)"}}>{s.gap_count}</span>
+          <span style={{width:50,textAlign:"center",fontSize:12,color:s.gap_count>3?"hsl(var(--destructive))":"var(--color-text-secondary)"}}>{s.gap_count}</span>
           <span style={{width:80,textAlign:"center",fontSize:11,color:"var(--color-text-secondary)"}}>{s.last_active}</span>
         </div>
       ))}
@@ -197,10 +197,10 @@ function GapsTab({ weaknesses }: { weaknesses: Weakness[] }) {
         <div key={i} style={{marginBottom:14}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
             <span style={{fontSize:13,fontWeight:600}}>{w.concept.replace(/_/g," ")}</span>
-            <span style={{fontSize:12,color:"#dc2626",fontWeight:600}}>{w.students_affected} طالب</span>
+            <span style={{fontSize:12,color:"hsl(var(--destructive))",fontWeight:600}}>{w.students_affected} طالب</span>
           </div>
           <div style={{height:8,background:"var(--color-border-tertiary)",borderRadius:4,overflow:"hidden"}}>
-            <div style={{height:"100%",width:`${100*w.students_affected/max}%`,background:"linear-gradient(90deg,#7c3aed,#dc2626)",borderRadius:4,transition:"width .4s"}}/>
+            <div style={{height:"100%",width:`${100*w.students_affected/max}%`,background:"linear-gradient(90deg,hsl(var(--primary)),hsl(var(--destructive)))",borderRadius:4,transition:"width .4s"}}/><br/>
           </div>
           {w.pattern_name && <div style={{fontSize:11,color:"var(--color-text-secondary)",marginTop:2}}>{w.pattern_name}</div>}
         </div>

@@ -130,7 +130,7 @@ export default function LearningPath() {
   return (
     <div className="bg-background" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-l from-emerald-400/25 via-teal-300/15 to-background border-b border-emerald-300/40 px-6 py-8">
+      <div className="border-b border-border px-6 py-8" style={{ background: "linear-gradient(to left, hsl(var(--geometry) / 0.12), hsl(var(--geometry) / 0.04), hsl(var(--background)))" }}>
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-3xl">📚</span>
