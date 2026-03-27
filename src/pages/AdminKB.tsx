@@ -137,6 +137,12 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     store.reload();
   };
 
+  const handleSaveToDB = async () => {
+    const ok = await store.saveAllToDB();
+    if (ok) alert(`✅ تم حفظ ${store.exercises.length} تمرين + ${store.patterns.length} نمط + ${store.deconstructions.length} تفكيك في قاعدة البيانات`);
+    else alert("❌ حدث خطأ أثناء الحفظ");
+  };
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ direction: "rtl" }}>
       <AdminSidebar
