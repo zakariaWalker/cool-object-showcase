@@ -30,6 +30,11 @@ export default function AITutor() {
   const [explanation, setExplanation] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
+  // KB-driven state
+  const [kbDecon, setKbDecon] = useState<any>(null);
+  const [kbPattern, setKbPattern] = useState<any>(null);
+  const [kbLoading, setKbLoading] = useState(false);
+
   useEffect(() => { loadExercises(); }, []);
 
   async function loadExercises() {
@@ -72,6 +77,36 @@ export default function AITutor() {
       setExplanation(`❌ خطأ: ${err.message}`);
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  // KB-driven: load deconstruction and pattern when exercise is selected
+  const loadKBData = async (exId: string) => {
+    setKbLoading(true);
+    setKbDecon(null);
+    setKbPattern(null);
+    try {
+      const { data: deconData } = await (supabase as any)
+        .from("kb_deconstructions")
+        .select("*")
+        .eq("exercise_id", exId)
+        .limit(1)
+        .single();
+      if (deconData) {
+        setKbDecon(deconData);
+        if (deconData.pattern_id) {
+          const { data: patData } = await (supabase as any)
+            .from("kb_patterns")
+            .select("*")
+            .eq("id", deconData.pattern_id)
+            .single();
+          if (patData) setKbPattern(patData);
+        }
+      }
+    } catch (e) {
+      console.error("KB load error:", e);
+    } finally {
+      setKbLoading(false);
     }
   };
 
@@ -142,7 +177,7 @@ export default function AITutor() {
 
             <div className="overflow-y-auto space-y-1.5" style={{ maxHeight: "calc(100vh - 380px)" }}>
               {filtered.map(ex => (
-                <div key={ex.id} onClick={() => { setSelectedEx(ex); setExplanation(""); }}
+                <div key={ex.id} onClick={() => { setSelectedEx(ex); setExplanation(""); loadKBData(ex.id); }}
                   className="p-3 rounded-lg cursor-pointer transition-all text-sm border"
                   style={{
                     background: selectedEx?.id === ex.id ? "hsl(var(--primary) / 0.08)" : "hsl(var(--card))",
@@ -173,46 +208,117 @@ export default function AITutor() {
                   </div>
                 </div>
 
-                {/* Controls */}
-                <div className="p-4 rounded-xl border border-border bg-card">
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div>
-                      <label className="text-[10px] font-bold text-muted-foreground block mb-1">المستوى</label>
-                      <select value={studentLevel} onChange={e => setStudentLevel(e.target.value as any)}
-                        className="w-full px-2 py-2 rounded-lg border border-border bg-background text-foreground text-xs">
-                        <option value="beginner">مبتدئ</option>
-                        <option value="intermediate">متوسط</option>
-                        <option value="advanced">متقدم</option>
-                      </select>
+                {/* KB Deconstruction (no AI needed) */}
+                {kbLoading ? (
+                  <div className="p-6 rounded-xl border border-border bg-card flex items-center justify-center gap-3">
+                    <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
+                    <span className="text-sm text-muted-foreground">جاري تحميل التفكيك من قاعدة المعارف...</span>
+                  </div>
+                ) : kbDecon && kbDecon.steps && kbDecon.steps.length > 0 ? (
+                  <div className="p-5 rounded-xl border border-primary/20 bg-primary/5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">📖</span>
+                        <h3 className="text-sm font-bold text-primary">خطوات الحل من قاعدة المعارف</h3>
+                      </div>
+                      {kbPattern && (
+                        <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary font-bold">
+                          النمط: {kbPattern.name}
+                        </span>
+                      )}
                     </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-muted-foreground block mb-1">الوضع</label>
-                      <select value={mode} onChange={e => setMode(e.target.value as any)}
-                        className="w-full px-2 py-2 rounded-lg border border-border bg-background text-foreground text-xs">
-                        <option value="solve">حل كامل</option>
-                        <option value="hint">تلميح فقط</option>
-                        <option value="errors">الأخطاء الشائعة</option>
-                      </select>
+
+                    {kbPattern?.description && (
+                      <p className="text-xs text-muted-foreground mb-4 border-r-2 border-primary/30 pr-3">{kbPattern.description}</p>
+                    )}
+
+                    <div className="space-y-3">
+                      {kbDecon.steps.map((step: string, i: number) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">{i + 1}</div>
+                          <div className="text-sm text-foreground leading-relaxed flex-1">{step}</div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex items-end gap-2 col-span-3 mt-2">
-                      <button onClick={askTutor} disabled={aiLoading}
-                        className="flex-1 py-2.5 rounded-lg text-xs font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all disabled:opacity-50">
-                        {aiLoading ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <div className="animate-spin w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full" />
-                            جاري الشرح...
-                          </span>
-                        ) : "🤖 اشرح لي بخطوة بخطوة"}
-                      </button>
-                      <a href={`/solve/${selectedEx.id}`}
-                        className="flex-1 py-2.5 rounded-lg text-xs font-bold text-center text-foreground border-2 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all">
-                        ✍️ حل تفاعلي (تجريبي)
-                      </a>
+
+                    {kbDecon.needs && kbDecon.needs.length > 0 && (
+                      <div className="mt-4 pt-3 border-t border-primary/10">
+                        <h4 className="text-[10px] font-bold text-muted-foreground mb-2 uppercase tracking-wider">المتطلبات المسبقة</h4>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {kbDecon.needs.map((need: string, i: number) => (
+                            <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-medium">{need}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {kbPattern?.concepts && kbPattern.concepts.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-primary/10">
+                        <h4 className="text-[10px] font-bold text-muted-foreground mb-2 uppercase tracking-wider">المفاهيم الأساسية</h4>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {kbPattern.concepts.map((c: string, i: number) => (
+                            <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">{c}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {kbDecon.notes && (
+                      <p className="text-[11px] text-muted-foreground mt-3 italic">📝 {kbDecon.notes}</p>
+                    )}
+
+                    <a href={`/solve/${selectedEx.id}`}
+                      className="mt-4 block w-full py-2.5 rounded-lg text-sm font-bold text-center text-primary-foreground bg-primary hover:opacity-90 transition-all shadow-lg shadow-primary/20">
+                      ✍️ حل هذا التمرين تفاعلياً
+                    </a>
+                  </div>
+                ) : !kbLoading ? (
+                  <div className="p-4 rounded-xl border border-border bg-card text-center">
+                    <p className="text-xs text-muted-foreground">لم يتم تفكيك هذا التمرين في قاعدة المعارف بعد.</p>
+                  </div>
+                ) : null}
+
+                {/* AI Controls (optional fallback) */}
+                <details className="rounded-xl border border-border bg-card overflow-hidden">
+                  <summary className="px-4 py-3 cursor-pointer text-xs font-bold text-muted-foreground hover:text-foreground transition-colors">
+                    🤖 شرح إضافي بالذكاء الاصطناعي (اختياري)
+                  </summary>
+                  <div className="p-4 border-t border-border">
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground block mb-1">المستوى</label>
+                        <select value={studentLevel} onChange={e => setStudentLevel(e.target.value as any)}
+                          className="w-full px-2 py-2 rounded-lg border border-border bg-background text-foreground text-xs">
+                          <option value="beginner">مبتدئ</option>
+                          <option value="intermediate">متوسط</option>
+                          <option value="advanced">متقدم</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground block mb-1">الوضع</label>
+                        <select value={mode} onChange={e => setMode(e.target.value as any)}
+                          className="w-full px-2 py-2 rounded-lg border border-border bg-background text-foreground text-xs">
+                          <option value="solve">حل كامل</option>
+                          <option value="hint">تلميح فقط</option>
+                          <option value="errors">الأخطاء الشائعة</option>
+                        </select>
+                      </div>
+                      <div className="flex items-end">
+                        <button onClick={askTutor} disabled={aiLoading}
+                          className="w-full py-2.5 rounded-lg text-xs font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all disabled:opacity-50">
+                          {aiLoading ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <div className="animate-spin w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full" />
+                              جاري الشرح...
+                            </span>
+                          ) : "🤖 اشرح لي"}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </details>
 
-                {/* Explanation */}
+                {/* AI Explanation */}
                 {explanation && (
                   <div className="p-6 rounded-xl border border-primary/20 bg-primary/5 overflow-y-auto" style={{ maxHeight: "calc(100vh - 520px)" }}>
                     <div className="flex items-center gap-2 mb-4">
