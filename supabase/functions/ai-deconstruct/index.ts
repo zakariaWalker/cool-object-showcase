@@ -136,7 +136,7 @@ ${e.text}`).join("\n\n")}
       for (const d of deconstructions) {
         // If new pattern suggested, create it
         if (d.new_pattern && d.new_pattern.name) {
-          const newPatId = `aip_ai_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+          const newPatId = crypto.randomUUID();
           await db.from("kb_patterns").upsert({
             id: newPatId,
             name: d.new_pattern.name,

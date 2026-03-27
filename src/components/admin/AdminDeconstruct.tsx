@@ -88,7 +88,7 @@ export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, 
   const handleSave = () => {
     if (!selectedExId) return;
     onAdd({
-      id: `decon_${Date.now()}`,
+      id: crypto.randomUUID(),
       exerciseId: selectedExId,
       patternId: selectedPatId || "",
       needs: [],

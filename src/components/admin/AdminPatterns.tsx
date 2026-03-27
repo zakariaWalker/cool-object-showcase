@@ -81,7 +81,7 @@ export function AdminPatterns({ patterns, onAdd, onUpdate, onDelete, reload }: P
   const handleCreate = () => {
     if (!newName.trim()) return;
     onAdd({
-      id: `pat_${Date.now()}`,
+      id: crypto.randomUUID(),
       name: newName,
       type: newType,
       description: newDescription,

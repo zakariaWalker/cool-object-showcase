@@ -264,9 +264,31 @@ export function useAdminKBStore() {
   }, []);
 
   const importData = useCallback((data: { exercises?: Exercise[]; patterns?: Pattern[]; deconstructions?: Deconstruction[] }) => {
-    if (data.exercises) { setExercises(data.exercises); setLoaded(true); }
-    if (data.patterns) setPatterns(prev => [...prev, ...data.patterns!]);
-    if (data.deconstructions) setDeconstructions(prev => [...prev, ...data.deconstructions!]);
+    const idMap = new Map<string, string>();
+    const resolveId = (oldId: string) => {
+      if (!oldId || isUUID(oldId)) return oldId;
+      if (!idMap.has(oldId)) idMap.set(oldId, crypto.randomUUID());
+      return idMap.get(oldId)!;
+    };
+
+    if (data.exercises) {
+      const mapped = data.exercises.map(e => ({ ...e, id: resolveId(e.id) }));
+      setExercises(mapped);
+      setLoaded(true);
+    }
+    if (data.patterns) {
+      const mapped = data.patterns.map(p => ({ ...p, id: resolveId(p.id) }));
+      setPatterns(prev => [...prev.filter(p => !mapped.some(m => m.id === p.id)), ...mapped]);
+    }
+    if (data.deconstructions) {
+      const mapped = data.deconstructions.map(d => ({
+        ...d,
+        id: resolveId(d.id),
+        exerciseId: resolveId(d.exerciseId),
+        patternId: resolveId(d.patternId)
+      }));
+      setDeconstructions(prev => [...prev.filter(d => !mapped.some(m => m.id === d.id)), ...mapped]);
+    }
   }, []);
 
   const saveAllToDB = useCallback(async () => {
