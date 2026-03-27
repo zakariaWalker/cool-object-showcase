@@ -127,6 +127,24 @@ export function useAdminKBStore() {
         setLoaded(true);
       }
 
+      // Paginate deconstructions
+      const allDeconstructions: any[] = [];
+      let deconFrom = 0;
+      while (true) {
+        const { data, error } = await (supabase as any)
+          .from("kb_deconstructions")
+          .select("*")
+          .order("created_at")
+          .range(deconFrom, deconFrom + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allDeconstructions.push(...data);
+        if (data.length < PAGE) break;
+        deconFrom += PAGE;
+      }
+
+      const patRes = await (supabase as any).from("kb_patterns").select("*").order("created_at");
+
       if (patRes.data) {
         setPatterns(patRes.data.map((p: any) => ({
           id: p.id,
