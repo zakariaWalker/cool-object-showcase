@@ -11,6 +11,8 @@ import { ImadrassaExercise } from "@/engine/dataset-types";
 import { ParsedExercise } from "@/engine/exercise-parser";
 import { Domain } from "@/engine/types";
 import { getProgressRemote, getGapsRemote, syncLocalToSupabase } from "@/engine/progress-store";
+import { useProfile, PROFILES } from "@/engine/profile-store";
+import { DiagnosticProfiler } from "./DiagnosticProfiler";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -109,62 +111,7 @@ const SEV_COLOR = { high: "hsl(var(--destructive))", medium: "hsl(var(--accent))
 const SEV_BG    = { high: "hsl(var(--destructive) / 0.08)", medium: "hsl(var(--accent) / 0.08)", low: "hsl(var(--geometry) / 0.05)" };
 const SEV_AR    = { high: "ثغرة حرجة", medium: "ثغرة متوسطة", low: "ثغرة بسيطة" };
 
-// ─── Diagnostic Quiz questions — curated from DZ KB ───────────────────────
-
-const DIAGNOSTIC_QUESTIONS: {
-  id: string; concept: string; domain: string;
-  question: string; correct: string; wrong: [string, string, string];
-  explanation: string;
-}[] = [
-  {
-    id: "d1", concept: "عزل_مجهول", domain: "algebra",
-    question: "حل المعادلة: 2x + 6 = 14",
-    correct: "x = 4", wrong: ["x = 10", "x = 3", "x = 7"],
-    explanation: "ننقل 6 للجهة اليمنى: 2x = 14 − 6 = 8، ثم نقسم على 2: x = 4",
-  },
-  {
-    id: "d2", concept: "تحليل", domain: "algebra",
-    question: "حلّل: x² − 9",
-    correct: "(x−3)(x+3)", wrong: ["(x−3)²", "(x+9)(x−1)", "x(x−9)"],
-    explanation: "هوية الفرق بين مربعين: a²−b² = (a−b)(a+b)، هنا a=x و b=3",
-  },
-  {
-    id: "d3", concept: "نظرية_فيثاغورس", domain: "geometry",
-    question: "مثلث قائم، الساقان 3 و 4. ما الوتر؟",
-    correct: "5", wrong: ["7", "√7", "12"],
-    explanation: "BC² = AB² + AC² = 9 + 16 = 25، إذن BC = 5",
-  },
-  {
-    id: "d4", concept: "توحيد_مقامات", domain: "algebra",
-    question: "احسب: 1/3 + 1/6",
-    correct: "1/2", wrong: ["2/9", "2/3", "1/4"],
-    explanation: "المضاعف المشترك هو 6: 2/6 + 1/6 = 3/6 = 1/2",
-  },
-  {
-    id: "d5", concept: "وسط_حسابي", domain: "statistics",
-    question: "ما متوسط: 4، 8، 6، 10، 2؟",
-    correct: "6", wrong: ["5", "7", "8"],
-    explanation: "المجموع = 30، العدد = 5، إذن الوسط = 30÷5 = 6",
-  },
-  {
-    id: "d6", concept: "احتمال", domain: "probability",
-    question: "نرمي قطعة نقود. ما احتمال الحصول على وجه؟",
-    correct: "1/2", wrong: ["1/4", "2/3", "1"],
-    explanation: "الفضاء = {وجه، ظهر}، الحالات المواتية = 1، إذن P = 1/2",
-  },
-  {
-    id: "d7", concept: "توزيع", domain: "algebra",
-    question: "انشر: 3(x + 4)",
-    correct: "3x + 12", wrong: ["3x + 4", "x + 12", "3x × 4"],
-    explanation: "نضرب 3 في كل حد: 3×x = 3x و 3×4 = 12",
-  },
-  {
-    id: "d8", concept: "مساحة", domain: "geometry",
-    question: "مساحة مستطيل طوله 8 وعرضه 5؟",
-    correct: "40", wrong: ["26", "13", "80"],
-    explanation: "المساحة = الطول × العرض = 8 × 5 = 40",
-  },
-];
+// Diagnostic questions moved to profile-store.ts and DiagnosticProfiler.tsx
 
 // ─── 1. كاشف الثغرات ─────────────────────────────────────────────────────────
 
@@ -173,11 +120,8 @@ function GapDetector() {
   const [kbGaps, setKbGaps] = useState<KBGap[]>([]);
   const [expandedGap, setExpandedGap] = useState<string | null>(null);
 
-  // Diagnostic quiz state
+  const { profile } = useProfile();
   const [quizMode, setQuizMode] = useState(false);
-  const [qIndex, setQIndex] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [quizAnswers, setQuizAnswers] = useState<{ id: string; correct: boolean; concept: string }[]>([]);
   const [quizDone, setQuizDone] = useState(false);
 
   useEffect(() => {
@@ -207,169 +151,17 @@ function GapDetector() {
     load();
   }, [quizDone]);
 
-  // Quiz helpers
-  const q = DIAGNOSTIC_QUESTIONS[qIndex];
-  const shuffledChoices = q ? (() => {
-    const pool = [q.correct, ...q.wrong];
-    const seed = q.id.charCodeAt(1);
-    return pool.sort((a, b) => ((a.charCodeAt(0) * 17 + seed) % 11) - ((b.charCodeAt(0) * 17 + seed) % 11));
-  })() : [];
-
-  function handleQuizAnswer(choice: string) {
-    if (selected) return;
-    setSelected(choice);
-    const isCorrect = choice === q.correct;
-    const newAnswers = [...quizAnswers, { id: q.id, correct: isCorrect, concept: q.concept }];
-    setQuizAnswers(newAnswers);
-    setTimeout(() => {
-      if (qIndex + 1 < DIAGNOSTIC_QUESTIONS.length) {
-        setQIndex(qIndex + 1);
-        setSelected(null);
-      } else {
-        setQuizDone(true);
-        // Persist results to progress store
-        newAnswers.forEach(a => {
-          try {
-            const raw = localStorage.getItem("qed_progress_v1");
-            const prog = raw ? JSON.parse(raw) : { records: [], streak: 0, totalSolved: 0, byDomain: {} };
-            prog.records.push({ domain: "algebra", subdomain: a.concept, correct: a.correct, timestamp: Date.now(), input: a.id });
-            prog.totalSolved = (prog.totalSolved || 0) + 1;
-            localStorage.setItem("qed_progress_v1", JSON.stringify(prog));
-          } catch {}
-        });
-      }
-    }, 1200);
-  }
-
   function resetQuiz() {
-    setQuizMode(false); setQIndex(0); setSelected(null);
-    setQuizAnswers([]); setQuizDone(false);
+    setQuizMode(false);
+    setQuizDone(false);
   }
 
   const noData = gaps.length === 0 && kbGaps.length === 0;
 
   // ── Quiz Mode UI ──────────────────────────────────────────────────────────
-  if (quizMode && !quizDone) {
-    const progress = ((qIndex) / DIAGNOSTIC_QUESTIONS.length) * 100;
+  if (quizMode) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {/* Progress */}
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "hsl(var(--primary))" }}>
-              التقييم التشخيصي
-            </span>
-            <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
-              {qIndex + 1} / {DIAGNOSTIC_QUESTIONS.length}
-            </span>
-          </div>
-          <div style={{ height: 6, background: "hsl(var(--border))", borderRadius: 3, overflow: "hidden" }}>
-            <motion.div
-              animate={{ width: `${progress}%` }}
-              style={{ height: "100%", background: "linear-gradient(90deg, #4F46E5, #7C3AED)", borderRadius: 3 }}
-            />
-          </div>
-        </div>
-
-        {/* Concept badge */}
-        <Chip color="hsl(var(--primary))" bg="hsl(var(--primary) / 0.1)">{label(q.concept)}</Chip>
-
-        {/* Question */}
-        <div style={{ background: "hsl(var(--card))", borderRadius: 14, padding: "16px", border: "1.5px solid #E5E7EB", fontSize: 15, fontWeight: 700, color: "hsl(var(--foreground))", lineHeight: 1.8, direction: "rtl" }}>
-          {q.question}
-        </div>
-
-        {/* Choices */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {shuffledChoices.map((choice, i) => {
-            const isCorrect = choice === q.correct;
-            const isSelected = selected === choice;
-            let bg = "hsl(var(--card))", border = "hsl(var(--border))", color = "hsl(var(--foreground))";
-            if (selected) {
-              if (isCorrect) { bg = "hsl(var(--geometry) / 0.08)"; border = "hsl(var(--geometry) / 0.6)"; color = "hsl(var(--geometry))"; }
-              else if (isSelected) { bg = "hsl(var(--destructive) / 0.08)"; border = "hsl(var(--destructive) / 0.7)"; color = "hsl(var(--destructive))"; }
-              else { bg = "hsl(var(--card))"; border = "hsl(var(--border))"; color = "hsl(var(--muted-foreground))"; }
-            } else if (isSelected) { bg = "hsl(var(--primary) / 0.1)"; border = "hsl(var(--primary))"; color = "hsl(var(--primary))"; }
-            return (
-              <motion.button
-                key={i} whileTap={{ scale: 0.97 }}
-                onClick={() => handleQuizAnswer(choice)}
-                style={{ background: bg, border: `2px solid ${border}`, borderRadius: 12, padding: "13px 14px", fontSize: 14, fontWeight: 600, color, cursor: selected ? "default" : "pointer", textAlign: "right", fontFamily: "'Tajawal',sans-serif", display: "flex", alignItems: "center", gap: 10, transition: "all 0.2s" }}
-              >
-                {selected && (
-                  <span style={{ fontSize: 16 }}>{isCorrect ? "✅" : isSelected ? "❌" : "○"}</span>
-                )}
-                {choice}
-              </motion.button>
-            );
-          })}
-        </div>
-
-        {/* Explanation after answer */}
-        {selected && (
-          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-            style={{ background: "hsl(var(--accent) / 0.08)", border: "1px solid #FDE68A", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "hsl(var(--accent))", lineHeight: 1.7 }}>
-            💡 {q.explanation}
-          </motion.div>
-        )}
-
-        <button onClick={resetQuiz} style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", background: "none", border: "none", cursor: "pointer", fontFamily: "'Tajawal',sans-serif" }}>
-          إلغاء التقييم ✕
-        </button>
-      </div>
-    );
-  }
-
-  // ── Quiz Done UI ──────────────────────────────────────────────────────────
-  if (quizMode && quizDone) {
-    const score = quizAnswers.filter(a => a.correct).length;
-    const total = quizAnswers.length;
-    const weakConcepts = quizAnswers.filter(a => !a.correct).map(a => a.concept);
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {/* Score */}
-        <div style={{ background: score >= total * 0.7 ? "hsl(var(--geometry) / 0.08)" : "hsl(var(--destructive) / 0.08)", borderRadius: 14, padding: "18px", textAlign: "center", border: `1px solid ${score >= total * 0.7 ? "hsl(var(--geometry) / 0.3)" : "hsl(var(--destructive) / 0.2)"}` }}>
-          <div style={{ fontSize: 36 }}>{score >= total * 0.7 ? "🎉" : "💪"}</div>
-          <p style={{ fontSize: 20, fontWeight: 900, color: score >= total * 0.7 ? "hsl(var(--geometry))" : "hsl(var(--destructive))", margin: "8px 0 4px" }}>
-            {score} / {total}
-          </p>
-          <p style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", margin: 0 }}>
-            {score >= total * 0.7 ? "ممتاز! مستواك جيد جداً" : "لا بأس — شاهد ثغراتك أدناه"}
-          </p>
-        </div>
-
-        {/* Weak concepts */}
-        {weakConcepts.length > 0 && (
-          <div style={{ background: "hsl(var(--accent) / 0.06)", borderRadius: 12, padding: "12px 14px", border: "1px solid #FED7AA" }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: "hsl(var(--accent))", margin: "0 0 8px 0" }}>
-              ⚠️ مفاهيم تحتاج مراجعة
-            </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {weakConcepts.map(c => <Chip key={c} color="hsl(var(--accent))" bg="hsl(var(--destructive) / 0.08)">{label(c)}</Chip>)}
-            </div>
-          </div>
-        )}
-
-        {/* Detail per question */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {quizAnswers.map((a, i) => (
-            <div key={a.id} style={{ display: "flex", gap: 8, alignItems: "center", background: "hsl(var(--card))", borderRadius: 10, padding: "8px 12px", border: `1px solid ${a.correct ? "hsl(var(--geometry) / 0.15)" : "hsl(var(--destructive) / 0.12)"}` }}>
-              <span style={{ fontSize: 14 }}>{a.correct ? "✅" : "❌"}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", flex: 1 }}>
-                {DIAGNOSTIC_QUESTIONS[i]?.question.slice(0, 40)}...
-              </span>
-              <Chip color={a.correct ? "hsl(var(--geometry))" : "hsl(var(--destructive))"} bg={a.correct ? "hsl(var(--geometry) / 0.15)" : "hsl(var(--destructive) / 0.12)"}>
-                {label(a.concept)}
-              </Chip>
-            </div>
-          ))}
-        </div>
-
-        <button onClick={resetQuiz}
-          style={{ background: "linear-gradient(135deg,#7B75CC,#9B7BC4)", color: "hsl(var(--card))", border: "none", borderRadius: 12, padding: "12px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal',sans-serif" }}>
-          🔄 أعد التقييم
-        </button>
-      </div>
+      <DiagnosticProfiler onClose={() => { setQuizMode(false); setQuizDone(true); }} />
     );
   }
 
@@ -377,15 +169,25 @@ function GapDetector() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", margin: 0, lineHeight: 1.7 }}>
-        يحلل إجاباتك ويكشف الثغرات — أو ابدأ التقييم التشخيصي المدروس.
+        يحلل طريقتك في الحل ويكشف "بنيتك الذهنية" — أو ابدأ التشخيص الآن.
       </p>
+
+      {profile && (
+        <div style={{ background: "hsl(var(--primary) / 0.07)", border: "1.5px solid hsl(var(--primary) / 0.3)", borderRadius: 14, padding: "14px 16px", display: "flex", gap: 12, alignItems: "center" }}>
+          <div style={{ fontSize: 24 }}>{PROFILES[profile].id === 'strategic' ? '🎯' : PROFILES[profile].id === 'conceptual' ? '💡' : PROFILES[profile].id === 'procedural' ? '📋' : '⚡'}</div>
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 800, color: "hsl(var(--primary))", margin: 0, textTransform: "uppercase" }}>نمط تفكيرك الحالي:</p>
+            <p style={{ fontSize: 15, fontWeight: 900, color: "hsl(var(--foreground))", margin: "2px 0" }}>{PROFILES[profile].title}</p>
+          </div>
+        </div>
+      )}
 
       {/* Start diagnostic button */}
       <button
-        onClick={() => { setQuizMode(true); setQIndex(0); setSelected(null); setQuizAnswers([]); setQuizDone(false); }}
+        onClick={() => { setQuizMode(true); setQuizDone(false); }}
         style={{ background: "linear-gradient(135deg,#7B75CC,#9B7BC4)", color: "hsl(var(--card))", border: "none", borderRadius: 12, padding: "13px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "'Tajawal',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
       >
-        🧪 ابدأ التقييم التشخيصي — {DIAGNOSTIC_QUESTIONS.length} أسئلة
+        🧠 {profile ? "أعد تشخيص طريقة التفكير" : "ابدأ تشخيص طريقة التفكير (Psych Profile)"}
       </button>
 
       {noData && (

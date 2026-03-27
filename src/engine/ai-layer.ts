@@ -2,6 +2,8 @@
 // Local engines solve — NVIDIA NIM only explains in natural language.
 // NIM API is OpenAI-compatible: POST to /v1/chat/completions.
 
+import { getProfile, PROFILES } from "./profile-store";
+
 const NIM_ENDPOINT = "https://integrate.api.nvidia.com/v1/chat/completions";
 const NIM_MODEL = "meta/llama-3.3-70b-instruct"; // best open model on NIM
 
@@ -16,9 +18,18 @@ export function getApiKey(): string | null {
   return _apiKey || localStorage.getItem("nim_api_key");
 }
 
+function getSystemModifier(): string {
+  const pId = getProfile();
+  if (!pId) return "";
+  const p = PROFILES[pId];
+  return `\n\n[STUDENT COGNITIVE PROFILE: ${p.id.toUpperCase()}]\nPedagogical Instruction: ${p.systemPromptModifier}`;
+}
+
 async function callNIM(systemPrompt: string, userContent: string): Promise<string> {
   const key = getApiKey();
   if (!key) throw new Error("Clé API NVIDIA NIM manquante");
+
+  const fullSystemPrompt = systemPrompt + getSystemModifier();
 
   const res = await fetch(NIM_ENDPOINT, {
     method: "POST",
@@ -29,11 +40,11 @@ async function callNIM(systemPrompt: string, userContent: string): Promise<strin
     body: JSON.stringify({
       model: NIM_MODEL,
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: fullSystemPrompt },
         { role: "user", content: userContent },
       ],
       temperature: 0.4,
-      max_tokens: 600,
+      max_tokens: 1000,
     }),
   });
 

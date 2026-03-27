@@ -14,6 +14,7 @@ import { SolveResult, Domain, StatisticsResult, ProbabilityResult } from "@/engi
 import { GeometryProblem, GeometrySolveResult } from "@/engine/geometry/types";
 import { FunctionAnalysis } from "@/engine/functions-engine";
 import { recordExercise } from "@/engine/progress-store";
+import { useProfile, PROFILES } from "@/engine/profile-store";
 import { astToLatex } from "@/engine/ast-utils";
 import { ExerciseInput } from "./ExerciseInput";
 import { ExerciseResult } from "./ExerciseResult";
@@ -65,6 +66,7 @@ export function ExerciseWorkspace({
   const [trainingGap, setTrainingGap] = useState<KnowledgeGap | null>(null);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
+  const { profile } = useProfile();
 
   // Sync state if prop changes (e.g. from Index/URL)
   useEffect(() => {
@@ -467,6 +469,17 @@ export function ExerciseWorkspace({
             </div>
           </div>
 
+          <div className="flex-1 flex flex-col min-w-0" style={{ gap: 20 }}>
+          {profile && (
+            <div style={{ background: "hsl(var(--card))", borderRadius: 16, padding: "16px 20px", border: "1px solid hsl(var(--primary)/0.2)", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", display: "flex", gap: 16, alignItems: "center" }} dir="rtl">
+              <div style={{ fontSize: 32 }}>{PROFILES[profile].id === 'strategic' ? '🎯' : PROFILES[profile].id === 'conceptual' ? '💡' : PROFILES[profile].id === 'procedural' ? '📋' : '⚡'}</div>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 800, color: "hsl(var(--primary))", margin: 0, textTransform: "uppercase" }}>المهمة الحالية ({PROFILES[profile].title}):</p>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))", margin: "2px 0 0 0", lineHeight: 1.5 }}>{PROFILES[profile].nextMission}</p>
+              </div>
+            </div>
+          )}
+
           {inputMode === "library" && <ExerciseLibrary onSelectExercise={handleDatasetExercise} />}
           {inputMode === "text" && <ExerciseInput onParsed={handleParsed} error={error} />}
           {inputMode === "dataset" && <DatasetBrowser onSelectExercise={handleDatasetExercise} />}
@@ -478,9 +491,10 @@ export function ExerciseWorkspace({
               <FreeDeconstruct />
             </div>
           )}
-          </>
-          )}
-        </div>
+          </div>
+        </>
+      )}
+    </div>
 
         {/* Center — results */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>

@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>محلل طريقة التفكير</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Mono:wght@300;400;500&family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c24;
+    --border: #252a35;
+    --border-bright: #353d50;
+    --amber: #f59e0b;
+    --amber-dim: #92600a;
+    --cyan: #22d3ee;
+    --cyan-dim: #0e5f6e;
+    --green: #4ade80;
+    --green-dim: #166534;
+    --red: #f87171;
+    --red-dim: #7f1d1d;
+    --purple: #a78bfa;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+    --mono: 'IBM Plex Mono', monospace;
+    --arabic: 'Cairo', sans-serif;
+    --display: 'Amiri', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--arabic);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(34,211,238,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,211,238,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(245,158,11,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(34,211,238,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+    animation: bgshift 20s ease-in-out infinite alternate;
+  }
+
+  @keyframes bgshift {
+    from { transform: translate(0,0); }
+    to   { transform: translate(2%, 2%); }
+  }
+
+  #app { position: relative; z-index: 1; }
+
+  /* ─── HEADER ─── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(10,12,16,0.8);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    border: 1.5px solid var(--amber);
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--amber);
+    font-weight: 500;
+  }
+
+  .logo-text {
+    font-family: var(--display);
+    font-size: 22px;
+    letter-spacing: 0.02em;
+    color: var(--text);
+  }
+
+  .logo-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+
+  /* ─── PROGRESS BAR ─── */
+  .progress-track {
+    height: 2px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--amber), var(--cyan));
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -2px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan);
+  }
+
+  /* ─── MAIN LAYOUT ─── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+
+  /* ─── SCREENS ─── */
+  .screen { display: none; }
+  .screen.active {
+    display: block;
+    animation: fadeIn 0.4s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── INTRO SCREEN ─── */
+  .intro-hero {
+    text-align: center;
+    padding: 40px 0 60px;
+  }
+
+  .intro-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border-bright);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .intro-badge span { color: var(--amber); }
+
+  .intro-title {
+    font-family: var(--display);
+    font-size: clamp(36px, 6vw, 60px);
+    line-height: 1.15;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, var(--text) 30%, var(--amber) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .intro-sub {
+    font-size: 16px;
+    color: var(--text-dim);
+    max-width: 500px;
+    margin: 0 auto 48px;
+    line-height: 1.7;
+  }
+
+  /* Profile cards */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  @media (min-width: 600px) {
+    .profile-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .profile-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    background: var(--surface);
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .profile-card:hover {
+    border-color: var(--border-bright);
+    transform: translateY(-2px);
+  }
+
+  .profile-card .icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .profile-card .name {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .profile-card .desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .card-reactive  { border-color: rgba(248,113,113,0.3); }
+  .card-reactive .name  { color: var(--red); }
+  .card-procedural { border-color: rgba(245,158,11,0.3); }
+  .card-procedural .name { color: var(--amber); }
+  .card-conceptual { border-color: rgba(34,211,238,0.3); }
+  .card-conceptual .name { color: var(--cyan); }
+  .card-strategic  { border-color: rgba(74,222,128,0.3); }
+  .card-strategic .name  { color: var(--green); }
+
+  /* ─── STEP INDICATORS ─── */
+  .steps-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 48px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    position: relative;
+  }
+
+  .step-item:not(:last-child)::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    margin: 0 8px;
+  }
+
+  .step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-bright);
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+
+  .step-item.done .step-num {
+    background: var(--amber);
+    border-color: var(--amber);
+    color: var(--bg);
+  }
+
+  .step-item.active .step-num {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    box-shadow: 0 0 12px rgba(34,211,238,0.3);
+  }
+
+  .step-label {
+    color: var(--text-muted);
+    white-space: nowrap;
+    transition: color 0.3s;
+  }
+
+  .step-item.active .step-label { color: var(--text); }
+  .step-item.done  .step-label  { color: var(--text-dim); }
+
+  /* ─── EXERCISE CARD ─── */
+  .ex-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .ex-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ex-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid;
+  }
+
+  .badge-standard  { border-color: rgba(245,158,11,0.4); color: var(--amber); background: rgba(245,158,11,0.07); }
+  .badge-trap      { border-color: rgba(248,113,113,0.4); color: var(--red);   background: rgba(248,113,113,0.07); }
+  .badge-open      { border-color: rgba(167,139,250,0.4); color: var(--purple);background: rgba(167,139,250,0.07); }
+  .badge-logic     { border-color: rgba(34,211,238,0.4); color: var(--cyan);  background: rgba(34,211,238,0.07); }
+
+  .ex-number {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .timer-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--cyan);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 18px;
+  }
+
+  .timer-display .t-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .timer-col { display: flex; flex-direction: column; align-items: center; }
+
+  /* Problem statement */
+  .problem-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-right: 3px solid var(--amber);
+    border-radius: 12px;
+    padding: 28px 24px;
+    margin-bottom: 28px;
+    position: relative;
+  }
+
+  .problem-box::before {
+    content: 'السؤال';
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    background: var(--surface2);
+    padding: 0 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .problem-text {
+    font-family: var(--display);
+    font-size: 22px;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .problem-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Answer area */
+  .answer-section { margin-bottom: 24px; }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .answer-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    direction: ltr;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+
+  .answer-input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(34,211,238,0.1);
+  }
+
+  textarea.answer-input {
+    resize: vertical;
+    min-height: 80px;
+    text-align: right;
+    direction: rtl;
+    font-family: var(--arabic);
+    font-size: 14px;
+    line-height: 1.7;
+    letter-spacing: 0;
+  }
+
+  /* MCQ options */
+  .mcq-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .mcq-option {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    cursor: pointer;
+    font-size: 14px;
+    background: var(--surface2);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: right;
+  }
+
+  .mcq-option:hover {
+    border-color: var(--border-bright);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .mcq-option.selected {
+    border-color: var(--cyan);
+    background: rgba(34,211,238,0.08);
+    color: var(--cyan);
+  }
+
+  .mcq-letter {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    min-width: 20px;
+  }
+
+  .mcq-option.selected .mcq-letter { color: var(--cyan); }
+
+  /* Hint btn */
+  .hint-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: var(--text-muted);
+    font-family: var(--arabic);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+  }
+
+  .hint-btn:hover {
+    border-color: var(--amber-dim);
+    color: var(--amber);
+  }
+
+  .hint-box {
+    background: rgba(245,158,11,0.07);
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--amber);
+    margin-bottom: 20px;
+    display: none;
+    line-height: 1.6;
+  }
+
+  /* Explanation section */
+  .explain-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .explain-label {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text-dim);
+  }
+
+  .explain-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  /* Confidence slider */
+  .confidence-row {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .conf-label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    flex: 1;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--amber);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 8px rgba(245,158,11,0.5);
+    cursor: pointer;
+  }
+
+  .conf-value {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--amber);
+    min-width: 32px;
+    text-align: center;
+  }
+
+  /* Attempt counter */
+  .attempt-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .attempt-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border-bright);
+    transition: background 0.2s;
+  }
+
+  .attempt-dot.used { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+
+  /* ─── BUTTONS ─── */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--amber), #d97706);
+    color: #0a0c10;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 28px;
+    font-family: var(--arabic);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(245,158,11,0.35);
+  }
+
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border-bright);
+    border-radius: 10px;
+    padding: 14px 24px;
+    font-family: var(--arabic);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover { border-color: var(--text-muted); }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  /* ─── ANALYSIS SCREEN ─── */
+  .analyzing-wrap {
+    text-align: center;
+    padding: 80px 0;
+  }
+
+  .brain-viz {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 40px;
+    position: relative;
+  }
+
+  .brain-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    animation: spin 3s linear infinite;
+  }
+
+  .ring1 { border-top-color: var(--amber); border-right-color: var(--amber); animation-duration: 2s; }
+  .ring2 { inset: 12px; border-bottom-color: var(--cyan); border-left-color: var(--cyan); animation-duration: 3s; animation-direction: reverse; }
+  .ring3 { inset: 24px; border-top-color: var(--green); animation-duration: 4s; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .brain-center {
+    position: absolute;
+    inset: 36px;
+    background: var(--surface2);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 24px;
+  }
+
+  .analyzing-title {
+    font-family: var(--display);
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+
+  .analyzing-steps {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 320px;
+    margin: 0 auto;
+    text-align: right;
+  }
+
+  .analyzing-step {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    animation: stepIn 0.4s forwards;
+  }
+
+  .analyzing-step.done { color: var(--green); }
+  .analyzing-step.done::before { content: '✓'; }
+  .analyzing-step:not(.done)::before { content: '›'; }
+
+  @keyframes stepIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ─── RESULT SCREEN ─── */
+  .result-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+    align-items: stretch;
+  }
+
+  @media (max-width: 600px) { .result-hero { grid-template-columns: 1fr; } }
+
+  .profile-result-card {
+    border-radius: 16px;
+    padding: 32px 28px;
+    border: 1.5px solid;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .profile-result-card::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    left: -40px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.3;
+  }
+
+  .prc-reactive   { border-color: rgba(248,113,113,0.5); background: rgba(248,113,113,0.05); }
+  .prc-reactive::before { background: var(--red); }
+  .prc-procedural { border-color: rgba(245,158,11,0.5); background: rgba(245,158,11,0.05); }
+  .prc-procedural::before { background: var(--amber); }
+  .prc-conceptual { border-color: rgba(34,211,238,0.5); background: rgba(34,211,238,0.05); }
+  .prc-conceptual::before { background: var(--cyan); }
+  .prc-strategic  { border-color: rgba(74,222,128,0.5); background: rgba(74,222,128,0.05); }
+  .prc-strategic::before { background: var(--green); }
+
+  .ptype-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .ptype-name {
+    font-family: var(--display);
+    font-size: 40px;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+
+  .ptype-desc {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+
+  /* Confidence arc */
+  .confidence-arc-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    gap: 16px;
+  }
+
+  .arc-svg { width: 140px; height: 80px; }
+
+  .conf-big {
+    font-family: var(--mono);
+    font-size: 44px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+  }
+
+  .conf-small {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    letter-spacing: 0.1em;
+  }
+
+  /* Radar/score bars */
+  .score-bars {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+
+  .score-bar-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .score-bar-item:last-child { margin-bottom: 0; }
+
+  .sb-label {
+    width: 90px;
+    font-size: 13px;
+    color: var(--text-dim);
+    text-align: right;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+
+  .sb-track {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 6px;
+    overflow: visible;
+    position: relative;
+  }
+
+  .sb-fill {
+    height: 100%;
+    border-radius: 6px;
+    position: relative;
+    transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+    width: 0;
+  }
+
+  .sb-fill::after {
+    content: '';
+    position: absolute;
+    right: -3px;
+    top: -3px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: inherit;
+    box-shadow: 0 0 10px currentColor;
+  }
+
+  .sb-val {
+    font-family: var(--mono);
+    font-size: 13px;
+    min-width: 28px;
+    text-align: left;
+  }
+
+  .fill-reactive   { background: linear-gradient(90deg, var(--red-dim), var(--red));   }
+  .fill-procedural { background: linear-gradient(90deg, var(--amber-dim), var(--amber)); }
+  .fill-conceptual { background: linear-gradient(90deg, var(--cyan-dim), var(--cyan)); }
+  .fill-strategic  { background: linear-gradient(90deg, var(--green-dim), var(--green)); }
+
+  /* Insights */
+  .insights-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 500px) { .insights-grid { grid-template-columns: 1fr; } }
+
+  .insight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .insight-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .insight-title.strength { color: var(--green); }
+  .insight-title.weakness { color: var(--red); }
+  .insight-title.rec      { color: var(--cyan); }
+  .insight-title.behavior { color: var(--amber); }
+
+  .insight-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
+  .insight-list li {
+    font-size: 13px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+  }
+
+  .insight-list li::before {
+    content: '—';
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* Behavior stats */
+  .behavior-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 500px) { .behavior-stats { grid-template-columns: 1fr 1fr; } }
+
+  .bstat {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .bstat-val {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 300;
+    margin-bottom: 4px;
+  }
+
+  .bstat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* JSON preview */
+  .json-preview {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin-bottom: 24px;
+  }
+
+  .jk { color: var(--cyan); }
+  .jv-str { color: var(--green); }
+  .jv-num { color: var(--amber); }
+  .jv-arr { color: var(--text-dim); }
+
+  /* ─── SECTION TITLE ─── */
+  .section-title {
+    font-family: var(--display);
+    font-size: 24px;
+    margin-bottom: 6px;
+  }
+
+  .section-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 32px 0;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 24px;
+    width: fit-content;
+  }
+
+  .tab {
+    padding: 8px 18px;
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    border: none;
+    background: none;
+    font-family: var(--arabic);
+  }
+
+  .tab.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2);
+    border: 1px solid var(--border-bright);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 14px;
+    color: var(--text);
+    z-index: 1000;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">QED</div>
+      <div>
+        <div class="logo-text">محلل التفكير</div>
+        <div class="logo-sub">Cognitive Profile Engine v1.0</div>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      <span id="header-status-text">جاهز</span>
+    </div>
+  </header>
+
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+
+  <!-- INTRO -->
+  <div class="screen active" id="screen-intro">
+    <div class="container">
+      <div class="intro-hero">
+        <div class="intro-badge">
+          <span>◈</span> نظام تشخيص طريقة التفكير
+        </div>
+        <h1 class="intro-title">اكتشف كيف<br>تفكر فعلاً</h1>
+        <p class="intro-sub">
+          ليس اختباراً عادياً — بل تحليل سلوكي دقيق يرصد طريقتك في حل المسائل والتكيف مع التحديات.
+        </p>
+
+        <div class="profile-grid">
+          <div class="profile-card card-reactive">
+            <span class="icon">⚡</span>
+            <div class="name">Reactive</div>
+            <div class="desc">يبدأ فوراً بدون تحليل</div>
+          </div>
+          <div class="profile-card card-procedural">
+            <span class="icon">📋</span>
+            <div class="name">Procedural</div>
+            <div class="desc">يعتمد على القوانين المحفوظة</div>
+          </div>
+          <div class="profile-card card-conceptual">
+            <span class="icon">💡</span>
+            <div class="name">Conceptual</div>
+            <div class="desc">يفهم السبب والمنطق</div>
+          </div>
+          <div class="profile-card card-strategic">
+            <span class="icon">🎯</span>
+            <div class="name">Strategic</div>
+            <div class="desc">يخطط ويبدّل استراتيجياته</div>
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="startTest()">
+          ابدأ التشخيص ←
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXERCISE -->
+  <div class="screen" id="screen-exercise">
+    <div class="container">
+      <div class="steps-bar" id="steps-bar"></div>
+
+      <div id="exercise-area"></div>
+    </div>
+  </div>
+
+  <!-- ANALYZING -->
+  <div class="screen" id="screen-analyzing">
+    <div class="container">
+      <div class="analyzing-wrap">
+        <div class="brain-viz">
+          <div class="brain-ring ring1"></div>
+          <div class="brain-ring ring2"></div>
+          <div class="brain-ring ring3"></div>
+          <div class="brain-center">🧠</div>
+        </div>
+        <h2 class="analyzing-title">تحليل البيانات...</h2>
+        <ul class="analyzing-steps" id="analyzing-steps"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="screen-result">
+    <div class="container" id="result-container"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────
+const EXERCISES = [
+  {
+    id: 1,
+    type: 'standard',
+    typeName: 'Standard Problem',
+    badgeClass: 'badge-standard',
+    question: 'حل المعادلة:  2x + 3 = 7',
+    answer: '2',
+    hint: 'ابدأ بعزل المتغير x على جهة واحدة',
+    kind: 'numeric',
+    placeholder: 'x = ?',
+  },
+  {
+    id: 2,
+    type: 'trap',
+    typeName: 'Trap Problem',
+    badgeClass: 'badge-trap',
+    question: 'حل المعادلة:  2(x + 3) = 7',
+    answer: '0.5',
+    hint: 'انتبه — هذه ليست نفس المعادلة السابقة!',
+    kind: 'numeric',
+    placeholder: 'x = ?',
+  },
+  {
+    id: 3,
+    type: 'logic',
+    typeName: 'Logic Puzzle',
+    badgeClass: 'badge-logic',
+    question: 'في سلسلة: 2، 6، 12، 20، ؟\nما العدد التالي؟',
+    answer: '30',
+    hint: 'ابحث عن الفرق بين كل عددين متتاليين',
+    kind: 'numeric',
+    placeholder: '؟ = ',
+  },
+  {
+    id: 4,
+    type: 'open',
+    typeName: 'Open Problem',
+    badgeClass: 'badge-open',
+    question: 'كيس فيه كرات حمراء وزرقاء. إذا سحبت كرتين عشوائياً، ما احتمال أن تكونا نفس اللون؟\n(وضّح طريقة تفكيرك)',
+    answer: null,
+    hint: 'لا يوجد جواب واحد صحيح — المهم هو منهجيتك',
+    kind: 'text',
+    placeholder: 'اشرح طريقة تفكيرك هنا...',
+  },
+];
+
+// Tracking state
+const state = {
+  currentEx: 0,
+  exerciseData: [],
+  totalTime: 0,
+  startTime: null,
+};
+
+// Per-exercise tracking
+let exState = {};
+
+function initExState() {
+  exState = {
+    startTime: Date.now(),
+    firstActionTime: null,
+    attempts: 0,
+    strategyChanges: 0,
+    hintUsed: false,
+    selectedAnswer: null,
+    explanation: '',
+    confidence: 0.5,
+    answers: [],
+    errors: 0,
+    errorTypes: [],
+  };
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function updateProgress(pct) {
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+// ─── START ───────────────────────────────────────────────────
+function startTest() {
+  state.currentEx = 0;
+  state.exerciseData = [];
+  state.startTime = Date.now();
+  showScreen('exercise');
+  updateProgress(5);
+  renderExercise();
+}
+
+// ─── STEPS BAR ───────────────────────────────────────────────
+function renderStepsBar() {
+  const bar = document.getElementById('steps-bar');
+  const labels = ['مسألة ١', 'مسألة ٢', 'منطق', 'مفتوح'];
+  bar.innerHTML = labels.map((l, i) => {
+    const done = i < state.currentEx;
+    const active = i === state.currentEx;
+    return `<div class="step-item ${done ? 'done' : ''} ${active ? 'active' : ''}">
+      <div class="step-num">${done ? '✓' : i + 1}</div>
+      <div class="step-label">${l}</div>
+      ${i < labels.length - 1 ? '<div style="flex:1;height:1px;background:var(--border);margin:0 8px;"></div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+// ─── EXERCISE RENDER ─────────────────────────────────────────
+function renderExercise() {
+  initExState();
+  const ex = EXERCISES[state.currentEx];
+  renderStepsBar();
+  updateProgress(Math.round((state.currentEx / EXERCISES.length) * 75) + 5);
+
+  document.getElementById('header-status-text').textContent = `تمرين ${state.currentEx + 1} / ${EXERCISES.length}`;
+
+  const area = document.getElementById('exercise-area');
+
+  const isLast = state.currentEx === EXERCISES.length - 1;
+
+  area.innerHTML = `
+    <div class="ex-header">
+      <div class="ex-meta">
+        <div class="ex-type-badge ${ex.badgeClass}">
+          <span>${getTypeIcon(ex.type)}</span> ${ex.typeName}
+        </div>
+        <div class="ex-number">تمرين ${state.currentEx + 1} من ${EXERCISES.length}</div>
+      </div>
+      <div class="timer-display">
+        <div class="timer-col">
+          <span id="timer-val">00:00</span>
+          <span class="t-label">الوقت</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="problem-box">
+      <div class="problem-text">${ex.question.replace(/\n/g, '<br>')}</div>
+      <div class="problem-hint">${ex.type === 'trap' ? '⚠️ ' : ''}انظر بعناية قبل الحل</div>
+    </div>
+
+    <div class="attempt-row">
+      <span style="color:var(--text-muted)">المحاولات:</span>
+      <div class="attempt-dot" id="dot0"></div>
+      <div class="attempt-dot" id="dot1"></div>
+      <div class="attempt-dot" id="dot2"></div>
+    </div>
+
+    <button class="hint-btn" onclick="toggleHint()">💡 تلميح (يؤثر على النتيجة)</button>
+    <div class="hint-box" id="hint-box">${ex.hint}</div>
+
+    <div class="answer-section">
+      <div class="section-label">إجابتك</div>
+      ${ex.kind === 'numeric'
+        ? `<input class="answer-input" id="answer-input" type="text" placeholder="${ex.placeholder}" 
+               oninput="onAnswerInput(this.value)" onkeydown="onKeyDown(event)" autocomplete="off">`
+        : `<textarea class="answer-input" id="answer-input" placeholder="${ex.placeholder}" 
+               oninput="onAnswerInput(this.value)"></textarea>`
+      }
+    </div>
+
+    <div class="explain-section">
+      <div class="explain-label">لماذا استخدمت هذه الطريقة؟</div>
+      <div class="explain-sub">شرح السبب يكشف طريقة تفكيرك الحقيقية</div>
+      <textarea class="answer-input" id="explain-input" placeholder="اشرح خطواتك ومنطقك..." 
+                oninput="exState.explanation = this.value" style="min-height:70px"></textarea>
+      <div class="confidence-row">
+        <span class="conf-label">ثقتك في إجابتك:</span>
+        <input type="range" min="0" max="100" value="50" id="conf-slider" oninput="updateConf(this.value)">
+        <span class="conf-value" id="conf-display">50%</span>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" onclick="submitExercise()">
+        ${isLast ? 'إنهاء وتحليل النتائج →' : 'التالي →'}
+      </button>
+      ${state.currentEx > 0 ? '' : ''}
+    </div>
+  `;
+
+  startExTimer();
+}
+
+function getTypeIcon(type) {
+  return { standard: '📘', trap: '🪤', open: '🔓', logic: '🧩' }[type] || '📝';
+}
+
+// ─── TIMER ───────────────────────────────────────────────────
+let timerInterval = null;
+
+function startExTimer() {
+  clearInterval(timerInterval);
+  let secs = 0;
+  timerInterval = setInterval(() => {
+    secs++;
+    const mm = String(Math.floor(secs / 60)).padStart(2, '0');
+    const ss = String(secs % 60).padStart(2, '0');
+    const el = document.getElementById('timer-val');
+    if (el) el.textContent = mm + ':' + ss;
+    // Color feedback
+    if (el) {
+      if (secs > 120) el.style.color = 'var(--red)';
+      else if (secs > 60) el.style.color = 'var(--amber)';
+      else el.style.color = 'var(--cyan)';
+    }
+    exState.totalSecs = secs;
+  }, 1000);
+}
+
+// ─── INTERACTIONS ─────────────────────────────────────────────
+function onAnswerInput(val) {
+  if (!exState.firstActionTime) {
+    exState.firstActionTime = (Date.now() - exState.startTime) / 1000;
+  }
+  exState.selectedAnswer = val;
+  if (exState.answers.length > 0 && val !== exState.answers[exState.answers.length - 1]) {
+    exState.strategyChanges++;
+  }
+  exState.answers.push(val);
+}
+
+function onKeyDown(e) {
+  if (e.key === 'Enter') submitExercise();
+}
+
+function toggleHint() {
+  const box = document.getElementById('hint-box');
+  if (box.style.display === 'block') {
+    box.style.display = 'none';
+  } else {
+    box.style.display = 'block';
+    exState.hintUsed = true;
+    showToast('تم تسجيل استخدام التلميح');
+  }
+}
+
+function updateConf(v) {
+  exState.confidence = v / 100;
+  document.getElementById('conf-display').textContent = v + '%';
+}
+
+// ─── SUBMIT EXERCISE ─────────────────────────────────────────
+function submitExercise() {
+  const ex = EXERCISES[state.currentEx];
+  const inputEl = document.getElementById('answer-input');
+  const answer = inputEl ? inputEl.value.trim() : '';
+  const explain = (document.getElementById('explain-input') || {}).value || '';
+
+  exState.attempts++;
+  updateDots();
+
+  let isCorrect = false;
+  let errorType = null;
+
+  if (ex.answer !== null) {
+    const numAnswer = parseFloat(answer.replace('x=','').replace('=','').trim());
+    const numCorrect = parseFloat(ex.answer);
+    isCorrect = Math.abs(numAnswer - numCorrect) < 0.1;
+
+    if (!isCorrect) {
+      exState.errors++;
+      // Classify error type
+      if (isNaN(numAnswer)) errorType = 'random';
+      else if (Math.abs(numAnswer - numCorrect) < 2) errorType = 'computational';
+      else errorType = 'conceptual';
+      exState.errorTypes.push(errorType);
+    }
+  } else {
+    // Open problem: check if they wrote something meaningful
+    isCorrect = answer.length > 10 || explain.length > 10;
+  }
+
+  if (!isCorrect && exState.errors <= 1 && ex.answer !== null) {
+    showToast('❌ الإجابة غير صحيحة، حاول مرة أخرى');
+    updateDots();
+    return; // let them retry once
+  }
+
+  clearInterval(timerInterval);
+
+  const record = {
+    exerciseId: ex.id,
+    type: ex.type,
+    timeToFirstAction: exState.firstActionTime || exState.totalSecs,
+    totalTime: exState.totalSecs || 0,
+    attempts: exState.errors + 1,
+    errors: exState.errors,
+    errorTypes: exState.errorTypes,
+    strategyChanges: exState.strategyChanges,
+    hintUsed: exState.hintUsed,
+    correct: isCorrect,
+    explanation: explain,
+    confidence: exState.confidence,
+    answer: answer,
+  };
+
+  state.exerciseData.push(record);
+
+  if (state.currentEx < EXERCISES.length - 1) {
+    state.currentEx++;
+    renderExercise();
+  } else {
+    runAnalysis();
+  }
+}
+
+function updateDots() {
+  for (let i = 0; i < 3; i++) {
+    const d = document.getElementById('dot' + i);
+    if (d) d.className = 'attempt-dot' + (i < exState.errors + 1 ? ' used' : '');
+  }
+}
+
+// ─── SCORING ENGINE ──────────────────────────────────────────
+function computeProfile() {
+  const scores = { reactive: 0, procedural: 0, conceptual: 0, strategic: 0 };
+
+  for (const rec of state.exerciseData) {
+    // Reactive signals
+    if (rec.timeToFirstAction < 3) scores.reactive += 2;
+    if (rec.attempts >= 3) scores.reactive += 1;
+    if (rec.errors > 1 && rec.errorTypes.includes('random')) scores.reactive += 1;
+
+    // Procedural signals
+    if (rec.correct && rec.attempts === 1 && rec.explanation.length < 20) scores.procedural += 2;
+    if (!rec.hintUsed && rec.correct) scores.procedural += 1;
+    if (rec.strategyChanges === 0 && rec.correct) scores.procedural += 1;
+
+    // Conceptual signals
+    if (rec.explanation.length > 30) scores.conceptual += 2;
+    if (rec.errors > 0 && rec.errorTypes.every(e => e !== 'random')) scores.conceptual += 1;
+    if (rec.confidence > 0.6 && rec.correct) scores.conceptual += 1;
+
+    // Strategic signals
+    if (rec.strategyChanges > 0) scores.strategic += 3;
+    if (rec.explanation.length > 60) scores.strategic += 2;
+    if (rec.hintUsed && rec.correct) scores.strategic += 1;
+    if (rec.type === 'open' && (rec.answer.length > 20 || rec.explanation.length > 40)) scores.strategic += 2;
+  }
+
+  // Find dominant
+  const total = Object.values(scores).reduce((a, b) => a + b, 0) || 1;
+  const normalized = {};
+  for (const [k, v] of Object.entries(scores)) normalized[k] = v / total;
+
+  // Decision engine (matches pseudo-code in spec)
+  const hasStrategyChange = state.exerciseData.some(r => r.strategyChanges > 0);
+  const avgExplainLen = state.exerciseData.reduce((a, r) => a + r.explanation.length, 0) / state.exerciseData.length;
+  const hasExplanation = avgExplainLen > 25;
+  const directFormula = state.exerciseData.filter(r => r.timeToFirstAction < 4 && r.correct).length >= 2;
+
+  let type;
+  if (hasStrategyChange && hasExplanation) type = 'strategic';
+  else if (hasExplanation) type = 'conceptual';
+  else if (directFormula) type = 'procedural';
+  else type = 'reactive';
+
+  const confidence = normalized[type];
+
+  return { type, confidence, scores, normalized };
+}
+
+const PROFILES = {
+  reactive: {
+    nameAr: 'انعكاسي',
+    color: 'var(--red)',
+    colorClass: 'prc-reactive',
+    icon: '⚡',
+    desc: 'تميل إلى البدء فوراً بدون تحليل مسبق. تعتمد على الحدس والسرعة أكثر من التخطيط.',
+    strengths: ['سريع في تنفيذ المعتاد', 'لا تتردد كثيراً', 'كفاءة في المواقف المألوفة'],
+    weaknesses: ['يقع في الفخاخ بسهولة', 'ضعف في المسائل غير المعتادة', 'قليل التأمل في الأخطاء'],
+    recs: ['تمارين forced pause (قف ثانية قبل الحل)', 'تمارين trap مكثفة', 'تدريب على التخطيط المسبق'],
+  },
+  procedural: {
+    nameAr: 'إجرائي',
+    color: 'var(--amber)',
+    colorClass: 'prc-procedural',
+    icon: '📋',
+    desc: 'تعتمد على القوانين والخطوات المحفوظة. قوي في التطبيق المباشر لكن قد تواجه صعوبة مع الجديد.',
+    strengths: ['دقيق في تطبيق القوانين', 'منظم في الخطوات', 'موثوق في المسائل المعيارية'],
+    weaknesses: ['يتعثر عند تغيير الصيغة', 'تفسير المفاهيم ضعيف', 'صعوبة في التحويل والتعميم'],
+    recs: ['تمارين forced explanation', 'اشرح "لماذا" قبل "كيف"', 'تمارين بدون استخدام القوانين مباشرة'],
+  },
+  conceptual: {
+    nameAr: 'مفاهيمي',
+    color: 'var(--cyan)',
+    colorClass: 'prc-conceptual',
+    icon: '💡',
+    desc: 'تفهم المنطق والسبب وراء الحلول. قادر على تكييف المعرفة لمواقف جديدة.',
+    strengths: ['يفهم السبب والمنطق', 'يتكيف مع التعديلات', 'تفسيره دقيق وواضح'],
+    weaknesses: ['قد يكون بطيئاً في التنفيذ', 'أحياناً يفكر أكثر مما يلزم', 'صعوبة مع المسائل الروتينية السريعة'],
+    recs: ['تمارين تحت ضغط الوقت', 'مسائل تتطلب سرعة التطبيق', 'تدريب على الكفاءة الإجرائية'],
+  },
+  strategic: {
+    nameAr: 'استراتيجي',
+    color: 'var(--green)',
+    colorClass: 'prc-strategic',
+    icon: '🎯',
+    desc: 'تخطط قبل التنفيذ وتبدّل استراتيجيتك عند الحاجة. هذا هو أعلى مستويات التفكير.',
+    strengths: ['يخطط ويتكيف', 'يعدّل الاستراتيجية عند الحاجة', 'فهم عميق ومرونة عالية'],
+    weaknesses: ['قد يبالغ في التعقيد', 'بطيء نسبياً في المسائل البسيطة', 'أحياناً يبحث عن patterns غير موجودة'],
+    recs: ['تمارين تحت ضغط الوقت', 'مسائل تستلزم حلولاً مباشرة', 'تدريب على تبسيط التفكير'],
+  },
+};
+
+// ─── ANALYSIS SEQUENCE ───────────────────────────────────────
+function runAnalysis() {
+  showScreen('analyzing');
+  updateProgress(80);
+  document.getElementById('header-status-text').textContent = 'جاري التحليل...';
+
+  const steps = [
+    'تحليل الأنماط السلوكية',
+    'معالجة بيانات التوقيت',
+    'تقييم جودة التفسير',
+    'تشغيل محرك القرار',
+    'توليد ملف التفكير',
+  ];
+
+  const stepsEl = document.getElementById('analyzing-steps');
+
+  steps.forEach((s, i) => {
+    setTimeout(() => {
+      const li = document.createElement('li');
+      li.className = 'analyzing-step';
+      li.style.animationDelay = '0s';
+      li.textContent = s;
+      stepsEl.appendChild(li);
+
+      setTimeout(() => {
+        li.className = 'analyzing-step done';
+      }, 600);
+    }, i * 700);
+  });
+
+  setTimeout(() => {
+    updateProgress(100);
+    setTimeout(() => renderResult(), 400);
+  }, steps.length * 700 + 600);
+}
+
+// ─── RESULT RENDER ───────────────────────────────────────────
+function renderResult() {
+  const { type, confidence, scores, normalized } = computeProfile();
+  const prof = PROFILES[type];
+
+  document.getElementById('header-status-text').textContent = 'اكتمل التحليل';
+
+  const totalTime = Math.round((Date.now() - state.startTime) / 1000);
+  const avgAttempts = (state.exerciseData.reduce((a, r) => a + r.attempts, 0) / state.exerciseData.length).toFixed(1);
+  const hintsUsed = state.exerciseData.filter(r => r.hintUsed).length;
+  const correctCount = state.exerciseData.filter(r => r.correct).length;
+
+  // Scores for bars (out of 10)
+  const maxScore = Math.max(...Object.values(scores), 1);
+  const barScores = {};
+  for (const [k, v] of Object.entries(scores)) barScores[k] = Math.round((v / maxScore) * 10);
+
+  // Build JSON output
+  const jsonOutput = {
+    type: type,
+    nameAr: prof.nameAr,
+    confidence: confidence.toFixed(2),
+    scores: Object.fromEntries(Object.entries(scores)),
+    strengths: prof.strengths,
+    weaknesses: prof.weaknesses,
+    recommendation: prof.recs,
+  };
+
+  function fmtTime(s) {
+    return s >= 60 ? `${Math.floor(s/60)}د ${s%60}ث` : `${s}ث`;
+  }
+
+  const html = `
+    <div style="margin-bottom:48px">
+      <div class="intro-badge" style="margin-bottom:16px">
+        <span>✓</span> نتائج التحليل المعرفي
+      </div>
+      <h2 class="section-title">ملف تفكيرك</h2>
+      <p class="section-subtitle">بناءً على ${EXERCISES.length} تمارين و ${state.exerciseData.reduce((a,r)=>a+r.attempts,0)} محاولة إجمالية</p>
+    </div>
+
+    <div class="result-hero">
+      <div class="profile-result-card ${prof.colorClass}">
+        <div class="ptype-label" style="color:${prof.color}">${prof.icon} نوع التفكير</div>
+        <div class="ptype-name" style="color:${prof.color}">${prof.nameAr}</div>
+        <div class="ptype-desc">${prof.desc}</div>
+      </div>
+      <div class="confidence-arc-wrap">
+        <svg class="arc-svg" viewBox="0 0 140 80">
+          <path d="M 10 75 A 60 60 0 0 1 130 75" fill="none" stroke="var(--border)" stroke-width="8" stroke-linecap="round"/>
+          <path id="arc-fill" d="M 10 75 A 60 60 0 0 1 130 75" fill="none" stroke="${prof.color}" stroke-width="8" stroke-linecap="round"
+            stroke-dasharray="188" stroke-dashoffset="${Math.round(188 - (confidence * 188))}"
+            style="transition: stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1); filter: drop-shadow(0 0 6px ${prof.color})"/>
+        </svg>
+        <div class="conf-big" style="color:${prof.color}">${Math.round(confidence * 100)}%</div>
+        <div class="conf-small">مستوى الثقة</div>
+      </div>
+    </div>
+
+    <!-- Score bars -->
+    <div class="score-bars">
+      <div class="section-label" style="margin-bottom:20px">توزيع درجات كل نمط</div>
+      ${['reactive','procedural','conceptual','strategic'].map(k => `
+        <div class="score-bar-item">
+          <div class="sb-label">${PROFILES[k].nameAr}</div>
+          <div class="sb-track">
+            <div class="sb-fill fill-${k}" data-target="${barScores[k] * 10}" style="width:0%"></div>
+          </div>
+          <div class="sb-val" style="color:${PROFILES[k].color}">${barScores[k]}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- Behavior stats -->
+    <div class="behavior-stats">
+      <div class="bstat">
+        <div class="bstat-val" style="color:var(--cyan)">${fmtTime(totalTime)}</div>
+        <div class="bstat-label">الوقت الإجمالي</div>
+      </div>
+      <div class="bstat">
+        <div class="bstat-val" style="color:var(--amber)">${avgAttempts}</div>
+        <div class="bstat-label">متوسط المحاولات</div>
+      </div>
+      <div class="bstat">
+        <div class="bstat-val" style="color:var(--green)">${correctCount}/${EXERCISES.length}</div>
+        <div class="bstat-label">الإجابات الصحيحة</div>
+      </div>
+    </div>
+
+    <!-- Insights -->
+    <div class="insights-grid">
+      <div class="insight-card">
+        <div class="insight-title strength">✦ نقاط القوة</div>
+        <ul class="insight-list">
+          ${prof.strengths.map(s => `<li>${s}</li>`).join('')}
+        </ul>
+      </div>
+      <div class="insight-card">
+        <div class="insight-title weakness">✦ نقاط الضعف</div>
+        <ul class="insight-list">
+          ${prof.weaknesses.map(s => `<li>${s}</li>`).join('')}
+        </ul>
+      </div>
+      <div class="insight-card">
+        <div class="insight-title rec">✦ التوصيات</div>
+        <ul class="insight-list">
+          ${prof.recs.map(s => `<li>${s}</li>`).join('')}
+        </ul>
+      </div>
+      <div class="insight-card">
+        <div class="insight-title behavior">✦ سلوكيات ملحوظة</div>
+        <ul class="insight-list">
+          <li>${state.exerciseData.some(r=>r.hintUsed) ? 'استخدم التلميح' : 'لم يستخدم أي تلميحات'}</li>
+          <li>${state.exerciseData.some(r=>r.strategyChanges>0) ? 'غيّر استراتيجيته أثناء الحل' : 'حافظ على نفس الأسلوب'}</li>
+          <li>${state.exerciseData.some(r=>r.explanation.length>40) ? 'قدّم تفسيرات مفصلة' : 'اختصر في التفسيرات'}</li>
+          <li>متوسط زمن البدء: ${(state.exerciseData.reduce((a,r)=>a+r.timeToFirstAction,0)/state.exerciseData.length).toFixed(1)}ث</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- JSON output -->
+    <div class="section-label" style="margin-bottom:12px">ملف التفكير (JSON)</div>
+    <div class="json-preview" id="json-out"></div>
+
+    <div class="btn-row">
+      <button class="btn-primary" onclick="retake()">↺ إعادة الاختبار</button>
+      <button class="btn-secondary" onclick="copyJSON()">نسخ JSON</button>
+    </div>
+  `;
+
+  const cont = document.getElementById('result-container');
+  cont.innerHTML = html;
+  showScreen('result');
+
+  // Animate bars
+  setTimeout(() => {
+    document.querySelectorAll('.sb-fill').forEach(el => {
+      el.style.width = el.dataset.target + '%';
+    });
+  }, 300);
+
+  // Render JSON
+  renderJSON('json-out', jsonOutput);
+}
+
+function renderJSON(elId, obj) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = syntaxHighlight(JSON.stringify(obj, null, 2));
+}
+
+function syntaxHighlight(json) {
+  return json
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"([\w]+)":/g, '<span class="jk">"$1"</span>:')
+    .replace(/: "([^"]+)"/g, ': <span class="jv-str">"$1"</span>')
+    .replace(/: (\d+\.?\d*)/g, ': <span class="jv-num">$1</span>')
+    .replace(/\[/g, '<span class="jv-arr">[</span>')
+    .replace(/\]/g, '<span class="jv-arr">]</span>');
+}
+
+function copyJSON() {
+  const { type, confidence, scores } = computeProfile();
+  const prof = PROFILES[type];
+  const obj = { type, nameAr: prof.nameAr, confidence: confidence.toFixed(2), scores, strengths: prof.strengths, recommendations: prof.recs };
+  navigator.clipboard.writeText(JSON.stringify(obj, null, 2)).then(() => showToast('✓ تم نسخ JSON'));
+}
+
+function retake() {
+  state.exerciseData = [];
+  state.currentEx = 0;
+  document.getElementById('header-status-text').textContent = 'جاهز';
+  updateProgress(0);
+  showScreen('intro');
+}
+
+// ─── TOAST ───────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

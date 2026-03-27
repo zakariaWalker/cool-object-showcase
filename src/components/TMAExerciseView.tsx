@@ -11,6 +11,7 @@ import { ParsedExercise } from "@/engine/exercise-parser";
 import { FunctionAnalysis } from "@/engine/functions-engine";
 import { astToLatex } from "@/engine/ast-utils"; // used in KatexSpan (KB pattern section)
 import { recordExercise } from "@/engine/progress-store";
+import { useProfile, PROFILES } from "@/engine/profile-store";
 import { FeatureTabs } from "./FeatureTabs";
 import { ExerciseResult } from "./ExerciseResult";
 import { motion, AnimatePresence } from "framer-motion";
@@ -157,6 +158,7 @@ export function TMAExerciseView({
   const [showEngine, setShowEngine] = useState(hasEngine); // auto-open if solved
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [revealAnswers, setRevealAnswers] = useState(false);
+  const { profile } = useProfile();
 
   // KB pattern state
   const [kbPattern, setKbPattern] = useState<{
@@ -312,6 +314,17 @@ export function TMAExerciseView({
           )}
         </div>
       </div>
+
+      {profile && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+          style={{ background: "#fff", margin: "14px 14px 0", borderRadius: 16, padding: "14px 16px", boxShadow: "0 4px 15px rgba(124, 58, 237, 0.1)", border: "1px solid rgba(124, 58, 237, 0.2)", display: "flex", gap: 14, alignItems: "center" }}>
+          <div style={{ fontSize: 28 }}>{PROFILES[profile].id === 'strategic' ? '🎯' : PROFILES[profile].id === 'conceptual' ? '💡' : PROFILES[profile].id === 'procedural' ? '📋' : '⚡'}</div>
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 800, color: "#7c3aed", margin: 0, textTransform: "uppercase" }}>المهمة الحالية ({PROFILES[profile].title}):</p>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#1e293b", margin: "2px 0 0 0", lineHeight: 1.5 }}>{PROFILES[profile].nextMission}</p>
+          </div>
+        </motion.div>
+      )}
 
       <div style={{ padding: "14px 14px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
 
