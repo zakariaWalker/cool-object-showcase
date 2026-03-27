@@ -54,7 +54,7 @@ export function useAdminKBStore() {
   async function loadFromSupabase() {
     setLoading(true);
     try {
-      // Paginate exercises to bypass 1000-row limit
+      // Paginate kb_exercises to bypass 1000-row limit
       const allExercises: any[] = [];
       const PAGE = 1000;
       let from = 0;
@@ -72,28 +72,44 @@ export function useAdminKBStore() {
         from += PAGE;
       }
 
-      // Paginate deconstructions too
-      const allDeconstructions: any[] = [];
-      let deconFrom = 0;
+      // Also paginate exercise_breakdowns
+      const allBreakdowns: any[] = [];
+      let bFrom = 0;
       while (true) {
         const { data, error } = await (supabase as any)
-          .from("kb_deconstructions")
+          .from("exercise_breakdowns")
           .select("*")
-          .order("created_at")
-          .range(deconFrom, deconFrom + PAGE - 1);
-        if (error) throw error;
+          .order("grade")
+          .range(bFrom, bFrom + PAGE - 1);
+        if (error) {
+          console.warn("Failed to load exercise_breakdowns:", error);
+          break;
+        }
         if (!data || data.length === 0) break;
-        allDeconstructions.push(...data);
+        allBreakdowns.push(...data);
         if (data.length < PAGE) break;
-        deconFrom += PAGE;
+        bFrom += PAGE;
       }
 
-      const [patRes] = await Promise.all([
-        (supabase as any).from("kb_patterns").select("*").order("created_at"),
-      ]);
+      // Collect existing kb_exercises ids to avoid duplicates
+      const kbIds = new Set(allExercises.map((e: any) => e.id));
 
-      if (allExercises.length > 0) {
-        setExercises(allExercises.map((e: any) => ({
+      // Map exercise_breakdowns to Exercise format
+      const breakdownExercises = allBreakdowns
+        .filter((b: any) => !kbIds.has(b.id))
+        .map((b: any) => ({
+          id: b.id,
+          text: b.source_text,
+          type: b.domain || "unclassified",
+          chapter: b.subdomain || "",
+          grade: b.grade || "",
+          stream: "",
+          label: `difficulty:${b.difficulty || 1}`,
+          source: b.source_origin || "breakdown",
+        }));
+
+      const merged = [
+        ...allExercises.map((e: any) => ({
           id: e.id,
           text: e.text,
           type: e.type || "unclassified",
@@ -102,7 +118,12 @@ export function useAdminKBStore() {
           stream: e.stream || "",
           label: e.label || "",
           source: e.source || "",
-        })));
+        })),
+        ...breakdownExercises,
+      ];
+
+      if (merged.length > 0) {
+        setExercises(merged);
         setLoaded(true);
       }
 
