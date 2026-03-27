@@ -275,7 +275,11 @@ export function useAdminKBStore() {
             label: e.label,
             source: e.source,
           }));
-          await (supabase as any).from("kb_exercises").upsert(batch, { onConflict: "id" });
+          const { error } = await (supabase as any).from("kb_exercises").upsert(batch, { onConflict: "id" });
+          if (error) {
+            console.error("kb_exercises upsert error:", error);
+            throw error;
+          }
         }
       }
 
@@ -290,7 +294,11 @@ export function useAdminKBStore() {
             steps: p.steps,
             concepts: p.concepts || [],
           }));
-          await (supabase as any).from("kb_patterns").upsert(batch, { onConflict: "id" });
+          const { error } = await (supabase as any).from("kb_patterns").upsert(batch, { onConflict: "id" });
+          if (error) {
+            console.error("kb_patterns upsert error:", error);
+            throw error;
+          }
         }
       }
 
@@ -305,7 +313,11 @@ export function useAdminKBStore() {
             needs: d.needs,
             notes: d.notes,
           }));
-          await (supabase as any).from("kb_deconstructions").upsert(batch, { onConflict: "id" });
+          const { error } = await (supabase as any).from("kb_deconstructions").upsert(batch, { onConflict: "id" });
+          if (error) {
+            console.error("kb_deconstructions upsert error:", error);
+            throw error;
+          }
         }
       }
 
