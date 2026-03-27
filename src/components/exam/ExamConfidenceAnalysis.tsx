@@ -4,6 +4,24 @@ import { motion } from "framer-motion";
 import { TYPE_LABELS_AR } from "@/engine/exam-types";
 import type { ExamEntry, ExamQuestion, ExamKBAnalysis } from "./useExamKBStore";
 
+type CognitiveParameter = "مباشر" | "مدمج" | "استنتاجي" | "متعدد المراحل" | "مجرد" | "سياقي" | "بياني / هندسي";
+
+function extractParameters(q: ExamQuestion): CognitiveParameter[] {
+  const params: CognitiveParameter[] = [];
+  const text = q.text || "";
+  
+  if (/استنتج|استنتاج|أثبت|برهن|بين أن|من خلال/.test(text)) params.push("استنتاجي");
+  if (/مسألة|يملك|اشترى|أراد|قطعة|أغنام|سيارات|وضعيات|أرض/.test(text)) { params.push("مدمج"); params.push("سياقي"); }
+  if (!params.includes("استنتاجي") && !params.includes("مدمج") && /احسب|حل|عين|اكتب|انشر|بسط/.test(text)) params.push("مباشر");
+
+  if (/ثم|ومنه|وعليه/.test(text) && params.includes("استنتاجي")) params.push("متعدد المراحل");
+  
+  if (/شكل|منحنى|دالة|بيان|تمثيل|ارسم|أنشئ|مضلع/.test(text)) params.push("بياني / هندسي");
+  if (!params.includes("مدمج") && !params.includes("بياني / هندسي")) params.push("مجرد");
+
+  return [...new Set(params.length > 0 ? params : (["مباشر", "مجرد"] as CognitiveParameter[]))];
+}
+
 interface Props {
   exams: ExamEntry[];
   questions: ExamQuestion[];
@@ -34,12 +52,12 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
       return exam && classifyFormat(exam.format) === "regular";
     });
 
-    // Topic overlap
-    const officialTypes = new Set(officialQs.map(q => q.type).filter(t => t !== "unclassified"));
-    const regularTypes = new Set(regularQs.map(q => q.type).filter(t => t !== "unclassified"));
-    const commonTypes = [...officialTypes].filter(t => regularTypes.has(t));
-    const overlapPct = officialTypes.size > 0
-      ? Math.round((commonTypes.length / officialTypes.size) * 100)
+    // Parameter overlap (Deep cognitive structure)
+    const officialParams = new Set(officialQs.flatMap(extractParameters));
+    const regularParams = new Set(regularQs.flatMap(extractParameters));
+    const commonParams = [...officialParams].filter(p => regularParams.has(p));
+    const paramOverlapPct = officialParams.size > 0
+      ? Math.round((commonParams.length / officialParams.size) * 100)
       : 0;
 
     // Difficulty comparison
@@ -67,18 +85,20 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
       ? Math.round((commonConcepts.length / officialConcepts.size) * 100)
       : 0;
 
-    // Repetition patterns in official exams
-    const typeFreqInOfficial: Record<string, number> = {};
+    // Repetition of Parameters in official exams
+    const paramFreqInOfficial: Record<string, number> = {};
     officialQs.forEach(q => {
-      typeFreqInOfficial[q.type] = (typeFreqInOfficial[q.type] || 0) + 1;
+      extractParameters(q).forEach(p => {
+        paramFreqInOfficial[p] = (paramFreqInOfficial[p] || 0) + 1;
+      });
     });
-    const topRepeated = Object.entries(typeFreqInOfficial)
-      .filter(([t]) => t !== "unclassified")
+    
+    const topRepeatedParams = Object.entries(paramFreqInOfficial)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
-    // "Surprise factor" - types in official but not in regular
-    const surpriseTypes = [...officialTypes].filter(t => !regularTypes.has(t));
+    // "Surprise factor" - parameters in official but not in regular
+    const surpriseParams = [...officialParams].filter(p => !regularParams.has(p));
 
     // Difficulty over years
     const years = [...new Set(exams.map(e => e.year))].filter(Boolean).sort();
@@ -99,12 +119,12 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
 
     return {
       officialExams, regularExams, officialQs, regularQs,
-      commonTypes, overlapPct,
+      commonParams, paramOverlapPct,
       officialDiff, regularDiff,
       officialAvgPts: avgPoints(officialQs),
       regularAvgPts: avgPoints(regularQs),
       conceptOverlapPct, commonConcepts,
-      topRepeated, surpriseTypes,
+      topRepeatedParams, surpriseParams,
       diffOverYears, years,
     };
   }, [exams, questions]);
@@ -134,11 +154,12 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
         className="rounded-2xl p-6 text-center border border-border"
         style={{ background: "linear-gradient(135deg, hsl(var(--primary) / 0.05), hsl(var(--geometry) / 0.08))" }}
       >
-        <div className="text-4xl mb-2">💪🧠</div>
-        <h2 className="text-xl font-black text-foreground mb-1">الامتحان الرسمي ≠ وحش مرعب</h2>
+        <div className="text-4xl mb-2">🧑‍🔬🔍</div>
+        <h2 className="text-xl font-black text-foreground mb-1">الامتحان لا يُقاس بمجالاته بل ببنيته الذهنية</h2>
         <p className="text-sm text-muted-foreground max-w-lg mx-auto">
-          تحليل علمي يكشف أن أسئلة BAC و BEM تتبع نفس الأنماط الموجودة في فروضك العادية.
-          الفرق الوحيد هو الضغط النفسي — وها نحن نكسره!
+          تكرار محور "الدوال" بنسبة 100% هو أمر بديهي ومبرمج وزارياً! 
+          الرهبة الحقيقية تكمن في البنية (الأسئلة المدمجة، المتعددة المراحل، والاستنتاجية).
+          دعنا نحلل الجهد الذهني الفعلي للامتحان.
         </p>
       </motion.div>
 
@@ -146,8 +167,8 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard icon="🎓" label="امتحانات رسمية" value={stats.officialExams.length} sub={`${stats.officialQs.length} سؤال`} color="hsl(var(--destructive))" />
         <StatCard icon="📝" label="فروض واختبارات" value={stats.regularExams.length} sub={`${stats.regularQs.length} سؤال`} color="hsl(var(--geometry))" />
-        <StatCard icon="🔄" label="تطابق المواضيع" value={`${stats.overlapPct}%`} sub={`${stats.commonTypes.length} موضوع مشترك`} color="hsl(var(--primary))" />
-        <StatCard icon="🧠" label="تطابق المفاهيم" value={`${stats.conceptOverlapPct}%`} sub={`${stats.commonConcepts.length} مفهوم مشترك`} color="hsl(var(--statistics))" />
+        <StatCard icon="🔄" label="تطابق البنية الذهنية" value={`${stats.paramOverlapPct}%`} sub={`${stats.commonParams.length} نمط مشترك`} color="hsl(var(--primary))" />
+        <StatCard icon="🧠" label="تطابق المفاهيم الدقيقة" value={`${stats.conceptOverlapPct}%`} sub={`${stats.commonConcepts.length} مفهوم مشترك`} color="hsl(var(--statistics))" />
       </div>
 
       {hasBothGroups && (
@@ -161,18 +182,18 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
           >
             <h3 className="text-sm font-black text-foreground mb-4">📊 مقياس الثقة — ما مدى تشابه الامتحانات؟</h3>
             <div className="space-y-4">
-              {/* Topic overlap bar */}
+              {/* Cognitive overlap bar */}
               <div>
                 <div className="flex justify-between text-[11px] mb-1">
-                  <span className="font-bold text-foreground">تطابق المواضيع</span>
-                  <span className="font-black" style={{ color: getConfidenceColor(stats.overlapPct) }}>{stats.overlapPct}%</span>
+                  <span className="font-bold text-foreground">تطابق البنية والأنماط المعرفية</span>
+                  <span className="font-black" style={{ color: getConfidenceColor(stats.paramOverlapPct) }}>{stats.paramOverlapPct}%</span>
                 </div>
                 <div className="h-4 bg-muted rounded-full overflow-hidden">
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${stats.overlapPct}%` }}
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${stats.paramOverlapPct}%` }}
                     transition={{ duration: 1.2, ease: "easeOut" }}
-                    className="h-full rounded-full" style={{ background: getConfidenceColor(stats.overlapPct) }} />
+                    className="h-full rounded-full" style={{ background: getConfidenceColor(stats.paramOverlapPct) }} />
                 </div>
-                <p className="text-[9px] text-muted-foreground mt-1">{getConfidenceMessage(stats.overlapPct)}</p>
+                <p className="text-[9px] text-muted-foreground mt-1">{getConfidenceMessage(stats.paramOverlapPct)}</p>
               </div>
 
               {/* Concept overlap bar */}
@@ -234,46 +255,46 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
             transition={{ delay: 0.5 }}
             className="rounded-2xl border-2 p-6 text-center"
             style={{
-              borderColor: getConfidenceColor(stats.overlapPct),
-              background: getConfidenceColor(stats.overlapPct) + "08",
+              borderColor: getConfidenceColor(stats.paramOverlapPct),
+              background: getConfidenceColor(stats.paramOverlapPct) + "08",
             }}
           >
-            <div className="text-3xl mb-2">{stats.overlapPct >= 60 ? "✅" : stats.overlapPct >= 30 ? "📈" : "📊"}</div>
+            <div className="text-3xl mb-2">{stats.paramOverlapPct >= 60 ? "🎯" : stats.paramOverlapPct >= 30 ? "🧩" : "📊"}</div>
             <h3 className="text-lg font-black text-foreground mb-1">
-              {stats.overlapPct >= 60
-                ? "الامتحان الرسمي = فرض عادي + ضغط نفسي"
-                : stats.overlapPct >= 30
-                ? "هناك تشابه كبير، أنت مستعد أكثر مما تعتقد"
-                : "ارفع المزيد من الامتحانات للحصول على نتائج أدق"}
+              {stats.paramOverlapPct >= 60
+                ? "فروضك تطابق البنية الذهنية للامتحان الرسمي بدقة!"
+                : stats.paramOverlapPct >= 30
+                ? "هناك تشابه في الأنماط المعرفية والجهد الذهني"
+                : "بنية التدريب الحالية سطحية مقارنة بالامتحان الرسمي"}
             </h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              {stats.overlapPct >= 60
-                ? `${stats.overlapPct}% من مواضيع الامتحان الرسمي موجودة في فروضك. إذا حللت الفرض، فأنت جاهز!`
-                : `${stats.commonTypes.length} مواضيع مشتركة بين الرسمي والعادي. واصل التدريب!`}
+              {stats.paramOverlapPct >= 60
+                ? `نسبة تقارب الأنماط (كـالاستنتاج أو الدمج) تصل لـ ${stats.paramOverlapPct}%. استمر في مواجهة مثل هذا الجهد الذهني العالي.`
+                : `${stats.commonParams.length} أنماط مشتركة فقط. واصل التدرب على مسائل أكثر دمجاً وتجريداً.`}
             </p>
           </motion.div>
         </>
       )}
 
-      {/* Top Repeated in Official */}
-      {stats.topRepeated.length > 0 && (
+      {/* Top Repeated Parameters in Official */}
+      {stats.topRepeatedParams.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="text-sm font-black text-foreground mb-4">🎯 أكثر المواضيع تكراراً في الامتحانات الرسمية</h3>
+          <h3 className="text-sm font-black text-foreground mb-4">🎯 البنية الذهنية الأكثر تكراراً في الرسمي</h3>
           <p className="text-[10px] text-muted-foreground mb-3">
-            هذه المواضيع تتكرر كل عام — ركّز عليها وستحل 80% من الامتحان
+            هذه الأنماط (وليس المجالات المبرمجة) هي التي تحدد صعوبة وطبيعة الامتحان حقاً.
           </p>
           <div className="space-y-2">
-            {stats.topRepeated.map(([type, count], i) => {
+            {stats.topRepeatedParams.map(([param, count], i) => {
               const pct = Math.round((count / Math.max(stats.officialQs.length, 1)) * 100);
               return (
-                <div key={type} className="flex items-center gap-3">
+                <div key={param} className="flex items-center gap-3">
                   <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-primary-foreground"
                     style={{ background: `hsl(var(--primary) / ${1 - i * 0.15})` }}>
                     {i + 1}
                   </span>
                   <div className="flex-1">
                     <div className="flex justify-between mb-0.5">
-                      <span className="text-xs font-bold text-foreground">{TYPE_LABELS_AR[type] || type}</span>
+                      <span className="text-xs font-bold text-foreground">{param}</span>
                       <span className="text-xs font-black text-primary">{count}× ({pct}%)</span>
                     </div>
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -289,18 +310,18 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
         </div>
       )}
 
-      {/* Surprise Topics */}
-      {stats.surpriseTypes.length > 0 && (
+      {/* Surprise Parameters */}
+      {stats.surpriseParams.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="text-sm font-black text-foreground mb-3">⚡ مواضيع تحتاج تحضير إضافي</h3>
+          <h3 className="text-sm font-black text-foreground mb-3">⚡ أنماط لم تتدرب عليها قط!</h3>
           <p className="text-[10px] text-muted-foreground mb-3">
-            هذه المواضيع ظهرت في الامتحانات الرسمية لكن لم تظهر في فروضك — راجعها!
+            تحتوي الامتحانات الرسمية على هذه الأنماط المعرفية، لكن فروضك المسجلة تخلو منها تماماً. يجب التركيز عليها تجنباً للصدمة!
           </p>
           <div className="flex flex-wrap gap-2">
-            {stats.surpriseTypes.filter(t => t !== "unclassified").map(type => (
-              <span key={type} className="text-xs px-3 py-1.5 rounded-full font-bold border-2"
+            {stats.surpriseParams.map(param => (
+              <span key={param} className="text-xs px-3 py-1.5 rounded-full font-bold border-2"
                 style={{ borderColor: "hsl(var(--destructive))", color: "hsl(var(--destructive))", background: "hsl(var(--destructive) / 0.05)" }}>
-                ⚠️ {TYPE_LABELS_AR[type] || type}
+                ⚠️ {param}
               </span>
             ))}
           </div>
@@ -455,8 +476,8 @@ function getConfidenceColor(pct: number): string {
 }
 
 function getConfidenceMessage(pct: number): string {
-  if (pct >= 80) return "تشابه شبه كامل! الامتحان الرسمي هو نفس الفرض العادي بغلاف مختلف.";
-  if (pct >= 60) return "تشابه عالي جداً. أنت تتدرب على نفس المواضيع يومياً.";
-  if (pct >= 40) return "تشابه جيد. معظم المواضيع مألوفة لديك.";
-  return "ارفع المزيد من الامتحانات لتحليل أدق.";
+  if (pct >= 80) return "الأنماط الاستنتاجية والتركيبية مألوفة لك بقوة.";
+  if (pct >= 60) return "بنية تمارينك تتقارب مع الجهد الإدراكي الرسمي.";
+  if (pct >= 40) return "هناك نقص في استهداف التعقيد الرسمي. راجع النماذج المدمجة.";
+  return "بنية فروضك سطحية. تدرب على مسائل استنتاجية أكثر.";
 }

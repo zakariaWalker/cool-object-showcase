@@ -338,9 +338,56 @@ export function useExamKBStore(primaryPatterns: Pattern[] = []) {
 
   const exportData = useCallback(() => ({ exams, questions }), [exams, questions]);
 
-  const importData = useCallback((data: { exams?: ExamEntry[]; questions?: ExamQuestion[] }) => {
-    if (data.exams) setExams(data.exams);
-    if (data.questions) setQuestions(data.questions);
+  const importData = useCallback(async (data: { exams?: ExamEntry[]; questions?: ExamQuestion[] }) => {
+    const userId = await getUserId();
+    if (!userId) {
+      console.error("User not logged in, import aborted.");
+      return;
+    }
+
+    if (data.exams && data.exams.length > 0) {
+      setExams(prev => {
+        const existingIds = new Set(prev.map(e => e.id));
+        const newExams = data.exams!.filter(e => !existingIds.has(e.id));
+        return [...prev, ...newExams];
+      });
+      
+      const examRows = data.exams.map(e => ({
+        id: e.id,
+        user_id: userId,
+        year: e.year,
+        session: e.session,
+        format: e.format,
+        grade: e.grade,
+        stream: e.stream || null,
+      }));
+      await (supabase as any).from("exam_kb_entries").upsert(examRows);
+    }
+
+    if (data.questions && data.questions.length > 0) {
+      setQuestions(prev => {
+        const existingIds = new Set(prev.map(q => q.id));
+        const newQs = data.questions!.filter(q => !existingIds.has(q.id));
+        return [...prev, ...newQs];
+      });
+
+      const qRows = data.questions.map(q => ({
+        id: q.id,
+        user_id: userId,
+        exam_id: q.examId,
+        section_label: q.sectionLabel,
+        question_number: q.questionNumber,
+        sub_question: q.subQuestion || null,
+        text: q.text,
+        points: q.points,
+        type: q.type,
+        difficulty: q.difficulty,
+        concepts: q.concepts,
+        linked_pattern_ids: q.linkedPatternIds,
+        linked_exercise_ids: q.linkedExerciseIds,
+      }));
+      await (supabase as any).from("exam_kb_questions").upsert(qRows);
+    }
   }, []);
 
   return {
