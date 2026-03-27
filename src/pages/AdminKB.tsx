@@ -137,6 +137,12 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     store.reload();
   };
 
+  const handleSaveToDB = async () => {
+    const ok = await store.saveAllToDB();
+    if (ok) alert(`✅ تم حفظ ${store.exercises.length} تمرين + ${store.patterns.length} نمط + ${store.deconstructions.length} تفكيك في قاعدة البيانات`);
+    else alert("❌ حدث خطأ أثناء الحفظ");
+  };
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ direction: "rtl" }}>
       <AdminSidebar
@@ -161,6 +167,11 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             className="text-xs px-3 py-1.5 rounded font-bold text-primary-foreground btn-press"
             style={{ background: "hsl(var(--primary))" }}>
             تحميل التمارين
+          </button>
+          <button onClick={handleSaveToDB} disabled={store.loading}
+            className="text-xs px-3 py-1.5 rounded font-bold text-primary-foreground btn-press"
+            style={{ background: "hsl(38 92% 50%)" }}>
+            {store.loading ? "جاري الحفظ..." : "💾 حفظ في DB"}
           </button>
           <button onClick={() => { try { sessionStorage.removeItem(PIN_STORAGE_KEY); } catch {} onLogout(); }}
             className="text-xs px-3 py-1.5 rounded border font-bold"
