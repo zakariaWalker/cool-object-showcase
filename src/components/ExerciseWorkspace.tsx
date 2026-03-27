@@ -327,14 +327,14 @@ export function ExerciseWorkspace({
             position: "relative",
             overflow: "hidden",
           }}>
-            <div style={{ position: "absolute", top: -30, left: -20, width: 120, height: 120, borderRadius: "50%", background: "hsla(0,0%,100%,0.05)" }} />
-            <div style={{ position: "absolute", bottom: -20, right: -10, width: 80, height: 80, borderRadius: "50%", background: "hsla(0,0%,100%,0.04)" }} />
+            <div style={{ position: "absolute", top: -30, left: -20, width: 120, height: 120, borderRadius: "50%", background: "hsl(var(--primary) / 0.08)" }} />
+            <div style={{ position: "absolute", bottom: -20, right: -10, width: 80, height: 80, borderRadius: "50%", background: "hsl(var(--primary) / 0.05)" }} />
             <div style={{ position: "relative" }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>🎓</div>
               <h1 style={{ fontSize: 22, fontWeight: 900, color: "hsl(var(--primary-foreground))", margin: "0 0 4px 0" }}>
                 محرك التمارين SOTA
               </h1>
-              <p style={{ fontSize: 12, color: "hsla(0,0%,100%,0.65)", margin: 0 }}>
+              <p style={{ fontSize: 12, color: "hsl(var(--primary-foreground) / 0.7)", margin: 0 }}>
                 حل محلي كامل • كشف الأخطاء المفاهيمية • مراجعة متباعدة
               </p>
             </div>
@@ -357,10 +357,10 @@ export function ExerciseWorkspace({
                 padding: "14px 16px",
                 borderBottom: "1px solid hsl(var(--border))",
               }}>
-                <h2 style={{ fontSize: 15, fontWeight: 800, color: "#1e293b", margin: 0 }}>
+                <h2 style={{ fontSize: 15, fontWeight: 800, color: "hsl(var(--foreground))", margin: 0 }}>
                   📚 مكتبة التمارين
                 </h2>
-                <p style={{ fontSize: 11, color: "#6b7280", margin: "4px 0 0 0" }}>
+                <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", margin: "4px 0 0 0" }}>
                   اختر تمريناً لفتحه مباشرة
                 </p>
               </div>
@@ -455,10 +455,10 @@ export function ExerciseWorkspace({
                     cursor: "pointer",
                     transition: "all 0.2s",
                     background: inputMode === mode
-                      ? "linear-gradient(135deg, hsl(var(--algebra)), hsl(var(--probability)))"
-                      : "hsl(var(--card))",
-                    color: inputMode === mode ? "white" : "hsl(var(--muted-foreground))",
-                    boxShadow: inputMode === mode ? "0 2px 8px hsl(var(--algebra) / 0.3)" : "none",
+                      ? "hsl(var(--primary))"
+                      : "hsl(var(--muted))",
+                    color: inputMode === mode ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
+                    boxShadow: inputMode === mode ? "var(--glow-primary)" : "none",
                   }}
                 >
                   {mode === "library" ? "📚 المكتبة" : mode === "text" ? "✏️ نص حر" : mode === "dataset" ? "📁 ملف JSON" : mode === "deconstruct" ? "🔬 تفكيك" : "🧠 ذكاء"}

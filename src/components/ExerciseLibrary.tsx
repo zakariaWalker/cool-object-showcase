@@ -110,6 +110,7 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Sync with profile when it loads
   useEffect(() => {
@@ -203,6 +204,7 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
   };
 
   const handleSelectExercise = (ex: KBExercise) => {
+    setSelectedId(ex.id);
     onSelectExercise({
       url: "",
       title: `${ex.source} — ${ex.chapter}`,
@@ -341,26 +343,35 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
 
               {openChapters[group.chapter] && (
                 <div className="p-2 space-y-1.5 bg-muted/20">
-                  {group.exercises.map(ex => (
-                    <button
-                      key={ex.id}
-                      onClick={() => handleSelectExercise(ex)}
-                      className="w-full text-right p-3 rounded-md border border-border bg-card hover:border-primary/50 hover:shadow-sm transition-all"
-                      dir="rtl"
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[12px] text-primary font-bold">{ex.source}</span>
+                  {group.exercises.map(ex => {
+                    const isSelected = selectedId === ex.id;
+                    return (
+                      <button
+                        key={ex.id}
+                        onClick={() => handleSelectExercise(ex)}
+                        className={`w-full text-right p-3 rounded-md transition-all text-left flex flex-col gap-1.5 ${
+                          isSelected 
+                            ? "selected-card" 
+                            : "bg-card border border-border card-hover hover:border-primary/50"
+                        }`}
+                        dir="rtl"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-[12px] font-bold ${isSelected ? "text-primary text-glow-primary" : "text-primary"}`}>
+                            {ex.source}
+                          </span>
                         {ex.type && ex.type !== "unclassified" && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary/10 text-secondary font-bold">
                             {ex.type}
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-                        {ex.text}
-                      </div>
-                    </button>
-                  ))}
+                        <div className={`text-[11px] line-clamp-2 leading-relaxed ${isSelected ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
+                          {ex.text}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

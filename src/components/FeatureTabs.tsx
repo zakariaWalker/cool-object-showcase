@@ -105,8 +105,8 @@ function severity(failRate: number): "high" | "medium" | "low" {
   if (failRate >= 0.35) return "medium";
   return "low";
 }
-const SEV_COLOR = { high: "#EF4444", medium: "#F59E0B", low: "#10B981" };
-const SEV_BG    = { high: "#FEF2F2", medium: "#FFFBEB", low: "#F0FDF4" };
+const SEV_COLOR = { high: "hsl(var(--destructive))", medium: "hsl(var(--accent))", low: "hsl(var(--geometry))" };
+const SEV_BG    = { high: "hsl(var(--destructive) / 0.08)", medium: "hsl(var(--accent) / 0.08)", low: "hsl(var(--geometry) / 0.05)" };
 const SEV_AR    = { high: "ثغرة حرجة", medium: "ثغرة متوسطة", low: "ثغرة بسيطة" };
 
 // ─── Diagnostic Quiz questions — curated from DZ KB ───────────────────────
@@ -256,14 +256,14 @@ function GapDetector() {
         {/* Progress */}
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#4F46E5" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "hsl(var(--primary))" }}>
               التقييم التشخيصي
             </span>
-            <span style={{ fontSize: 11, color: "#6b7280" }}>
+            <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
               {qIndex + 1} / {DIAGNOSTIC_QUESTIONS.length}
             </span>
           </div>
-          <div style={{ height: 6, background: "#E5E7EB", borderRadius: 3, overflow: "hidden" }}>
+          <div style={{ height: 6, background: "hsl(var(--border))", borderRadius: 3, overflow: "hidden" }}>
             <motion.div
               animate={{ width: `${progress}%` }}
               style={{ height: "100%", background: "linear-gradient(90deg, #4F46E5, #7C3AED)", borderRadius: 3 }}
@@ -272,10 +272,10 @@ function GapDetector() {
         </div>
 
         {/* Concept badge */}
-        <Chip color="#4F46E5" bg="#EEF2FF">{label(q.concept)}</Chip>
+        <Chip color="hsl(var(--primary))" bg="hsl(var(--primary) / 0.1)">{label(q.concept)}</Chip>
 
         {/* Question */}
-        <div style={{ background: "#fff", borderRadius: 14, padding: "16px", border: "1.5px solid #E5E7EB", fontSize: 15, fontWeight: 700, color: "#1e293b", lineHeight: 1.8, direction: "rtl" }}>
+        <div style={{ background: "hsl(var(--card))", borderRadius: 14, padding: "16px", border: "1.5px solid #E5E7EB", fontSize: 15, fontWeight: 700, color: "hsl(var(--foreground))", lineHeight: 1.8, direction: "rtl" }}>
           {q.question}
         </div>
 
@@ -284,12 +284,12 @@ function GapDetector() {
           {shuffledChoices.map((choice, i) => {
             const isCorrect = choice === q.correct;
             const isSelected = selected === choice;
-            let bg = "#F8FAFC", border = "#E5E7EB", color = "#374151";
+            let bg = "hsl(var(--card))", border = "hsl(var(--border))", color = "hsl(var(--foreground))";
             if (selected) {
-              if (isCorrect) { bg = "#ECFDF5"; border = "#34D399"; color = "#065F46"; }
-              else if (isSelected) { bg = "#FEF2F2"; border = "#F87171"; color = "#991B1B"; }
-              else { bg = "#F9FAFB"; border = "#E5E7EB"; color = "#9CA3AF"; }
-            } else if (isSelected) { bg = "#EEF2FF"; border = "#4F46E5"; color = "#3730A3"; }
+              if (isCorrect) { bg = "hsl(var(--geometry) / 0.08)"; border = "hsl(var(--geometry) / 0.6)"; color = "hsl(var(--geometry))"; }
+              else if (isSelected) { bg = "hsl(var(--destructive) / 0.08)"; border = "hsl(var(--destructive) / 0.7)"; color = "hsl(var(--destructive))"; }
+              else { bg = "hsl(var(--card))"; border = "hsl(var(--border))"; color = "hsl(var(--muted-foreground))"; }
+            } else if (isSelected) { bg = "hsl(var(--primary) / 0.1)"; border = "hsl(var(--primary))"; color = "hsl(var(--primary))"; }
             return (
               <motion.button
                 key={i} whileTap={{ scale: 0.97 }}
@@ -308,12 +308,12 @@ function GapDetector() {
         {/* Explanation after answer */}
         {selected && (
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-            style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "#92400E", lineHeight: 1.7 }}>
+            style={{ background: "hsl(var(--accent) / 0.08)", border: "1px solid #FDE68A", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "hsl(var(--accent))", lineHeight: 1.7 }}>
             💡 {q.explanation}
           </motion.div>
         )}
 
-        <button onClick={resetQuiz} style={{ fontSize: 11, color: "#9CA3AF", background: "none", border: "none", cursor: "pointer", fontFamily: "'Tajawal',sans-serif" }}>
+        <button onClick={resetQuiz} style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", background: "none", border: "none", cursor: "pointer", fontFamily: "'Tajawal',sans-serif" }}>
           إلغاء التقييم ✕
         </button>
       </div>
@@ -328,24 +328,24 @@ function GapDetector() {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {/* Score */}
-        <div style={{ background: score >= total * 0.7 ? "#ECFDF5" : "#FEF2F2", borderRadius: 14, padding: "18px", textAlign: "center", border: `1px solid ${score >= total * 0.7 ? "#A7F3D0" : "#FECACA"}` }}>
+        <div style={{ background: score >= total * 0.7 ? "hsl(var(--geometry) / 0.08)" : "hsl(var(--destructive) / 0.08)", borderRadius: 14, padding: "18px", textAlign: "center", border: `1px solid ${score >= total * 0.7 ? "hsl(var(--geometry) / 0.3)" : "hsl(var(--destructive) / 0.2)"}` }}>
           <div style={{ fontSize: 36 }}>{score >= total * 0.7 ? "🎉" : "💪"}</div>
-          <p style={{ fontSize: 20, fontWeight: 900, color: score >= total * 0.7 ? "#065F46" : "#DC2626", margin: "8px 0 4px" }}>
+          <p style={{ fontSize: 20, fontWeight: 900, color: score >= total * 0.7 ? "hsl(var(--geometry))" : "hsl(var(--destructive))", margin: "8px 0 4px" }}>
             {score} / {total}
           </p>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+          <p style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", margin: 0 }}>
             {score >= total * 0.7 ? "ممتاز! مستواك جيد جداً" : "لا بأس — شاهد ثغراتك أدناه"}
           </p>
         </div>
 
         {/* Weak concepts */}
         {weakConcepts.length > 0 && (
-          <div style={{ background: "#FFF7ED", borderRadius: 12, padding: "12px 14px", border: "1px solid #FED7AA" }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: "#C2410C", margin: "0 0 8px 0" }}>
+          <div style={{ background: "hsl(var(--accent) / 0.06)", borderRadius: 12, padding: "12px 14px", border: "1px solid #FED7AA" }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: "hsl(var(--accent))", margin: "0 0 8px 0" }}>
               ⚠️ مفاهيم تحتاج مراجعة
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {weakConcepts.map(c => <Chip key={c} color="#C2410C" bg="#FEF2F2">{label(c)}</Chip>)}
+              {weakConcepts.map(c => <Chip key={c} color="hsl(var(--accent))" bg="hsl(var(--destructive) / 0.08)">{label(c)}</Chip>)}
             </div>
           </div>
         )}
@@ -353,12 +353,12 @@ function GapDetector() {
         {/* Detail per question */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {quizAnswers.map((a, i) => (
-            <div key={a.id} style={{ display: "flex", gap: 8, alignItems: "center", background: "#fff", borderRadius: 10, padding: "8px 12px", border: `1px solid ${a.correct ? "#D1FAE5" : "#FEE2E2"}` }}>
+            <div key={a.id} style={{ display: "flex", gap: 8, alignItems: "center", background: "hsl(var(--card))", borderRadius: 10, padding: "8px 12px", border: `1px solid ${a.correct ? "hsl(var(--geometry) / 0.15)" : "hsl(var(--destructive) / 0.12)"}` }}>
               <span style={{ fontSize: 14 }}>{a.correct ? "✅" : "❌"}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#374151", flex: 1 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", flex: 1 }}>
                 {DIAGNOSTIC_QUESTIONS[i]?.question.slice(0, 40)}...
               </span>
-              <Chip color={a.correct ? "#059669" : "#DC2626"} bg={a.correct ? "#D1FAE5" : "#FEE2E2"}>
+              <Chip color={a.correct ? "hsl(var(--geometry))" : "hsl(var(--destructive))"} bg={a.correct ? "hsl(var(--geometry) / 0.15)" : "hsl(var(--destructive) / 0.12)"}>
                 {label(a.concept)}
               </Chip>
             </div>
@@ -366,7 +366,7 @@ function GapDetector() {
         </div>
 
         <button onClick={resetQuiz}
-          style={{ background: "linear-gradient(135deg,#7B75CC,#9B7BC4)", color: "#fff", border: "none", borderRadius: 12, padding: "12px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal',sans-serif" }}>
+          style={{ background: "linear-gradient(135deg,#7B75CC,#9B7BC4)", color: "hsl(var(--card))", border: "none", borderRadius: 12, padding: "12px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal',sans-serif" }}>
           🔄 أعد التقييم
         </button>
       </div>
@@ -376,22 +376,22 @@ function GapDetector() {
   // ── Normal Gap View ───────────────────────────────────────────────────────
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <p style={{ fontSize: 12, color: "#6b7280", margin: 0, lineHeight: 1.7 }}>
+      <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", margin: 0, lineHeight: 1.7 }}>
         يحلل إجاباتك ويكشف الثغرات — أو ابدأ التقييم التشخيصي المدروس.
       </p>
 
       {/* Start diagnostic button */}
       <button
         onClick={() => { setQuizMode(true); setQIndex(0); setSelected(null); setQuizAnswers([]); setQuizDone(false); }}
-        style={{ background: "linear-gradient(135deg,#7B75CC,#9B7BC4)", color: "#fff", border: "none", borderRadius: 12, padding: "13px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "'Tajawal',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        style={{ background: "linear-gradient(135deg,#7B75CC,#9B7BC4)", color: "hsl(var(--card))", border: "none", borderRadius: 12, padding: "13px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "'Tajawal',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
       >
         🧪 ابدأ التقييم التشخيصي — {DIAGNOSTIC_QUESTIONS.length} أسئلة
       </button>
 
       {noData && (
-        <div style={{ background: "#F3F4F6", borderRadius: 12, padding: "20px 16px", textAlign: "center" }}>
+        <div style={{ background: "hsl(var(--muted))", borderRadius: 12, padding: "20px 16px", textAlign: "center" }}>
           <span style={{ fontSize: 28 }}>📊</span>
-          <p style={{ fontSize: 13, color: "#6b7280", marginTop: 8 }}>
+          <p style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>
             حلّ بعض التمارين أو ابدأ التقييم أعلاه — ستظهر ثغراتك هنا تلقائياً.
           </p>
         </div>
@@ -399,7 +399,7 @@ function GapDetector() {
 
       {gaps.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", margin: 0 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "hsl(var(--foreground))", margin: 0 }}>
             🔍 ثغرات من جلساتك ({gaps.length} مفهوم)
           </p>
           {gaps.map(g => (
@@ -408,7 +408,7 @@ function GapDetector() {
               <button onClick={() => setExpandedGap(expandedGap === g.concept ? null : g.concept)}
                 style={{ width: "100%", background: "none", border: "none", padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textAlign: "right" }}>
                 <span style={{ width: 10, height: 10, borderRadius: "50%", background: SEV_COLOR[g.sev], flexShrink: 0 }} />
-                <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: "#1e293b" }}>{label(g.concept)}</span>
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))" }}>{label(g.concept)}</span>
                 <span style={{ fontSize: 11, color: SEV_COLOR[g.sev], fontWeight: 700 }}>
                   {Math.round(g.failRate * 100)}% خطأ
                 </span>
@@ -420,13 +420,13 @@ function GapDetector() {
                 <div style={{ padding: "0 14px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
                   <div style={{ display: "flex", gap: 8 }}>
                     <Chip color={SEV_COLOR[g.sev]} bg={`${SEV_COLOR[g.sev]}18`}>{SEV_AR[g.sev]}</Chip>
-                    <Chip color="#6b7280" bg="#f3f4f6">{g.failCount} خطأ من {g.total} محاولة</Chip>
+                    <Chip color="hsl(var(--muted-foreground))" bg="#f3f4f6">{g.failCount} خطأ من {g.total} محاولة</Chip>
                   </div>
                   {g.prereqs.length > 0 && (
                     <div>
-                      <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 6px 0" }}>المفاهيم الأساسية المطلوبة:</p>
+                      <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", margin: "0 0 6px 0" }}>المفاهيم الأساسية المطلوبة:</p>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                        {g.prereqs.map(p => <Chip key={p} color="#4F46E5" bg="#EEF2FF">{label(p)}</Chip>)}
+                        {g.prereqs.map(p => <Chip key={p} color="hsl(var(--primary))" bg="hsl(var(--primary) / 0.1)">{label(p)}</Chip>)}
                       </div>
                     </div>
                   )}
@@ -440,13 +440,13 @@ function GapDetector() {
 
       {kbGaps.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", margin: 0 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "hsl(var(--foreground))", margin: 0 }}>
             🧠 ثغرات مرصودة من قاعدة المعرفة
           </p>
           {kbGaps.map(g => (
-            <div key={g.id} style={{ background: "#fff", borderRadius: 10, border: "1px solid #e5e7eb", padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 13, color: "#374151", fontWeight: 600 }}>{label(g.signature)}</span>
-              <Chip color="#7C3AED" bg="#F5F3FF">تكرار {g.frequency}</Chip>
+            <div key={g.id} style={{ background: "hsl(var(--card))", borderRadius: 10, border: "1px solid #e5e7eb", padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 13, color: "hsl(var(--foreground))", fontWeight: 600 }}>{label(g.signature)}</span>
+              <Chip color="hsl(var(--primary))" bg="#F5F3FF">تكرار {g.frequency}</Chip>
             </div>
           ))}
         </div>
@@ -541,10 +541,10 @@ function LearningPath({ domain }: { domain?: Domain }) {
   }
 
   const STATUS_STYLE = {
-    done:   { icon: "✅", color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
-    gap:    { icon: "⚠️", color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
-    next:   { icon: "▶️", color: "#4F46E5", bg: "#EEF2FF", border: "#C7D2FE" },
-    locked: { icon: "🔒", color: "#9CA3AF", bg: "#F9FAFB", border: "#E5E7EB" },
+    done:   { icon: "✅", color: "hsl(var(--geometry))", bg: "hsl(var(--geometry) / 0.08)", border: "hsl(var(--geometry) / 0.3)" },
+    gap:    { icon: "⚠️", color: "hsl(var(--destructive))", bg: "hsl(var(--destructive) / 0.08)", border: "hsl(var(--destructive) / 0.2)" },
+    next:   { icon: "▶️", color: "hsl(var(--primary))", bg: "hsl(var(--primary) / 0.1)", border: "hsl(var(--primary) / 0.3)" },
+    locked: { icon: "🔒", color: "hsl(var(--muted-foreground))", bg: "hsl(var(--card))", border: "hsl(var(--border))" },
   };
 
   const nextGap = path.find(p => p.status === "gap");
@@ -552,13 +552,13 @@ function LearningPath({ domain }: { domain?: Domain }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <p style={{ fontSize: 12, color: "#6b7280", margin: 0, lineHeight: 1.7 }}>
+      <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", margin: 0, lineHeight: 1.7 }}>
         مسار مخصص لإتقان مفاهيم هذا المجال بالترتيب الصحيح.
       </p>
 
       {/* Recommendation banner */}
       {(nextGap || nextUp) && (
-        <div style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)", borderRadius: 12, padding: "14px 16px", color: "#fff" }}>
+        <div style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)", borderRadius: 12, padding: "14px 16px", color: "hsl(var(--card))" }}>
           <p style={{ fontSize: 11, opacity: 0.8, margin: "0 0 4px 0" }}>📍 التوصية الآن</p>
           <p style={{ fontSize: 14, fontWeight: 800, margin: 0 }}>
             {nextGap ? `عالج ثغرة: ${label(nextGap.concept)}` : `ابدأ بـ: ${label(nextUp!.concept)}`}
@@ -569,7 +569,7 @@ function LearningPath({ domain }: { domain?: Domain }) {
       {/* Path steps */}
       <div style={{ position: "relative" }}>
         {/* Vertical line */}
-        <div style={{ position: "absolute", right: 18, top: 0, bottom: 0, width: 2, background: "#E5E7EB", zIndex: 0 }} />
+        <div style={{ position: "absolute", right: 18, top: 0, bottom: 0, width: 2, background: "hsl(var(--border))", zIndex: 0 }} />
         <div style={{ display: "flex", flexDirection: "column", gap: 10, position: "relative", zIndex: 1 }}>
           {path.map((item, i) => {
             const st = STATUS_STYLE[item.status];
@@ -589,13 +589,13 @@ function LearningPath({ domain }: { domain?: Domain }) {
                       {(item.status === "gap" || item.status === "next") && (
                         <button
                           onClick={() => fetchExercisesFor(item.concept)}
-                          style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 8, border: "none", background: st.color, color: "#fff", cursor: "pointer", flexShrink: 0, fontFamily: "'Tajawal',sans-serif" }}
+                          style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 8, border: "none", background: st.color, color: "hsl(var(--card))", cursor: "pointer", flexShrink: 0, fontFamily: "'Tajawal',sans-serif" }}
                         >
                           {expandedConcept === item.concept ? "▲ إخفاء" : "📚 تمارين"}
                         </button>
                       )}
                     </div>
-                    <p style={{ fontSize: 11, color: "#6b7280", margin: 0 }}>{item.description}</p>
+                    <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", margin: 0 }}>{item.description}</p>
                   </div>
                   {/* Exercises panel */}
                   <AnimatePresence>
@@ -603,18 +603,18 @@ function LearningPath({ domain }: { domain?: Domain }) {
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                         style={{ overflow: "hidden", marginTop: 6 }}>
                         {loadingEx ? (
-                          <p style={{ fontSize: 12, color: "#6b7280", padding: "8px 12px" }}>⏳ جارٍ تحميل التمارين...</p>
+                          <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", padding: "8px 12px" }}>⏳ جارٍ تحميل التمارين...</p>
                         ) : (exercises[item.concept] ?? []).length > 0 ? (
                           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                             {(exercises[item.concept] ?? []).map((ex, ei) => (
-                              <div key={ei} style={{ background: "#fff", border: `1px solid ${st.border}`, borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#374151", cursor: "pointer" }}
+                              <div key={ei} style={{ background: "hsl(var(--card))", border: `1px solid ${st.border}`, borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "hsl(var(--foreground))", cursor: "pointer" }}
                                 onClick={() => { const apiBase = (import.meta.env.VITE_API_BASE ?? "").replace(/\/$/, ""); if (ex.id) window.open(`${apiBase}/exercise/${ex.id}`, "_blank"); }}>
                                 📝 {ex.title}
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <p style={{ fontSize: 12, color: "#9CA3AF", padding: "8px 12px" }}>لا توجد تمارين محددة — استخدم المكتبة.</p>
+                          <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", padding: "8px 12px" }}>لا توجد تمارين محددة — استخدم المكتبة.</p>
                         )}
                       </motion.div>
                     )}
@@ -627,9 +627,9 @@ function LearningPath({ domain }: { domain?: Domain }) {
       </div>
 
       {path.length === 0 && (
-        <div style={{ background: "#F3F4F6", borderRadius: 12, padding: "20px 16px", textAlign: "center" }}>
+        <div style={{ background: "hsl(var(--muted))", borderRadius: 12, padding: "20px 16px", textAlign: "center" }}>
           <span style={{ fontSize: 28 }}>🗺️</span>
-          <p style={{ fontSize: 13, color: "#6b7280", marginTop: 8 }}>حلّ بعض التمارين لتوليد مسارك الشخصي.</p>
+          <p style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>حلّ بعض التمارين لتوليد مسارك الشخصي.</p>
         </div>
       )}
     </div>
@@ -699,7 +699,7 @@ function ConceptMapView({ domain }: { domain?: Domain }) {
 
   function nodeColor(c: string) {
     if (coreConcepts.includes(c)) return accent;
-    return "#64748B";
+    return "hsl(var(--muted-foreground))";
   }
 
   const selNode = selectedNode;
@@ -719,7 +719,7 @@ function ConceptMapView({ domain }: { domain?: Domain }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <p style={{ fontSize: 12, color: "#6b7280", margin: 0, lineHeight: 1.7 }}>
+      <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", margin: 0, lineHeight: 1.7 }}>
         اضغط على أي مفهوم لتفاصيله — الترتيب من الأساسي إلى المتقدم.
       </p>
 
@@ -737,8 +737,8 @@ function ConceptMapView({ domain }: { domain?: Domain }) {
                   style={{
                     display: "flex", flexDirection: "column", alignItems: "center",
                     gap: 4, padding: "10px 12px", borderRadius: 12,
-                    border: `2px solid ${isSel ? accent : isCore ? `${accent}60` : "#E5E7EB"}`,
-                    background: isSel ? accent : isCore ? `${accent}10` : "#F9FAFB",
+                    border: `2px solid ${isSel ? accent : isCore ? `${accent}60` : "hsl(var(--border))"}`,
+                    background: isSel ? accent : isCore ? `${accent}10` : "hsl(var(--card))",
                     cursor: "pointer", minWidth: 72, transition: "all 0.15s",
                     fontFamily: "'Tajawal', sans-serif",
                   }}
@@ -748,7 +748,7 @@ function ConceptMapView({ domain }: { domain?: Domain }) {
                   </span>
                   <span style={{
                     fontSize: 11, fontWeight: isSel ? 800 : isCore ? 700 : 500,
-                    color: isSel ? "#fff" : isCore ? accent : "#64748B",
+                    color: isSel ? "hsl(var(--card))" : isCore ? accent : "hsl(var(--muted-foreground))",
                     textAlign: "center", lineHeight: 1.3, maxWidth: 70,
                   }}>
                     {label(c)}
@@ -756,7 +756,7 @@ function ConceptMapView({ domain }: { domain?: Domain }) {
                 </button>
                 {/* Arrow between nodes */}
                 {i < chain.length - 1 && (
-                  <div style={{ fontSize: 16, color: "#CBD5E1", padding: "0 4px" }}>→</div>
+                  <div style={{ fontSize: 16, color: "hsl(var(--border))", padding: "0 4px" }}>→</div>
                 )}
               </div>
             );
@@ -774,9 +774,9 @@ function ConceptMapView({ domain }: { domain?: Domain }) {
             </p>
             {(PREREQS[selectedNode] ?? []).length > 0 && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6, alignItems: "center" }}>
-                <span style={{ fontSize: 11, color: "#6b7280" }}>يتطلب:</span>
+                <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>يتطلب:</span>
                 {(PREREQS[selectedNode] ?? []).map(p => (
-                  <span key={p} style={{ fontSize: 11, background: "#EEF2FF", color: accent, padding: "2px 8px", borderRadius: 8, fontWeight: 600 }}>
+                  <span key={p} style={{ fontSize: 11, background: "hsl(var(--primary) / 0.1)", color: accent, padding: "2px 8px", borderRadius: 8, fontWeight: 600 }}>
                     {label(p)}
                   </span>
                 ))}
@@ -784,9 +784,9 @@ function ConceptMapView({ domain }: { domain?: Domain }) {
             )}
             {Object.entries(PREREQS).filter(([, v]) => v.includes(selectedNode)).map(([k]) => k).length > 0 && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                <span style={{ fontSize: 11, color: "#6b7280" }}>يُمكّن:</span>
+                <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>يُمكّن:</span>
                 {Object.entries(PREREQS).filter(([, v]) => v.includes(selectedNode)).map(([k]) => (
-                  <span key={k} style={{ fontSize: 11, background: "#F0FDF4", color: "#059669", padding: "2px 8px", borderRadius: 8, fontWeight: 600 }}>
+                  <span key={k} style={{ fontSize: 11, background: "hsl(var(--geometry) / 0.05)", color: "hsl(var(--geometry))", padding: "2px 8px", borderRadius: 8, fontWeight: 600 }}>
                     {label(k)}
                   </span>
                 ))}
@@ -797,9 +797,9 @@ function ConceptMapView({ domain }: { domain?: Domain }) {
       </AnimatePresence>
 
       {chain.length === 0 && (
-        <div style={{ background: "#F3F4F6", borderRadius: 12, padding: "20px", textAlign: "center" }}>
+        <div style={{ background: "hsl(var(--muted))", borderRadius: 12, padding: "20px", textAlign: "center" }}>
           <span style={{ fontSize: 28 }}>🕸️</span>
-          <p style={{ fontSize: 13, color: "#6b7280", marginTop: 8 }}>لا توجد بيانات للمجال الحالي.</p>
+          <p style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>لا توجد بيانات للمجال الحالي.</p>
         </div>
       )}
     </div>
@@ -891,21 +891,21 @@ ${kbPattern ? `النمط المعرفي: ${kbPattern.name} — ${kbPattern.desc
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <p style={{ fontSize: 12, color: "#6b7280", margin: 0, lineHeight: 1.7 }}>
+      <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", margin: 0, lineHeight: 1.7 }}>
         اسأل عن أي خطوة في التمرين — سيشرح لك المدرّس الآلي بالعربية خطوة بخطوة.
       </p>
 
       {/* Chat area */}
       <div style={{ minHeight: 180, maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, padding: "4px 0" }}>
         {messages.length === 0 && (
-          <div style={{ background: "#F0FDF4", borderRadius: 12, padding: "14px 16px" }}>
-            <p style={{ fontSize: 13, color: "#065F46", fontWeight: 700, margin: "0 0 6px 0" }}>
+          <div style={{ background: "hsl(var(--geometry) / 0.05)", borderRadius: 12, padding: "14px 16px" }}>
+            <p style={{ fontSize: 13, color: "hsl(var(--geometry))", fontWeight: 700, margin: "0 0 6px 0" }}>
               مرحباً! أنا مدرّسك الآلي 🤖
             </p>
-            <p style={{ fontSize: 12, color: "#374151", margin: 0 }}>
+            <p style={{ fontSize: 12, color: "hsl(var(--foreground))", margin: 0 }}>
               يمكنك أن تسألني عن أي شيء في هذا التمرين:
             </p>
-            <ul style={{ fontSize: 12, color: "#374151", margin: "8px 0 0 0", paddingRight: 16, lineHeight: 2 }}>
+            <ul style={{ fontSize: 12, color: "hsl(var(--foreground))", margin: "8px 0 0 0", paddingRight: 16, lineHeight: 2 }}>
               <li>«كيف أبدأ حل هذا التمرين؟»</li>
               <li>«لماذا نستخدم هذه القاعدة؟»</li>
               <li>«اشرح لي الخطوة الأولى»</li>
@@ -919,8 +919,8 @@ ${kbPattern ? `النمط المعرفي: ${kbPattern.name} — ${kbPattern.desc
             style={{
               alignSelf: m.role === "user" ? "flex-end" : "flex-start",
               maxWidth: "88%",
-              background: m.role === "user" ? "#7B75CC" : "#fff",
-              color: m.role === "user" ? "#fff" : "#1e293b",
+              background: m.role === "user" ? "#7B75CC" : "hsl(var(--card))",
+              color: m.role === "user" ? "hsl(var(--card))" : "hsl(var(--foreground))",
               border: m.role === "user" ? "none" : "1px solid #E5E7EB",
               borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
               padding: "10px 14px",
@@ -934,7 +934,7 @@ ${kbPattern ? `النمط المعرفي: ${kbPattern.name} — ${kbPattern.desc
         ))}
 
         {loading && (
-          <div style={{ display: "flex", gap: 5, padding: "10px 14px", background: "#F9FAFB", borderRadius: "18px 18px 18px 4px", alignSelf: "flex-start", border: "1px solid #E5E7EB" }}>
+          <div style={{ display: "flex", gap: 5, padding: "10px 14px", background: "hsl(var(--card))", borderRadius: "18px 18px 18px 4px", alignSelf: "flex-start", border: "1px solid #E5E7EB" }}>
             {[0, 1, 2].map(i => (
               <motion.div key={i}
                 animate={{ y: [0, -5, 0] }}
@@ -946,7 +946,7 @@ ${kbPattern ? `النمط المعرفي: ${kbPattern.name} — ${kbPattern.desc
         )}
 
         {error && (
-          <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "#DC2626" }}>
+          <div style={{ background: "hsl(var(--destructive) / 0.08)", border: "1px solid #FECACA", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "hsl(var(--destructive))" }}>
             {error}
           </div>
         )}
@@ -965,13 +965,13 @@ ${kbPattern ? `النمط المعرفي: ${kbPattern.name} — ${kbPattern.desc
             flex: 1, resize: "none", borderRadius: 14, border: "1px solid #D1D5DB",
             padding: "10px 14px", fontSize: 13, fontFamily: "'Tajawal', sans-serif",
             direction: "rtl", outline: "none", lineHeight: 1.6,
-            background: "#F9FAFB",
+            background: "hsl(var(--card))",
           }}
         />
         <button onClick={sendMessage} disabled={!question.trim() || loading}
           style={{
             width: 42, height: 42, borderRadius: "50%", flexShrink: 0,
-            background: question.trim() && !loading ? "#7B75CC" : "#E5E7EB",
+            background: question.trim() && !loading ? "#7B75CC" : "hsl(var(--border))",
             border: "none", cursor: question.trim() && !loading ? "pointer" : "default",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 18, transition: "background 0.2s",
@@ -980,7 +980,7 @@ ${kbPattern ? `النمط المعرفي: ${kbPattern.name} — ${kbPattern.desc
         </button>
       </div>
 
-      <p style={{ fontSize: 10, color: "#9CA3AF", margin: 0, textAlign: "center" }}>
+      <p style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", margin: 0, textAlign: "center" }}>
         مدعوم بـ Gemini Flash · elmentor AI
       </p>
     </div>
@@ -1056,9 +1056,9 @@ function TeacherPanel() {
 
   if (!stats) {
     return (
-      <div style={{ background: "#F3F4F6", borderRadius: 12, padding: "24px 16px", textAlign: "center" }}>
+      <div style={{ background: "hsl(var(--muted))", borderRadius: 12, padding: "24px 16px", textAlign: "center" }}>
         <span style={{ fontSize: 32 }}>📊</span>
-        <p style={{ fontSize: 13, color: "#6b7280", marginTop: 10 }}>
+        <p style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 10 }}>
           حلّ التمارين لبناء لوحة متابعتك.
         </p>
       </div>
@@ -1080,7 +1080,7 @@ function TeacherPanel() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <p style={{ fontSize: 12, color: "#6b7280", margin: 0, lineHeight: 1.7 }}>
+      <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", margin: 0, lineHeight: 1.7 }}>
         ملخص أدائك الكامل — ثغراتك الجماعية وتقدمك عبر الوقت.
       </p>
 
@@ -1091,27 +1091,27 @@ function TeacherPanel() {
           { label: "معدل النجاح", value: `${Math.round(stats.overallRate * 100)}%`, icon: "🎯", valueColor: rateColor },
           { label: "سلسلة الأيام", value: `${stats.streak} يوم`, icon: "🔥" },
         ].map(kpi => (
-          <div key={kpi.label} style={{ background: "#fff", borderRadius: 12, padding: "12px 10px", textAlign: "center", border: "1px solid #E5E7EB" }}>
+          <div key={kpi.label} style={{ background: "hsl(var(--card))", borderRadius: 12, padding: "12px 10px", textAlign: "center", border: "1px solid #E5E7EB" }}>
             <div style={{ fontSize: 20, marginBottom: 4 }}>{kpi.icon}</div>
-            <div style={{ fontSize: 17, fontWeight: 900, color: kpi.valueColor ?? "#1e293b", lineHeight: 1 }}>{kpi.value}</div>
-            <div style={{ fontSize: 9, color: "#9CA3AF", marginTop: 4, lineHeight: 1.3 }}>{kpi.label}</div>
+            <div style={{ fontSize: 17, fontWeight: 900, color: kpi.valueColor ?? "hsl(var(--foreground))", lineHeight: 1 }}>{kpi.value}</div>
+            <div style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", marginTop: 4, lineHeight: 1.3 }}>{kpi.label}</div>
           </div>
         ))}
       </div>
 
       {/* Domain bars */}
-      <div style={{ background: "#fff", borderRadius: 12, padding: "14px", border: "1px solid #E5E7EB" }}>
-        <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", margin: "0 0 10px 0" }}>📈 التمارين حسب المجال</p>
+      <div style={{ background: "hsl(var(--card))", borderRadius: 12, padding: "14px", border: "1px solid #E5E7EB" }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: "hsl(var(--foreground))", margin: "0 0 10px 0" }}>📈 التمارين حسب المجال</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {Object.entries(stats.byDomain).map(([domain, count]) => {
             if (!count) return null;
             const pct = maxDomain ? (count / maxDomain) * 100 : 0;
-            const color = DOMAIN_COLOR[domain] ?? "#64748B";
+            const color = DOMAIN_COLOR[domain] ?? "hsl(var(--muted-foreground))";
             return (
               <div key={domain}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                  <span style={{ fontSize: 12, color: "#374151", fontWeight: 600 }}>{DOMAIN_AR[domain] ?? domain}</span>
-                  <span style={{ fontSize: 12, color: "#6b7280" }}>{count} تمرين</span>
+                  <span style={{ fontSize: 12, color: "hsl(var(--foreground))", fontWeight: 600 }}>{DOMAIN_AR[domain] ?? domain}</span>
+                  <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{count} تمرين</span>
                 </div>
                 <div style={{ height: 8, background: "#F1F5F9", borderRadius: 4, overflow: "hidden" }}>
                   <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6, delay: 0.1 }}
@@ -1125,14 +1125,14 @@ function TeacherPanel() {
 
       {/* Weak concepts */}
       {stats.weakConcepts.length > 0 && (
-        <div style={{ background: "#FEF2F2", borderRadius: 12, padding: "14px", border: "1px solid #FECACA" }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#DC2626", margin: "0 0 10px 0" }}>
+        <div style={{ background: "hsl(var(--destructive) / 0.08)", borderRadius: 12, padding: "14px", border: "1px solid #FECACA" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "hsl(var(--destructive))", margin: "0 0 10px 0" }}>
             ⚠️ أضعف المفاهيم — يُوصى بإعادة الشرح
           </p>
           {stats.weakConcepts.map(w => (
             <div key={w.concept} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: 12, color: "#374151", fontWeight: 600 }}>{label(w.concept)}</span>
-              <Chip color="#DC2626" bg="#FEF2F2">{Math.round(w.failRate * 100)}% خطأ</Chip>
+              <span style={{ fontSize: 12, color: "hsl(var(--foreground))", fontWeight: 600 }}>{label(w.concept)}</span>
+              <Chip color="hsl(var(--destructive))" bg="hsl(var(--destructive) / 0.08)">{Math.round(w.failRate * 100)}% خطأ</Chip>
             </div>
           ))}
         </div>
@@ -1140,14 +1140,14 @@ function TeacherPanel() {
 
       {/* Strong concepts */}
       {stats.strongConcepts.length > 0 && (
-        <div style={{ background: "#ECFDF5", borderRadius: 12, padding: "14px", border: "1px solid #A7F3D0" }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#059669", margin: "0 0 10px 0" }}>
+        <div style={{ background: "hsl(var(--geometry) / 0.08)", borderRadius: 12, padding: "14px", border: "1px solid #A7F3D0" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "hsl(var(--geometry))", margin: "0 0 10px 0" }}>
             ✅ أقوى المفاهيم — مُتقَنة
           </p>
           {stats.strongConcepts.map(s => (
             <div key={s.concept} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: 12, color: "#374151", fontWeight: 600 }}>{label(s.concept)}</span>
-              <Chip color="#059669" bg="#D1FAE5">{Math.round(s.successRate * 100)}% صحيح</Chip>
+              <span style={{ fontSize: 12, color: "hsl(var(--foreground))", fontWeight: 600 }}>{label(s.concept)}</span>
+              <Chip color="hsl(var(--geometry))" bg="hsl(var(--geometry) / 0.15)">{Math.round(s.successRate * 100)}% صحيح</Chip>
             </div>
           ))}
         </div>
@@ -1155,16 +1155,16 @@ function TeacherPanel() {
 
       {/* Weekly activity */}
       {stats.recentActivity.length > 0 && (
-        <div style={{ background: "#fff", borderRadius: 12, padding: "14px", border: "1px solid #E5E7EB" }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", margin: "0 0 10px 0" }}>📅 نشاط الأسبوع الحالي</p>
+        <div style={{ background: "hsl(var(--card))", borderRadius: 12, padding: "14px", border: "1px solid #E5E7EB" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "hsl(var(--foreground))", margin: "0 0 10px 0" }}>📅 نشاط الأسبوع الحالي</p>
           <div style={{ display: "flex", gap: 6, alignItems: "flex-end", height: 60 }}>
             {stats.recentActivity.map(d => {
               const maxCount = Math.max(...stats.recentActivity.map(x => x.count));
               const h = maxCount ? (d.count / maxCount) * 50 + 10 : 10;
               return (
                 <div key={d.date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                  <div style={{ width: "100%", height: h, background: "#4F46E5", borderRadius: "4px 4px 0 0", opacity: 0.8 }} />
-                  <span style={{ fontSize: 9, color: "#9CA3AF" }}>{d.date}</span>
+                  <div style={{ width: "100%", height: h, background: "hsl(var(--primary))", borderRadius: "4px 4px 0 0", opacity: 0.8 }} />
+                  <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground))" }}>{d.date}</span>
                 </div>
               );
             })}
@@ -1208,7 +1208,7 @@ export function FeatureTabs({ exercise, parsed, kbPattern }: FeatureTabsProps) {
   return (
     <div
       style={{
-        background: "#fff",
+        background: "hsl(var(--card))",
         borderRadius: 16,
         boxShadow: "0 2px 14px rgba(0,0,0,0.07)",
         overflow: "hidden",
@@ -1217,9 +1217,9 @@ export function FeatureTabs({ exercise, parsed, kbPattern }: FeatureTabsProps) {
       }}
     >
       {/* Section header */}
-      <div style={{ background: "#F8FAFC", borderBottom: "1px solid #E5E7EB", padding: "12px 16px" }}>
-        <span style={{ fontSize: 13, fontWeight: 800, color: "#374151" }}>⚡ أدوات التعلم الذكي</span>
-        <span style={{ fontSize: 11, color: "#9CA3AF", marginRight: 8 }}>اختر الأداة</span>
+      <div style={{ background: "hsl(var(--card))", borderBottom: "1px solid #E5E7EB", padding: "12px 16px" }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: "hsl(var(--foreground))" }}>⚡ أدوات التعلم الذكي</span>
+        <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginRight: 8 }}>اختر الأداة</span>
       </div>
 
       {/* Tab chips — horizontal scroll */}
@@ -1232,14 +1232,14 @@ export function FeatureTabs({ exercise, parsed, kbPattern }: FeatureTabsProps) {
               style={{
                 display: "flex", alignItems: "center", gap: 5,
                 padding: "8px 14px", borderRadius: 20, flexShrink: 0,
-                background: active ? "#4F46E5" : "#F1F5F9",
+                background: active ? "hsl(var(--primary))" : "#F1F5F9",
                 border: active ? "none" : "1px solid #E5E7EB",
                 cursor: "pointer",
                 transition: "all 0.2s",
                 fontFamily: "'Tajawal', sans-serif",
               }}>
               <span style={{ fontSize: 15 }}>{t.icon}</span>
-              <span style={{ fontSize: 12, fontWeight: active ? 800 : 600, color: active ? "#fff" : "#374151", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: 12, fontWeight: active ? 800 : 600, color: active ? "hsl(var(--card))" : "hsl(var(--foreground))", whiteSpace: "nowrap" }}>
                 {t.shortLabel}
               </span>
             </button>
@@ -1261,7 +1261,7 @@ export function FeatureTabs({ exercise, parsed, kbPattern }: FeatureTabsProps) {
             {/* Tab title */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, paddingTop: 2 }}>
               <span style={{ fontSize: 20 }}>{TABS[activeTab].icon}</span>
-              <span style={{ fontSize: 14, fontWeight: 800, color: "#1e293b" }}>{TABS[activeTab].label}</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: "hsl(var(--foreground))" }}>{TABS[activeTab].label}</span>
             </div>
 
             {activeTab === 0 && <GapDetector />}
