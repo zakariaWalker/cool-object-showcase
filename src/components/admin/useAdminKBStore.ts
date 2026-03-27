@@ -339,7 +339,7 @@ export function useAdminKBStore() {
     searchQuery, setSearchQuery,
     classifyExercise, addPattern, updatePattern, deletePattern,
     addDeconstruction, updateDeconstruction, deleteDeconstruction,
-    importData, exportData, resetAll,
+    importData, exportData, resetAll, saveAllToDB,
     reload: loadFromSupabase,
   };
 }
