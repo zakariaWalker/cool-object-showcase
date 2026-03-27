@@ -35,9 +35,12 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis, primaryPatt
       return exam && classifyFormat(exam.format) === "regular";
     });
 
-    // Parameter overlap (Deep cognitive structure)
-    const officialParams = new Set(officialQs.flatMap(q => q.linkedPatternIds));
-    const regularParams = new Set(regularQs.flatMap(q => q.linkedPatternIds));
+    // Parameter overlap (Deep cognitive structure) - filter out unknown/deleted patterns
+    const extractValidPatterns = (qs: typeof questions) => 
+      new Set(qs.flatMap(q => q.linkedPatternIds).filter(id => primaryPatterns.some(p => p.id === id)));
+
+    const officialParams = extractValidPatterns(officialQs);
+    const regularParams = extractValidPatterns(regularQs);
     const commonParams = [...officialParams].filter(p => regularParams.has(p));
     const paramOverlapPct = officialParams.size > 0
       ? Math.round((commonParams.length / officialParams.size) * 100)
@@ -71,9 +74,11 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis, primaryPatt
     // Repetition of Parameters in official exams
     const paramFreqInOfficial: Record<string, number> = {};
     officialQs.forEach(q => {
-      q.linkedPatternIds.forEach(id => {
-        const name = primaryPatterns.find(p => p.id === id)?.name || "نمط مجهول";
-        paramFreqInOfficial[name] = (paramFreqInOfficial[name] || 0) + 1;
+      [...new Set(q.linkedPatternIds)].forEach(id => {
+        const pattern = primaryPatterns.find(p => p.id === id);
+        if (pattern) {
+          paramFreqInOfficial[pattern.name] = (paramFreqInOfficial[pattern.name] || 0) + 1;
+        }
       });
     });
     
@@ -84,7 +89,8 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis, primaryPatt
     // "Surprise factor" - parameters in official but not in regular
     const surpriseParams = [...officialParams]
       .filter(p => !regularParams.has(p))
-      .map(id => primaryPatterns.find(p => p.id === id)?.name || "نمط غير معروف");
+      .map(id => primaryPatterns.find(p => p.id === id)?.name)
+      .filter(Boolean) as string[];
 
     // Difficulty over years
     const years = [...new Set(exams.map(e => e.year))].filter(Boolean).sort();

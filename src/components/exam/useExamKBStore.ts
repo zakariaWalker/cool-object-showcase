@@ -256,9 +256,12 @@ export function useExamKBStore(primaryPatterns: Pattern[] = []) {
       if (!yearTrends[year]) yearTrends[year] = {};
       yearTrends[year][q.type] = (yearTrends[year][q.type] || 0) + 1;
 
-      // KB Patterns
-      q.linkedPatternIds.forEach(id => {
-        const patternName = primaryPatterns.find(p => p.id === id)?.name || "نمط غير معروف";
+      // KB Patterns (ensure unique per question, drop unrecognized)
+      [...new Set(q.linkedPatternIds)].forEach(id => {
+        const pattern = primaryPatterns.find(p => p.id === id);
+        if (!pattern) return; // Skip deleted or unknown patterns
+        
+        const patternName = pattern.name;
         if (!kbPatternFrequency[patternName]) kbPatternFrequency[patternName] = { count: 0, totalPoints: 0, years: [] };
         kbPatternFrequency[patternName].count++;
         kbPatternFrequency[patternName].totalPoints += q.points;
