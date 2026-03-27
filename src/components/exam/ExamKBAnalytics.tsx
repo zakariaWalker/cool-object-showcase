@@ -22,8 +22,7 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
     );
   }
 
-  const sortedTopics = Object.entries(analysis.topicFrequency)
-    .filter(([t]) => t !== "unclassified")
+  const sortedParams = Object.entries(analysis.parameterFrequency)
     .sort((a, b) => b[1].count - a[1].count);
 
   const totalQuestions = questions.length;
@@ -43,14 +42,14 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Topic Frequency */}
         <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="text-sm font-black text-foreground mb-4">📊 تكرار المواضيع في الامتحانات</h3>
+          <h3 className="text-sm font-black text-foreground mb-4">📊 تكرار الأنماط المعرفية في الامتحانات</h3>
           <div className="space-y-2">
-            {sortedTopics.map(([type, data]) => {
+            {sortedParams.map(([type, data]) => {
               const pct = Math.round((data.count / totalQuestions) * 100);
               return (
                 <div key={type}>
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-[11px] font-bold text-foreground">{TYPE_LABELS_AR[type] || type}</span>
+                    <span className="text-[11px] font-bold text-foreground">{type}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-[9px] text-muted-foreground">{data.count}× في {data.years.length} سنة</span>
                       <span className="text-[10px] font-bold text-primary">{pct}%</span>
@@ -69,21 +68,21 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
 
         {/* Predictions */}
         <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="text-sm font-black text-foreground mb-4">🔮 توقعات الامتحان القادم</h3>
+          <h3 className="text-sm font-black text-foreground mb-4">🔮 توقعات البنية الذهنية للامتحان القادم</h3>
           <div className="space-y-3">
-            {analysis.predictions.map((pred, i) => (
+            {analysis.parameterPredictions.map((pred, i) => (
               <div key={pred.type} className="p-3 rounded-lg" style={{ background: "hsl(var(--primary) / 0.05)" }}>
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black">{i + 1}</span>
-                    <span className="text-xs font-bold text-foreground">{TYPE_LABELS_AR[pred.type] || pred.type}</span>
+                    <span className="text-xs font-bold text-foreground">{pred.type}</span>
                   </div>
                   <span className="text-sm font-black text-primary">{pred.probability}%</span>
                 </div>
                 <div className="text-[9px] text-muted-foreground mr-8">{pred.reasoning}</div>
               </div>
             ))}
-            {analysis.predictions.length === 0 && (
+            {analysis.parameterPredictions.length === 0 && (
               <p className="text-center py-4 text-muted-foreground text-xs">صنّف المزيد من الأسئلة لتحصل على توقعات</p>
             )}
           </div>
@@ -157,21 +156,21 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
       {/* Year Trends Table */}
       {years.length > 1 && (
         <div className="rounded-xl border border-border bg-card p-5 overflow-x-auto">
-          <h3 className="text-sm font-black text-foreground mb-4">📅 اتجاهات المواضيع عبر السنوات</h3>
+          <h3 className="text-sm font-black text-foreground mb-4">📅 تطور أنماط الجهد الذهني عبر السنوات</h3>
           <table className="w-full text-[10px]">
             <thead>
               <tr>
-                <th className="p-2 text-right font-bold text-muted-foreground">الموضوع</th>
+                <th className="p-2 text-right font-bold text-muted-foreground">النمط المعرفي</th>
                 {years.map(y => <th key={y} className="p-2 text-center font-bold text-muted-foreground">{y}</th>)}
                 <th className="p-2 text-center font-bold text-foreground">المجموع</th>
               </tr>
             </thead>
             <tbody>
-              {sortedTopics.map(([type, data]) => (
+              {sortedParams.map(([type, data]) => (
                 <tr key={type} className="border-t border-border">
-                  <td className="p-2 font-bold text-foreground">{TYPE_LABELS_AR[type] || type}</td>
+                  <td className="p-2 font-bold text-foreground">{type}</td>
                   {years.map(y => {
-                    const count = analysis.yearTrends[y]?.[type] || 0;
+                    const count = analysis.parameterYearTrends[y]?.[type] || 0;
                     return (
                       <td key={y} className="p-2 text-center">
                         {count > 0 ? (

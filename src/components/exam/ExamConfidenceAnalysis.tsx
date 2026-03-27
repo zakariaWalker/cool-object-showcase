@@ -1,26 +1,8 @@
 // ===== Exam Confidence Analysis — Demystify BAC/BEM, reduce stress =====
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { TYPE_LABELS_AR } from "@/engine/exam-types";
 import type { ExamEntry, ExamQuestion, ExamKBAnalysis } from "./useExamKBStore";
-
-type CognitiveParameter = "مباشر" | "مدمج" | "استنتاجي" | "متعدد المراحل" | "مجرد" | "سياقي" | "بياني / هندسي";
-
-function extractParameters(q: ExamQuestion): CognitiveParameter[] {
-  const params: CognitiveParameter[] = [];
-  const text = q.text || "";
-  
-  if (/استنتج|استنتاج|أثبت|برهن|بين أن|من خلال/.test(text)) params.push("استنتاجي");
-  if (/مسألة|يملك|اشترى|أراد|قطعة|أغنام|سيارات|وضعيات|أرض/.test(text)) { params.push("مدمج"); params.push("سياقي"); }
-  if (!params.includes("استنتاجي") && !params.includes("مدمج") && /احسب|حل|عين|اكتب|انشر|بسط/.test(text)) params.push("مباشر");
-
-  if (/ثم|ومنه|وعليه/.test(text) && params.includes("استنتاجي")) params.push("متعدد المراحل");
-  
-  if (/شكل|منحنى|دالة|بيان|تمثيل|ارسم|أنشئ|مضلع/.test(text)) params.push("بياني / هندسي");
-  if (!params.includes("مدمج") && !params.includes("بياني / هندسي")) params.push("مجرد");
-
-  return [...new Set(params.length > 0 ? params : (["مباشر", "مجرد"] as CognitiveParameter[]))];
-}
+import { extractParameters } from "./useExamKBStore";
 
 interface Props {
   exams: ExamEntry[];
@@ -53,8 +35,8 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
     });
 
     // Parameter overlap (Deep cognitive structure)
-    const officialParams = new Set(officialQs.flatMap(extractParameters));
-    const regularParams = new Set(regularQs.flatMap(extractParameters));
+    const officialParams = new Set(officialQs.flatMap(q => extractParameters(q.text)));
+    const regularParams = new Set(regularQs.flatMap(q => extractParameters(q.text)));
     const commonParams = [...officialParams].filter(p => regularParams.has(p));
     const paramOverlapPct = officialParams.size > 0
       ? Math.round((commonParams.length / officialParams.size) * 100)
@@ -88,7 +70,7 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
     // Repetition of Parameters in official exams
     const paramFreqInOfficial: Record<string, number> = {};
     officialQs.forEach(q => {
-      extractParameters(q).forEach(p => {
+      extractParameters(q.text).forEach(p => {
         paramFreqInOfficial[p] = (paramFreqInOfficial[p] || 0) + 1;
       });
     });
