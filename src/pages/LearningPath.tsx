@@ -205,15 +205,15 @@ export default function LearningPath() {
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 p-4 rounded-xl border border-border/50 shadow-sm"
+                  <div className="flex-1 p-4 rounded-xl border border-border bg-card shadow-sm"
                     style={{
                       background: [
-                        "linear-gradient(135deg, hsl(40 70% 92%), hsl(45 65% 85%))",
-                        "linear-gradient(135deg, hsl(200 65% 92%), hsl(215 55% 85%))",
-                        "linear-gradient(135deg, hsl(150 55% 92%), hsl(165 50% 85%))",
-                        "linear-gradient(135deg, hsl(280 55% 92%), hsl(295 50% 85%))",
-                        "linear-gradient(135deg, hsl(20 65% 92%), hsl(10 60% 85%))",
-                        "linear-gradient(135deg, hsl(340 55% 92%), hsl(355 50% 85%))",
+                        "linear-gradient(135deg, hsl(var(--statistics) / 0.06), hsl(var(--card)))",
+                        "linear-gradient(135deg, hsl(var(--algebra) / 0.06), hsl(var(--card)))",
+                        "linear-gradient(135deg, hsl(var(--geometry) / 0.06), hsl(var(--card)))",
+                        "linear-gradient(135deg, hsl(var(--probability) / 0.06), hsl(var(--card)))",
+                        "linear-gradient(135deg, hsl(var(--accent) / 0.06), hsl(var(--card)))",
+                        "linear-gradient(135deg, hsl(var(--functions) / 0.06), hsl(var(--card)))",
                       ][gi % 6],
                     }}>
                     <div className="flex items-center justify-between mb-3">
