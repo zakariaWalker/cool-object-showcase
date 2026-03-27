@@ -11,6 +11,7 @@ import ExercisePage from "./pages/Exercise";
 import AdminKBPage from "./pages/AdminKB";
 import GapDetector from "./pages/GapDetector";
 import AITutor from "./pages/AITutor";
+import StudentSolver from "./pages/StudentSolver";
 import LearningPath from "./pages/LearningPath";
 import VisualExplorer from "./pages/VisualExplorer";
 import WhatIf from "./pages/WhatIf";
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/admin" element={<AdminKBPage />} />
             <Route path="/gaps" element={<GapDetector />} />
             <Route path="/tutor" element={<AITutor />} />
+            <Route path="/solve/:id" element={<StudentSolver />} />
             <Route path="/learn" element={<LearningPath />} />
             <Route path="/explore" element={<VisualExplorer />} />
             <Route path="/whatif" element={<WhatIf />} />

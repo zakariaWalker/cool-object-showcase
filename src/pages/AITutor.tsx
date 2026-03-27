@@ -194,16 +194,20 @@ export default function AITutor() {
                         <option value="errors">الأخطاء الشائعة</option>
                       </select>
                     </div>
-                    <div className="flex items-end">
+                    <div className="flex items-end gap-2 col-span-3 mt-2">
                       <button onClick={askTutor} disabled={aiLoading}
-                        className="w-full py-2 rounded-lg text-xs font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all disabled:opacity-50">
+                        className="flex-1 py-2.5 rounded-lg text-xs font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all disabled:opacity-50">
                         {aiLoading ? (
                           <span className="flex items-center justify-center gap-2">
                             <div className="animate-spin w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full" />
                             جاري الشرح...
                           </span>
-                        ) : "🤖 اشرح لي"}
+                        ) : "🤖 اشرح لي بخطوة بخطوة"}
                       </button>
+                      <a href={`/solve/${selectedEx.id}`}
+                        className="flex-1 py-2.5 rounded-lg text-xs font-bold text-center text-foreground border-2 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all">
+                        ✍️ حل تفاعلي (تجريبي)
+                      </a>
                     </div>
                   </div>
                 </div>
