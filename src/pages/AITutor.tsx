@@ -145,7 +145,7 @@ export default function AITutor() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-l from-amber-500/10 via-orange-500/5 to-background border-b border-amber-200/30 px-6 py-8">
+      <div className="border-b border-border px-6 py-8" style={{ background: "linear-gradient(to left, hsl(var(--accent) / 0.08), hsl(var(--accent) / 0.03), hsl(var(--background)))" }}>
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-3xl">🤖</span>
@@ -246,7 +246,7 @@ export default function AITutor() {
                         <h4 className="text-[10px] font-bold text-muted-foreground mb-2 uppercase tracking-wider">المتطلبات المسبقة</h4>
                         <div className="flex gap-1.5 flex-wrap">
                           {kbDecon.needs.map((need: string, i: number) => (
-                            <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-medium">{need}</span>
+                            <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-accent/10 text-accent-foreground font-medium">{need}</span>
                           ))}
                         </div>
                       </div>
@@ -257,7 +257,7 @@ export default function AITutor() {
                         <h4 className="text-[10px] font-bold text-muted-foreground mb-2 uppercase tracking-wider">المفاهيم الأساسية</h4>
                         <div className="flex gap-1.5 flex-wrap">
                           {kbPattern.concepts.map((c: string, i: number) => (
-                            <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">{c}</span>
+                            <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">{c}</span>
                           ))}
                         </div>
                       </div>

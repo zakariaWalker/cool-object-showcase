@@ -249,7 +249,7 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
             <h2 className="text-lg font-black text-foreground">📝 التمارين</h2>
             <div className="flex items-center gap-3">
               <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                currentPoints === totalPoints ? "bg-green-500/10 text-green-600" :
+                currentPoints === totalPoints ? "bg-primary/10 text-primary" :
                 currentPoints > totalPoints ? "bg-destructive/10 text-destructive" :
                 "bg-muted text-muted-foreground"
               }`}>
