@@ -46,6 +46,8 @@ export function useAdminKBStore() {
   const [gradeFilter, setGradeFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
   // Load all data from Supabase on mount
   useEffect(() => {
     loadFromSupabase();
@@ -194,23 +196,28 @@ export function useAdminKBStore() {
 
   const classifyExercise = useCallback(async (id: string, type: string) => {
     setExercises(prev => prev.map(e => e.id === id ? { ...e, type } : e));
-    await (supabase as any).from("kb_exercises").update({ type }).eq("id", id);
+    if (isUUID(id)) {
+      await (supabase as any).from("kb_exercises").update({ type }).eq("id", id);
+    }
   }, []);
 
   const addPattern = useCallback(async (pattern: Pattern) => {
     setPatterns(prev => [...prev, pattern]);
-    await (supabase as any).from("kb_patterns").insert({
-      id: pattern.id,
+    const { data, error } = await (supabase as any).from("kb_patterns").insert({
       name: pattern.name,
       type: pattern.type,
       description: pattern.description || "",
       steps: pattern.steps,
       concepts: pattern.concepts || [],
-    });
+    }).select("id").single();
+    if (data?.id) {
+      setPatterns(prev => prev.map(p => p.id === pattern.id ? { ...p, id: data.id } : p));
+    }
   }, []);
 
   const updatePattern = useCallback(async (id: string, updates: Partial<Pattern>) => {
     setPatterns(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    if (!isUUID(id)) return;
     const dbUpdates: any = {};
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.type !== undefined) dbUpdates.type = updates.type;
@@ -222,22 +229,27 @@ export function useAdminKBStore() {
 
   const deletePattern = useCallback(async (id: string) => {
     setPatterns(prev => prev.filter(p => p.id !== id));
-    await (supabase as any).from("kb_patterns").delete().eq("id", id);
+    if (isUUID(id)) await (supabase as any).from("kb_patterns").delete().eq("id", id);
   }, []);
 
   const addDeconstruction = useCallback(async (decon: Deconstruction) => {
     setDeconstructions(prev => [...prev, decon]);
-    await (supabase as any).from("kb_deconstructions").insert({
+    if (!isUUID(decon.exerciseId) || (decon.patternId && !isUUID(decon.patternId))) return;
+    const { data, error } = await (supabase as any).from("kb_deconstructions").insert({
       exercise_id: decon.exerciseId,
       pattern_id: decon.patternId,
       steps: decon.steps || [],
       needs: decon.needs,
       notes: decon.notes,
-    });
+    }).select("id").single();
+    if (data?.id) {
+      setDeconstructions(prev => prev.map(d => d.id === decon.id ? { ...d, id: data.id } : d));
+    }
   }, []);
 
   const updateDeconstruction = useCallback(async (id: string, updates: Partial<Deconstruction>) => {
     setDeconstructions(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
+    if (!isUUID(id)) return;
     const dbUpdates: any = {};
     if (updates.patternId !== undefined) dbUpdates.pattern_id = updates.patternId;
     if (updates.steps !== undefined) dbUpdates.steps = updates.steps;
@@ -248,7 +260,7 @@ export function useAdminKBStore() {
 
   const deleteDeconstruction = useCallback(async (id: string) => {
     setDeconstructions(prev => prev.filter(d => d.id !== id));
-    await (supabase as any).from("kb_deconstructions").delete().eq("id", id);
+    if (isUUID(id)) await (supabase as any).from("kb_deconstructions").delete().eq("id", id);
   }, []);
 
   const importData = useCallback((data: { exercises?: Exercise[]; patterns?: Pattern[]; deconstructions?: Deconstruction[] }) => {
@@ -265,20 +277,29 @@ export function useAdminKBStore() {
       // Upsert exercises in batches
       if (exercises.length > 0) {
         for (let i = 0; i < exercises.length; i += BATCH) {
-          const batch = exercises.slice(i, i + BATCH).map(e => ({
-            id: e.id,
-            text: e.text,
-            type: e.type,
-            chapter: e.chapter,
-            grade: e.grade,
-            stream: e.stream,
-            label: e.label,
-            source: e.source,
-          }));
-          const { error } = await (supabase as any).from("kb_exercises").upsert(batch, { onConflict: "id" });
-          if (error) {
-            console.error("kb_exercises upsert error:", error);
-            throw error;
+          const batch = exercises.slice(i, i + BATCH).map(e => {
+            const row: any = {
+              text: e.text,
+              type: e.type,
+              chapter: e.chapter,
+              grade: e.grade,
+              stream: e.stream,
+              label: e.label,
+              source: e.source,
+            };
+            if (isUUID(e.id)) row.id = e.id;
+            return row;
+          });
+          const toUpdate = batch.filter(r => r.id);
+          const toInsert = batch.filter(r => !r.id);
+          
+          if (toUpdate.length > 0) {
+            const { error } = await (supabase as any).from("kb_exercises").upsert(toUpdate, { onConflict: "id" });
+            if (error) { console.error("kb_exercises upsert error:", error); throw error; }
+          }
+          if (toInsert.length > 0) {
+            const { error } = await (supabase as any).from("kb_exercises").insert(toInsert);
+            if (error) { console.error("kb_exercises insert error:", error); throw error; }
           }
         }
       }
@@ -286,18 +307,27 @@ export function useAdminKBStore() {
       // Upsert patterns in batches
       if (patterns.length > 0) {
         for (let i = 0; i < patterns.length; i += BATCH) {
-          const batch = patterns.slice(i, i + BATCH).map(p => ({
-            id: p.id,
-            name: p.name,
-            type: p.type,
-            description: p.description || "",
-            steps: p.steps,
-            concepts: p.concepts || [],
-          }));
-          const { error } = await (supabase as any).from("kb_patterns").upsert(batch, { onConflict: "id" });
-          if (error) {
-            console.error("kb_patterns upsert error:", error);
-            throw error;
+          const batch = patterns.slice(i, i + BATCH).map(p => {
+            const row: any = {
+              name: p.name,
+              type: p.type,
+              description: p.description || "",
+              steps: p.steps,
+              concepts: p.concepts || [],
+            };
+            if (isUUID(p.id)) row.id = p.id;
+            return row;
+          });
+          const toUpdate = batch.filter(r => r.id);
+          const toInsert = batch.filter(r => !r.id);
+          
+          if (toUpdate.length > 0) {
+            const { error } = await (supabase as any).from("kb_patterns").upsert(toUpdate, { onConflict: "id" });
+            if (error) { console.error("kb_patterns upsert error:", error); throw error; }
+          }
+          if (toInsert.length > 0) {
+            const { error } = await (supabase as any).from("kb_patterns").insert(toInsert);
+            if (error) { console.error("kb_patterns insert error:", error); throw error; }
           }
         }
       }
@@ -305,18 +335,30 @@ export function useAdminKBStore() {
       // Upsert deconstructions in batches
       if (deconstructions.length > 0) {
         for (let i = 0; i < deconstructions.length; i += BATCH) {
-          const batch = deconstructions.slice(i, i + BATCH).map(d => ({
-            id: d.id,
-            exercise_id: d.exerciseId,
-            pattern_id: d.patternId,
-            steps: d.steps || [],
-            needs: d.needs,
-            notes: d.notes,
-          }));
-          const { error } = await (supabase as any).from("kb_deconstructions").upsert(batch, { onConflict: "id" });
-          if (error) {
-            console.error("kb_deconstructions upsert error:", error);
-            throw error;
+          const batch = deconstructions.slice(i, i + BATCH)
+            .filter(d => isUUID(d.exerciseId) && (!d.patternId || isUUID(d.patternId))) // Prevent foreign key constraint errors
+            .map(d => {
+              const row: any = {
+                exercise_id: d.exerciseId,
+                pattern_id: d.patternId,
+                steps: d.steps || [],
+                needs: d.needs,
+                notes: d.notes,
+              };
+              if (isUUID(d.id)) row.id = d.id;
+              return row;
+            });
+            
+          const toUpdate = batch.filter(r => r.id);
+          const toInsert = batch.filter(r => !r.id);
+          
+          if (toUpdate.length > 0) {
+            const { error } = await (supabase as any).from("kb_deconstructions").upsert(toUpdate, { onConflict: "id" });
+            if (error) { console.error("kb_deconstructions upsert error:", error); throw error; }
+          }
+          if (toInsert.length > 0) {
+            const { error } = await (supabase as any).from("kb_deconstructions").insert(toInsert);
+            if (error) { console.error("kb_deconstructions insert error:", error); throw error; }
           }
         }
       }
