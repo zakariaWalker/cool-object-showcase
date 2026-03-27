@@ -366,7 +366,7 @@ function GapDetector() {
         </div>
 
         <button onClick={resetQuiz}
-          style={{ background: "linear-gradient(135deg,#4F46E5,#7C3AED)", color: "#fff", border: "none", borderRadius: 12, padding: "12px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal',sans-serif" }}>
+          style={{ background: "linear-gradient(135deg,#7B75CC,#9B7BC4)", color: "#fff", border: "none", borderRadius: 12, padding: "12px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal',sans-serif" }}>
           🔄 أعد التقييم
         </button>
       </div>
@@ -383,7 +383,7 @@ function GapDetector() {
       {/* Start diagnostic button */}
       <button
         onClick={() => { setQuizMode(true); setQIndex(0); setSelected(null); setQuizAnswers([]); setQuizDone(false); }}
-        style={{ background: "linear-gradient(135deg,#4F46E5,#7C3AED)", color: "#fff", border: "none", borderRadius: 12, padding: "13px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "'Tajawal',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        style={{ background: "linear-gradient(135deg,#7B75CC,#9B7BC4)", color: "#fff", border: "none", borderRadius: 12, padding: "13px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "'Tajawal',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
       >
         🧪 ابدأ التقييم التشخيصي — {DIAGNOSTIC_QUESTIONS.length} أسئلة
       </button>
@@ -692,10 +692,10 @@ function ConceptMapView({ domain }: { domain?: Domain }) {
 
   // Domain-matched color
   const DOMAIN_COLOR: Record<string, string> = {
-    algebra: "#4F46E5", geometry: "#059669", statistics: "#D97706",
-    probability: "#7C3AED", functions: "#E11D48",
+    algebra: "#7B75CC", geometry: "#4DA88D", statistics: "#C49A4A",
+    probability: "#9B7BC4", functions: "#C46B7E",
   };
-  const accent = DOMAIN_COLOR[activeDomain] ?? "#4F46E5";
+  const accent = DOMAIN_COLOR[activeDomain] ?? "#7B75CC";
 
   function nodeColor(c: string) {
     if (coreConcepts.includes(c)) return accent;
@@ -919,7 +919,7 @@ ${kbPattern ? `النمط المعرفي: ${kbPattern.name} — ${kbPattern.desc
             style={{
               alignSelf: m.role === "user" ? "flex-end" : "flex-start",
               maxWidth: "88%",
-              background: m.role === "user" ? "#4F46E5" : "#fff",
+              background: m.role === "user" ? "#7B75CC" : "#fff",
               color: m.role === "user" ? "#fff" : "#1e293b",
               border: m.role === "user" ? "none" : "1px solid #E5E7EB",
               borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
@@ -939,7 +939,7 @@ ${kbPattern ? `النمط المعرفي: ${kbPattern.name} — ${kbPattern.desc
               <motion.div key={i}
                 animate={{ y: [0, -5, 0] }}
                 transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.15 }}
-                style={{ width: 7, height: 7, borderRadius: "50%", background: "#4F46E5" }}
+                style={{ width: 7, height: 7, borderRadius: "50%", background: "#7B75CC" }}
               />
             ))}
           </div>
@@ -971,7 +971,7 @@ ${kbPattern ? `النمط المعرفي: ${kbPattern.name} — ${kbPattern.desc
         <button onClick={sendMessage} disabled={!question.trim() || loading}
           style={{
             width: 42, height: 42, borderRadius: "50%", flexShrink: 0,
-            background: question.trim() && !loading ? "#4F46E5" : "#E5E7EB",
+            background: question.trim() && !loading ? "#7B75CC" : "#E5E7EB",
             border: "none", cursor: question.trim() && !loading ? "pointer" : "default",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 18, transition: "background 0.2s",
@@ -1065,15 +1065,15 @@ function TeacherPanel() {
     );
   }
 
-  const rateColor = stats.overallRate >= 0.65 ? "#059669" : stats.overallRate >= 0.4 ? "#D97706" : "#DC2626";
+  const rateColor = stats.overallRate >= 0.65 ? "#4DA88D" : stats.overallRate >= 0.4 ? "#C49A4A" : "#D06060";
 
   const DOMAIN_AR: Record<string, string> = {
     algebra: "الجبر", geometry: "الهندسة", statistics: "الإحصاء",
     probability: "الاحتمالات", functions: "الدوال",
   };
   const DOMAIN_COLOR: Record<string, string> = {
-    algebra: "#4F46E5", geometry: "#059669", statistics: "#D97706",
-    probability: "#7C3AED", functions: "#E11D48",
+    algebra: "#7B75CC", geometry: "#4DA88D", statistics: "#C49A4A",
+    probability: "#9B7BC4", functions: "#C46B7E",
   };
 
   const maxDomain = Math.max(...Object.values(stats.byDomain));

@@ -97,32 +97,32 @@ const DOMAIN: Record<Domain, {
 }> = {
   algebra: {
     label: "الجبر", emoji: "🔢",
-    bg: "#EEF2FF", banner: "linear-gradient(135deg,#4F46E5 0%,#7C3AED 100%)",
-    pill: "#E0E7FF", accent: "#4F46E5", accentLight: "#C7D2FE",
+    bg: "#EEF2FF", banner: "linear-gradient(135deg,#7B75CC 0%,#9B7BC4 100%)",
+    pill: "#E0E7FF", accent: "#7B75CC", accentLight: "#C7D2FE",
     accentText: "#3730A3", border: "#A5B4FC", stepBg: "#F5F3FF",
   },
   geometry: {
     label: "الهندسة", emoji: "📐",
-    bg: "#ECFDF5", banner: "linear-gradient(135deg,#059669 0%,#0D9488 100%)",
-    pill: "#D1FAE5", accent: "#059669", accentLight: "#A7F3D0",
+    bg: "#ECFDF5", banner: "linear-gradient(135deg,#4DA88D 0%,#5AADA0 100%)",
+    pill: "#D1FAE5", accent: "#4DA88D", accentLight: "#A7F3D0",
     accentText: "#065F46", border: "#6EE7B7", stepBg: "#F0FDF4",
   },
   statistics: {
     label: "الإحصاء", emoji: "📊",
-    bg: "#FFFBEB", banner: "linear-gradient(135deg,#D97706 0%,#EA580C 100%)",
-    pill: "#FEF3C7", accent: "#D97706", accentLight: "#FDE68A",
+    bg: "#FFFBEB", banner: "linear-gradient(135deg,#C49A4A 0%,#CC7A3A 100%)",
+    pill: "#FEF3C7", accent: "#C49A4A", accentLight: "#FDE68A",
     accentText: "#92400E", border: "#FCD34D", stepBg: "#FFFBEB",
   },
   probability: {
     label: "الاحتمالات", emoji: "🎲",
-    bg: "#F5F3FF", banner: "linear-gradient(135deg,#7C3AED 0%,#C026D3 100%)",
-    pill: "#EDE9FE", accent: "#7C3AED", accentLight: "#DDD6FE",
+    bg: "#F5F3FF", banner: "linear-gradient(135deg,#9B7BC4 0%,#C06CCE 100%)",
+    pill: "#EDE9FE", accent: "#9B7BC4", accentLight: "#DDD6FE",
     accentText: "#5B21B6", border: "#C4B5FD", stepBg: "#F5F3FF",
   },
   functions: {
     label: "الدوال", emoji: "📈",
-    bg: "#FFF1F2", banner: "linear-gradient(135deg,#E11D48 0%,#DB2777 100%)",
-    pill: "#FFE4E6", accent: "#E11D48", accentLight: "#FECDD3",
+    bg: "#FFF1F2", banner: "linear-gradient(135deg,#C46B7E 0%,#C25D8B 100%)",
+    pill: "#FFE4E6", accent: "#C46B7E", accentLight: "#FECDD3",
     accentText: "#9F1239", border: "#FDA4AF", stepBg: "#FFF1F2",
   },
 };

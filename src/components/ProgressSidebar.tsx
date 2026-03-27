@@ -78,7 +78,7 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
         }}>
           <div style={{ fontSize: 28 }}>🔥</div>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: "#D97706", lineHeight: 1 }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: "#C49A4A", lineHeight: 1 }}>
               {progress.streak}
             </div>
             <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontFamily: "'Tajawal', sans-serif" }}>
@@ -129,7 +129,7 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
         return (
           <div style={{ padding: "10px 14px", borderBottom: "1px solid hsl(var(--border))", background: "#FFF1F2" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "#E11D48", margin: 0 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#C46B7E", margin: 0 }}>
                 🔔 مراجعة متباعدة ({due.length})
               </p>
               <span style={{ fontSize: 10, color: "#6b7280" }}>SM-2</span>
@@ -202,7 +202,7 @@ export function ProgressSidebar({ onSelectExercise }: Props) {
                 <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
                   <span style={{
                     width: 6, height: 6, borderRadius: "50%",
-                    background: r.correct ? "#34D399" : "#F87171",
+                    background: r.correct ? "#6DC9A8" : "#E09999",
                     flexShrink: 0,
                   }} />
                   <span style={{ fontSize: 11, color: `hsl(var(${info.colorVar}))`, fontWeight: 700 }}>

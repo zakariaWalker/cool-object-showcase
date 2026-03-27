@@ -46,7 +46,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
           </span>
           <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden max-w-[120px]">
             <motion.div
-              className="h-full bg-gradient-to-l from-primary to-purple-500 rounded-full"
+              className="h-full bg-gradient-to-l from-primary/80 to-purple-400/70 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${progress.percent}%` }}
               transition={{ duration: 0.8, ease: "easeOut" }}
@@ -72,12 +72,12 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
           <div className="flex items-center gap-3">
             {/* Level badge */}
             <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white shadow-lg">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/80 to-purple-400 flex items-center justify-center text-white shadow-lg">
                 <span className="text-xl font-black">{stats.level}</span>
               </div>
               {stats.streak_days > 0 && (
                 <motion.div
-                  className="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-[10px] shadow-md border-2 border-card"
+                  className="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-orange-400 flex items-center justify-center text-[10px] shadow-md border-2 border-card"
                   animate={{ scale: [1, 1.15, 1] }}
                   transition={{ repeat: Infinity, duration: 2 }}
                 >
@@ -93,7 +93,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
 
           {/* Streak */}
           <div className="text-center">
-            <div className={`text-2xl font-black ${stats.streak_days > 0 ? "text-orange-500" : "text-muted-foreground"}`}>
+            <div className={`text-2xl font-black ${stats.streak_days > 0 ? "text-orange-400" : "text-muted-foreground"}`}>
               {stats.streak_days}
             </div>
             <div className="text-[10px] text-muted-foreground">
@@ -110,7 +110,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
           </div>
           <div className="h-3 bg-muted rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-l from-primary via-purple-500 to-pink-500 rounded-full"
+              className="h-full bg-gradient-to-l from-primary/80 via-purple-400/70 to-pink-400/60 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${progress.percent}%` }}
               transition={{ duration: 1.2, ease: "easeOut" }}
@@ -148,7 +148,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
           {onStartDailyChallenge && (
             <button
               onClick={() => onStartDailyChallenge(dailyChallenge.exerciseId)}
-              className="w-full py-2.5 rounded-xl text-xs font-bold text-primary-foreground bg-gradient-to-l from-amber-500 to-orange-500 hover:opacity-90 transition-all shadow-md"
+              className="w-full py-2.5 rounded-xl text-xs font-bold text-primary-foreground bg-gradient-to-l from-amber-400 to-orange-400 hover:opacity-90 transition-all shadow-md"
             >
               🚀 ابدأ التحدي
             </button>

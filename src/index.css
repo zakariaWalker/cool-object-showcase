@@ -10,28 +10,28 @@
 @layer base {
   /* ── Light Mode (default) ── */
   :root {
-    --background: 40 30% 97%;
-    --foreground: 220 15% 22%;
+    --background: 40 15% 97%;
+    --foreground: 220 12% 28%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 22%;
+    --card-foreground: 220 12% 28%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 22%;
+    --popover-foreground: 220 12% 28%;
 
-    --primary: 45 75% 50%;
+    --primary: 45 55% 55%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 10% 92%;
     --secondary-foreground: 220 15% 30%;
 
     --muted: 220 10% 94%;
-    --muted-foreground: 220 10% 45%;
+    --muted-foreground: 220 8% 50%;
 
-    --accent: 180 45% 42%;
+    --accent: 180 35% 48%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 65% 58%;
+    --destructive: 0 55% 62%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 15% 88%;
@@ -47,11 +47,11 @@
     --glow-cyan: 0 0 30px hsl(180 55% 38% / 0.15);
 
     /* Domain palette */
-    --algebra:      243 55% 62%;
-    --geometry:     158 48% 45%;
-    --statistics:   38  70% 55%;
-    --probability:  277 48% 56%;
-    --functions:    340 58% 56%;
+    --algebra:      243 40% 65%;
+    --geometry:     158 35% 50%;
+    --statistics:   38  50% 60%;
+    --probability:  277 35% 60%;
+    --functions:    340 42% 60%;
 
     --sidebar-background: 40 20% 96%;
     --sidebar-foreground: 220 20% 10%;

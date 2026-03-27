@@ -4,12 +4,12 @@ import { ApiKeyModal } from "./ApiKeyModal";
 import { getApiKey } from "@/engine/ai-layer";
 
 const NAV_ITEMS = [
-  { path: "/",           label: "التمارين",  emoji: "📝", color: "#4F46E5" },
-  { path: "/algebra",    label: "الجبر",     emoji: "🔢", color: "#4F46E5" },
-  { path: "/geometry",   label: "الهندسة",   emoji: "📐", color: "#059669" },
-  { path: "/statistics", label: "الإحصاء",   emoji: "📊", color: "#D97706" },
-  { path: "/probability",label: "الاحتمال",  emoji: "🎲", color: "#7C3AED" },
-  { path: "/functions",  label: "الدوال",    emoji: "📈", color: "#E11D48" },
+  { path: "/",           label: "التمارين",  emoji: "📝", color: "#7B75CC" },
+  { path: "/algebra",    label: "الجبر",     emoji: "🔢", color: "#7B75CC" },
+  { path: "/geometry",   label: "الهندسة",   emoji: "📐", color: "#4DA88D" },
+  { path: "/statistics", label: "الإحصاء",   emoji: "📊", color: "#C49A4A" },
+  { path: "/probability",label: "الاحتمال",  emoji: "🎲", color: "#9B7BC4" },
+  { path: "/functions",  label: "الدوال",    emoji: "📈", color: "#C46B7E" },
 ];
 
 export function EngineNav() {
@@ -22,8 +22,8 @@ export function EngineNav() {
       <nav
         dir="rtl"
         style={{
-          background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)",
-          boxShadow: "0 2px 16px rgba(79,70,229,0.25)",
+          background: "linear-gradient(135deg, #2D2A50 0%, #3D3A6A 100%)",
+          boxShadow: "0 2px 16px rgba(79,70,229,0.12)",
           flexShrink: 0,
         }}
         className="flex items-center gap-1 px-3 py-2 overflow-x-auto"
@@ -31,7 +31,7 @@ export function EngineNav() {
         {/* Brand */}
         <div className="flex items-center gap-2 ml-3 flex-shrink-0">
           <span style={{
-            background: "linear-gradient(135deg, #818CF8, #C084FC)",
+            background: "linear-gradient(135deg, #9BA3E0, #C9A8E0)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             fontSize: 18,
