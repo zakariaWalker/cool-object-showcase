@@ -496,6 +496,66 @@ export type Database = {
         }
         Relationships: []
       }
+      exercise_breakdowns: {
+        Row: {
+          constraints: Json | null
+          created_at: string
+          diagram_spec: Json | null
+          difficulty: number | null
+          domain: string | null
+          formulas_needed: Json | null
+          grade: string | null
+          id: string
+          intent: Json | null
+          relations: Json | null
+          render_plan: Json | null
+          semantic_objects: Json | null
+          solution_tree: Json | null
+          source_language: string | null
+          source_origin: string | null
+          source_text: string
+          subdomain: string | null
+        }
+        Insert: {
+          constraints?: Json | null
+          created_at?: string
+          diagram_spec?: Json | null
+          difficulty?: number | null
+          domain?: string | null
+          formulas_needed?: Json | null
+          grade?: string | null
+          id: string
+          intent?: Json | null
+          relations?: Json | null
+          render_plan?: Json | null
+          semantic_objects?: Json | null
+          solution_tree?: Json | null
+          source_language?: string | null
+          source_origin?: string | null
+          source_text: string
+          subdomain?: string | null
+        }
+        Update: {
+          constraints?: Json | null
+          created_at?: string
+          diagram_spec?: Json | null
+          difficulty?: number | null
+          domain?: string | null
+          formulas_needed?: Json | null
+          grade?: string | null
+          id?: string
+          intent?: Json | null
+          relations?: Json | null
+          render_plan?: Json | null
+          semantic_objects?: Json | null
+          solution_tree?: Json | null
+          source_language?: string | null
+          source_origin?: string | null
+          source_text?: string
+          subdomain?: string | null
+        }
+        Relationships: []
+      }
       kb_deconstructions: {
         Row: {
           ai_generated: boolean | null
