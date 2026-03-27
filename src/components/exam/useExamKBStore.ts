@@ -2,20 +2,6 @@ import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Pattern } from "@/components/admin/useAdminKBStore";
 
-export type CognitiveParameter = "مباشر" | "مدمج" | "استنتاجي" | "متعدد المراحل" | "مجرد" | "سياقي" | "بياني / هندسي";
-
-export function extractParameters(text: string): CognitiveParameter[] {
-  const params: CognitiveParameter[] = [];
-  const t = text || "";
-  if (/استنتج|استنتاج|أثبت|برهن|بين أن|من خلال/.test(t)) params.push("استنتاجي");
-  if (/مسألة|يملك|اشترى|أراد|قطعة|أغنام|سيارات|وضعيات|أرض/.test(t)) { params.push("مدمج"); params.push("سياقي"); }
-  if (!params.includes("استنتاجي") && !params.includes("مدمج") && /احسب|حل|عين|اكتب|انشر|بسط/.test(t)) params.push("مباشر");
-  if (/ثم|ومنه|وعليه/.test(t) && params.includes("استنتاجي")) params.push("متعدد المراحل");
-  if (/شكل|منحنى|دالة|بيان|تمثيل|ارسم|أنشئ|مضلع/.test(t)) params.push("بياني / هندسي");
-  if (!params.includes("مدمج") && !params.includes("بياني / هندسي")) params.push("مجرد");
-  return [...new Set(params.length > 0 ? params : (["مباشر", "مجرد"] as CognitiveParameter[]))];
-}
-
 export interface ExamEntry {
   id: string;
   year: string;
@@ -42,13 +28,13 @@ export interface ExamQuestion {
 
 export interface ExamKBAnalysis {
   topicFrequency: Record<string, { count: number; totalPoints: number; years: string[] }>;
-  parameterFrequency: Record<string, { count: number; totalPoints: number; years: string[] }>;
+  kbPatternFrequency: Record<string, { count: number; totalPoints: number; years: string[] }>;
   difficultyDistribution: Record<string, number>;
   yearTrends: Record<string, Record<string, number>>;
-  parameterYearTrends: Record<string, Record<string, number>>;
+  kbPatternYearTrends: Record<string, Record<string, number>>;
   conceptFrequency: Record<string, number>;
   predictions: { type: string; probability: number; reasoning: string }[];
-  parameterPredictions: { type: string; probability: number; reasoning: string }[];
+  kbPatternPredictions: { type: string; probability: number; reasoning: string }[];
   kbCoverage: { covered: string[]; gaps: string[] };
 }
 
@@ -251,10 +237,10 @@ export function useExamKBStore(primaryPatterns: Pattern[] = []) {
   // Analytics (computed, same as before)
   const analysis: ExamKBAnalysis = (() => {
     const topicFrequency: Record<string, { count: number; totalPoints: number; years: string[] }> = {};
-    const parameterFrequency: Record<string, { count: number; totalPoints: number; years: string[] }> = {};
+    const kbPatternFrequency: Record<string, { count: number; totalPoints: number; years: string[] }> = {};
     const difficultyDistribution: Record<string, number> = { easy: 0, medium: 0, hard: 0 };
     const yearTrends: Record<string, Record<string, number>> = {};
-    const parameterYearTrends: Record<string, Record<string, number>> = {};
+    const kbPatternYearTrends: Record<string, Record<string, number>> = {};
     const conceptFrequency: Record<string, number> = {};
 
     questions.forEach(q => {
@@ -270,16 +256,16 @@ export function useExamKBStore(primaryPatterns: Pattern[] = []) {
       if (!yearTrends[year]) yearTrends[year] = {};
       yearTrends[year][q.type] = (yearTrends[year][q.type] || 0) + 1;
 
-      // Parameters
-      const params = extractParameters(q.text);
-      params.forEach(p => {
-        if (!parameterFrequency[p]) parameterFrequency[p] = { count: 0, totalPoints: 0, years: [] };
-        parameterFrequency[p].count++;
-        parameterFrequency[p].totalPoints += q.points;
-        if (!parameterFrequency[p].years.includes(year)) parameterFrequency[p].years.push(year);
+      // KB Patterns
+      q.linkedPatternIds.forEach(id => {
+        const patternName = primaryPatterns.find(p => p.id === id)?.name || "نمط غير معروف";
+        if (!kbPatternFrequency[patternName]) kbPatternFrequency[patternName] = { count: 0, totalPoints: 0, years: [] };
+        kbPatternFrequency[patternName].count++;
+        kbPatternFrequency[patternName].totalPoints += q.points;
+        if (!kbPatternFrequency[patternName].years.includes(year)) kbPatternFrequency[patternName].years.push(year);
         
-        if (!parameterYearTrends[year]) parameterYearTrends[year] = {};
-        parameterYearTrends[year][p] = (parameterYearTrends[year][p] || 0) + 1;
+        if (!kbPatternYearTrends[year]) kbPatternYearTrends[year] = {};
+        kbPatternYearTrends[year][patternName] = (kbPatternYearTrends[year][patternName] || 0) + 1;
       });
 
       difficultyDistribution[q.difficulty]++;
@@ -293,11 +279,11 @@ export function useExamKBStore(primaryPatterns: Pattern[] = []) {
       reasoning: `ظهر ${data.count} مرة في ${data.years.length} سنة بمجموع ${data.totalPoints} نقطة`,
     }));
 
-    const sortedParams = Object.entries(parameterFrequency).sort((a, b) => b[1].count - a[1].count);
-    const parameterPredictions = sortedParams.slice(0, 5).map(([type, data]) => ({
+    const sortedParams = Object.entries(kbPatternFrequency).sort((a, b) => b[1].count - a[1].count);
+    const kbPatternPredictions = sortedParams.slice(0, 5).map(([type, data]) => ({
       type,
       probability: Math.min(95, Math.round((data.count / Math.max(questions.length, 1)) * 100 + 20)),
-      reasoning: `تم توظيف هذا الجهد الذهني ${data.count} مرة في ${data.years.length} دورات`,
+      reasoning: `ظهر هذا النمط البيداغوجي ${data.count} مرة في ${data.years.length} دورات`,
     }));
 
     const examTypes = new Set(questions.map(q => q.type));
@@ -306,11 +292,11 @@ export function useExamKBStore(primaryPatterns: Pattern[] = []) {
     const gaps = [...examTypes].filter(t => !patternTypes.has(t));
 
     return { 
-      topicFrequency, parameterFrequency, 
+      topicFrequency, kbPatternFrequency, 
       difficultyDistribution, 
-      yearTrends, parameterYearTrends, 
+      yearTrends, kbPatternYearTrends, 
       conceptFrequency, 
-      predictions, parameterPredictions, 
+      predictions, kbPatternPredictions, 
       kbCoverage: { covered, gaps } 
     };
   })();

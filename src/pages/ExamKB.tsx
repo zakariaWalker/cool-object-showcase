@@ -64,6 +64,7 @@ export default function ExamKBPage() {
             exams={store.exams}
             questions={store.questions}
             analysis={store.analysis}
+            primaryPatterns={primaryKB.patterns}
           />
         )}
         {activeView === "analytics" && <ExamKBAnalytics store={store} primaryPatterns={primaryKB.patterns} />}

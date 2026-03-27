@@ -2,12 +2,13 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import type { ExamEntry, ExamQuestion, ExamKBAnalysis } from "./useExamKBStore";
-import { extractParameters } from "./useExamKBStore";
+import { Pattern } from "@/components/admin/useAdminKBStore";
 
 interface Props {
   exams: ExamEntry[];
   questions: ExamQuestion[];
   analysis: ExamKBAnalysis;
+  primaryPatterns: Pattern[];
 }
 
 type FormatGroup = "official" | "regular";
@@ -21,7 +22,7 @@ const FORMAT_GROUP_LABELS: Record<FormatGroup, string> = {
   regular: "فروض واختبارات عادية",
 };
 
-export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
+export function ExamConfidenceAnalysis({ exams, questions, analysis, primaryPatterns }: Props) {
   const stats = useMemo(() => {
     const officialExams = exams.filter(e => classifyFormat(e.format) === "official");
     const regularExams = exams.filter(e => classifyFormat(e.format) === "regular");
@@ -35,8 +36,8 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
     });
 
     // Parameter overlap (Deep cognitive structure)
-    const officialParams = new Set(officialQs.flatMap(q => extractParameters(q.text)));
-    const regularParams = new Set(regularQs.flatMap(q => extractParameters(q.text)));
+    const officialParams = new Set(officialQs.flatMap(q => q.linkedPatternIds));
+    const regularParams = new Set(regularQs.flatMap(q => q.linkedPatternIds));
     const commonParams = [...officialParams].filter(p => regularParams.has(p));
     const paramOverlapPct = officialParams.size > 0
       ? Math.round((commonParams.length / officialParams.size) * 100)
@@ -70,8 +71,9 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
     // Repetition of Parameters in official exams
     const paramFreqInOfficial: Record<string, number> = {};
     officialQs.forEach(q => {
-      extractParameters(q.text).forEach(p => {
-        paramFreqInOfficial[p] = (paramFreqInOfficial[p] || 0) + 1;
+      q.linkedPatternIds.forEach(id => {
+        const name = primaryPatterns.find(p => p.id === id)?.name || "نمط مجهول";
+        paramFreqInOfficial[name] = (paramFreqInOfficial[name] || 0) + 1;
       });
     });
     
@@ -80,7 +82,9 @@ export function ExamConfidenceAnalysis({ exams, questions, analysis }: Props) {
       .slice(0, 5);
 
     // "Surprise factor" - parameters in official but not in regular
-    const surpriseParams = [...officialParams].filter(p => !regularParams.has(p));
+    const surpriseParams = [...officialParams]
+      .filter(p => !regularParams.has(p))
+      .map(id => primaryPatterns.find(p => p.id === id)?.name || "نمط غير معروف");
 
     // Difficulty over years
     const years = [...new Set(exams.map(e => e.year))].filter(Boolean).sort();

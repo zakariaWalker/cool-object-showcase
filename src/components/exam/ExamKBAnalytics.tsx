@@ -22,7 +22,7 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
     );
   }
 
-  const sortedParams = Object.entries(analysis.parameterFrequency)
+  const sortedParams = Object.entries(analysis.kbPatternFrequency || {})
     .sort((a, b) => b[1].count - a[1].count);
 
   const totalQuestions = questions.length;
@@ -42,7 +42,7 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Topic Frequency */}
         <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="text-sm font-black text-foreground mb-4">📊 تكرار الأنماط المعرفية في الامتحانات</h3>
+          <h3 className="text-sm font-black text-foreground mb-4">📊 تكرار أنماط KB في الامتحانات</h3>
           <div className="space-y-2">
             {sortedParams.map(([type, data]) => {
               const pct = Math.round((data.count / totalQuestions) * 100);
@@ -68,9 +68,9 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
 
         {/* Predictions */}
         <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="text-sm font-black text-foreground mb-4">🔮 توقعات البنية الذهنية للامتحان القادم</h3>
+          <h3 className="text-sm font-black text-foreground mb-4">🔮 توقعات ظهور أنماط KB للامتحان القادم</h3>
           <div className="space-y-3">
-            {analysis.parameterPredictions.map((pred, i) => (
+            {(analysis.kbPatternPredictions || []).map((pred, i) => (
               <div key={pred.type} className="p-3 rounded-lg" style={{ background: "hsl(var(--primary) / 0.05)" }}>
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
@@ -82,7 +82,7 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
                 <div className="text-[9px] text-muted-foreground mr-8">{pred.reasoning}</div>
               </div>
             ))}
-            {analysis.parameterPredictions.length === 0 && (
+            {(analysis.kbPatternPredictions || []).length === 0 && (
               <p className="text-center py-4 text-muted-foreground text-xs">صنّف المزيد من الأسئلة لتحصل على توقعات</p>
             )}
           </div>
@@ -156,11 +156,11 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
       {/* Year Trends Table */}
       {years.length > 1 && (
         <div className="rounded-xl border border-border bg-card p-5 overflow-x-auto">
-          <h3 className="text-sm font-black text-foreground mb-4">📅 تطور أنماط الجهد الذهني عبر السنوات</h3>
+          <h3 className="text-sm font-black text-foreground mb-4">📅 تطور أنماط KB عبر السنوات</h3>
           <table className="w-full text-[10px]">
             <thead>
               <tr>
-                <th className="p-2 text-right font-bold text-muted-foreground">النمط المعرفي</th>
+                <th className="p-2 text-right font-bold text-muted-foreground">النمط</th>
                 {years.map(y => <th key={y} className="p-2 text-center font-bold text-muted-foreground">{y}</th>)}
                 <th className="p-2 text-center font-bold text-foreground">المجموع</th>
               </tr>
@@ -170,7 +170,7 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
                 <tr key={type} className="border-t border-border">
                   <td className="p-2 font-bold text-foreground">{type}</td>
                   {years.map(y => {
-                    const count = analysis.parameterYearTrends[y]?.[type] || 0;
+                    const count = (analysis.kbPatternYearTrends || {})[y]?.[type] || 0;
                     return (
                       <td key={y} className="p-2 text-center">
                         {count > 0 ? (
