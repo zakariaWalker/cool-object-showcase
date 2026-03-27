@@ -26,7 +26,7 @@ const NAV_ITEMS: { id: AdminView; icon: string; label: string; badge?: keyof Pro
 export function AdminSidebar({ view, setView, stats, onImport, onExport }: Props) {
   return (
     <aside className="w-[260px] flex-shrink-0 flex flex-col overflow-hidden"
-      style={{ background: "hsl(213 50% 20%)" }}>
+      style={{ background: "hsl(213 35% 28%)" }}>
       {/* Logo */}
       <div className="p-5 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
         <div className="text-lg font-bold text-primary-foreground tracking-tight">
@@ -64,7 +64,7 @@ export function AdminSidebar({ view, setView, stats, onImport, onExport }: Props
               className="flex items-center gap-3 px-5 py-2.5 cursor-pointer text-sm font-medium transition-all"
               style={{
                 color: view === item.id ? "#fff" : "rgba(255,255,255,0.7)",
-                background: view === item.id ? "hsl(213 50% 30%)" : "transparent",
+                background: view === item.id ? "hsl(213 35% 35%)" : "transparent",
                 borderRight: view === item.id ? "3px solid #60a5fa" : "3px solid transparent",
               }}
             >
