@@ -313,7 +313,11 @@ export function useAdminKBStore() {
             needs: d.needs,
             notes: d.notes,
           }));
-          await (supabase as any).from("kb_deconstructions").upsert(batch, { onConflict: "id" });
+          const { error } = await (supabase as any).from("kb_deconstructions").upsert(batch, { onConflict: "id" });
+          if (error) {
+            console.error("kb_deconstructions upsert error:", error);
+            throw error;
+          }
         }
       }
 
