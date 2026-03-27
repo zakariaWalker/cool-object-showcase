@@ -282,11 +282,12 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
                     return <td key={t} className="p-1"><div className="w-6 h-6 mx-auto rounded bg-muted/30" /></td>;
                   }
                   const pct = Math.round((cell.covered / cell.total) * 100);
-                  const bg = pct >= 80 ? "hsl(var(--geometry))" : pct >= 50 ? "hsl(var(--statistics))" : pct > 0 ? "hsl(var(--functions) / 0.7)" : "hsl(var(--destructive) / 0.5)";
+                  const bg = pct >= 80 ? "hsl(var(--geometry) / 0.35)" : pct >= 50 ? "hsl(var(--statistics) / 0.35)" : pct > 0 ? "hsl(var(--functions) / 0.25)" : "hsl(var(--destructive) / 0.2)";
+                  const textColor = pct >= 80 ? "hsl(var(--geometry))" : pct >= 50 ? "hsl(158 64% 25%)" : pct > 0 ? "hsl(340 60% 35%)" : "hsl(var(--destructive))";
                   return (
                     <td key={t} className="p-1" title={`${GRADE_LABELS[g]} × ${TYPE_LABELS_AR[t]}: ${cell.covered}/${cell.total}`}>
-                      <div className="w-6 h-6 mx-auto rounded flex items-center justify-center text-white text-[8px] font-bold"
-                        style={{ background: bg }}>
+                      <div className="w-6 h-6 mx-auto rounded flex items-center justify-center text-[8px] font-bold"
+                        style={{ background: bg, color: textColor }}>
                         {cell.total}
                       </div>
                     </td>
@@ -297,10 +298,10 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
           </tbody>
         </table>
         <div className="flex items-center gap-4 mt-3 text-[9px] text-muted-foreground justify-center">
-          <span className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: "hsl(var(--geometry))" }} /> ≥80%</span>
-          <span className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: "hsl(var(--statistics))" }} /> 50-79%</span>
-          <span className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: "hsl(var(--functions) / 0.7)" }} /> 1-49%</span>
-          <span className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: "hsl(var(--destructive) / 0.5)" }} /> 0%</span>
+          <span className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: "hsl(var(--geometry) / 0.35)" }} /> ≥80%</span>
+          <span className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: "hsl(var(--statistics) / 0.35)" }} /> 50-79%</span>
+          <span className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: "hsl(var(--functions) / 0.25)" }} /> 1-49%</span>
+          <span className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: "hsl(var(--destructive) / 0.2)" }} /> 0%</span>
           <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-muted/30" /> لا تمارين</span>
         </div>
       </div>
