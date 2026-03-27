@@ -141,7 +141,7 @@ export function GapFixWizard({ gap, onSolve, onCancel }: GapFixWizardProps) {
         {/* Footer */}
         <div className="p-6 bg-muted/20 border-t border-border flex flex-col gap-4">
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
+            <Sparkles className="w-3.5 h-3.5 text-accent" />
             <span>سيتم تحويل هذه الخطوات إلى DeconstructionSchema دائم في قاعدة معرفتك.</span>
           </div>
           <div className="flex gap-3">

@@ -260,7 +260,7 @@ export default function GapDetector() {
   if (quizState === "setup") {
     return (
       <div className="h-full overflow-y-auto bg-background" dir="rtl">
-        <div className="bg-gradient-to-l from-blue-500/10 via-indigo-500/5 to-background border-b border-blue-200/30 px-6 py-8">
+        <div className="border-b border-border px-6 py-8" style={{ background: "linear-gradient(to left, hsl(var(--primary) / 0.08), hsl(var(--primary) / 0.03), hsl(var(--background)))" }}>
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-3xl">🔍</span>
@@ -376,7 +376,7 @@ export default function GapDetector() {
                 {/* Self-assessment fallback */}
                 <div className="flex gap-3">
                   <button onClick={() => answerQuestion(true)}
-                    className="flex-1 py-3 rounded-xl text-xs font-bold border-2 border-green-500/30 bg-green-500/5 text-green-600 hover:bg-green-500/15 transition-all">
+                    className="flex-1 py-3 rounded-xl text-xs font-bold border-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 transition-all">
                     ✅ حللته بنجاح
                   </button>
                   <button onClick={() => answerQuestion(false)}
@@ -390,7 +390,7 @@ export default function GapDetector() {
             {/* Solution reveal */}
             {showSolution && (
               <div className="space-y-4">
-                <div className={`p-4 rounded-xl border ${answers[answers.length - 1]?.correct ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"}`}>
+                <div className={`p-4 rounded-xl border ${answers[answers.length - 1]?.correct ? "border-primary/30 bg-primary/5" : "border-destructive/30 bg-destructive/5"}`}>
                   <div className="text-sm font-bold mb-2">
                     {answers[answers.length - 1]?.correct ? "✅ أحسنت!" : "❌ لا بأس، إليك خطوات الحل:"}
                   </div>
@@ -435,7 +435,7 @@ export default function GapDetector() {
   if (quizState === "results" && analysis) {
     return (
       <div className="h-full overflow-y-auto bg-background" dir="rtl">
-        <div className="bg-gradient-to-l from-blue-500/10 via-indigo-500/5 to-background border-b border-blue-200/30 px-6 py-6">
+        <div className="border-b border-border px-6 py-6" style={{ background: "linear-gradient(to left, hsl(var(--primary) / 0.08), hsl(var(--primary) / 0.03), hsl(var(--background)))" }}>
           <div className="max-w-3xl mx-auto">
             <h1 className="text-xl font-black text-foreground flex items-center gap-2">📊 نتائج التقييم التشخيصي</h1>
             <p className="text-xs text-muted-foreground mt-1">الجولة {roundHistory.length} • {analysis.total} سؤال</p>
@@ -456,7 +456,7 @@ export default function GapDetector() {
               <div className="text-[10px] text-muted-foreground mt-1">المستوى</div>
             </div>
             <div className="p-4 rounded-xl border border-border bg-card text-center">
-              <div className="text-3xl font-black text-green-500">{analysis.correctCount}</div>
+              <div className="text-3xl font-black text-primary">{analysis.correctCount}</div>
               <div className="text-[10px] text-muted-foreground mt-1">صحيح</div>
             </div>
             <div className="p-4 rounded-xl border border-border bg-card text-center">
@@ -522,9 +522,9 @@ export default function GapDetector() {
           )}
 
           {analysis.failedCount === 0 && (
-            <div className="text-center p-6 rounded-xl bg-green-500/5 border border-green-500/20">
+            <div className="text-center p-6 rounded-xl bg-primary/5 border border-primary/20">
               <div className="text-4xl mb-2">🎉</div>
-              <div className="text-sm font-bold text-green-600">ممتاز! لم تخطئ في أي تمرين</div>
+              <div className="text-sm font-bold text-primary">ممتاز! لم تخطئ في أي تمرين</div>
               <div className="text-xs text-muted-foreground mt-1">جرّب مستوى أعلى للتحدي</div>
             </div>
           )}

@@ -46,7 +46,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
           </span>
           <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden max-w-[120px]">
             <motion.div
-              className="h-full bg-gradient-to-l from-primary/80 to-purple-400/70 rounded-full"
+              className="h-full bg-gradient-to-l from-primary/80 to-accent/70 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${progress.percent}%` }}
               transition={{ duration: 0.8, ease: "easeOut" }}
@@ -72,12 +72,12 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
           <div className="flex items-center gap-3">
             {/* Level badge */}
             <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/80 to-purple-400 flex items-center justify-center text-white shadow-lg">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/80 to-accent flex items-center justify-center text-primary-foreground shadow-lg">
                 <span className="text-xl font-black">{stats.level}</span>
               </div>
               {stats.streak_days > 0 && (
                 <motion.div
-                  className="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-orange-400 flex items-center justify-center text-[10px] shadow-md border-2 border-card"
+                  className="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-accent flex items-center justify-center text-[10px] shadow-md border-2 border-card"
                   animate={{ scale: [1, 1.15, 1] }}
                   transition={{ repeat: Infinity, duration: 2 }}
                 >
@@ -93,7 +93,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
 
           {/* Streak */}
           <div className="text-center">
-            <div className={`text-2xl font-black ${stats.streak_days > 0 ? "text-orange-400" : "text-muted-foreground"}`}>
+            <div className={`text-2xl font-black ${stats.streak_days > 0 ? "text-accent" : "text-muted-foreground"}`}>
               {stats.streak_days}
             </div>
             <div className="text-[10px] text-muted-foreground">
@@ -110,7 +110,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
           </div>
           <div className="h-3 bg-muted rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-l from-primary/80 via-purple-400/70 to-pink-400/60 rounded-full"
+              className="h-full bg-gradient-to-l from-primary/80 via-accent/70 to-accent/60 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${progress.percent}%` }}
               transition={{ duration: 1.2, ease: "easeOut" }}
@@ -128,7 +128,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
 
       {/* Daily Challenge */}
       {dailyChallenge && (
-        <div className="rounded-2xl border-2 border-dashed border-amber-500/30 bg-amber-500/5 p-4">
+        <div className="rounded-2xl border-2 border-dashed border-accent/30 bg-accent/5 p-4">
           <div className="flex items-center gap-2 mb-3">
             <motion.span
               className="text-lg"
@@ -138,7 +138,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
               📅
             </motion.span>
             <span className="text-sm font-black text-foreground">تحدي اليوم</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 font-bold">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/20 text-accent-foreground font-bold">
               +{50} XP
             </span>
           </div>
@@ -148,7 +148,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
           {onStartDailyChallenge && (
             <button
               onClick={() => onStartDailyChallenge(dailyChallenge.exerciseId)}
-              className="w-full py-2.5 rounded-xl text-xs font-bold text-primary-foreground bg-gradient-to-l from-amber-400 to-orange-400 hover:opacity-90 transition-all shadow-md"
+              className="w-full py-2.5 rounded-xl text-xs font-bold text-primary-foreground bg-gradient-to-l from-accent to-accent/80 hover:opacity-90 transition-all shadow-md"
             >
               🚀 ابدأ التحدي
             </button>
@@ -197,10 +197,10 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
                       <div className="text-[9px] text-muted-foreground mt-0.5">{badge.description}</div>
                       {earned && (
                         <div className={`text-[8px] mt-1 px-1.5 py-0.5 rounded-full inline-block font-bold ${
-                          badge.tier === "diamond" ? "bg-blue-500/20 text-blue-500"
-                          : badge.tier === "gold" ? "bg-amber-500/20 text-amber-600"
-                          : badge.tier === "silver" ? "bg-gray-400/20 text-gray-500"
-                          : "bg-orange-500/20 text-orange-600"
+                          badge.tier === "diamond" ? "bg-primary/20 text-primary"
+                          : badge.tier === "gold" ? "bg-accent/20 text-accent-foreground"
+                          : badge.tier === "silver" ? "bg-muted text-muted-foreground"
+                          : "bg-accent/20 text-accent-foreground"
                         }`}>
                           {badge.tier === "diamond" ? "💎" : badge.tier === "gold" ? "🥇" : badge.tier === "silver" ? "🥈" : "🥉"}
                         </div>
@@ -303,10 +303,10 @@ export function BadgeUnlockOverlay({ badge, onDone }: { badge: Badge; onDone: ()
         <div className="text-lg font-black text-foreground mb-1">{badge.name}</div>
         <div className="text-xs text-muted-foreground">{badge.description}</div>
         <div className={`mt-3 inline-block text-[10px] px-3 py-1 rounded-full font-bold ${
-          badge.tier === "diamond" ? "bg-blue-500/20 text-blue-500"
-          : badge.tier === "gold" ? "bg-amber-500/20 text-amber-600"
-          : badge.tier === "silver" ? "bg-gray-400/20 text-gray-500"
-          : "bg-orange-500/20 text-orange-600"
+          badge.tier === "diamond" ? "bg-primary/20 text-primary"
+          : badge.tier === "gold" ? "bg-accent/20 text-accent-foreground"
+          : badge.tier === "silver" ? "bg-muted text-muted-foreground"
+          : "bg-accent/20 text-accent-foreground"
         }`}>
           {badge.tier === "diamond" ? "💎 ماسي" : badge.tier === "gold" ? "🥇 ذهبي" : badge.tier === "silver" ? "🥈 فضي" : "🥉 برونزي"}
         </div>

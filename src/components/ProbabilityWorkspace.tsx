@@ -90,7 +90,7 @@ export function ProbabilityWorkspace() {
 
           <div className="flex-1 overflow-y-auto p-4">
             {error && (
-              <div className="text-[12px] text-red-400 border border-red-400/30 rounded-sm p-3 mb-4">{error}</div>
+              <div className="text-[12px] text-destructive border border-destructive/30 rounded-sm p-3 mb-4">{error}</div>
             )}
             {result && (
               <AnimatePresence>

@@ -27,7 +27,7 @@ export function ExamPreview({ exam, onClose }: Props) {
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between print:hidden z-10">
           <div className="flex items-center gap-3">
             <button onClick={handlePrint}
-              className="px-4 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700">
+              className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90">
               🖨️ طباعة / PDF
             </button>
           </div>

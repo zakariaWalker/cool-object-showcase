@@ -8,11 +8,11 @@ interface ExerciseNebulaProps {
 }
 
 const DOMAIN_THEMES: Record<Domain, { color: string; bg: string; icon: string; title: string }> = {
-  algebra: { color: "#8B5CF6", bg: "from-purple-900/20", icon: "🔢", title: "المنطق الجبري" },
-  geometry: { color: "#10B981", bg: "from-emerald-900/20", icon: "📐", title: "الفضاء الهندسي" },
-  statistics: { color: "#F59E0B", bg: "from-amber-900/20", icon: "📊", title: "الذكاء الإحصائي" },
-  probability: { color: "#A855F7", bg: "from-violet-900/20", icon: "🎲", title: "الاحتمالات" },
-  functions: { color: "#3B82F6", bg: "from-blue-900/20", icon: "📈", title: "تحليل الدوال" },
+  algebra: { color: "hsl(var(--algebra))", bg: "from-primary/10", icon: "🔢", title: "المنطق الجبري" },
+  geometry: { color: "hsl(var(--geometry))", bg: "from-primary/10", icon: "📐", title: "الفضاء الهندسي" },
+  statistics: { color: "hsl(var(--statistics))", bg: "from-accent/10", icon: "📊", title: "الذكاء الإحصائي" },
+  probability: { color: "hsl(var(--probability))", bg: "from-primary/10", icon: "🎲", title: "الاحتمالات" },
+  functions: { color: "hsl(var(--functions))", bg: "from-primary/10", icon: "📈", title: "تحليل الدوال" },
 };
 
 interface Particle {

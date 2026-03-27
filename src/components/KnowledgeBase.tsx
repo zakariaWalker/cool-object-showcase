@@ -521,7 +521,7 @@ function SchemasTab({ kb }: { kb: KBType }) {
 
 function ConfidenceBadge({ value }: { value: number }) {
   const pct = Math.round(value * 100);
-  const color = pct >= 70 ? "text-green-400" : pct >= 40 ? "text-yellow-400" : "text-muted-foreground";
+  const color = pct >= 70 ? "text-primary" : pct >= 40 ? "text-accent-foreground" : "text-muted-foreground";
   return <span className={`text-[9px] font-mono ${color}`}>{pct}%</span>;
 }
 
@@ -630,7 +630,7 @@ function NeuralMap({ kb }: { kb: KBType }) {
         
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
             <span className="text-[7px] uppercase tracking-[0.3em] text-muted-foreground/40 font-bold">Neural Topology v3.0</span>
-            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
+            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" style={{ boxShadow: "0 0 5px hsl(var(--primary) / 0.5)" }} />
         </div>
      </div>
   );

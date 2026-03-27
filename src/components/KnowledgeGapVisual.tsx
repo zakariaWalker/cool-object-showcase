@@ -104,7 +104,7 @@ export function KnowledgeGapVisual({ exercise, kb, onJumpToKB, onTrainGap }: Kno
                 onClick={() => onJumpToKB(gap?.id || sig)}
                 className="py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-[14px] font-bold transition-all border border-white/10 flex items-center justify-center gap-3 backdrop-blur-xl"
             >
-                <Zap className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                <Zap className="w-4 h-4 text-accent fill-accent" />
                 استكشاف في الخريطة
             </motion.button>
         </div>

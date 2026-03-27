@@ -38,7 +38,7 @@ const DOMAIN_CONFIG: Record<Domain, {
   geometry:    { labelAr: "هندسة",   label: "Geometry",    borderClass: "border-l-geometry", badgeClass: "bg-geometry/10 text-geometry border-geometry/20" },
   statistics:  { labelAr: "إحصاء",   label: "Statistics",  borderClass: "border-l-accent",   badgeClass: "bg-accent/10 text-accent border-accent/20" },
   probability: { labelAr: "احتمال",  label: "Probability", borderClass: "border-l-secondary",badgeClass: "bg-secondary/10 text-secondary border-secondary/20" },
-  functions:   { labelAr: "دوال",    label: "Functions",   borderClass: "border-l-purple-400",badgeClass: "bg-purple-400/10 text-purple-400 border-purple-400/20" },
+  functions:   { labelAr: "دوال",    label: "Functions",   borderClass: "border-l-primary",badgeClass: "bg-primary/10 text-primary border-primary/20" },
 };
 
 export function ExerciseResult({ 
@@ -309,7 +309,7 @@ export function ExerciseResult({
             {(functionsResult as any).domain && (
               <div>
                 <div className="text-[10px] text-muted-foreground mb-2">مجال التعريف</div>
-                <div className="text-[16px] text-purple-600 font-mono">
+                <div className="text-[16px] text-primary font-mono">
                   <LatexRenderer latex={`D_f = ${(functionsResult as any).domain}`} displayMode />
                 </div>
               </div>
@@ -317,7 +317,7 @@ export function ExerciseResult({
             {/* f'(x) */}
             <div>
               <div className="text-[10px] text-muted-foreground mb-2">المشتقة f'(x)</div>
-              <div className="text-[20px] text-purple-600">
+              <div className="text-[20px] text-primary">
                 <LatexRenderer latex={`f'(x) = ${functionsResult.derivativeLatex}`} displayMode />
               </div>
             </div>
@@ -325,7 +325,7 @@ export function ExerciseResult({
             {(functionsResult as any).secondDerivativeLatex && (
               <div>
                 <div className="text-[10px] text-muted-foreground mb-2">المشتقة الثانية f''(x)</div>
-                <div className="text-[16px] text-blue-600">
+                <div className="text-[16px] text-primary">
                   <LatexRenderer latex={`f''(x) = ${(functionsResult as any).secondDerivativeLatex}`} displayMode />
                 </div>
               </div>
@@ -374,7 +374,7 @@ export function ExerciseResult({
                 <div className="text-[10px] text-muted-foreground mb-2">النقاط الحرجة (f'(x)=0)</div>
                 <div className="flex gap-2 flex-wrap">
                   {functionsResult.criticalPoints.map((cp, i) => (
-                    <span key={i} className="px-3 py-1 bg-purple-100 text-purple-800 rounded text-[13px] font-mono">x = {cp}</span>
+                    <span key={i} className="px-3 py-1 bg-primary/10 text-primary rounded text-[13px] font-mono">x = {cp}</span>
                   ))}
                 </div>
               </div>
@@ -385,7 +385,7 @@ export function ExerciseResult({
                 <div className="text-[10px] text-muted-foreground mb-2">نقاط الانعطاف (f''(x)=0)</div>
                 <div className="flex gap-2 flex-wrap">
                   {(functionsResult as any).inflectionPoints.map((ip: string, i: number) => (
-                    <span key={i} className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-[13px] font-mono">{ip}</span>
+                    <span key={i} className="px-3 py-1 bg-primary/10 text-primary rounded text-[13px] font-mono">{ip}</span>
                   ))}
                 </div>
               </div>

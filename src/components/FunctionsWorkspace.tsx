@@ -137,7 +137,7 @@ export function FunctionsWorkspace() {
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && solve()}
                 placeholder="x^2 - 4"
-                className="flex-1 bg-background border border-border rounded-sm px-3 py-2 text-[13px] focus:outline-none focus:border-purple-400/50 placeholder:text-muted-foreground"
+                className="flex-1 bg-background border border-border rounded-sm px-3 py-2 text-[13px] focus:outline-none focus:border-primary/50 placeholder:text-muted-foreground"
                 dir="ltr"
               />
             </div>
@@ -146,7 +146,7 @@ export function FunctionsWorkspace() {
                 <button
                   key={ex.label}
                   onClick={() => setInput(ex.value)}
-                  className="text-[11px] px-2 py-1 border border-border rounded-sm text-muted-foreground hover:text-foreground hover:border-purple-400/50 transition-colors"
+                  className="text-[11px] px-2 py-1 border border-border rounded-sm text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
                 >
                   {ex.label}
                 </button>
@@ -155,7 +155,7 @@ export function FunctionsWorkspace() {
             <button
               onClick={solve}
               disabled={!input.trim()}
-              className="mt-3 w-full py-2.5 bg-purple-600 text-white text-[13px] font-semibold rounded-sm hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="mt-3 w-full py-2.5 bg-primary text-primary-foreground text-[13px] font-semibold rounded-sm hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               تحليل الدالة →
             </button>
@@ -163,7 +163,7 @@ export function FunctionsWorkspace() {
 
           <div className="flex-1 overflow-y-auto p-4">
             {error && (
-              <div className="text-[12px] text-red-400 border border-red-400/30 rounded-sm p-3 mb-4">{error}</div>
+              <div className="text-[12px] text-destructive border border-destructive/30 rounded-sm p-3 mb-4">{error}</div>
             )}
             {result && (
               <AnimatePresence>
@@ -174,8 +174,8 @@ export function FunctionsWorkspace() {
                     <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">الدالة</div>
                     <LatexRenderer latex={`f(x) = ${result.latex}`} displayMode={true} />
                   </div>
-                  <div className="mb-3 p-3 bg-background border border-purple-400/30 rounded-sm">
-                    <div className="text-[10px] text-purple-400 uppercase tracking-wider mb-1">المشتقة f'(x)</div>
+                  <div className="mb-3 p-3 bg-background border border-primary/30 rounded-sm">
+                    <div className="text-[10px] text-primary uppercase tracking-wider mb-1">المشتقة f'(x)</div>
                     <LatexRenderer latex={`f'(x) = ${result.derivativeLatex}`} displayMode={true} />
                   </div>
 
@@ -210,7 +210,7 @@ export function FunctionsWorkspace() {
                       className="border border-border rounded-sm p-3 mb-2"
                     >
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-[11px] text-purple-400 font-semibold">{step.ruleAr}</span>
+                        <span className="text-[11px] text-primary font-semibold">{step.ruleAr}</span>
                       </div>
                       <div className="text-[10px] text-muted-foreground font-mono mb-1">{step.explanation}</div>
                       <div className="bg-background rounded-sm p-1.5 overflow-x-auto">

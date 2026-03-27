@@ -35,7 +35,7 @@ export function ExamListPanel({ exams, onEdit, onCorrect, onDelete }: Props) {
                   <div className="text-[10px] text-muted-foreground mt-0.5">{gradeLabel} · /{exam.totalPoints} · {exam.duration} د</div>
                 </div>
                 <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${
-                  exam.status === "ready" ? "bg-green-500/10 text-green-600" :
+                  exam.status === "ready" ? "bg-primary/10 text-primary" :
                   exam.status === "published" ? "bg-primary/10 text-primary" :
                   "bg-muted text-muted-foreground"
                 }`}>

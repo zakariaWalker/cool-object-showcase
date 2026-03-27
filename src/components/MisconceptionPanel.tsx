@@ -14,9 +14,9 @@ interface Props {
 }
 
 const SEVERITY_COLORS = {
-  low: "text-green-400 border-green-400/30 bg-green-400/5",
-  medium: "text-yellow-400 border-yellow-400/30 bg-yellow-400/5",
-  high: "text-red-400 border-red-400/30 bg-red-400/5",
+  low: "text-primary border-primary/30 bg-primary/5",
+  medium: "text-accent-foreground border-accent/30 bg-accent/5",
+  high: "text-destructive border-destructive/30 bg-destructive/5",
 };
 
 export function MisconceptionPanel({ correctAnswer, domain }: Props) {

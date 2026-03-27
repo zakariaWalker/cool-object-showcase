@@ -149,12 +149,12 @@ export default function StudentSolver() {
 
         {/* Solver Area */}
         {completed ? (
-          <div className="p-8 rounded-xl border-2 border-green-500/30 bg-green-500/5 text-center space-y-4 animate-in fade-in zoom-in duration-500">
+          <div className="p-8 rounded-xl border-2 border-primary/30 bg-primary/5 text-center space-y-4 animate-in fade-in zoom-in duration-500">
             <div className="text-5xl mb-2">🎉</div>
-            <h2 className="text-2xl font-black text-green-600 dark:text-green-400">أحسنت العمل!</h2>
+            <h2 className="text-2xl font-black text-primary">أحسنت العمل!</h2>
             <p className="text-muted-foreground">لقد أكملت حل هذا التمرين خطوة بخطوة بنجاح.</p>
             <div className="pt-4">
-              <button onClick={() => navigate("/tutor")} className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-green-500/20">
+              <button onClick={() => navigate("/tutor")} className="px-8 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl transition-all shadow-lg shadow-primary/20">
                 تمرين آخر
               </button>
             </div>
@@ -186,7 +186,7 @@ export default function StudentSolver() {
                 />
                 
                 {stepStatus === "correct" && (
-                  <div className="absolute top-4 right-4 text-green-500 text-xl font-bold">✓</div>
+                  <div className="absolute top-4 right-4 text-primary text-xl font-bold">✓</div>
                 )}
               </div>
 
@@ -206,7 +206,7 @@ export default function StudentSolver() {
               )}
 
               {stepStatus === "hint_shown" && (
-                <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-sm flex gap-3">
+                <div className="p-4 rounded-lg bg-accent/10 border border-accent/30 text-accent-foreground text-sm flex gap-3">
                   <span className="text-xl">💡</span>
                   <div>
                     <strong>تلميح:</strong> 
@@ -221,9 +221,9 @@ export default function StudentSolver() {
               )}
 
               {stepStatus === "correct" && (
-                <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center justify-between animate-in slide-in-from-bottom-2">
-                  <div className="text-green-700 dark:text-green-400 font-bold text-sm">ممتاز! إجابتك تبدو متوافقة مع المطلوب.</div>
-                  <button onClick={nextStep} className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition-all shadow-md">
+                <div className="p-4 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-between animate-in slide-in-from-bottom-2">
+                  <div className="text-primary font-bold text-sm">ممتاز! إجابتك تبدو متوافقة مع المطلوب.</div>
+                  <button onClick={nextStep} className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg transition-all shadow-md">
                     الخطوة التالية ←
                   </button>
                 </div>

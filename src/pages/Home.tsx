@@ -72,7 +72,7 @@ export default function Home() {
         <div className="relative max-w-4xl mx-auto text-center space-y-4">
           <div className="text-5xl mb-2">🎓</div>
           <h1 className="text-3xl font-black text-foreground">
-            محرك الرياضيات <span className="bg-gradient-to-l from-primary to-purple-500 bg-clip-text text-transparent">QED</span>
+            محرك الرياضيات <span className="bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">QED</span>
           </h1>
           <p className="text-muted-foreground text-sm max-w-lg mx-auto leading-relaxed">
             منصة تعليمية ذكية تعتمد على قاعدة معرفة مفكّكة — تقييم تشخيصي → مسار تعلم مخصص → تمارين تفاعلية → مدرّس ذكي

@@ -137,8 +137,8 @@ export function ExamCorrectorPanel({ exams, exam, onSelectExam }: Props) {
                     {correction && (
                       <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
                         className={`p-3 rounded-lg border ${
-                          correction.isCorrect ? "border-green-500/30 bg-green-500/5" :
-                          correction.partialCredit ? "border-yellow-500/30 bg-yellow-500/5" :
+                          correction.isCorrect ? "border-primary/30 bg-primary/5" :
+                          correction.partialCredit ? "border-accent/30 bg-accent/5" :
                           "border-destructive/30 bg-destructive/5"
                         }`}>
                         <div className="flex items-center justify-between mb-2">
