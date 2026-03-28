@@ -39,19 +39,19 @@
     --border: 220 12% 78%;
     --input: 220 12% 78%;
 
-    --ring: 210 62% 40%;
+    --ring: 215 65% 38%;
     --radius: 0.75rem;
 
     /* glow tuned */
-    --glow-primary: 0 0 25px hsl(210 62% 40% / 0.25);
-    --glow-accent: 0 0 25px hsl(26 72% 52% / 0.25);
+    --glow-primary: 0 0 25px hsl(215 65% 38% / 0.25);
+    --glow-accent: 0 0 25px hsl(26 75% 48% / 0.25);
 
-    /* domain colors */
-    --algebra: 228 48% 58%;
-    --geometry: 162 38% 44%;
-    --statistics: 34 55% 52%;
-    --probability: 272 32% 55%;
-    --functions: 344 40% 55%;
+    /* domain colors — high contrast */
+    --algebra: 228 55% 50%;
+    --geometry: 162 45% 38%;
+    --statistics: 34 60% 45%;
+    --probability: 272 40% 48%;
+    --functions: 344 48% 48%;
 
     --sidebar-background: 38 22% 94%;
     --sidebar-foreground: 215 28% 18%;
