@@ -1,339 +1,390 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  Landing.tsx — QED Premium · صفحة الهبوط المطورة
+//  Landing.tsx — QED · صفحة الهبوط
+//  Real platform features: KB, math solving, gap detection, learning path
 // ═══════════════════════════════════════════════════════════════════════
 import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { QEDLogo } from "@/components/QEDLogo";
-import { Brain, Zap, Target, BookOpen, CheckCircle2, ChevronDown, Sparkles, GraduationCap } from "lucide-react";
 
-// Assets (Using absolute paths from artifact dir)
-const ASSETS = {
-  hero: "/C:/Users/lenovo/.gemini/antigravity/brain/90f3bcb0-01ed-4d9c-986b-6ff0fccf994c/qed_hero_concept_1774708805136.png",
-  kb: "/C:/Users/lenovo/.gemini/antigravity/brain/90f3bcb0-01ed-4d9c-986b-6ff0fccf994c/qed_feature_kb_mockup_1774708941274.png",
-  tutor: "/C:/Users/lenovo/.gemini/antigravity/brain/90f3bcb0-01ed-4d9c-986b-6ff0fccf994c/qed_feature_tutor_mockup_1774709105988.png",
-};
-
+// ─── Feature Sections ───────────────────────────────────────────────────
 const FEATURES = [
   {
     id: "kb",
-    icon: <Brain className="w-8 h-8" />,
-    title: "قاعدة معرفة ذكية (KB)",
-    subtitle: "تفكيك رياضي كامل لكل الأنماط",
-    description: "أكثر من 500 نمط حل مصنف حسب المنهج الجزائري. لا مزيد من الحفظ الصم، افهم 'لماذا' و 'كيف' لكل خطوة حل.",
-    img: ASSETS.kb,
-    color: "hsl(var(--algebra))",
+    emoji: "🧩",
+    title: "قاعدة معرفة رياضية ذكية",
+    subtitle: "أنماط حل مصنّفة ومنظّمة — جاهزة لتفكيك أي تمرين",
+    description: "قاعدة المعرفة (KB) تحتوي على مئات الأنماط الرياضية المصنّفة: جبر، هندسة، دوال، احتمالات. كل نمط فيه خطوات الحل، المفاهيم المطلوبة، والأخطاء الشائعة.",
+    details: ["أنماط مصنّفة حسب المنهج الجزائري", "خطوات حل واضحة لكل نمط", "ربط المفاهيم ببعضها"],
+    colorVar: "--algebra",
   },
   {
-    id: "tutor",
-    icon: <Sparkles className="w-8 h-8" />,
-    title: "المدرّس الذكي SOTA",
-    subtitle: "توجيه تفاعلي خطوة بخطوة",
-    description: "محرك حل محلي يحلل إجابتك، يكتشف ثغراتك، ويشرح لك المفاهيم بأسلوب مبسط وممتع عبر شات تفاعلي.",
-    img: ASSETS.tutor,
-    color: "hsl(var(--geometry))",
+    id: "solve",
+    emoji: "⚡",
+    title: "محرك حل التمارين",
+    subtitle: "أدخل أي تمرين واحصل على الحل كاملاً مع الشرح",
+    description: "محرك SOTA يحل التمارين محلياً — جبر، هندسة، إحصاء، احتمالات، دوال. يكشف الأخطاء المفاهيمية ويشرح كل خطوة بالتفصيل.",
+    details: ["حل محلي بدون إنترنت", "كشف الأخطاء المفاهيمية", "شرح كل خطوة بالعربية"],
+    colorVar: "--geometry",
+  },
+  {
+    id: "gaps",
+    emoji: "🔍",
+    title: "كاشف الثغرات الذكي",
+    subtitle: "يحلل إجاباتك ويحدد بالضبط أين الخلل في فهمك",
+    description: "بدل ما تضيع وقتك في مراجعة كل شيء، الكاشف يحدد الأنماط الضعيفة والمفاهيم الغائبة — ويقترح تمارين مستهدفة لسد كل ثغرة.",
+    details: ["تحليل أنماط الأخطاء", "خريطة ثغرات بصرية", "تمارين مستهدفة لكل ثغرة"],
+    colorVar: "--functions",
+  },
+  {
+    id: "path",
+    emoji: "📚",
+    title: "مسار تعلّم مخصص",
+    subtitle: "تسلسل تمارين مرتّب من الأسهل إلى الأصعب",
+    description: "بعد التشخيص، QED يرسم لك مسار تعلم مرتّب حسب التعقيد — يبدأ من الأساسيات ويصعد تدريجياً حتى تُتقن كل مفهوم في المنهج.",
+    details: ["ترتيب حسب المتطلبات المسبقة", "تتبع التقدم في كل مفهوم", "تمارين متدرجة الصعوبة"],
+    colorVar: "--statistics",
+  },
+  {
+    id: "deconstruct",
+    emoji: "🔬",
+    title: "تفكيك التمارين خطوة بخطوة",
+    subtitle: "تفكيك بصري يربط كل خطوة بالمفهوم الرياضي المناسب من KB",
+    description: "اكتب أي تمرين وشاهد تفكيكه البصري: مخطط تدفق يوضح كل خطوة حل مع القانون المستخدم والسبب — مباشرة من قاعدة المعرفة.",
+    details: ["مخطط تدفق بصري تفاعلي", "ربط كل خطوة بنمط KB", "عرض الصيغ الرياضية بـ LaTeX"],
+    colorVar: "--probability",
+  },
+  {
+    id: "parent",
+    emoji: "👨‍👩‍👧",
+    title: "لوحة ولي الأمر",
+    subtitle: "تابع تقدّم ابنك بشفافية كاملة — بدون انتظار النتائج",
+    description: "تقارير واضحة عن التقدم اليومي، خريطة الثغرات، مؤشر التحسن الأسبوعي. اعرف بالضبط أين يحتاج ابنك للمساعدة.",
+    details: ["تقارير يومية وأسبوعية", "خريطة ثغرات بصرية", "مقارنة التقدم عبر الزمن"],
+    colorVar: "--accent",
   },
 ];
 
-const SUCCESS_STEPS = [
-  { id: 1, title: "التشخيص الذكي", desc: "كشف الثغرات المعرفية فورا", icon: <Target className="w-6 h-6" /> },
-  { id: 2, title: "المسار المخصص", desc: "خطة دراسية ذكية للـ BAC", icon: <BookOpen className="w-6 h-6" /> },
-  { id: 3, title: "الإتقان الكامل", desc: "تجاوز كل الصعوبات والتميز", icon: <GraduationCap className="w-6 h-6" /> },
-];
+// ─── Stat component ─────────────────────────────────────────────────────
+function StatBadge({ value, label, color }: { value: string; label: string; color: string }) {
+  return (
+    <div className="text-center px-5">
+      <div className="text-2xl lg:text-3xl font-black" style={{ color }}>{value}</div>
+      <div className="text-[10px] text-muted-foreground mt-1 font-semibold">{label}</div>
+    </div>
+  );
+}
 
-export default function Landing() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: containerRef });
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => setIsLoaded(true), []);
+// ─── Feature Card ───────────────────────────────────────────────────────
+function FeatureCard({ feature, index, isVisible }: { feature: typeof FEATURES[number]; index: number; isVisible: boolean }) {
+  const flip = index % 2 !== 0;
 
   return (
-    <div ref={containerRef} className="relative bg-[#020617] text-white min-h-screen font-['Inter',_sans-serif] selection:bg-primary/30" dir="rtl">
-      
-      {/* ── Background Layers ── */}
-      <div className="fixed inset-0 z-0">
-        <motion.div 
-          initial={{ scale: 1.1, opacity: 0 }}
-          animate={{ scale: 1, opacity: 0.4 }}
-          transition={{ duration: 2, ease: "easeOut" }}
-          className="absolute inset-0 bg-cover bg-center mix-blend-overlay"
-          style={{ backgroundImage: `url(${ASSETS.hero})` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#020617]/40 via-[#020617]/90 to-[#020617]" />
-        
-        {/* Particle/Star effect */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <div className="absolute inset-0 stars-container" />
-        </div>
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0.1, y: 30 }}
+      transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}
+      className={`flex flex-col ${flip ? "lg:flex-row-reverse" : "lg:flex-row"} items-stretch gap-8 lg:gap-12 rounded-3xl overflow-hidden transition-all duration-700`}
+      style={{
+        background: isVisible ? `hsl(var(${feature.colorVar}) / 0.06)` : "transparent",
+        border: isVisible ? "1px solid hsl(var(--border))" : "1px solid transparent",
+      }}
+    >
+      {/* Text side */}
+      <div className="flex-1 min-w-0 p-8 lg:p-10 text-right" dir="rtl">
+        <div className="text-4xl mb-4">{feature.emoji}</div>
+        <h2 className={`text-2xl lg:text-3xl font-black leading-tight mb-3 transition-colors duration-500 ${
+          isVisible ? "text-foreground" : "text-muted-foreground/20"
+        }`}>
+          {feature.title}
+        </h2>
+        <p className={`text-sm lg:text-base font-bold mb-3 transition-colors duration-500 ${
+          isVisible ? "text-foreground/70" : "text-foreground/10"
+        }`}>
+          {feature.subtitle}
+        </p>
+        <p className={`text-sm leading-relaxed mb-6 transition-colors duration-500 ${
+          isVisible ? "text-muted-foreground" : "text-muted-foreground/10"
+        }`}>
+          {feature.description}
+        </p>
+
+        {/* Detail chips */}
+        {isVisible && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="flex flex-wrap gap-2"
+          >
+            {feature.details.map((d, i) => (
+              <span key={i} className="text-xs font-bold px-3 py-1.5 rounded-full bg-foreground/5 text-foreground/70 border border-border">
+                ✓ {d}
+              </span>
+            ))}
+          </motion.div>
+        )}
       </div>
 
-      {/* ── Fixed Nav ── */}
-      <motion.nav 
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        className="fixed top-0 inset-x-0 z-[100] flex items-center justify-between px-6 lg:px-12 py-5 backdrop-blur-2xl border-b border-white/5 bg-black/20"
-      >
-        <div className="flex items-center gap-4">
-          <QEDLogo size="sm" white />
-          <div className="hidden md:block h-6 w-px bg-white/10" />
-          <div className="hidden md:flex items-center gap-6 text-[10px] uppercase tracking-widest font-black opacity-40">
-            <span>SOTA Engine v2.0</span>
-            <span className="w-1 h-1 rounded-full bg-primary" />
-            <span>BAC 2025 Algeria</span>
-          </div>
+      {/* Visual side — gradient block */}
+      <div className="flex-shrink-0 w-full lg:w-[320px] flex items-center justify-center p-8 relative overflow-hidden" style={{ background: `linear-gradient(135deg, hsl(var(${feature.colorVar})), hsl(var(${feature.colorVar}) / 0.7))` }}>
+        <div className="absolute inset-0 opacity-10">
+          <svg viewBox="0 0 200 200" className="w-full h-full">
+            {/* Grid pattern */}
+            {Array.from({ length: 8 }).map((_, i) => (
+              <g key={i}>
+                <line x1={i * 28} y1="0" x2={i * 28} y2="200" stroke="white" strokeWidth="0.5" opacity="0.3" />
+                <line x1="0" y1={i * 28} x2="200" y2={i * 28} stroke="white" strokeWidth="0.5" opacity="0.3" />
+              </g>
+            ))}
+          </svg>
         </div>
-        <div className="flex items-center gap-4">
-          <Link to="/auth" className="text-sm font-black opacity-60 hover:opacity-100 transition-all ml-4">دخول</Link>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Link to="/home" className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)] hover:shadow-[0_0_40px_rgba(var(--primary-rgb),0.5)] transition-all">
-              ابدأ الآن — مجاناً
-            </Link>
-          </motion.div>
+        <div className="relative text-center text-white z-10">
+          <div className="text-6xl mb-3">{feature.emoji}</div>
+          <div className="text-sm font-black opacity-90">{feature.title.split(" ").slice(0, 3).join(" ")}</div>
         </div>
-      </motion.nav>
+      </div>
+    </motion.div>
+  );
+}
 
-      {/* ── HERO SECTION ── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center pt-20 px-6 text-center z-10">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[180px] opacity-30 animate-pulse pointer-events-none" />
-        
+// ─── Domain Tags ────────────────────────────────────────────────────────
+const DOMAINS = [
+  { name: "الجبر", colorVar: "--algebra", icon: "📐" },
+  { name: "الهندسة", colorVar: "--geometry", icon: "📏" },
+  { name: "الدوال", colorVar: "--functions", icon: "📈" },
+  { name: "الإحصاء", colorVar: "--statistics", icon: "📊" },
+  { name: "الاحتمالات", colorVar: "--probability", icon: "🎲" },
+];
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Main Landing Component
+// ═══════════════════════════════════════════════════════════════════════
+export default function Landing() {
+  const [activeFeature, setActiveFeature] = useState(-1);
+  const featureRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const { scrollYProgress } = useScroll({ target: containerRef });
+
+  // Intersection observer for features
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting && e.intersectionRatio > 0.3) {
+            const idx = Number((e.target as HTMLElement).dataset.idx);
+            if (!isNaN(idx)) setActiveFeature(idx);
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+    featureRefs.current.forEach((el) => { if (el) obs.observe(el); });
+    return () => obs.disconnect();
+  }, []);
+
+  const featureCount = useTransform(scrollYProgress, [0, 1], [0, FEATURES.length]);
+  const [displayCount, setDisplayCount] = useState(0);
+  useEffect(() => {
+    const unsub = featureCount.on("change", (v) => setDisplayCount(Math.round(v)));
+    return unsub;
+  }, [featureCount]);
+
+  return (
+    <div ref={containerRef} className="relative bg-background min-h-screen" dir="rtl">
+
+      {/* Progress bar */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-1 z-50 origin-right"
+        style={{ scaleX: scrollYProgress, background: `linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))` }}
+      />
+
+      {/* Feature counter */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1 }}
+        className="fixed top-4 left-4 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full bg-foreground/90 text-background text-xs backdrop-blur-md"
+      >
+        <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "hsl(var(--geometry))" }} />
+        <span className="font-mono font-bold">ميزات مكتشفة:</span>
+        <span className="font-black">{displayCount}</span>
+      </motion.div>
+
+      {/* Progress dots */}
+      <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2.5 z-40">
+        {FEATURES.map((_, i) => (
+          <div
+            key={i}
+            className={`w-2 h-2 rounded-full transition-all duration-500 ${
+              i <= activeFeature
+                ? "bg-foreground scale-125"
+                : "bg-muted-foreground/20"
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* ── Fixed top bar with QED logo ── */}
+      <div className="fixed top-0 right-0 z-40 p-4">
+        <QEDLogo size="md" />
+      </div>
+
+      {/* ── Hero ── */}
+      <div className="relative min-h-screen flex flex-col justify-center items-center px-6 text-center">
+        {/* Background math symbols */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03]">
+          <div className="absolute text-[200px] font-black text-foreground -top-10 -right-10 rotate-12">∑</div>
+          <div className="absolute text-[180px] font-black text-foreground bottom-20 -left-10 -rotate-12">∫</div>
+          <div className="absolute text-[150px] font-black text-foreground top-1/3 left-1/4 rotate-6">π</div>
+          <div className="absolute text-[120px] font-black text-foreground bottom-1/3 right-1/4 -rotate-6">√</div>
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.5 }}
-          className="relative"
+          transition={{ duration: 1, delay: 0.3 }}
+          className="relative z-10 max-w-2xl"
         >
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl mb-10 shadow-xl">
-            <Zap className="w-3 h-3 text-primary animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80">المستقبل التعليمي للطالب الجزائري</span>
+          <div className="inline-flex items-center gap-3 mb-6">
+            <div className="h-px w-10 bg-foreground/20" />
+            <span className="font-mono text-[10px] tracking-[0.3em] text-foreground/50 uppercase font-bold">
+              QED · محرك الرياضيات الذكي
+            </span>
+            <div className="h-px w-10 bg-foreground/20" />
           </div>
 
-          <h1 className="text-5xl lg:text-[7.5rem] font-black leading-[0.9] tracking-tighter mb-10 selection:text-primary">
-            تخطّى حدود
+          <div className="text-5xl mb-4">🧠</div>
+
+          <h1 className="text-4xl lg:text-6xl font-black text-foreground leading-[1.1] mb-6">
+            تعلّم الرياضيات
             <br />
-            <span className="bg-gradient-to-r from-primary via-indigo-400 to-cyan-400 bg-clip-text text-transparent filter drop-shadow-2xl">
-              الفهم التقليدي
+            <span style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              بطريقة ذكية
             </span>
           </h1>
 
-          <p className="max-w-3xl mx-auto text-lg lg:text-2xl text-white/50 leading-relaxed font-medium mb-16 px-4">
-            أول منصة ذكية تفكك شفرات الرياضيات للمنهج الجزائري.
-            <br className="hidden md:block" />
-            حول تعثراتك إلى تميز حقيقي في <span className="text-white font-black underline decoration-primary/50 underline-offset-4">BAC 2025</span>.
+          <p className="text-foreground/60 text-sm lg:text-base max-w-lg mx-auto leading-relaxed mb-6">
+            قاعدة معرفة رياضية + محرك حل ذكي + كاشف ثغرات + مسار تعلّم مخصص.
+            <br />
+            كل ما تحتاجه لإتقان الرياضيات في مكان واحد.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link 
-                to="/home" 
-                className="group relative px-12 py-6 rounded-2xl bg-primary text-primary-foreground font-black text-2xl shadow-[0_20px_60px_-15px_rgba(var(--primary-rgb),0.4)] overflow-hidden block"
-              >
-                <div className="absolute inset-0 bg-white/30 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out" />
-                ابدأ رحلة النجاح مجاناً ←
-              </Link>
-            </motion.div>
-            <Link 
-              to="/gaps" 
-              className="px-10 py-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl font-black text-xl hover:bg-white/10 transition-all flex items-center gap-3 group"
-            >
-              <Target className="w-6 h-6 text-primary group-hover:rotate-45 transition-transform" />
-              التقييم التشخيصي
-            </Link>
-          </div>
-        </motion.div>
-
-        {/* Scroll Indicator */}
-        <motion.div 
-          animate={{ y: [0, 15, 0] }}
-          transition={{ repeat: Infinity, duration: 2.5 }}
-          className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-30"
-        >
-          <div className="w-[1px] h-16 bg-gradient-to-b from-primary to-transparent" />
-          <span className="text-[9px] font-black uppercase tracking-[0.3em]">اكتشف المزيد</span>
-        </motion.div>
-      </section>
-
-      {/* ── ROADMAP SECTION ── */}
-      <section className="relative py-40 px-6 z-10 bg-[#020617]/50 backdrop-blur-3xl">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {SUCCESS_STEPS.map((step) => (
-              <motion.div
-                key={step.id}
-                whileInView={{ opacity: 1, y: 0 }}
-                initial={{ opacity: 0, y: 30 }}
-                viewport={{ once: true }}
-                transition={{ delay: step.id * 0.2 }}
-                className="group relative p-10 rounded-[2.5rem] bg-white/[0.03] border border-white/5 hover:border-primary/30 transition-all duration-500 overflow-hidden"
-              >
-                <div className="absolute -top-6 -left-6 w-32 h-32 bg-primary/5 rounded-full blur-[40px] group-hover:bg-primary/10 transition-all" />
-                <div className="relative z-10">
-                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-8 group-hover:scale-110 group-hover:rotate-6 transition-all">
-                    {step.icon}
-                  </div>
-                  <h3 className="text-2xl font-black mb-4">{step.title}</h3>
-                  <p className="text-white/40 text-sm leading-relaxed font-bold">{step.desc}</p>
-                </div>
-                <div className="absolute bottom-0 right-0 p-6 text-6xl font-black text-white/[0.02] pointer-events-none">0{step.id}</div>
-              </motion.div>
+          {/* Domain tags */}
+          <div className="flex flex-wrap justify-center gap-2 mb-8">
+            {DOMAINS.map((d) => (
+              <span key={d.name} className="text-xs font-bold px-3 py-1.5 rounded-full border border-border bg-card" style={{ color: `hsl(var(${d.colorVar}))` }}>
+                {d.icon} {d.name}
+              </span>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* ── CINEMATIC FEATURES ── */}
-      <section className="relative py-40 px-6 z-10 space-y-40">
-        {FEATURES.map((f, idx) => (
-          <div key={f.id} className={`flex flex-col ${idx % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"} items-center gap-20 max-w-7xl mx-auto`}>
-            {/* Image side with floating animation */}
-            <motion.div 
-              whileInView={{ opacity: 1, x: 0, rotateY: 0 }}
-              initial={{ opacity: 0, x: idx % 2 === 0 ? -100 : 100, rotateY: idx % 2 === 0 ? 10 : -10 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 1.2, ease: "easeOut" }}
-              className="flex-1 relative perspective-1000"
-            >
-              <div className="absolute inset-0 bg-primary/20 blur-[120px] opacity-20" />
-              <img 
-                src={f.img} 
-                alt={f.title}
-                className="rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.6)] border border-white/10 hover:scale-[1.03] transition-transform duration-700"
-              />
-              {/* Scanline decoration */}
-              <div className="absolute inset-x-0 h-[2px] bg-primary/40 top-1/4 blur-sm animate-scan" />
-            </motion.div>
-
-            {/* Content Side */}
-            <div className="flex-1 text-right" dir="rtl">
-              <motion.div
-                whileInView={{ opacity: 1, y: 0 }}
-                initial={{ opacity: 0, y: 20 }}
-                viewport={{ once: true }}
-              >
-                <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary mb-10 shadow-inner">
-                  {f.icon}
-                </div>
-                <h3 className="text-4xl lg:text-7xl font-black mb-8 leading-tight tracking-tighter">
-                  {f.title}
-                </h3>
-                <p className="text-2xl text-primary font-black mb-6 italic opacity-80">{f.subtitle}</p>
-                <p className="text-xl text-white/40 leading-relaxed font-medium mb-12">
-                  {f.description}
-                </p>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {[1, 2, 3, 4].map(i => (
-                    <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all group">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-all">
-                        <CheckCircle2 size={16} />
-                      </div>
-                      <span className="text-sm font-black text-white/70">ميزة تكنولوجية رقم {i}</span>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
+          {/* Stats */}
+          <div className="flex items-center justify-center gap-1 mb-10">
+            <StatBadge value="+٥٠٠" label="نمط في KB" color="hsl(var(--algebra))" />
+            <div className="w-px h-8 bg-border mx-2" />
+            <StatBadge value="٥ مجالات" label="رياضية" color="hsl(var(--geometry))" />
+            <div className="w-px h-8 bg-border mx-2" />
+            <StatBadge value="مجاني" label="بالكامل" color="hsl(var(--functions))" />
           </div>
-        ))}
-      </section>
 
-      {/* ── CTA FINAL ── */}
-      <section className="relative py-60 px-6 z-10 text-center">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[200px] pointer-events-none" />
-        
-        <motion.div
-          whileInView={{ opacity: 1, scale: 1 }}
-          initial={{ opacity: 0, scale: 0.9 }}
-          viewport={{ once: true }}
-          className="relative max-w-4xl mx-auto"
-        >
-          <h2 className="text-5xl lg:text-8xl font-black mb-12 leading-none tracking-tighter shrink-0">
-            العلامة الكاملة في الـ 
-            <span className="text-primary italic"> BAC </span>
-            <br />
-            ليست حلماً بعد الآن.
-          </h2>
-          <p className="text-xl lg:text-3xl text-white/40 mb-20 font-medium">
-            انضم للثورة التعليمية الأذكى في الجزائر.
-          </p>
-          
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Link 
-              to="/home" 
-              className="px-16 py-8 rounded-[2.5rem] bg-primary text-primary-foreground font-black text-3xl shadow-[0_30px_90px_-15px_rgba(var(--primary-rgb),0.6)]"
+          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+            <Link
+              to="/home"
+              className="inline-block px-10 py-4 rounded-2xl font-black text-lg text-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] hover:shadow-[0_14px_50px_rgba(0,0,0,0.25)] transition-shadow"
+              style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))" }}
             >
-              ابدأ تجربتك المجانية ←
+              ابدأ الآن — مجاني ←
             </Link>
           </motion.div>
-          
-          <div className="mt-12 flex justify-center gap-12 text-white/20 font-black text-xs uppercase tracking-widest">
-            <span>دقة عالية</span>
-            <span>ذكاء جزائري 🇩🇿</span>
-            <span>مجاني للأبد</span>
+        </motion.div>
+
+        {/* Scroll cue */}
+        <motion.div
+          animate={{ y: [0, 10, 0] }}
+          transition={{ repeat: Infinity, duration: 2.5 }}
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        >
+          <div className="w-5 h-8 rounded-full border-2 border-foreground/15 flex items-start justify-center p-1">
+            <motion.div
+              animate={{ y: [0, 12, 0] }}
+              transition={{ repeat: Infinity, duration: 2.5 }}
+              className="w-1 h-1 rounded-full bg-foreground/30"
+            />
+          </div>
+          <span className="font-mono text-[8px] tracking-[0.2em] text-foreground/20 font-bold">اكتشف الميزات</span>
+        </motion.div>
+      </div>
+
+      {/* ── Feature Sections ── */}
+      <div className="max-w-5xl mx-auto px-6 pb-20">
+        {FEATURES.map((feature, idx) => (
+          <div
+            key={feature.id}
+            ref={(el) => { featureRefs.current[idx] = el; }}
+            data-idx={idx}
+            className="min-h-[70vh] flex flex-col justify-center py-10"
+          >
+            <FeatureCard feature={feature} index={idx} isVisible={activeFeature >= idx} />
+
+            {idx < FEATURES.length - 1 && (
+              <div className="flex justify-center my-6">
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={activeFeature >= idx ? { height: 50 } : { height: 0 }}
+                  transition={{ duration: 1, delay: 0.5 }}
+                  className="w-px bg-gradient-to-b from-foreground/20 to-transparent"
+                />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ── Final CTA ── */}
+      <div className="min-h-[60vh] flex flex-col justify-center items-center text-center px-6 pb-20">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="max-w-xl"
+        >
+          <div className="text-4xl mb-4">🚀</div>
+          <h2 className="text-3xl lg:text-5xl font-black text-foreground leading-tight mb-6">
+            جاهز تبدأ؟
+            <br />
+            <span style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              اكتشف ثغراتك الآن
+            </span>
+          </h2>
+          <p className="text-muted-foreground text-sm lg:text-base mb-10 leading-relaxed">
+            قاعدة معرفة + محرك حل + كاشف ثغرات + مسار تعلّم — كلها مجانية.
+            <br />
+            بدون حساب · بدون بطاقة بنكية · نتائج فورية.
+          </p>
+          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+            <Link
+              to="/home"
+              className="inline-block px-12 py-5 rounded-2xl font-black text-xl text-white shadow-[0_0_50px_hsl(var(--algebra)/0.2),0_16px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_0_70px_hsl(var(--algebra)/0.35),0_20px_60px_rgba(0,0,0,0.15)] transition-shadow"
+              style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))" }}
+            >
+              ابدأ الآن — مجاني ←
+            </Link>
+          </motion.div>
+          <div className="mt-4 text-[10px] text-muted-foreground/40 font-mono tracking-wider">
+            بدون حساب · بدون بطاقة بنكية · نتائج فورية
           </div>
         </motion.div>
-      </section>
+      </div>
 
       {/* Footer */}
-      <footer className="relative py-20 px-6 lg:px-12 z-10 border-t border-white/5 bg-black/60 backdrop-blur-3xl">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12">
-          <div className="flex flex-col items-center md:items-start gap-4">
-            <QEDLogo size="md" white />
-            <p className="text-white/30 text-[11px] font-bold max-w-xs text-center md:text-right">
-              نظام QED التعليمي هو ثمرة تعاون لتطوير طرق تعلم الرياضيات في الجزائر.
-            </p>
-          </div>
-          
-          <div className="flex gap-16">
-            <div className="flex flex-col gap-4 text-right">
-              <span className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mb-2">الدعم</span>
-              <Link to="#" className="text-sm font-bold opacity-60 hover:text-primary transition-all">الأسئلة الشائعة</Link>
-              <Link to="#" className="text-sm font-bold opacity-60 hover:text-primary transition-all">تواصل معنا</Link>
-            </div>
-            <div className="flex flex-col gap-4 text-right">
-              <span className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mb-2">القانونية</span>
-              <Link to="#" className="text-sm font-bold opacity-60 hover:text-primary transition-all">الشروط</Link>
-              <Link to="#" className="text-sm font-bold opacity-60 hover:text-primary transition-all">الخصوصية</Link>
-            </div>
-          </div>
-        </div>
-        
-        <div className="mt-20 pt-8 border-t border-white/5 text-center">
-          <p className="text-[9px] text-white/10 font-mono tracking-widest uppercase">
-            Designed & Engineered for BAC 2025 Excellence • © QED ALGERIA
-          </p>
-        </div>
-      </footer>
-
-      {/* Global CSS */}
-      <style>{`
-        .perspective-1000 { perspective: 1000px; }
-        .stars-container {
-          background-image: 
-            radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
-            radial-gradient(1px 1px at 150px 150px, #fff, rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 80px 250px, #fff, rgba(0,0,0,0));
-          background-repeat: repeat;
-          background-size: 300px 400px;
-          animation: stars 120s linear infinite;
-        }
-        @keyframes stars {
-          from { transform: translateY(0); }
-          to { transform: translateY(-1200px); }
-        }
-        @keyframes scan {
-          0% { transform: translateY(0); opacity: 0; }
-          50% { opacity: 0.5; }
-          100% { transform: translateY(600px); opacity: 0; }
-        }
-        .animate-scan {
-          animation: scan 4s linear infinite;
-        }
-        :root {
-          --primary-rgb: 59, 130, 246; /* Blue 500 */
-        }
-      `}</style>
+      <div className="text-center py-8 border-t border-border">
+        <p className="text-[10px] text-muted-foreground/40 font-mono tracking-[0.15em]">
+          © 2025 QED ALGERIA · MATH LEARNING ENGINE · مبني بحب للطالب الجزائري 🇩🇿
+        </p>
+      </div>
     </div>
   );
 }
