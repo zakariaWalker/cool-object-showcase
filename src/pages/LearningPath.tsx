@@ -56,7 +56,7 @@ function ExerciseItem({ ex, isCompleted, onToggle }: { ex: Exercise; isCompleted
             textDecoration: isCompleted ? "line-through" : "none",
             opacity: isCompleted ? 0.6 : 1,
           }}>
-            {ex.text}
+            <ExerciseRenderer text={ex.text} />
           </div>
           
           <AnimatePresence>

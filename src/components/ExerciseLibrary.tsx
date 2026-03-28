@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { ExerciseRenderer } from "./ExerciseRenderer";
 
 interface ExerciseItem {
   id: string;
@@ -345,30 +346,47 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
                 <div className="p-2 space-y-1.5 bg-muted/20">
                   {group.exercises.map(ex => {
                     const isSelected = selectedId === ex.id;
+                    const isGeometry = (ex.type || "").includes("geometry") || (ex.type || "").includes("هندس");
                     return (
                       <button
                         key={ex.id}
                         onClick={() => handleSelectExercise(ex)}
-                        className={`w-full text-right p-3 rounded-md transition-all text-left flex flex-col gap-1.5 ${
+                        className={`w-full text-right p-4 rounded-xl transition-all flex flex-col gap-3 group/card ${
                           isSelected 
-                            ? "selected-card" 
-                            : "bg-card border border-border card-hover hover:border-primary/50"
+                            ? "bg-primary/5 border-2 border-primary shadow-md" 
+                            : "bg-card border border-border hover:border-primary/40 hover:shadow-sm"
                         }`}
                         dir="rtl"
                       >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-[12px] font-bold ${isSelected ? "text-primary text-glow-primary" : "text-primary"}`}>
-                            {ex.source}
-                          </span>
-                        {ex.type && ex.type !== "unclassified" && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary/10 text-secondary font-bold">
-                            {ex.type}
-                          </span>
-                        )}
-                      </div>
-                        <div className={`text-[11px] line-clamp-2 leading-relaxed ${isSelected ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
-                          {ex.text}
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[11px] font-black px-2 py-0.5 rounded-md ${
+                              isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover/card:bg-primary/10 group-hover/card:text-primary"
+                            }`}>
+                              {ex.source}
+                            </span>
+                            {ex.type && ex.type !== "unclassified" && (
+                              <span className="text-[9px] px-2 py-0.5 rounded-full bg-secondary/10 text-secondary font-bold border border-secondary/20">
+                                {ex.type}
+                              </span>
+                            )}
+                          </div>
+                          {isGeometry && (
+                            <span className="text-[14px]">📐</span>
+                          )}
                         </div>
+                        
+                        <div className={`text-[12px] leading-relaxed text-right w-full ${isSelected ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                          <ExerciseRenderer text={ex.text} className="line-clamp-3" />
+                        </div>
+
+                        {isSelected && (
+                          <div className="flex justify-end pt-1">
+                            <span className="text-[10px] text-primary font-black flex items-center gap-1 animate-pulse">
+                              جاري الحل الآن... ⚡
+                            </span>
+                          </div>
+                        )}
                       </button>
                     );
                   })}
