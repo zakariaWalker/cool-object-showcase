@@ -3,7 +3,7 @@ import { useMemo, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { TYPE_LABELS_AR } from "@/engine/exam-types";
 import { Pattern } from "@/components/admin/useAdminKBStore";
-import { COGNITIVE_LABELS_AR, detectScoringParams, computeBaseScore, categorizeForExam, type ExerciseScoringParams, type CognitiveLevel } from "@/engine/exercise-scoring";
+import { COGNITIVE_LABELS_AR, detectScoringParams, computeBaseScore, categorizeForExam, computeExerciseBenchmark, compareToBenchmark, type ExerciseScoringParams, type CognitiveLevel } from "@/engine/exercise-scoring";
 import { analyzeUploadedExam, buildBlueprint, PROGRESSION_LABELS_AR } from "@/engine/exam-enhancer";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,6 +16,7 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
   const { analysis, questions, exams } = store;
   const [extractedQuestions, setExtractedQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [benchmarkFormat, setBenchmarkFormat] = useState<"official" | "regular">("official");
 
   // Load extracted questions from DB for real analysis
   useEffect(() => {
@@ -72,9 +73,14 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
       };
       const baseScore = computeBaseScore(fullParams);
       const category = categorizeForExam(fullParams);
-      return { ...q, params: fullParams, baseScore, category };
+      
+      // Calculate benchmark match
+      const benchmark = computeExerciseBenchmark(q.type, benchmarkFormat, extractedQuestions, exams);
+      const { similarity, gaps } = compareToBenchmark(fullParams, benchmark);
+
+      return { ...q, params: fullParams, baseScore, category, similarity, gaps };
     });
-  }, [questions, extractedQuestions]);
+  }, [questions, extractedQuestions, benchmarkFormat, exams]);
 
   // Build blueprint from all data
   const blueprint = useMemo(() => {
@@ -377,12 +383,27 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
                 <th className="p-2 text-center font-bold text-muted-foreground">الخطوات</th>
                 <th className="p-2 text-center font-bold text-muted-foreground">النقاط</th>
                 <th className="p-2 text-center font-bold text-muted-foreground">التصنيف</th>
+                <th className="p-2 text-center font-bold text-muted-foreground">
+                  <button 
+                    onClick={() => setBenchmarkFormat(f => f === "official" ? "regular" : "official")}
+                    className="underline decoration-dotted"
+                  >
+                    مطابقة {benchmarkFormat === "official" ? "الرسمي" : "العادي"}
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
               {scoringAnalysis.slice(0, 20).map((q, i) => (
-                <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
-                  <td className="p-2 text-right text-foreground max-w-[200px] truncate">{q.text.slice(0, 60)}...</td>
+                <tr key={i} className="border-b border-border/50 hover:bg-muted/30 group">
+                  <td className="p-2 text-right text-foreground max-w-[200px] truncate">
+                    {q.text.slice(0, 60)}...
+                    {q.gaps && q.gaps.length > 0 && (
+                      <div className="hidden group-hover:block text-[8px] text-destructive mt-1">
+                        ⚠️ {q.gaps.join(" · ")}
+                      </div>
+                    )}
+                  </td>
                   <td className="p-2 text-center">
                     <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
                       {COGNITIVE_LABELS_AR[q.params.cognitiveLevel as CognitiveLevel] || q.params.cognitiveLevel}
@@ -406,6 +427,16 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
                       }}>
                       {q.category.sectionLabelAr}
                     </span>
+                  </td>
+                  <td className="p-2 text-center">
+                    <div className="flex flex-col items-center">
+                      <span className="font-black" style={{ color: q.similarity > 70 ? "hsl(var(--geometry))" : q.similarity > 40 ? "hsl(var(--statistics))" : "hsl(var(--destructive))" }}>
+                        {q.similarity}%
+                      </span>
+                      <div className="w-12 h-1 bg-muted rounded-full mt-0.5">
+                        <div className="h-full rounded-full" style={{ width: `${q.similarity}%`, background: q.similarity > 70 ? "hsl(var(--geometry))" : q.similarity > 40 ? "hsl(var(--statistics))" : "hsl(var(--destructive))" }} />
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ))}

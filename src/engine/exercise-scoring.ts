@@ -1,4 +1,5 @@
 import { CognitiveLevel, ExerciseScoringParams, ExamSection, ExamStructuralPattern, COGNITIVE_LABELS_AR } from "./exam-types";
+export type { CognitiveLevel, ExerciseScoringParams };
 
 export { COGNITIVE_LABELS_AR };
 
@@ -160,6 +161,84 @@ export function categorizeForExam(params: ExerciseScoringParams): ExerciseCatego
     suggestedPoints: baseScore,
     reasoning: `تحليل/تقييم — صعوبة ${params.difficulty}/5`,
   };
+}
+
+// ── Exercise Benchmarking ──
+
+export interface ExerciseBenchmark {
+  topic: string;
+  format: "official" | "regular";
+  avgDifficulty: number;
+  avgBloom: number;
+  avgConcepts: number;
+  avgSteps: number;
+  avgTime: number;
+  requiresProofPct: number;
+}
+
+/**
+ * Computes a benchmark profile for a specific topic and format based on KB data
+ */
+export function computeExerciseBenchmark(
+  topic: string,
+  format: "official" | "regular",
+  allQuestions: any[],
+  exams: any[]
+): ExerciseBenchmark {
+  const filteredEx = allQuestions.filter(q => {
+    const exam = exams.find(e => e.id === q.exam_id || e.id === q.examId);
+    if (!exam) return false;
+    const isOfficial = exam.format === "bac" || exam.format === "bem";
+    const matchFormat = format === "official" ? isOfficial : !isOfficial;
+    return q.type === topic && matchFormat;
+  });
+
+  if (filteredEx.length === 0) {
+    // Default fallback benchmarks if no data exists
+    return {
+      topic,
+      format,
+      avgDifficulty: format === "official" ? 3.5 : 2.5,
+      avgBloom: format === "official" ? 4 : 2.5,
+      avgConcepts: format === "official" ? 2.5 : 1.5,
+      avgSteps: format === "official" ? 5 : 3,
+      avgTime: format === "official" ? 15 : 10,
+      requiresProofPct: format === "official" ? 40 : 10,
+    };
+  }
+
+  const count = filteredEx.length;
+  return {
+    topic,
+    format,
+    avgDifficulty: filteredEx.reduce((s, q) => s + (q.difficulty_num || q.difficulty === "hard" ? 5 : q.difficulty === "medium" ? 3 : 1), 0) / count,
+    avgBloom: filteredEx.reduce((s, q) => s + (q.bloom_level || 3), 0) / count,
+    avgConcepts: filteredEx.reduce((s, q) => s + (q.concepts?.length || 1), 0) / count,
+    avgSteps: filteredEx.reduce((s, q) => s + (q.step_count || 3), 0) / count,
+    avgTime: filteredEx.reduce((s, q) => s + (q.estimated_time_min || 10), 0) / count,
+    requiresProofPct: (filteredEx.filter(q => q.requires_proof || q.text?.includes("برهن")).length / count) * 100,
+  };
+}
+
+/**
+ * Compares an exercise against a benchmark and returns a similarity score + insights
+ */
+export function compareToBenchmark(
+  params: ExerciseScoringParams,
+  benchmark: ExerciseBenchmark
+) {
+  const diffSim = 1 - Math.abs(params.difficulty - benchmark.avgDifficulty) / 5;
+  const bloomSim = 1 - Math.abs(BLOOM_WEIGHTS[params.cognitiveLevel] - (benchmark.avgBloom / 2)) / 3.5;
+  const conceptSim = 1 - Math.min(Math.abs(params.conceptCount - benchmark.avgConcepts) / 5, 1);
+  
+  const similarity = Math.round(((diffSim + bloomSim + conceptSim) / 3) * 100);
+  
+  const gaps: string[] = [];
+  if (params.difficulty < benchmark.avgDifficulty - 1) gaps.push("أقل تعقيداً من المعتاد");
+  if (BLOOM_WEIGHTS[params.cognitiveLevel] < (benchmark.avgBloom / 2) - 0.5) gaps.push("يتطلب مهارات ذهنية أدنى");
+  if (benchmark.requiresProofPct > 50 && !params.requiresProof) gaps.push("يفتقر للبرهنة المطلوبة رسمياً");
+
+  return { similarity, gaps };
 }
 
 // ── Pedagogical Gap Analysis ──
