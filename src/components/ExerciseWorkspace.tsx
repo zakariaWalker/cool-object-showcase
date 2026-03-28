@@ -402,7 +402,8 @@ export function ExerciseWorkspace({
           background: "hsl(var(--card))",
           boxShadow: "2px 0 12px rgba(0,0,0,0.04)",
           transition: "width 0.3s ease",
-          overflow: "hidden",
+          overflowY: leftCollapsed ? "hidden" : "auto",
+          overflowX: "hidden",
           position: "relative",
         }}>
           {/* Collapse toggle */}
@@ -578,7 +579,8 @@ export function ExerciseWorkspace({
           width: rightCollapsed ? 40 : 220,
           flexShrink: 0,
           transition: "width 0.3s ease",
-          overflow: "hidden",
+          overflowY: rightCollapsed ? "hidden" : "auto",
+          overflowX: "hidden",
           position: "relative",
           borderRight: "1px solid hsl(var(--border))",
           background: "hsl(var(--card))",
