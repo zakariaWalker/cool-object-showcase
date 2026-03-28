@@ -13,9 +13,17 @@ export function ExamPreview({ exam, onClose }: Props) {
   const formatLabel = exam.format === "bem" ? "شهادة التعليم المتوسط" :
     exam.format === "bac" ? "شهادة البكالوريا" : "فرض / اختبار";
 
-  const style = exam.styleProfile || {
-    typography: { math: "serif", text: "sans", hierarchy: "balanced" },
-    layout: { columns: 1, spacing: "normal", exerciseBorder: false }
+  const style = {
+    typography: { 
+      math: exam.styleProfile?.typography?.math || "serif", 
+      text: exam.styleProfile?.typography?.text || "sans", 
+      hierarchy: exam.styleProfile?.typography?.hierarchy || "balanced" 
+    },
+    layout: { 
+      columns: exam.styleProfile?.layout?.columns || 1, 
+      spacing: exam.styleProfile?.layout?.spacing || "normal", 
+      exerciseBorder: exam.styleProfile?.layout?.exerciseBorder || false 
+    }
   };
 
   const spacingMap = { compact: "1.2", normal: "1.6", wide: "2.0" };
