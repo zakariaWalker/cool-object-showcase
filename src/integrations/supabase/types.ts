@@ -449,6 +449,8 @@ export type Database = {
         Row: {
           created_at: string
           error_message: string | null
+          extracted_metadata: Json | null
+          extracted_patterns: Json | null
           file_name: string
           file_path: string
           file_size: number | null
@@ -465,6 +467,8 @@ export type Database = {
         Insert: {
           created_at?: string
           error_message?: string | null
+          extracted_metadata?: Json | null
+          extracted_patterns?: Json | null
           file_name: string
           file_path: string
           file_size?: number | null
@@ -481,6 +485,8 @@ export type Database = {
         Update: {
           created_at?: string
           error_message?: string | null
+          extracted_metadata?: Json | null
+          extracted_patterns?: Json | null
           file_name?: string
           file_path?: string
           file_size?: number | null
@@ -498,60 +504,81 @@ export type Database = {
       }
       exercise_breakdowns: {
         Row: {
+          base_score: number | null
+          bloom_level: number | null
+          cognitive_level: string | null
+          concept_count: number | null
           constraints: Json | null
           created_at: string
           diagram_spec: Json | null
           difficulty: number | null
           domain: string | null
+          estimated_time_min: number | null
           formulas_needed: Json | null
           grade: string | null
           id: string
           intent: Json | null
           relations: Json | null
           render_plan: Json | null
+          scoring_params: Json | null
           semantic_objects: Json | null
           solution_tree: Json | null
           source_language: string | null
           source_origin: string | null
           source_text: string
+          step_count: number | null
           subdomain: string | null
         }
         Insert: {
+          base_score?: number | null
+          bloom_level?: number | null
+          cognitive_level?: string | null
+          concept_count?: number | null
           constraints?: Json | null
           created_at?: string
           diagram_spec?: Json | null
           difficulty?: number | null
           domain?: string | null
+          estimated_time_min?: number | null
           formulas_needed?: Json | null
           grade?: string | null
           id: string
           intent?: Json | null
           relations?: Json | null
           render_plan?: Json | null
+          scoring_params?: Json | null
           semantic_objects?: Json | null
           solution_tree?: Json | null
           source_language?: string | null
           source_origin?: string | null
           source_text: string
+          step_count?: number | null
           subdomain?: string | null
         }
         Update: {
+          base_score?: number | null
+          bloom_level?: number | null
+          cognitive_level?: string | null
+          concept_count?: number | null
           constraints?: Json | null
           created_at?: string
           diagram_spec?: Json | null
           difficulty?: number | null
           domain?: string | null
+          estimated_time_min?: number | null
           formulas_needed?: Json | null
           grade?: string | null
           id?: string
           intent?: Json | null
           relations?: Json | null
           render_plan?: Json | null
+          scoring_params?: Json | null
           semantic_objects?: Json | null
           solution_tree?: Json | null
           source_language?: string | null
           source_origin?: string | null
           source_text?: string
+          step_count?: number | null
           subdomain?: string | null
         }
         Relationships: []
@@ -606,34 +633,58 @@ export type Database = {
       }
       kb_exercises: {
         Row: {
+          base_score: number | null
+          bloom_level: number | null
           chapter: string | null
+          cognitive_level: string | null
+          concept_count: number | null
           created_at: string
+          difficulty: number | null
+          estimated_time_min: number | null
           grade: string | null
           id: string
           label: string | null
+          scoring_params: Json | null
           source: string | null
+          step_count: number | null
           stream: string | null
           text: string
           type: string | null
         }
         Insert: {
+          base_score?: number | null
+          bloom_level?: number | null
           chapter?: string | null
+          cognitive_level?: string | null
+          concept_count?: number | null
           created_at?: string
+          difficulty?: number | null
+          estimated_time_min?: number | null
           grade?: string | null
           id?: string
           label?: string | null
+          scoring_params?: Json | null
           source?: string | null
+          step_count?: number | null
           stream?: string | null
           text: string
           type?: string | null
         }
         Update: {
+          base_score?: number | null
+          bloom_level?: number | null
           chapter?: string | null
+          cognitive_level?: string | null
+          concept_count?: number | null
           created_at?: string
+          difficulty?: number | null
+          estimated_time_min?: number | null
           grade?: string | null
           id?: string
           label?: string | null
+          scoring_params?: Json | null
           source?: string | null
+          step_count?: number | null
           stream?: string | null
           text?: string
           type?: string | null
