@@ -2,18 +2,20 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useAdminKBStore } from "@/components/admin/useAdminKBStore";
-import { ExamExercise, TYPE_LABELS_AR } from "@/engine/exam-types";
+import { ExamExercise, TYPE_LABELS_AR, ExamStyleProfile, ExamStructuralPattern } from "@/engine/exam-types";
 import { detectScoringParams, computeBaseScore, categorizeForExam, suggestPoints, COGNITIVE_LABELS_AR, type ExerciseScoringParams, type CognitiveLevel } from "@/engine/exercise-scoring";
 
 interface Props {
   grade: string;
   sectionId: string;
   allowedTypes?: string[];
+  targetSection?: string; // warmup, core, challenge, problem
+  structuralPatterns?: ExamStructuralPattern;
   onSelect: (sectionId: string, exercise: ExamExercise) => void;
   onClose: () => void;
 }
 
-export function ExamKBPicker({ grade, sectionId, allowedTypes, onSelect, onClose }: Props) {
+export function ExamKBPicker({ grade, sectionId, allowedTypes, targetSection, structuralPatterns, onSelect, onClose }: Props) {
   const { exercises } = useAdminKBStore();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -30,8 +32,35 @@ export function ExamKBPicker({ grade, sectionId, allowedTypes, onSelect, onClose
       const q = search.trim().toLowerCase();
       list = list.filter(e => e.text.toLowerCase().includes(q));
     }
-    return list.slice(0, 50);
-  }, [exercises, grade, allowedTypes, typeFilter, search]);
+
+    // AI recommendation score (0-1)
+    const scoredList = list.map(ex => {
+      const params = detectScoringParams(ex.text, ex.type);
+      const cat = categorizeForExam({
+        difficulty: params.difficulty || 2,
+        cognitiveLevel: (params.cognitiveLevel || "apply") as CognitiveLevel,
+        bloomLevel: 3,
+        conceptCount: params.conceptCount || 1,
+        stepCount: params.stepCount || 2,
+        estimatedTimeMin: params.estimatedTimeMin || 5,
+        hasSubQuestions: params.hasSubQuestions || false,
+        requiresProof: params.requiresProof || false,
+        requiresGraph: params.requiresGraph || false,
+        requiresConstruction: params.requiresConstruction || false,
+        domain: ex.type,
+        subdomain: "",
+      });
+
+      let score = 0;
+      if (targetSection && cat.section === targetSection) score += 0.5;
+      if (structuralPatterns?.difficultyCurve === "linear" && params.difficulty && params.difficulty < 3) score += 0.2;
+      
+      return { ...ex, recommendationScore: score, category: cat, params };
+    });
+
+    // Sort by recommendation score
+    return scoredList.sort((a, b) => b.recommendationScore - a.recommendationScore).slice(0, 50);
+  }, [exercises, grade, allowedTypes, typeFilter, search, targetSection, structuralPatterns]);
 
   const availableTypes = useMemo(() => {
     const types = new Set<string>();
@@ -100,39 +129,37 @@ export function ExamKBPicker({ grade, sectionId, allowedTypes, onSelect, onClose
         </div>
 
         {/* Exercise list */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto px-5 py-3 space-y-3 custom-scrollbar" style={{ maxHeight: 'calc(80vh - 120px)' }}>
           {filtered.length === 0 && (
             <p className="text-center py-8 text-muted-foreground text-sm">لا توجد تمارين مطابقة</p>
           )}
           {filtered.map(ex => {
-            const params = detectScoringParams(ex.text, ex.type);
-            const category = categorizeForExam({
-              difficulty: params.difficulty || 2,
-              cognitiveLevel: (params.cognitiveLevel || "apply") as CognitiveLevel,
-              bloomLevel: 3,
-              conceptCount: params.conceptCount || 1,
-              stepCount: params.stepCount || 2,
-              estimatedTimeMin: params.estimatedTimeMin || 5,
-              hasSubQuestions: params.hasSubQuestions || false,
-              requiresProof: params.requiresProof || false,
-              requiresGraph: params.requiresGraph || false,
-              requiresConstruction: params.requiresConstruction || false,
-              domain: ex.type,
-              subdomain: "",
-            });
+            const category = ex.category;
+            const params = ex.params;
+            const isRecommended = ex.recommendationScore > 0.4;
+            
             return (
-            <button key={ex.id} onClick={() => handleSelect(ex)}
-              className="w-full text-right p-3 rounded-lg border border-border hover:border-primary/40 hover:bg-primary/5 transition-all">
-              <div className="text-xs text-foreground leading-relaxed line-clamp-3">{ex.text}</div>
+            <button key={ex.id} onClick={() => handleSelect(ex as any)}
+              className={`w-full text-right p-4 rounded-xl border transition-all ${
+                isRecommended ? "border-primary/40 bg-primary/5 shadow-sm" : "border-border hover:border-primary/30 hover:bg-muted/50"
+              }`}>
+              <div className="flex items-start justify-between mb-2">
+                <div className="text-xs text-foreground leading-relaxed line-clamp-3 ml-4">{ex.text}</div>
+                {isRecommended && (
+                  <span className="shrink-0 text-[8px] font-black bg-primary text-primary-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
+                    ✨ مقترح
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
                   {TYPE_LABELS_AR[ex.type] || ex.type}
                 </span>
-                <span className="text-[9px] text-muted-foreground">{ex.grade}</span>
+                <span className="text-[9px] text-muted-foreground opacity-60">{ex.grade}</span>
                 <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-bold">
                   {COGNITIVE_LABELS_AR[(params.cognitiveLevel || "apply") as CognitiveLevel]} · ≈{category.suggestedPoints}ن
                 </span>
-                <span className="text-[8px] px-1.5 py-0.5 rounded-full font-bold"
+                <span className="text-[10px] px-2 py-1 rounded-lg font-black"
                   style={{
                     background: category.section === "warmup" ? "hsl(var(--geometry) / 0.1)" :
                       category.section === "core" ? "hsl(var(--primary) / 0.1)" :

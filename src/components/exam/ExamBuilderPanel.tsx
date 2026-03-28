@@ -155,6 +155,33 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
     ));
   };
 
+  const achievementScore = useMemo(() => {
+    if (!structuralPatterns || sections.length === 0) return 0;
+    
+    let score = 0;
+    const totalExercises = sections.reduce((sum, s) => sum + s.exercises.length, 0);
+    if (totalExercises === 0) return 0;
+
+    // 1. Points coverage (0.3)
+    const pointsRatio = Math.min(currentPoints / totalPoints, 1);
+    score += pointsRatio * 30;
+
+    // 2. Section density match (0.4)
+    // Check if each section has at least one exercise
+    const sectionsWithExercises = sections.filter(s => s.exercises.length > 0).length;
+    const sectionRatio = sectionsWithExercises / sections.length;
+    score += sectionRatio * 40;
+
+    // 3. Difficulty/Cognitive variety (0.3)
+    const hasVariety = sections.some(s => s.exercises.some(e => {
+      const p = detectScoringParams(e.text);
+      return (p.difficulty || 0) >= 3 || p.requiresProof;
+    }));
+    if (hasVariety) score += 30;
+
+    return Math.round(score);
+  }, [sections, structuralPatterns, currentPoints, totalPoints]);
+
   const handleSave = () => {
     const examData: Exam = {
       id: exam?.id || generateExamId(),
@@ -317,18 +344,32 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-black text-foreground">📝 التمارين</h2>
-            <div className="flex items-center gap-3">
-              <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                currentPoints === totalPoints ? "bg-primary/10 text-primary" :
-                currentPoints > totalPoints ? "bg-destructive/10 text-destructive" :
-                "bg-muted text-muted-foreground"
-              }`}>
-                {currentPoints} / {totalPoints} نقطة
-              </span>
-              <button onClick={addSection}
-                className="text-xs px-3 py-1.5 rounded-lg border border-dashed border-primary/50 text-primary font-bold hover:bg-primary/5">
-                + قسم جديد
-              </button>
+            <div className="flex items-center gap-4">
+              {/* Achievement Score */}
+              {structuralPatterns && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary/5 border border-primary/10">
+                  <div className="flex flex-col items-end">
+                    <span className="text-[9px] font-black text-primary uppercase">جودة البناء التربوي</span>
+                    <span className="text-[10px] font-bold text-foreground">{achievementScore}%</span>
+                  </div>
+                  <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-primary transition-all duration-500" style={{ width: `${achievementScore}%` }} />
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                  currentPoints === totalPoints ? "bg-primary/10 text-primary" :
+                  currentPoints > totalPoints ? "bg-destructive/10 text-destructive" :
+                  "bg-muted text-muted-foreground"
+                }`}>
+                  {currentPoints} / {totalPoints} نقطة
+                </span>
+                <button onClick={addSection}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-dashed border-primary/50 text-primary font-bold hover:bg-primary/5">
+                  + قسم جديد
+                </button>
+              </div>
             </div>
           </div>
 
@@ -435,6 +476,11 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
             grade={grade}
             sectionId={showKBPicker}
             allowedTypes={template?.sections.find(s => s.id === showKBPicker)?.allowedTypes}
+            targetSection={
+              template?.sections.find(s => s.id === showKBPicker)?.id === "problem" ? "problem" :
+              template?.sections.find(s => s.id === showKBPicker)?.id === "ex1" ? "warmup" : "core"
+            }
+            structuralPatterns={structuralPatterns}
             onSelect={(sectionId, exercise) => { addExerciseToSection(sectionId, exercise); setShowKBPicker(null); }}
             onClose={() => setShowKBPicker(null)}
           />
