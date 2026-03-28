@@ -66,37 +66,37 @@
   /* ── DARK MODE (FIXED) ── */
   .dark,
   [data-theme="dark"] {
-    --background: 214 22% 12%;
-    --foreground: 38 18% 90%;
+    --background: 220 20% 10%;
+    --foreground: 40 15% 92%;
 
-    --card: 214 18% 20%;
-    --card-foreground: 38 18% 90%;
+    --card: 220 16% 16%;
+    --card-foreground: 40 15% 92%;
 
-    --popover: 214 18% 20%;
-    --popover-foreground: 38 18% 90%;
+    --popover: 220 16% 16%;
+    --popover-foreground: 40 15% 92%;
 
-    --primary: 204 68% 58%;
-    --primary-foreground: 214 22% 10%;
+    --primary: 210 70% 60%;
+    --primary-foreground: 220 20% 8%;
 
-    --secondary: 214 18% 26%;
-    --secondary-foreground: 38 15% 80%;
+    --secondary: 220 14% 22%;
+    --secondary-foreground: 40 12% 82%;
 
-    --muted: 214 16% 26%;
-    --muted-foreground: 214 12% 60%;
+    --muted: 220 12% 22%;
+    --muted-foreground: 220 10% 62%;
 
-    --accent: 34 65% 60%;
-    --accent-foreground: 214 22% 10%;
+    --accent: 34 70% 58%;
+    --accent-foreground: 220 20% 8%;
 
-    --destructive: 4 55% 55%;
-    --destructive-foreground: 38 18% 95%;
+    --destructive: 4 58% 52%;
+    --destructive-foreground: 40 15% 96%;
 
-    --border: 214 16% 32%;
-    --input: 214 16% 32%;
+    --border: 220 12% 28%;
+    --input: 220 12% 28%;
 
-    --ring: 204 68% 58%;
+    --ring: 210 70% 60%;
 
-    --glow-primary: 0 0 35px hsl(204 68% 58% / 0.30);
-    --glow-accent: 0 0 35px hsl(34 65% 60% / 0.30);
+    --glow-primary: 0 0 35px hsl(210 70% 60% / 0.30);
+    --glow-accent: 0 0 35px hsl(34 70% 58% / 0.30);
 
     --sidebar-background: 214 22% 10%;
     --sidebar-foreground: 38 18% 90%;
