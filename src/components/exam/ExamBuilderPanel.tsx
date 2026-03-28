@@ -95,6 +95,29 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
     addExerciseToSection(sectionId, ex);
   };
 
+  // Auto-score an exercise when text changes
+  const autoScoreExercise = (sectionId: string, exerciseId: string, text: string) => {
+    if (text.length < 20) return;
+    const params = detectScoringParams(text);
+    const fullParams: ExerciseScoringParams = {
+      difficulty: params.difficulty || 2,
+      cognitiveLevel: (params.cognitiveLevel || "apply") as CognitiveLevel,
+      bloomLevel: 3,
+      conceptCount: params.conceptCount || 1,
+      stepCount: params.stepCount || 2,
+      estimatedTimeMin: params.estimatedTimeMin || 5,
+      hasSubQuestions: params.hasSubQuestions || false,
+      requiresProof: params.requiresProof || false,
+      requiresGraph: params.requiresGraph || false,
+      requiresConstruction: params.requiresConstruction || false,
+      domain: "",
+      subdomain: "",
+    };
+    const totalEx = sections.reduce((s, sec) => s + sec.exercises.length, 0);
+    const suggested = suggestPoints(fullParams, totalPoints, Math.max(totalEx, 1));
+    updateExercisePoints(sectionId, exerciseId, suggested);
+  };
+
   const updateExerciseText = (sectionId: string, exerciseId: string, text: string) => {
     setSections(prev => prev.map(s =>
       s.id === sectionId ? {
