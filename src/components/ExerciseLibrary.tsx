@@ -217,46 +217,45 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Level Tabs */}
-      <div className="px-3 py-2 border-b border-border bg-muted/30">
-        <div className="flex gap-2 mb-2">
-          {GRADE_LEVELS.map(level => (
-            <button
-              key={level.id}
-              onClick={() => handleGradeChange(level.grades[0].id)}
-              className={`flex-1 py-1.5 rounded-lg text-[12px] font-bold transition-all border ${
-                currentLevel?.id === level.id
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card text-muted-foreground border-border hover:border-primary/40"
-              }`}
-            >
-              {level.emoji} {level.label}
-            </button>
-          ))}
-        </div>
+      {/* Level & Grade Tabs - Only for Admin/Teacher */}
+      {!isStudent && (
+        <div className="px-3 py-2 border-b border-border bg-muted/30">
+          <div className="flex gap-2 mb-2">
+            {GRADE_LEVELS.map(level => (
+              <button
+                key={level.id}
+                onClick={() => handleGradeChange(level.grades[0].id)}
+                className={`flex-1 py-1.5 rounded-lg text-[12px] font-bold transition-all border ${
+                  currentLevel?.id === level.id
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card text-muted-foreground border-border hover:border-primary/40"
+                }`}
+              >
+                {level.emoji} {level.label}
+              </button>
+            ))}
+          </div>
 
-        {/* Filter Bar - Hidden for students to prevent confusion */}
-        {!isStudent && (
-          <div className="flex items-center gap-4 px-3 py-2 bg-muted/30 border-b border-border/50 overflow-x-auto no-scrollbar">
-            {GRADE_LEVELS.map(g => (
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+            {currentLevel?.grades.map(g => (
               <button
                 key={g.id}
-                onClick={() => setSelectedGrade(g.id)}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
-                  selectedGrade === g.id 
-                    ? "bg-primary text-primary-foreground border-primary shadow-sm" 
-                    : "bg-card border-border text-muted-foreground hover:text-foreground"
+                onClick={() => handleGradeChange(g.id)}
+                className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all border whitespace-nowrap ${
+                  selectedGrade === g.id
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "bg-card text-muted-foreground border-border hover:border-primary/50"
                 }`}
               >
                 {g.label}
               </button>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Stream Selector for Secondary */}
-      {hasStreams && (
+      {/* Stream Selector for Secondary - Only for Admin/Teacher */}
+      {!isStudent && hasStreams && (
         <div className="px-3 py-2 border-b border-border bg-accent/10">
           <div className="text-[10px] text-muted-foreground font-semibold mb-1.5" dir="rtl">🎯 الشعبة:</div>
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
