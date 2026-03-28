@@ -105,12 +105,12 @@ Deno.serve(async (req) => {
       )
     );
 
-    // Use Lovable AI gateway
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
+    // Use Native Google Gemini API
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
+    if (!GEMINI_API_KEY) {
       await supabase
         .from("exam_uploads")
-        .update({ status: "failed", error_message: "LOVABLE_API_KEY not set" })
+        .update({ status: "failed", error_message: "GEMINI_API_KEY not set" })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "AI key not configured" }), {
         status: 500,
@@ -163,45 +163,40 @@ Deno.serve(async (req) => {
 }`;
 
     const aiResponse = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.0-flash",
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: `data:application/pdf;base64,${base64}`,
-                  },
+          contents: [{
+            parts: [
+              {
+                inlineData: {
+                  mimeType: "application/pdf",
+                  data: base64,
                 },
-                {
-                  type: "text",
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          temperature: 0.1,
-          max_tokens: 8192,
+              },
+              {
+                text: prompt,
+              },
+            ],
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 8192,
+            responseMimeType: "application/json",
+          },
         }),
       }
     );
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errText);
+      console.error("Gemini API error:", aiResponse.status, errText);
       
       await supabase
         .from("exam_uploads")
-        .update({ status: "failed", error_message: `AI error: ${aiResponse.status}` })
+        .update({ status: "failed", error_message: `Gemini API error: ${aiResponse.status}` })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "AI analysis failed" }), {
         status: 500,
@@ -210,14 +205,14 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    const aiText = aiData?.choices?.[0]?.message?.content || "";
+    const parsed = aiData?.candidates?.[0]?.content?.parts?.[0]?.text 
+      ? JSON.parse(aiData.candidates[0].content.parts[0].text) 
+      : null;
 
-    // Parse JSON from AI response
-    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
+    if (!parsed) {
       await supabase
         .from("exam_uploads")
-        .update({ status: "failed", error_message: "Could not parse AI response" })
+        .update({ status: "failed", error_message: "Empty or invalid AI response" })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "Parse failed" }), {
         status: 500,
@@ -225,7 +220,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const parsed = JSON.parse(jsonMatch[0]);
     const questions: ExtractedQuestion[] = parsed.questions || [];
 
     await supabase

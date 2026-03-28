@@ -75,34 +75,30 @@ ${modePrompt}
 - في النهاية اذكر الأخطاء الشائعة إن وجدت
 - اجعل الشرح مناسباً لتلميذ جزائري`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash",
-        messages: [
-          { role: "system", content: "أنت مدرّس رياضيات خبير متخصص في المنهاج الجزائري. تشرح بالعربية بوضوح وبساطة." },
-          { role: "user", content: prompt },
+        contents: [
+          { role: "user", parts: [{ text: "أنت مدرّس رياضيات خبير متخصص في المنهاج الجزائري. تشرح بالعربية بوضوح وبساطة." }] },
+          { role: "user", parts: [{ text: prompt }] },
         ],
+        generationConfig: {
+          temperature: 0.2,
+        },
       }),
     });
 
     if (!response.ok) {
       const text = await response.text();
-      console.error("AI error:", response.status, text);
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "رصيد AI غير كافٍ" }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error(`AI error: ${response.status}`);
+      console.error("Gemini error:", response.status, text);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const explanation = data.choices?.[0]?.message?.content || "";
+    const explanation = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     return new Response(JSON.stringify({ 
       success: true, 

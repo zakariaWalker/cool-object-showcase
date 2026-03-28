@@ -48,21 +48,18 @@ ${e.text}`).join("\n\n")}
 
 أجب بـ JSON فقط.`;
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.0-flash",
-          messages: [
-            { role: "system", content: "أنت مساعد تعليمي متخصص في تحليل التمارين الرياضية. أجب دائماً بـ JSON صالح فقط." },
-            { role: "user", content: prompt },
+          contents: [
+            { role: "user", parts: [{ text: "أنت مساعد تعليمي متخصص في تحليل التمارين الرياضية. أجب دائماً باستخدام الأدوات المتاحة." }] },
+            { role: "user", parts: [{ text: prompt }] },
           ],
           tools: [{
-            type: "function",
-            function: {
+            function_declarations: [{
               name: "submit_deconstructions",
               description: "Submit exercise deconstructions",
               parameters: {
@@ -95,9 +92,14 @@ ${e.text}`).join("\n\n")}
                 },
                 required: ["deconstructions"],
               },
-            },
+            }],
           }],
-          tool_choice: { type: "function", function: { name: "submit_deconstructions" } },
+          tool_config: {
+            function_calling_config: {
+              mode: "ANY",
+              allowed_function_names: ["submit_deconstructions"],
+            },
+          },
         }),
       });
 
@@ -120,16 +122,11 @@ ${e.text}`).join("\n\n")}
       }
 
       const data = await response.json();
-      const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+      const toolCall = data.candidates?.[0]?.content?.parts?.[0]?.functionCall;
       if (!toolCall) continue;
 
-      let parsed;
-      try {
-        parsed = JSON.parse(toolCall.function.arguments);
-      } catch {
-        console.error("Failed to parse tool call arguments");
-        continue;
-      }
+      const parsed = toolCall.args;
+      if (!parsed) continue;
 
       const deconstructions = parsed.deconstructions || [];
 

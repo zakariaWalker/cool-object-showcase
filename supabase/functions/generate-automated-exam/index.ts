@@ -69,25 +69,32 @@ Deno.serve(async (req) => {
 أعد النتيجة بنفس هيكل JSON الخاص بالامتحان المرفق.`;
     }
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
+
+    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.2,
+        contents: [{
+          parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+          temperature: 0.2,
+          responseMimeType: "application/json",
+        },
       }),
     });
 
-    const aiData = await aiResponse.json();
-    const aiText = aiData?.choices?.[0]?.message?.content || "";
-    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Could not parse AI response");
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text();
+      throw new Error(`Gemini API error ${aiResponse.status}: ${errText}`);
+    }
 
-    return new Response(jsonMatch[0], {
+    const aiData = await aiResponse.json();
+    const aiText = aiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!aiText) throw new Error("Empty AI response from Gemini");
+
+    return new Response(aiText, {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
