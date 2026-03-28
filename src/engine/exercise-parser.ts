@@ -397,17 +397,22 @@ function extractTable(text: string): TableSpec | null {
 
 function extractQuestions(text: string): string[] {
   const questions: string[] = [];
-  const lines = text.split("\n");
+  // First split by known delimiters to catch multiple questions on one line
+  const mergedText = text.replace(/\s*\/\s*(?=سؤال|\d+[\.\)]|[أ-ي]\))/g, "\n");
+  const subLines = mergedText.split("\n");
 
-  for (const line of lines) {
+  for (const line of subLines) {
     const trimmed = line.trim();
+    if (!trimmed) continue;
     // Match lines starting with question markers
     if (/^[\-•\*]\s+/.test(trimmed) ||
         /^\d+[\.\)]\s+/.test(trimmed) ||
+        /^[أ-ي]\)\s+/.test(trimmed) ||
+        /^سؤال \d+/.test(trimmed) ||
         /^(حدد|احسب|أحسب|أنشر|بسط|حل|مثل|أنشئ|هل|علل|أوجد|عين|ارسم|بين|استنتج)/.test(trimmed) ||
         /^(calculer|résoudre|développer|simplifier|déterminer|tracer|montrer)/i.test(trimmed) ||
         /^(calculate|solve|expand|simplify|find|draw|show|prove)/i.test(trimmed)) {
-      questions.push(trimmed.replace(/^[\-•\*\d\.\)]+\s*/, ""));
+      questions.push(trimmed.replace(/^[\-•\*\d\.\)]+\s*|^سؤال \d+\s*|^[أ-ي]\)\s*/, ""));
     }
   }
 

@@ -10,43 +10,53 @@ interface Props {
 function detectContent(text: string) {
   const segments: { type: "text" | "latex" | "table" | "list" | "geometric" | "header"; content: string }[] = [];
 
-  // Split by — (section separator used in exercises)
-  const sections = text.split(/\s*—\s*/);
+  // Split by common section separators: —, –, |, and newlines
+  const sections = text.split(/\s*(?:—|–|\||\n)\s*/);
 
   for (const section of sections) {
-    if (!section.trim()) continue;
+    const trimmed = section.trim();
+    if (!trimmed) continue;
 
     // Check for table-like patterns (columns of numbers with headers)
-    const tableMatch = section.match(/(\[[\d;,.\s]+\[|\$\[[\d;,.\s]+\[)/g);
-    const hasTableHeaders = /القامة|العمر|المسافة|الوزن|التردد|عدد|الفئات|القيم/i.test(section);
-    const hasTabularData = section.match(/(\d+\s+){3,}/);
+    const tableMatch = trimmed.match(/(\[[\d;,.\s]+\[|\$\[[\d;,.\s]+\[)/g);
+    const hasTableHeaders = /القامة|العمر|المسافة|الوزن|التردد|عدد|الفئات|القيم/i.test(trimmed);
+    const hasTabularData = trimmed.match(/(\d+\s+){3,}/);
 
     if (hasTableHeaders && (tableMatch || hasTabularData)) {
-      segments.push({ type: "table", content: section });
+      segments.push({ type: "table", content: trimmed });
       continue;
     }
 
-    // Check for list/numbered items  
-    if (/سؤال \d+|^\d+[\)\.]/m.test(section)) {
-      // Split by question markers
-      const questions = section.split(/\s*\/\s*(?=سؤال)/);
-      if (questions.length > 1) {
-        questions.forEach(q => {
-          if (q.trim()) segments.push({ type: "list", content: q.trim() });
+    // Check for list/numbered items within this section
+    // Common markers: سؤال 1, أ), 1., etc. OR just "/" between questions
+    if (/سؤال \d+|[أ-ي]\)|^\d+[\)\.]/m.test(trimmed) || trimmed.includes(" / ")) {
+      // Split by question markers or "/"
+      const subItems = trimmed.split(/\s*(?:\/|(?=سؤال \d+)|(?=[أ-ي]\))|(?=[\d]+[\)\.]))\s*/);
+      if (subItems.length > 1) {
+        subItems.forEach(item => {
+          const itrim = item.trim();
+          if (itrim && itrim !== "/") {
+            // If it starts with a marker, it's a list item
+            if (/^سؤال \d+|[أ-ي]\)|^\d+[\)\.]/.test(itrim) || itrim.length > 5) {
+              segments.push({ type: "list", content: itrim });
+            } else {
+              segments.push({ type: "text", content: itrim });
+            }
+          }
         });
         continue;
       }
     }
 
     // Check for geometric construction instructions
-    if (/ارسم|أنشئ|المثلث|الدائرة|المستقيم|المستوي|القطعة|الزاوية|التحويل|الإنشاء/i.test(section) &&
-        /\$[A-Z]\$/i.test(section)) {
-      segments.push({ type: "geometric", content: section });
+    if (/ارسم|أنشئ|المثلث|الدائرة|المستقيم|المستوي|القطعة|الزاوية|التحويل|الإنشاء/i.test(trimmed) &&
+        /\$[A-Z]\$/i.test(trimmed)) {
+      segments.push({ type: "geometric", content: trimmed });
       continue;
     }
 
     // Default: text with potential LaTeX
-    segments.push({ type: "text", content: section });
+    segments.push({ type: "text", content: trimmed });
   }
 
   return segments;
@@ -85,7 +95,23 @@ function RenderLatexText({ text }: { text: string }) {
           const latex = part.slice(1, -1);
           return <LatexRenderer key={i} latex={latex} />;
         }
-        return <span key={i}>{part}</span>;
+        
+        // Automated highlighting for numbers outside of LaTeX
+        const subParts = part.split(/(\d+[\.,]?\d*)/g);
+        return (
+          <span key={i}>
+            {subParts.map((sp, j) => {
+              if (/^\d+[\.,]?\d*$/.test(sp) && sp.length > 0) {
+                return (
+                  <span key={j} className="font-black text-primary bg-primary/5 px-1 rounded mx-0.5 border-b border-primary/20">
+                    {sp}
+                  </span>
+                );
+              }
+              return <span key={j}>{sp}</span>;
+            })}
+          </span>
+        );
       })}
     </span>
   );
@@ -161,26 +187,30 @@ export function ExerciseRenderer({ text, className = "" }: Props) {
               </div>
             );
 
-          case "list":
+          case "list": {
+            const markerMatch = seg.content.match(/^سؤال (\d+)|^(\d+)[\)\.]|^([أ-ي])\)/);
+            const marker = markerMatch ? (markerMatch[1] || markerMatch[2] || markerMatch[3]) : null;
+            
             return (
-              <div key={i} className="flex gap-3 items-start">
-                {/سؤال (\d+)/.test(seg.content) && (
-                  <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5">
-                    {seg.content.match(/سؤال (\d+)/)?.[1] || "?"}
-                  </div>
-                )}
-                <div className="text-sm text-foreground leading-relaxed flex-1">
-                  <RenderLatexText text={seg.content.replace(/^سؤال \d+\s*/, "")} />
+              <div key={i} className="flex gap-4 items-start p-4 rounded-xl bg-card border border-border shadow-sm hover:border-primary/30 transition-all hover:shadow-md group">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-[12px] font-black flex-shrink-0 mt-0.5 shadow-inner group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                  {marker || "•"}
+                </div>
+                <div className="text-[13px] text-foreground/90 leading-relaxed flex-1 font-medium">
+                  <RenderLatexText text={seg.content.replace(/^سؤال \d+\s*|^\d+[\)\.]\s*|^[أ-ي]\)\s*/, "").trim()} />
                 </div>
               </div>
             );
+          }
 
-          default:
+          default: {
+            const isPotentialHeader = seg.content.length < 60 && (/^(\d+[\.\)]|إليك|ليكن|نعتبر|في الشكل|لاحظ)/i.test(seg.content));
             return (
-              <div key={i} className="text-sm text-foreground leading-relaxed">
+              <div key={i} className={`text-sm leading-relaxed ${isPotentialHeader ? "font-black text-foreground border-r-4 border-primary/40 pr-3 py-1 my-2 bg-muted/20 rounded-l-md" : "text-foreground/70"}`}>
                 <RenderLatexText text={seg.content} />
               </div>
             );
+          }
         }
       })}
     </div>
