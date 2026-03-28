@@ -29,7 +29,7 @@ export const ALGEBRA_TEMPLATES = [
     level: "middle",
     description: "حل جملة معادلتين من الدرجة الأولى بمجهولين",
     steps: [
-      "\\begin{cases} ax + by = c \\\\ a'x + b'y = c' \\end{cases}",
+      "\\begin{cases} ... = ... \\\\ ... = ... \\end{cases}",
       "من (1) نجد: x = ...",
       "بتعويض x في (2): ...",
       "إذن: y = ... ، x = ...",
@@ -43,9 +43,9 @@ export const ALGEBRA_TEMPLATES = [
     description: "حساب المشتقة وتحديد اتجاه التغير",
     steps: [
       "f(x) = ...",
-      "f'(x) = ...",
-      "إشارة f'(x) هي ...",
-      "f متزايدة على ... ومتناقصة على ..."
+      "f'(x) = ... (المشتقة)",
+      "إشارة f'(x) هي ... لأن ...",
+      "إذن f متزايدة على ... ومتناقصة على ..."
     ]
   },
   {

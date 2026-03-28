@@ -37,9 +37,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Don't show shell on landing, auth, or TMA pages
   if (currentPath === "/" || currentPath === "/auth" || currentPath.startsWith("/tma")) return <>{children}</>;
 
-  // Filter steps for navigation: Guests only see Diagnostic
+  // Filter steps for navigation: Guests only see Diagnostic, Students only see learning/practice
   const visibleSteps = WORKFLOW_STEPS.filter(step => {
-    if (isGuest) return step.path === "/gaps"; // Only Diagnostic for guests
+    if (isGuest) return step.path === "/gaps"; 
+    // Admin only steps
+    if (!isAdmin && (step.path === "/exams" || step.path === "/exam-kb")) return false;
     return true;
   });
 

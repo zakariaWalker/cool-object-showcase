@@ -259,7 +259,9 @@ export async function getDailyChallenge(): Promise<{ exerciseId: string; text: s
   const { count } = await (supabase as any).from("kb_exercises").select("id", { count: "exact", head: true });
   if (!count || count === 0) return null;
 
-  const offset = seed % count;
+  // Use date + a secondary seed to mix it up more if the dataset is small
+  const secondarySeed = new Date().getHours() > 12 ? 1 : 0; // Simple shift mid-day
+  const offset = (seed + secondarySeed) % count;
   const { data } = await (supabase as any)
     .from("kb_exercises")
     .select("id, text, grade, type")

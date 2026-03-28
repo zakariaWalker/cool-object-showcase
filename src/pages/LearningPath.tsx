@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ExerciseRenderer } from "@/components/ExerciseRenderer";
+import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Exercise {
@@ -100,7 +101,8 @@ export default function LearningPath() {
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [deconstructions, setDeconstructions] = useState<Deconstruction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedGrade, setSelectedGrade] = useState("middle_1");
+  const { profile } = useAuth();
+  const [selectedGrade, setSelectedGrade] = useState(profile?.grade || "middle_4");
   const [selectedType, setSelectedType] = useState("");
   const [completedExIds, setCompletedExIds] = useState<Set<string>>(new Set());
 

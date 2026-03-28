@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { ExerciseRenderer } from "@/components/ExerciseRenderer";
 import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
@@ -42,7 +43,8 @@ export default function GapDetector() {
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [deconstructions, setDeconstructions] = useState<Deconstruction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [gradeFilter, setGradeFilter] = useState("");
+  const { profile } = useAuth();
+  const [gradeFilter, setGradeFilter] = useState(profile?.grade || "");
   
   // Quiz state
   const [quizState, setQuizState] = useState<QuizState>("setup");

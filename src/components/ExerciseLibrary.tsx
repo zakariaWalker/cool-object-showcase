@@ -87,7 +87,7 @@ const STREAMS: Record<string, { id: string; label: string; color: string }[]> = 
 };
 
 export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
-  const { profile } = useAuth();
+  const { profile, isStudent } = useAuth();
 
   // Initialize from profile or localStorage
   const initGrade = (() => {
@@ -113,15 +113,10 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
   const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Sync with profile when it loads
+  // SYNC: When profile changes, update filters to match student level
   useEffect(() => {
-    if (profile?.grade && profile.grade !== selectedGrade) {
+    if (profile && profile.grade) {
       setSelectedGrade(profile.grade);
-      if (profile.stream && profile.grade.startsWith("secondary_")) {
-        setSelectedStream(profile.stream);
-      } else {
-        setSelectedStream("");
-      }
     }
   }, [profile]);
 
@@ -240,22 +235,24 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
           ))}
         </div>
 
-        {/* Grade Selector */}
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-          {currentLevel?.grades.map(g => (
-            <button
-              key={g.id}
-              onClick={() => handleGradeChange(g.id)}
-              className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all border whitespace-nowrap ${
-                selectedGrade === g.id
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-card text-muted-foreground border-border hover:border-primary/50"
-              }`}
-            >
-              {g.label}
-            </button>
-          ))}
-        </div>
+        {/* Filter Bar - Hidden for students to prevent confusion */}
+        {!isStudent && (
+          <div className="flex items-center gap-4 px-3 py-2 bg-muted/30 border-b border-border/50 overflow-x-auto no-scrollbar">
+            {GRADE_LEVELS.map(g => (
+              <button
+                key={g.id}
+                onClick={() => setSelectedGrade(g.id)}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
+                  selectedGrade === g.id 
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm" 
+                    : "bg-card border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Stream Selector for Secondary */}

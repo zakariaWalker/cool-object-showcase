@@ -36,7 +36,7 @@ const SYMBOLS: Record<Level, { label: string; insert: string; category: string }
     { label: "°", insert: "^{\\circ}", category: "مثلثات" },
     { label: "vec", insert: "\\vec{}", category: "أشعة" },
     { label: "⇒", insert: "\\Rightarrow", category: "منطق" },
-    { label: "{", insert: "\\begin{cases}  \\\\  \\end{cases}", category: "جملة" },
+    { label: "{=}", insert: "\\begin{cases}  ... \\\\  ... \\end{cases}", category: "جملة" },
   ],
   secondary: [
     { label: "lim", insert: "\\lim_{x \\to }", category: "تحليل" },
@@ -311,7 +311,7 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
       <div className="px-5 py-4 border-t border-border/50 bg-muted/20 flex items-center justify-between">
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
           <Type size={12} />
-          <span>ادعم حلك بالرموز والخطوات المنطقية لمستواك</span>
+          <span>استخدم الرموز أعلاه للإدراج الرياضي. يمكنك كتابة الشرح باللغة العربية بين الخطوات.</span>
         </div>
         <button
           onClick={handleSubmit}

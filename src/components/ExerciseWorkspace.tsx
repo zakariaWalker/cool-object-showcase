@@ -480,7 +480,9 @@ export function ExerciseWorkspace({
             </div>
           )}
 
-          {inputMode === "library" && <ExerciseLibrary onSelectExercise={handleDatasetExercise} />}
+          <div className="flex-1 overflow-hidden flex flex-col">
+            {inputMode === "library" && <ExerciseLibrary onSelectExercise={handleDatasetExercise} />}
+          </div>
           {inputMode === "text" && <ExerciseInput onParsed={handleParsed} error={error} />}
           {inputMode === "dataset" && <DatasetBrowser onSelectExercise={handleDatasetExercise} />}
           {inputMode === "knowledge" && (
