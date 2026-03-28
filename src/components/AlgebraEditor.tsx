@@ -280,6 +280,16 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
                       dir="ltr"
                       style={{ textAlign: "left" }}
                     />
+                    {/* Live Preview for active step */}
+                    {!preview && activeStep === i && step.trim() && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -5 }} 
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-2 p-3 rounded-lg bg-primary/5 border border-primary/10 text-primary-foreground min-h-[40px] flex items-center justify-center"
+                      >
+                         <LatexRenderer latex={step} className="text-sm text-foreground" />
+                      </motion.div>
+                    )}
                   </div>
                 )}
               </div>

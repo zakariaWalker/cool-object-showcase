@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 import { FunctionAnalysis } from "@/engine/functions-engine";
 import { KnowledgeGapVisual } from "./KnowledgeGapVisual";
 import { KnowledgeBase } from "@/engine/knowledge/types";
+import { ExerciseRenderer } from "./ExerciseRenderer";
 
 interface ExerciseResultProps {
   exercise: ParsedExercise;
@@ -54,7 +55,7 @@ export function ExerciseResult({
   const table = exercise.semanticObjects.table;
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="w-full">
       {/* Header */}
       <motion.div
         className={`border-b border-border p-6 bg-card/50 border-l-4 ${config.borderClass}`}
@@ -71,8 +72,8 @@ export function ExerciseResult({
             {exercise.source.language === "ar" ? "عربي" : exercise.source.language === "fr" ? "Français" : "English"}
           </span>
         </div>
-        <div className="bg-background border border-border rounded-sm p-4 text-[13px] text-foreground whitespace-pre-wrap leading-relaxed" dir="auto">
-          {cleanMathText(exercise.source.text)}
+        <div className="bg-background border border-border rounded-sm p-4 text-[13px] text-foreground leading-relaxed" dir="auto">
+          <ExerciseRenderer text={exercise.source.text} />
         </div>
       </motion.div>
 
@@ -136,11 +137,13 @@ export function ExerciseResult({
           <div className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">
             الأسئلة المكتشفة ({exercise.rawQuestions.length})
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {exercise.rawQuestions.map((q, i) => (
               <div key={i} className="flex items-start gap-2 text-[13px]">
                 <span className="text-primary font-mono text-[11px] mt-0.5 shrink-0">Q{i + 1}</span>
-                <span className="text-foreground" dir="auto">{cleanMathText(q)}</span>
+                <span className="text-foreground" dir="auto">
+                   <ExerciseRenderer text={q} />
+                </span>
               </div>
             ))}
           </div>

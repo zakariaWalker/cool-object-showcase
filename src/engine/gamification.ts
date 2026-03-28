@@ -260,7 +260,7 @@ export async function getDailyChallenge(): Promise<{ exerciseId: string; text: s
   if (!count || count === 0) return null;
 
   // Use date + a secondary seed to mix it up more if the dataset is small
-  const secondarySeed = new Date().getHours() > 12 ? 1 : 0; // Simple shift mid-day
+  const secondarySeed = new Date().getHours(); // Rotate challenge every hour
   const offset = (seed + secondarySeed) % count;
   const { data } = await (supabase as any)
     .from("kb_exercises")
