@@ -318,8 +318,9 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
                         <div className="flex-1 space-y-2">
                           <textarea value={ex.text}
                             onChange={e => updateExerciseText(section.id, ex.id, e.target.value)}
+                            onBlur={() => autoScoreExercise(section.id, ex.id, ex.text)}
                             className="w-full px-2 py-1.5 rounded border border-border bg-card text-sm text-foreground resize-none min-h-[60px]"
-                            placeholder="نص التمرين..." />
+                            placeholder="نص التمرين... (النقاط ستُحسب تلقائياً)" />
                           <div className="flex items-center gap-3">
                             <div className="flex items-center gap-1">
                               <label className="text-[10px] text-muted-foreground">النقاط:</label>
