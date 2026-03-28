@@ -21,34 +21,34 @@ const SYMBOLS: Record<Level, { label: string; insert: string; category: string }
   primary: [
     { label: "+", insert: "+", category: "أساسي" },
     { label: "-", insert: "-", category: "أساسي" },
-    { label: "×", insert: "\\times", category: "أساسي" },
-    { label: "÷", insert: "\\div", category: "أساسي" },
-    { label: "=", insert: "=", category: "أساسي" },
-    { label: "frac", insert: "\\frac{}{}", category: "كسور" },
+    { label: "×", insert: " × ", category: "أساسي" },
+    { label: "÷", insert: " ÷ ", category: "أساسي" },
+    { label: "=", insert: " = ", category: "أساسي" },
+    { label: "frac", insert: "( )/( )", category: "كسور" },
   ],
   middle: [
-    { label: "x²", insert: "x^2", category: "أساسي" },
-    { label: "√", insert: "\\sqrt{}", category: "أساسي" },
-    { label: "frac", insert: "\\frac{}{}", category: "أساسي" },
-    { label: "sin", insert: "\\sin()", category: "مثلثات" },
-    { label: "cos", insert: "\\cos()", category: "مثلثات" },
-    { label: "tan", insert: "\\tan()", category: "مثلثات" },
-    { label: "°", insert: "^{\\circ}", category: "مثلثات" },
-    { label: "vec", insert: "\\vec{}", category: "أشعة" },
-    { label: "⇒", insert: "\\Rightarrow", category: "منطق" },
-    { label: "{=}", insert: "\\begin{cases}  ... \\\\  ... \\end{cases}", category: "جملة" },
+    { label: "x²", insert: "x²", category: "أساسي" },
+    { label: "√", insert: "√( )", category: "أساسي" },
+    { label: "frac", insert: "( )/( )", category: "أساسي" },
+    { label: "sin", insert: "sin( )", category: "مثلثات" },
+    { label: "cos", insert: "cos( )", category: "مثلثات" },
+    { label: "tan", insert: "tan( )", category: "مثلثات" },
+    { label: "°", insert: "°", category: "مثلثات" },
+    { label: "vec", insert: "vec( )", category: "أشعة" },
+    { label: "⇒", insert: " ⇒ ", category: "منطق" },
+    { label: "{=}", insert: "begin{cases}  ... \\\\  ... end{cases}", category: "جملة" },
   ],
   secondary: [
-    { label: "lim", insert: "\\lim_{x \\to }", category: "تحليل" },
-    { label: "∫", insert: "\\int_{}^{} dx", category: "تحليل" },
-    { label: "Σ", insert: "\\sum_{i=0}^{n}", category: "تحليل" },
-    { label: "ln", insert: "\\ln()", category: "دوال" },
-    { label: "eˣ", insert: "e^{x}", category: "دوال" },
+    { label: "lim", insert: "lim(x→ )", category: "تحليل" },
+    { label: "∫", insert: "∫( )dx", category: "تحليل" },
+    { label: "Σ", insert: "Σ(i=0, n, )", category: "تحليل" },
+    { label: "ln", insert: "ln( )", category: "دوال" },
+    { label: "eˣ", insert: "e^( )", category: "دوال" },
     { label: "i", insert: "i", category: "مركبة" },
-    { label: "z̄", insert: "\\bar{z}", category: "مركبة" },
-    { label: "∞", insert: "\\infty", category: "أساسي" },
+    { label: "z̄", insert: "bar(z)", category: "مركبة" },
+    { label: "∞", insert: "∞", category: "أساسي" },
     { label: "f'", insert: "f'(x)", category: "اشتقاق" },
-    { label: "ℝ", insert: "\\mathbb{R}", category: "مجموعات" },
+    { label: "ℝ", insert: "ℝ", category: "مجموعات" },
   ]
 };
 
@@ -57,6 +57,53 @@ const LEVEL_LABELS: Record<Level, string> = {
   middle: "متوسط",
   secondary: "ثانوي (BAC)"
 };
+
+// Helper to convert natural text to LaTeX for rendering
+export function toLatex(text: string): string {
+  let l = text;
+  // Basic symbols
+  l = l.replace(/×/g, "\\times ");
+  l = l.replace(/÷/g, "\\div ");
+  l = l.replace(/±/g, "\\pm ");
+  l = l.replace(/≠/g, "\\neq ");
+  l = l.replace(/⇒/g, "\\Rightarrow ");
+  l = l.replace(/∞/g, "\\infty ");
+  l = l.replace(/ℝ/g, "\\mathbb{R} ");
+  l = l.replace(/°/g, "^{\\circ}");
+  l = l.replace(/≤/g, "\\leq ");
+  l = l.replace(/≥/g, "\\geq ");
+  l = l.replace(/π/g, "\\pi ");
+  l = l.replace(/θ/g, "\\theta ");
+  l = l.replace(/α/g, "\\alpha ");
+  l = l.replace(/β/g, "\\beta ");
+  l = l.replace(/γ/g, "\\gamma ");
+
+  // Advanced functions
+  l = l.replace(/√\((.*?)\)/g, "\\sqrt{$1}");
+  l = l.replace(/√(\d+)/g, "\\sqrt{$1}"); // √2 -> \sqrt{2}
+  l = l.replace(/√([a-z]|[α-ω])/gi, "\\sqrt{$1}"); // √x -> \sqrt{x}
+
+  l = l.replace(/\((.*?)\)\/\((.*?)\)/g, "\\frac{$1}{$2}");
+  l = l.replace(/(\w+)\/\((.*?)\)/g, "\\frac{$1}{$2}"); // x/(...)
+  l = l.replace(/\((.*?)\)\/(\w+)/g, "\\frac{$1}{$2}"); // (...)/y
+
+  l = l.replace(/sin\((.*?)\)/g, "\\sin($1)");
+  l = l.replace(/cos\((.*?)\)/g, "\\cos($1)");
+  l = l.replace(/tan\((.*?)\)/g, "\\tan($1)");
+  l = l.replace(/ln\((.*?)\)/g, "\\ln($1)");
+  l = l.replace(/e\^\((.*?)\)/g, "e^{$1}");
+  l = l.replace(/vec\((.*?)\)/g, "\\vec{$1}");
+  l = l.replace(/bar\((.*?)\)/g, "\\bar{$1}");
+  l = l.replace(/lim\(x→(.*?)\)/g, "\\lim_{x \\to $1}");
+  l = l.replace(/x²/g, "x^{2}");
+  l = l.replace(/(\w+)\^(\d+)/g, "$1^{$2}"); // x^2 -> x^{2}
+
+  // Structural
+  l = l.replace(/begin\{cases\}/g, "\\begin{cases}");
+  l = l.replace(/end\{cases\}/g, "\\end{cases}");
+
+  return l;
+}
 
 export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder = "أدخل خطوات الحل...", className = "" }: AlgebraEditorProps) {
   const [level, setLevel] = useState<Level>(initialLevel);
@@ -99,7 +146,15 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
     updateStep(activeStep, newVal);
     setTimeout(() => {
       ref.focus();
-      const cursorPos = start + symbol.length;
+      // Intelligent cursor positioning: if symbol has ( ), place cursor inside
+      let cursorPos = start + symbol.length;
+      if (symbol.includes("( )")) {
+        cursorPos = start + symbol.indexOf("( )") + 1;
+      } else if (symbol.includes("{ }")) {
+        cursorPos = start + symbol.indexOf("{ }") + 1;
+      } else if (symbol.includes("...")) {
+        cursorPos = start + symbol.indexOf("...");
+      }
       ref.setSelectionRange(cursorPos, cursorPos);
     }, 10);
   };
@@ -112,7 +167,7 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
 
   const handleSubmit = () => {
     const filledSteps = steps.filter(s => s.trim().length > 0);
-    if (filledSteps.length > 0) onSubmit(filledSteps);
+    if (filledSteps.length > 0) onSubmit(filledSteps.map(s => toLatex(s)));
   };
 
   const hasContent = steps.some(s => s.trim().length > 0);
@@ -265,7 +320,7 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
               <div className="flex-1">
                 {preview && step.trim() ? (
                   <div className="p-4 rounded-xl bg-card border border-border/50 shadow-sm min-h-[50px] flex items-center hover:border-primary/30 transition-colors">
-                    <LatexRenderer latex={step} className="text-sm md:text-base text-foreground leading-relaxed" />
+                    <LatexRenderer latex={toLatex(step)} className="text-sm md:text-base text-foreground leading-relaxed" />
                   </div>
                 ) : (
                   <div className={`relative transition-all ${activeStep === i ? "ring-2 ring-primary/20 rounded-xl" : ""}`}>
@@ -287,7 +342,7 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
                         animate={{ opacity: 1, y: 0 }}
                         className="mt-2 p-3 rounded-lg bg-primary/5 border border-primary/10 text-primary-foreground min-h-[40px] flex items-center justify-center"
                       >
-                         <LatexRenderer latex={step} className="text-sm text-foreground" />
+                         <LatexRenderer latex={toLatex(step)} className="text-sm text-foreground" />
                       </motion.div>
                     )}
                   </div>
