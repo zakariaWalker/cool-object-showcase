@@ -43,8 +43,15 @@ export default function GapDetector() {
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [deconstructions, setDeconstructions] = useState<Deconstruction[]>([]);
   const [loading, setLoading] = useState(true);
-  const { profile } = useAuth();
+  const { profile, isAdmin, isTeacher } = useAuth();
   const [gradeFilter, setGradeFilter] = useState(profile?.grade || "");
+
+  // Sync gradeFilter with profile when it loads
+  useEffect(() => {
+    if (profile?.grade && !gradeFilter) {
+      setGradeFilter(profile.grade);
+    }
+  }, [profile, gradeFilter]);
   
   // Quiz state
   const [quizState, setQuizState] = useState<QuizState>("setup");
@@ -284,14 +291,17 @@ export default function GapDetector() {
             </div>
 
             <div className="w-full max-w-sm space-y-4">
-              <div>
-                <label className="text-xs font-bold text-muted-foreground mb-1 block">اختر المستوى</label>
-                <select value={gradeFilter} onChange={e => setGradeFilter(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground text-sm">
-                  <option value="">كل المستويات</option>
-                  {Object.entries(GRADE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                </select>
-              </div>
+              {/* Only show grade selector for Admin/Teacher, or if guest (no profile) */}
+              {(!profile || isAdmin || isTeacher) && (
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground mb-1 block">اختر المستوى</label>
+                  <select value={gradeFilter} onChange={e => setGradeFilter(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground text-sm">
+                    <option value="">كل المستويات</option>
+                    {Object.entries(GRADE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  </select>
+                </div>
+              )}
 
               <div className="text-center text-xs text-muted-foreground">
                 {availableExercises.length} تمرين متاح للتقييم
