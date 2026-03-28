@@ -2,6 +2,34 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
+  Plus, 
+  Trash2, 
+  GripVertical, 
+  FileText, 
+  Printer, 
+  CheckCircle2, 
+  PlusCircle, 
+  ChevronRight, 
+  ArrowRight, 
+  Save, 
+  Sparkles, 
+  Star, 
+  BadgeCheck,
+  Layout,
+  Type,
+  Target,
+  Loader2,
+  Wand2,
+  Zap,
+  Database,
+  Combine
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useExamKBStore } from "./useExamKBStore";
+import { 
   ALL_TEMPLATES, 
   BEM_TEMPLATE, 
   BAC_TEMPLATE, 
@@ -22,6 +50,8 @@ import {
 import { 
   detectScoringParams, 
   computeBaseScore, 
+  categorizeForExam, 
+  suggestPoints, 
   detectPedagogicalGaps,
   type PedagogicalGap
 } from "@/engine/exercise-scoring";
@@ -39,7 +69,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Wand2, Zap, Database, Combine } from "lucide-react";
 import { toast } from "sonner";
 
 import { ExamPreview } from "./ExamPreview";
@@ -69,6 +98,7 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
   const [showPreview, setShowPreview] = useState(false);
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [sampleSize, setSampleSize] = useState(0);
+  const [version, setVersion] = useState(1);
   const [changeSummary, setChangeSummary] = useState("");
   const [gaps, setGaps] = useState<PedagogicalGap[]>([]);
   const [isComparing, setIsComparing] = useState(false);
