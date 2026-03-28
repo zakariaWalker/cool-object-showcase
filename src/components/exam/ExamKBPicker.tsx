@@ -41,11 +41,29 @@ export function ExamKBPicker({ grade, sectionId, allowedTypes, onSelect, onClose
   }, [exercises, grade, allowedTypes]);
 
   const handleSelect = (ex: typeof exercises[0]) => {
+    // Auto-compute points based on scoring params
+    const params = detectScoringParams(ex.text, ex.type);
+    const fullParams: ExerciseScoringParams = {
+      difficulty: params.difficulty || 2,
+      cognitiveLevel: (params.cognitiveLevel || "apply") as CognitiveLevel,
+      bloomLevel: 3,
+      conceptCount: params.conceptCount || 1,
+      stepCount: params.stepCount || 2,
+      estimatedTimeMin: params.estimatedTimeMin || 5,
+      hasSubQuestions: params.hasSubQuestions || false,
+      requiresProof: params.requiresProof || false,
+      requiresGraph: params.requiresGraph || false,
+      requiresConstruction: params.requiresConstruction || false,
+      domain: ex.type,
+      subdomain: "",
+    };
+    const baseScore = computeBaseScore(fullParams);
+    
     onSelect(sectionId, {
       id: `kb_${ex.id}_${Date.now()}`,
       sectionId,
       text: ex.text,
-      points: 2,
+      points: Math.max(baseScore, 1),
       type: ex.type,
       grade: ex.grade,
       source: "kb",
