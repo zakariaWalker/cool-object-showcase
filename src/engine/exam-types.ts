@@ -108,6 +108,7 @@ export interface Exam {
     semester?: string;
     year?: string;
   };
+  version?: number;
 }
 
 export interface ExamSection {

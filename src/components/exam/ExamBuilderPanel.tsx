@@ -98,7 +98,7 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
   const [showPreview, setShowPreview] = useState(false);
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [sampleSize, setSampleSize] = useState(0);
-  const [version, setVersion] = useState(1);
+  const [blueprintVersion, setBlueprintVersion] = useState(1);
   const [changeSummary, setChangeSummary] = useState("");
   const [gaps, setGaps] = useState<PedagogicalGap[]>([]);
   const [isComparing, setIsComparing] = useState(false);
@@ -136,7 +136,7 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
         if (data.aggregated_style) setStyleProfile(data.aggregated_style as any);
         if (data.aggregated_patterns) setStructuralPatterns(data.aggregated_patterns as any);
         if (data.sample_size) setSampleSize(data.sample_size);
-        if (data.version) setVersion(data.version);
+        if (data.version) setBlueprintVersion(data.version);
         if (data.change_summary) setChangeSummary(data.change_summary);
       } else {
         // Fallback to latest upload if no blueprint yet
@@ -324,6 +324,7 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
       metadata,
       styleProfile,
       structuralPatterns,
+      version: blueprintVersion,
     };
     onSave(examData);
   };
@@ -437,9 +438,9 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <div className="text-[10px] font-bold text-primary">النمط البصري والتربوي</div>
-                    {version > 1 && (
+                    {blueprintVersion > 1 && (
                       <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-black">
-                        v{version}
+                        v{blueprintVersion}
                       </span>
                     )}
                   </div>
@@ -448,7 +449,7 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
                      styleProfile ? `✅ تم تطبيق نمط مجمّع (${sampleSize} امتحانات)` : 
                      "⚠️ لا يوجد نمط حقيقي متاح حالياً"}
                   </div>
-                  {changeSummary && version > 1 && (
+                  {changeSummary && blueprintVersion > 1 && (
                     <p className="text-[8px] text-primary/60 italic line-clamp-1 hover:line-clamp-none cursor-help transition-all">
                       ✨ {changeSummary}
                     </p>
@@ -457,20 +458,20 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
                     <div className="flex justify-between items-end mb-1">
                       <div className="text-[10px] font-black text-primary flex items-center gap-1">
                         🏆 مستوى ذكاء المنظمة
-                        <span className="text-[8px] bg-primary/20 px-1 rounded">v{version}</span>
+                        <span className="text-[8px] bg-primary/20 px-1 rounded">v{blueprintVersion}</span>
                       </div>
                       <div className="text-[9px] font-bold text-primary/60">
-                        {Math.min(version * 10, 100)}%
-                        {version >= 10 && " (الذروة ✨)"}
+                        {Math.min(blueprintVersion * 10, 100)}%
+                        {blueprintVersion >= 10 && " (الذروة ✨)"}
                       </div>
                     </div>
                     <div className="h-2 bg-primary/10 rounded-full overflow-hidden border border-primary/5">
                       <motion.div 
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(version * 10, 100)}%` }}
+                        animate={{ width: `${Math.min(blueprintVersion * 10, 100)}%` }}
                         className={`h-full transition-all duration-1000 ${
-                          version >= 10 ? "bg-gradient-to-l from-amber-400 via-primary to-amber-400 animate-pulse" : 
-                          version >= 7 ? "bg-primary" : 
+                          blueprintVersion >= 10 ? "bg-gradient-to-l from-amber-400 via-primary to-amber-400 animate-pulse" : 
+                          blueprintVersion >= 7 ? "bg-primary" : 
                           "bg-primary/60"
                         }`}
                       />
@@ -705,6 +706,7 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
               metadata,
               styleProfile,
               structuralPatterns,
+              version: blueprintVersion,
             }}
             onClose={() => setShowPreview(false)}
           />
