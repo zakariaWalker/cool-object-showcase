@@ -1,6 +1,20 @@
 export const ALGEBRA_TEMPLATES = [
+  // --- Primary Level ---
+  {
+    name: "عملية عمودية (جمع/طرح)",
+    level: "primary",
+    description: "ترتيب الأعداد وإجراء العملية",
+    steps: [
+      "  125",
+      "+ 456",
+      "------",
+      "  581"
+    ]
+  },
+  // --- Middle Level (4AM) ---
   {
     name: "PGCD (خوارزمية إقليدس)",
+    level: "middle",
     description: "حساب القاسم المشترك الأكبر باستخدام القسمات المتتالية",
     steps: [
       "PGCD(a, b) = ?",
@@ -12,6 +26,7 @@ export const ALGEBRA_TEMPLATES = [
   },
   {
     name: "جملة معادلتين",
+    level: "middle",
     description: "حل جملة معادلتين من الدرجة الأولى بمجهولين",
     steps: [
       "\\begin{cases} ax + by = c \\\\ a'x + b'y = c' \\end{cases}",
@@ -21,23 +36,38 @@ export const ALGEBRA_TEMPLATES = [
       "الثنائية (x, y) هي حل للجملة"
     ]
   },
+  // --- Secondary Level (BAC) ---
   {
-    name: "دالة خطية / تألفية",
-    description: "تحليل وحساب صور وأعداد بالدوال",
+    name: "دراسة دالة (المشتقة)",
+    level: "secondary",
+    description: "حساب المشتقة وتحديد اتجاه التغير",
     steps: [
-      "f(x) = ax + b",
-      "حساب صورة العدد 2: f(2) = a(2) + b",
-      "إيجاد العدد الذي صورته 5: f(x) = 5",
-      "ax + b = 5 \\Rightarrow x = ..."
+      "f(x) = ...",
+      "f'(x) = ...",
+      "إشارة f'(x) هي ...",
+      "f متزايدة على ... ومتناقصة على ..."
     ]
   },
   {
-    name: "نشر وتبسيط",
-    description: "نشر عبارات جبرية باستخدام المتطابقات الشهيرة",
+    name: "الأعداد المركبة",
+    level: "secondary",
+    description: "الشكل الأسي والجبري لعدد مركب",
     steps: [
-      "A = (a + b)^2 = a^2 + 2ab + b^2",
-      "B = (a - b)^2 = a^2 - 2ab + b^2",
-      "C = (a - b)(a + b) = a^2 - b^2"
+      "z = a + bi",
+      "|z| = \\sqrt{a^2 + b^2}",
+      "\\cos \\theta = a/|z|, \\sin \\theta = b/|z|",
+      "z = |z|e^{i\\theta}"
+    ]
+  },
+  {
+    name: "التكامل بالتجزئة",
+    level: "secondary",
+    description: "حساب تكامل باستخدام قانون التجزئة",
+    steps: [
+      "\\int u(x)v'(x) dx = [u(x)v(x)] - \\int u'(x)v(x) dx",
+      "u(x) = ..., v'(x) = ...",
+      "u'(x) = ..., v(x) = ...",
+      "I = ..."
     ]
   }
 ];

@@ -2,44 +2,69 @@
 import { useState, useRef, useEffect } from "react";
 import { LatexRenderer } from "./LatexRenderer";
 import { ALGEBRA_TEMPLATES } from "./MathEditorTemplates";
-import { ChevronDown, Plus, Trash2, Eye, Edit3, Type, Layout, CheckCircle2 } from "lucide-react";
+import { 
+  ChevronDown, Plus, Trash2, Eye, Edit3, Type, 
+  Layout, CheckCircle2, GraduationCap, Calculator
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+type Level = "primary" | "middle" | "secondary";
 
 interface AlgebraEditorProps {
   onSubmit: (steps: string[]) => void;
+  initialLevel?: Level;
   placeholder?: string;
   className?: string;
 }
 
-const SYMBOLS = [
-  // Basic
-  { label: "x²", insert: "x^2", category: "أساسي" },
-  { label: "√", insert: "\\sqrt{}", category: "أساسي" },
-  { label: "frac", insert: "\\frac{}{}", category: "أساسي" },
-  { label: "()", insert: "()", category: "أساسي" },
-  // 4AM Specific
-  { label: "sin", insert: "\\sin()", category: "مثلثات" },
-  { label: "cos", insert: "\\cos()", category: "مثلثات" },
-  { label: "tan", insert: "\\tan()", category: "مثلثات" },
-  { label: "°", insert: "^{\\circ}", category: "مثلثات" },
-  // Vectors
-  { label: "vec", insert: "\\vec{}", category: "أشعة" },
-  { label: "AB", insert: "\\vec{AB}", category: "أشعة" },
-  // Logic
-  { label: "±", insert: "\\pm", category: "منطق" },
-  { label: "≠", insert: "\\neq", category: "منطق" },
-  { label: "⇒", insert: "\\Rightarrow", category: "منطق" },
-  { label: "⇔", insert: "\\Leftrightarrow", category: "منطق" },
-  { label: "in", insert: "\\in", category: "منطق" },
-  // Systems
-  { label: "{", insert: "\\begin{cases}  \\\\  \\end{cases}", category: "جملة" },
-];
+const SYMBOLS: Record<Level, { label: string; insert: string; category: string }[]> = {
+  primary: [
+    { label: "+", insert: "+", category: "أساسي" },
+    { label: "-", insert: "-", category: "أساسي" },
+    { label: "×", insert: "\\times", category: "أساسي" },
+    { label: "÷", insert: "\\div", category: "أساسي" },
+    { label: "=", insert: "=", category: "أساسي" },
+    { label: "frac", insert: "\\frac{}{}", category: "كسور" },
+  ],
+  middle: [
+    { label: "x²", insert: "x^2", category: "أساسي" },
+    { label: "√", insert: "\\sqrt{}", category: "أساسي" },
+    { label: "frac", insert: "\\frac{}{}", category: "أساسي" },
+    { label: "sin", insert: "\\sin()", category: "مثلثات" },
+    { label: "cos", insert: "\\cos()", category: "مثلثات" },
+    { label: "tan", insert: "\\tan()", category: "مثلثات" },
+    { label: "°", insert: "^{\\circ}", category: "مثلثات" },
+    { label: "vec", insert: "\\vec{}", category: "أشعة" },
+    { label: "⇒", insert: "\\Rightarrow", category: "منطق" },
+    { label: "{", insert: "\\begin{cases}  \\\\  \\end{cases}", category: "جملة" },
+  ],
+  secondary: [
+    { label: "lim", insert: "\\lim_{x \\to }", category: "تحليل" },
+    { label: "∫", insert: "\\int_{}^{} dx", category: "تحليل" },
+    { label: "Σ", insert: "\\sum_{i=0}^{n}", category: "تحليل" },
+    { label: "ln", insert: "\\ln()", category: "دوال" },
+    { label: "eˣ", insert: "e^{x}", category: "دوال" },
+    { label: "i", insert: "i", category: "مركبة" },
+    { label: "z̄", insert: "\\bar{z}", category: "مركبة" },
+    { label: "∞", insert: "\\infty", category: "أساسي" },
+    { label: "f'", insert: "f'(x)", category: "اشتقاق" },
+    { label: "ℝ", insert: "\\mathbb{R}", category: "مجموعات" },
+  ]
+};
 
-export function AlgebraEditor({ onSubmit, placeholder = "أدخل خطوات الحل...", className = "" }: AlgebraEditorProps) {
+const LEVEL_LABELS: Record<Level, string> = {
+  primary: "ابتدائي",
+  middle: "متوسط",
+  secondary: "ثانوي (BAC)"
+};
+
+export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder = "أدخل خطوات الحل...", className = "" }: AlgebraEditorProps) {
+  const [level, setLevel] = useState<Level>(initialLevel);
   const [steps, setSteps] = useState<string[]>([""]);
   const [activeStep, setActiveStep] = useState(0);
   const [preview, setPreview] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showLevelSelect, setShowLevelSelect] = useState(false);
   const inputRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
 
   const updateStep = (index: number, value: string) => {
@@ -98,10 +123,16 @@ export function AlgebraEditor({ onSubmit, placeholder = "أدخل خطوات ا�
       <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-primary/10 via-transparent to-transparent border-b border-border/50">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center text-primary shadow-inner">
-            <Edit3 size={18} />
+            <Calculator size={18} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-foreground">محرر الجبر المتقدم</h3>
+            <button 
+              onClick={() => setShowLevelSelect(!showLevelSelect)}
+              className="flex items-center gap-1.5 text-sm font-bold text-foreground hover:text-primary transition-colors"
+            >
+              محرر الجبر ({LEVEL_LABELS[level]})
+              <ChevronDown size={14} className={`transition-transform ${showLevelSelect ? "rotate-180" : ""}`} />
+            </button>
             <p className="text-[10px] text-muted-foreground">صمم حلك بطريقة رياضية دقيقة</p>
           </div>
         </div>
@@ -127,7 +158,36 @@ export function AlgebraEditor({ onSubmit, placeholder = "أدخل خطوات ا�
         </div>
       </div>
 
-      {/* Templates Panel */}
+      {/* Level Selector Modal/Panel */}
+      <AnimatePresence>
+        {showLevelSelect && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-primary/5 border-b border-border/50 overflow-hidden"
+          >
+            <div className="p-3 flex gap-2">
+              {(Object.keys(LEVEL_LABELS) as Level[]).map(l => (
+                <button
+                  key={l}
+                  onClick={() => { setLevel(l); setShowLevelSelect(false); }}
+                  className={`flex-1 flex flex-col items-center p-2 rounded-xl border transition-all ${
+                    level === l 
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm" 
+                      : "bg-card border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <GraduationCap size={16} />
+                  <span className="text-[10px] font-bold mt-1">{LEVEL_LABELS[l]}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Templates Panel - Filtered by Level */}
       <AnimatePresence>
         {showTemplates && (
           <motion.div 
@@ -137,7 +197,7 @@ export function AlgebraEditor({ onSubmit, placeholder = "أدخل خطوات ا�
             className="overflow-hidden bg-muted/20 border-b border-border/50"
           >
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-              {ALGEBRA_TEMPLATES.map((tmpl, idx) => (
+              {ALGEBRA_TEMPLATES.filter(t => t.level === level).map((tmpl, idx) => (
                 <button
                   key={idx}
                   onClick={() => applyTemplate(tmpl.steps)}
@@ -152,18 +212,33 @@ export function AlgebraEditor({ onSubmit, placeholder = "أدخل خطوات ا�
         )}
       </AnimatePresence>
 
-      {/* Toolbar - Optimized for 4AM */}
+      {/* Toolbar - Dynamic by Level */}
       <div className="flex flex-wrap gap-1.5 px-4 py-3 border-b border-border/50 bg-muted/10">
-        {SYMBOLS.map((sym, i) => (
+        {SYMBOLS[level].map((sym, i) => (
           <button
             key={i}
             onClick={() => insertSymbol(sym.insert)}
             className="px-3 py-1.5 rounded-lg text-xs font-mono bg-card border border-border/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary transition-all shadow-sm active:scale-95"
             title={sym.category}
           >
-            {sym.label}
+            <LatexRenderer latex={sym.label} />
           </button>
         ))}
+        {/* Fillers to keep basic symbols always available unless primary */}
+        {level !== "primary" && (
+          <>
+            <div className="w-px h-6 bg-border mx-1" />
+            {[{ label: "±", insert: "\\pm" }, { label: "≠", insert: "\\neq" }, { label: "×", insert: "\\times" }].map((sym, i) => (
+              <button
+                key={`shared-${i}`}
+                onClick={() => insertSymbol(sym.insert)}
+                className="px-3 py-1.5 rounded-lg text-xs font-mono bg-card border border-border/60 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
+              >
+                {sym.label}
+              </button>
+            ))}
+          </>
+        )}
       </div>
 
       {/* Solving Canvas */}
@@ -205,11 +280,6 @@ export function AlgebraEditor({ onSubmit, placeholder = "أدخل خطوات ا�
                       dir="ltr"
                       style={{ textAlign: "left" }}
                     />
-                    {activeStep === i && (
-                      <div className="absolute left-3 bottom-2 flex gap-1 animate-pulse">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -218,7 +288,6 @@ export function AlgebraEditor({ onSubmit, placeholder = "أدخل خطوات ا�
                 <button
                   onClick={() => removeStep(i)}
                   className="p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors"
-                  title="حذف الخطوة"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -242,34 +311,17 @@ export function AlgebraEditor({ onSubmit, placeholder = "أدخل خطوات ا�
       <div className="px-5 py-4 border-t border-border/50 bg-muted/20 flex items-center justify-between">
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
           <Type size={12} />
-          <span>ادعم حلك بالرموز والخطوات المنطقية</span>
+          <span>ادعم حلك بالرموز والخطوات المنطقية لمستواك</span>
         </div>
         <button
           onClick={handleSubmit}
           disabled={!hasContent}
-          className="group relative flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-primary/20 overflow-hidden"
+          className="group relative flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 transition-all disabled:opacity-40 shadow-lg"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CheckCircle2 size={14} />
-          <span>تأكيد الإجابة النهائية</span>
+          <span>تأكيد الإجابة</span>
         </button>
       </div>
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: hsl(var(--border));
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: hsl(var(--primary) / 0.3);
-        }
-      `}</style>
     </div>
   );
 }
