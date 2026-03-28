@@ -22,11 +22,25 @@ import {
 import { 
   detectScoringParams, 
   computeBaseScore, 
-  categorizeForExam, 
-  suggestPoints, 
   detectPedagogicalGaps,
   type PedagogicalGap
 } from "@/engine/exercise-scoring";
+import { 
+  generateKBOnlyExam, 
+  generateAIOnlyExam, 
+  generateHybridExam, 
+  type GenerationResult 
+} from "@/engine/AutomatedGeneratorService";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { Loader2, Wand2, Zap, Database, Combine } from "lucide-react";
+import { toast } from "sonner";
 
 import { ExamPreview } from "./ExamPreview";
 import { ExamKBPicker } from "./ExamKBPicker";
@@ -55,9 +69,11 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
   const [showPreview, setShowPreview] = useState(false);
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [sampleSize, setSampleSize] = useState(0);
-  const [version, setVersion] = useState(1);
   const [changeSummary, setChangeSummary] = useState("");
   const [gaps, setGaps] = useState<PedagogicalGap[]>([]);
+  const [isComparing, setIsComparing] = useState(false);
+  const [comparisonResults, setComparisonResults] = useState<GenerationResult[]>([]);
+  const [generating, setGenerating] = useState(false);
 
   const template = ALL_TEMPLATES.find(t => t.id === format);
 
@@ -144,6 +160,33 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
         exercises: s.exercises.map(e => e.id === exerciseId ? { ...e, points } : e)
       } : s
     ));
+  };
+
+  const runTripleGeneration = async () => {
+    if (!template) return;
+    setGenerating(true);
+    setIsComparing(true);
+    try {
+      const [kb, ai, hybrid] = await Promise.all([
+        generateKBOnlyExam(template, grade),
+        generateAIOnlyExam(template, grade, structuralPatterns, styleProfile),
+        generateHybridExam(template, grade, structuralPatterns)
+      ]);
+      setComparisonResults([kb, ai, hybrid]);
+    } catch (e) {
+      console.error(e);
+      toast.error("فشل التوليد التلقائي. تأكد من إعداد مفتاح AI.");
+      setIsComparing(false);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const selectGeneratedExam = (res: GenerationResult) => {
+    setSections(res.exam.sections);
+    setTitle(res.exam.title);
+    setIsComparing(false);
+    toast.success(`تم تطبيق ${res.engine === 'kb_only' ? 'النموذج الواقعي' : res.engine === 'ai_only' ? 'النموذج الابتكاري' : 'النموذج الهجين'}`);
   };
 
   const addSection = () => {
@@ -257,6 +300,24 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-foreground">المنشئ الذكي للامتحانات</h1>
+          <p className="text-xs text-muted-foreground mt-1">بناء تربوي متكامل بمعايير الجيل الثاني</p>
+        </div>
+        {step === "exercises" && (
+          <Button 
+            onClick={runTripleGeneration} 
+            variant="outline"
+            className="border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary gap-2"
+          >
+            <Wand2 className="w-4 h-4" />
+            <span className="text-xs font-black">توليد سحري (3 محركات)</span>
+          </Button>
+        )}
+      </div>
+
       {/* ── Step indicator ── */}
       <div className="flex items-center gap-2">
         {(["template", "configure", "exercises", "preview"] as Step[]).map((s, i) => {
@@ -619,6 +680,82 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
           />
         )}
       </AnimatePresence>
+      {/* ── Comparison Dialog ── */}
+      <Dialog open={isComparing} onOpenChange={setIsComparing}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-foreground text-right border-b pb-4">مقارنة محركات التوليد التلقائي</DialogTitle>
+            <DialogDescription className="text-right pt-2 font-bold text-primary">
+              اختر المنهجية التي تناسب احتياجاتك التربوية اليوم
+            </DialogDescription>
+          </DialogHeader>
+
+          {generating ? (
+            <div className="flex flex-col items-center justify-center py-20 space-y-4">
+              <Loader2 className="w-12 h-12 text-primary animate-spin" />
+              <p className="text-sm font-black animate-pulse">جاري الاستعلام من 3 محركات بيداغوجية...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              {comparisonResults.map((res) => (
+                <div key={res.engine} className="p-4 rounded-xl border-2 border-border hover:border-primary transition-all flex flex-col space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase ${
+                      res.engine === 'kb_only' ? 'bg-blue-100 text-blue-700' :
+                      res.engine === 'ai_only' ? 'bg-purple-100 text-purple-700' :
+                      'bg-amber-100 text-amber-700'
+                    }`}>
+                      {res.engine === 'kb_only' ? 'واقعي (KB)' : 
+                       res.engine === 'ai_only' ? 'ابتكاري (AI)' : 
+                       'هجين (Hybrid)'}
+                    </span>
+                    {res.engine === 'kb_only' ? <Database className="w-4 h-4" /> :
+                     res.engine === 'ai_only' ? <Zap className="w-4 h-4" /> :
+                     <Combine className="w-4 h-4" />}
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-bold">
+                        <span>الواقعية (Authenticity)</span>
+                        <span>{res.metrics.authenticity}%</span>
+                      </div>
+                      <Progress value={res.metrics.authenticity} className="h-1" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-bold">
+                        <span>الابتكار (Originality)</span>
+                        <span>{res.metrics.originality}%</span>
+                      </div>
+                      <Progress value={res.metrics.originality} className="h-1" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-bold text-primary">
+                        <span>الدقة البيداغوجية</span>
+                        <span>{res.metrics.pedagogicalMatch}%</span>
+                      </div>
+                      <Progress value={res.metrics.pedagogicalMatch} className="h-1 bg-primary/20" />
+                    </div>
+                  </div>
+
+                  <div className="flex-1 bg-muted/30 rounded-lg p-3 text-[10px] space-y-2 overflow-hidden border border-border/50">
+                    <p className="font-black border-b border-border pb-1">محتوى العينة:</p>
+                    {res.exam.sections[0]?.exercises[0]?.text && (
+                      <p className="line-clamp-6 text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                        {res.exam.sections[0].exercises[0].text}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button onClick={() => selectGeneratedExam(res)} className="w-full font-black text-xs gap-2 py-5">
+                    <CheckCircle2 className="w-4 h-4" /> تطبيق هذا النموذج
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
