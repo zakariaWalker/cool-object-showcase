@@ -98,14 +98,14 @@
     --glow-primary: 0 0 35px hsl(210 70% 60% / 0.30);
     --glow-accent: 0 0 35px hsl(34 70% 58% / 0.30);
 
-    --sidebar-background: 214 22% 10%;
-    --sidebar-foreground: 38 18% 90%;
-    --sidebar-primary: 204 68% 58%;
-    --sidebar-primary-foreground: 214 22% 10%;
-    --sidebar-accent: 214 18% 24%;
-    --sidebar-accent-foreground: 38 18% 90%;
-    --sidebar-border: 214 16% 30%;
-    --sidebar-ring: 204 68% 58%;
+    --sidebar-background: 220 20% 8%;
+    --sidebar-foreground: 40 15% 92%;
+    --sidebar-primary: 210 70% 60%;
+    --sidebar-primary-foreground: 220 20% 8%;
+    --sidebar-accent: 220 14% 20%;
+    --sidebar-accent-foreground: 40 15% 92%;
+    --sidebar-border: 220 12% 26%;
+    --sidebar-ring: 210 70% 60%;
   }
 }
 
