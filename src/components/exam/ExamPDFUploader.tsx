@@ -219,6 +219,11 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
         points: q.points || 0,
         type: q.type || "unclassified",
         difficulty: q.difficulty || "medium",
+        cognitive_level: (q as any).cognitive_level || "apply",
+        bloom_level: (q as any).bloom_level || 3,
+        estimated_time_min: (q as any).estimated_time_min || 0,
+        step_count: (q as any).step_count || 0,
+        concept_count: (q as any).concept_count || 0,
         concepts: q.concepts || [],
         linked_pattern_ids: [],
         linked_exercise_ids: [],
@@ -614,11 +619,18 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
                   </p>
                 </div>
                 {h.status === "completed" && (
-                  <Button size="sm" variant="outline" className="text-[10px] px-2 py-1" disabled={importing}
-                    onClick={(e) => { e.stopPropagation(); importToKB(h.id); }}>
-                    {importing ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowLeftRight className="w-3 h-3 ml-1" />}
-                    نقل للأسئلة
-                  </Button>
+                  <div className="flex flex-col gap-2 items-end">
+                    <Button size="sm" variant="outline" className="text-[10px] px-2 py-1" disabled={importing}
+                      onClick={(e) => { e.stopPropagation(); importToKB(h.id); }}>
+                      {importing ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowLeftRight className="w-3 h-3 ml-1" />}
+                      نقل للأسئلة
+                    </Button>
+                    {(h as any).extracted_metadata && (
+                      <span className="text-[8px] bg-primary/5 text-primary px-2 py-0.5 rounded border border-primary/20">
+                        🎨 تم استخراج النمط البصري
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             ))}

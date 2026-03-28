@@ -35,6 +35,26 @@ export interface ExamExercise {
   source?: "kb" | "manual" | "ai";
 }
 
+export interface ExamStyleProfile {
+  typography: {
+    math: "serif" | "sans";
+    text: "serif" | "sans";
+    hierarchy: "high" | "balanced";
+  };
+  layout: {
+    columns: 1 | 2;
+    spacing: "compact" | "normal" | "wide";
+    exerciseBorder: boolean;
+  };
+  typographyNotes?: string;
+}
+
+export interface ExamStructuralPattern {
+  difficultyCurve: "linear" | "stepped" | "u-shaped";
+  explicitImplicitRatio: number;
+  structuralNotes?: string;
+}
+
 export interface Exam {
   id: string;
   title: string;
@@ -45,6 +65,8 @@ export interface Exam {
   sections: ExamSection[];
   createdAt: string;
   status: "draft" | "ready" | "published";
+  styleProfile?: ExamStyleProfile;
+  structuralPatterns?: ExamStructuralPattern;
   metadata?: {
     school?: string;
     teacher?: string;

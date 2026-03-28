@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Exam, ExamSection, ExamExercise, ExamFormat,
+  ExamStyleProfile, ExamStructuralPattern,
   ALL_TEMPLATES, GRADE_OPTIONS, TYPE_LABELS_AR,
   generateExamId, generateSectionId,
 } from "@/engine/exam-types";
@@ -28,8 +29,11 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
   const [totalPoints, setTotalPoints] = useState(exam?.totalPoints || 20);
   const [sections, setSections] = useState<ExamSection[]>(exam?.sections || []);
   const [metadata, setMetadata] = useState(exam?.metadata || {});
+  const [styleProfile, setStyleProfile] = useState<ExamStyleProfile | undefined>(exam?.styleProfile);
+  const [structuralPatterns, setStructuralPatterns] = useState<ExamStructuralPattern | undefined>(exam?.structuralPatterns);
   const [showKBPicker, setShowKBPicker] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [loadingInsights, setLoadingInsights] = useState(false);
 
   const template = ALL_TEMPLATES.find(t => t.id === format);
 
@@ -43,7 +47,31 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
       points: s.points,
       exercises: [],
     })));
+    fetchStyleInsights(template.format);
     setStep("configure");
+  };
+
+  const fetchStyleInsights = async (format: ExamFormat) => {
+    setLoadingInsights(true);
+    try {
+      const { data, error } = await supabase
+        .from("exam_uploads")
+        .select("extracted_metadata, extracted_patterns")
+        .eq("format", format)
+        .eq("status", "completed")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        if (data.extracted_metadata) setStyleProfile(data.extracted_metadata as any);
+        if (data.extracted_patterns) setStructuralPatterns(data.extracted_patterns as any);
+      }
+    } catch (e) {
+      console.error("Error fetching insights:", e);
+    } finally {
+      setLoadingInsights(false);
+    }
   };
 
   const currentPoints = sections.reduce((sum, s) => sum + s.exercises.reduce((es, e) => es + e.points, 0), 0);
@@ -139,6 +167,8 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
       createdAt: exam?.createdAt || new Date().toISOString(),
       status: "draft",
       metadata,
+      styleProfile,
+      structuralPatterns,
     };
     onSave(examData);
   };
@@ -230,6 +260,21 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
             </div>
             <div className="rounded-xl border border-border bg-card p-5 space-y-4">
               <h3 className="text-xs font-black text-foreground">📎 معلومات إضافية (اختياري)</h3>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/10 mb-2">
+                <div className="space-y-1">
+                  <div className="text-[10px] font-bold text-primary">النمط البصري والتربوي</div>
+                  <div className="text-[9px] text-muted-foreground">
+                    {loadingInsights ? "جاري جلب الأنماط..." : 
+                     styleProfile ? "✅ تم تطبيق نمط حقيقي من الامتحانات السابقة" : 
+                     "⚠️ لا يوجد نمط حقيقي متاح حالياً"}
+                  </div>
+                </div>
+                {styleProfile && (
+                  <div className="text-[9px] px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-bold">
+                    نشط
+                  </div>
+                )}
+              </div>
               <div>
                 <label className="text-xs font-bold text-muted-foreground block mb-1">اسم المؤسسة</label>
                 <input value={metadata.school || ""} onChange={e => setMetadata({ ...metadata, school: e.target.value })}
@@ -407,6 +452,8 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
               createdAt: new Date().toISOString(),
               status: "draft",
               metadata,
+              styleProfile,
+              structuralPatterns,
             }}
             onClose={() => setShowPreview(false)}
           />

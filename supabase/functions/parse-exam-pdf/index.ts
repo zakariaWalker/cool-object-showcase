@@ -14,6 +14,11 @@ interface ExtractedQuestion {
   points: number;
   type: string;
   difficulty: string;
+  cognitive_level: string;
+  bloom_level: number;
+  estimated_time_min: number;
+  step_count: number;
+  concept_count: number;
   concepts: string[];
   raw_latex: string | null;
 }
@@ -113,31 +118,46 @@ Deno.serve(async (req) => {
       });
     }
 
-    const prompt = `أنت محلل امتحانات رياضيات جزائرية. حلل هذا الامتحان واستخرج كل الأسئلة بالتنسيق التالي.
+    const prompt = `أنت محلل امتحانات رياضيات جزائرية خبير. حلل هذا الامتحان بدقة واستخرج كل الأسئلة بالإضافة إلى تحليل معمق للهيكل والأسلوب التربوي والبصري.
+
+تحليل الأسلوب والهيكل (style_metadata):
+- typography: نوع الخطوط المستخدمة (هل هي Serif للرياضيات و Sans-serif للنصوص؟)، أحجام الخطوط النسبية (العناوين، النصوص)، هل هناك خطوط غليظة للأرقام؟
+- layout: هل التنسيق عمود واحد أم عمودين؟ هل المسافات بين الأسطر واسعة أم ضيقة؟ هل هناك صناديق أو حدود حول التمارين؟
+- structure: كيف يتم ترتيب التمارين؟ هل هناك تدرج واضح في الصعوبة (تدرج خطي)؟ هل البداية بتمارين بسيطة ثم مسألة مركبة؟
+- questioning_approach: هل الأسئلة مباشرة (Explicit) أم غامضة تتطلب استنتاجاً (Implicit)؟ ما هي نسبة الأسئلة التي تتطلب برهاناً؟
 
 لكل سؤال استخرج:
-- section_label: اسم القسم (التمرين الأول، التمرين الثاني، المسألة، إلخ)
-- question_number: رقم السؤال (1, 2, 3...)
-- sub_question: السؤال الفرعي إن وجد أو null
-- text: نص السؤال كاملاً مع الصيغ الرياضية
-- points: عدد النقاط (إن كان مذكوراً، وإلا قدّر)
-- type: نوع السؤال (algebra, equations, geometry, statistics, probability, functions, calculus, sequences, trigonometry, arithmetic, fractions, number_sets, proportionality, prove, factor, solve_equation, analytic_geometry, systems, transformations, solids, other)
-- difficulty: مستوى الصعوبة (easy, medium, hard)
-- concepts: قائمة المفاهيم الرياضية المستخدمة
-- raw_latex: الصيغة الرياضية بتنسيق LaTeX إن أمكن
+- section_label: اسم القسم (التمرين الأول، التمرين الثاني...)
+- question_number: رقم السؤال
+- sub_question: السؤال الفرعي أو null
+- text: نص السؤال كاملاً
+- points: عدد النقاط
+- type: نوع السؤال (algebra, geometry, functions...)
+- difficulty: (easy, medium, hard)
+- cognitive_level: (remember, understand, apply, analyze, evaluate, create)
+- bloom_level: (1, 2, 3, 4, 5, 6)
+- estimated_time_min: عدد دقائق تقريبي للحل
+- step_count: عدد الخطوات المتوقع للحل
+- concept_count: عدد المفاهيم الرياضية المتداخلة
+- concepts: قائمة المفاهيم الرياضية
+- raw_latex: الصيغة الرياضية بتنسيق LaTeX
 
-حدد أيضاً:
-- format: نوع الامتحان (bem, bac, regular)
-- year: السنة إن كانت مذكورة
-- session: الدورة (juin, septembre, remplacement) إن كانت مذكورة
-- grade: المستوى الدراسي
-
-أعد النتيجة كـ JSON فقط بهذا الشكل:
+أعد النتيجة كـ JSON فقط بالهيكل التالي:
 {
   "format": "bem|bac|regular",
   "year": "2024",
   "session": "juin",
   "grade": "middle_4",
+  "style_metadata": {
+    "typography": { "math": "serif|sans", "text": "serif|sans", "hierarchy": "high|balanced" },
+    "layout": { "columns": 1|2, "spacing": "compact|normal|wide", "exercise_border": true|false },
+    "typography_notes": "وصف دقيق للخطوط والأسلوب البصري"
+  },
+  "structural_patterns": {
+    "difficulty_curve": "linear|stepped|u-shaped",
+    "explicit_implicit_ratio": 0.8,
+    "structural_notes": "وصف لطريقة طرح الأسئلة والتدرج في الصعوبة"
+  },
   "questions": [...]
 }`;
 
@@ -150,7 +170,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-2.0-flash",
           messages: [
             {
               role: "user",
@@ -178,27 +198,6 @@ Deno.serve(async (req) => {
       const errText = await aiResponse.text();
       console.error("AI gateway error:", aiResponse.status, errText);
       
-      if (aiResponse.status === 429) {
-        await supabase
-          .from("exam_uploads")
-          .update({ status: "failed", error_message: "Rate limit exceeded, try again later" })
-          .eq("id", upload_id);
-        return new Response(JSON.stringify({ error: "Rate limit exceeded, please try again later" }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (aiResponse.status === 402) {
-        await supabase
-          .from("exam_uploads")
-          .update({ status: "failed", error_message: "AI credits exhausted" })
-          .eq("id", upload_id);
-        return new Response(JSON.stringify({ error: "AI credits exhausted" }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
       await supabase
         .from("exam_uploads")
         .update({ status: "failed", error_message: `AI error: ${aiResponse.status}` })
@@ -219,7 +218,7 @@ Deno.serve(async (req) => {
         .from("exam_uploads")
         .update({ status: "failed", error_message: "Could not parse AI response" })
         .eq("id", upload_id);
-      return new Response(JSON.stringify({ error: "Parse failed", raw: aiText }), {
+      return new Response(JSON.stringify({ error: "Parse failed" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -235,6 +234,8 @@ Deno.serve(async (req) => {
         year: parsed.year || upload.year,
         session: parsed.session || upload.session,
         grade: parsed.grade || upload.grade,
+        extracted_metadata: parsed.style_metadata || {},
+        extracted_patterns: parsed.structural_patterns || {},
         status: "completed",
       })
       .eq("id", upload_id);
@@ -250,6 +251,11 @@ Deno.serve(async (req) => {
         points: q.points || 0,
         type: q.type || "unclassified",
         difficulty: q.difficulty || "medium",
+        cognitive_level: q.cognitive_level || "apply",
+        bloom_level: q.bloom_level || 3,
+        estimated_time_min: q.estimated_time_min || 0,
+        step_count: q.step_count || 0,
+        concept_count: q.concept_count || 0,
         concepts: q.concepts || [],
         raw_latex: q.raw_latex,
         linked_pattern_ids: [],
@@ -278,6 +284,11 @@ Deno.serve(async (req) => {
           points: q.points || 0,
           type: q.type || "unclassified",
           difficulty: q.difficulty || "medium",
+          cognitive_level: q.cognitive_level || "apply",
+          bloom_level: q.bloom_level || 3,
+          estimated_time_min: q.estimated_time_min || 0,
+          step_count: q.step_count || 0,
+          concept_count: q.concept_count || 0,
           concepts: q.concepts || [],
           linked_pattern_ids: [],
           linked_exercise_ids: [],
@@ -311,6 +322,8 @@ Deno.serve(async (req) => {
         grade: parsed.grade,
         total_questions: questions.length,
         total_points: questions.reduce((s, q) => s + (q.points || 0), 0),
+        style: parsed.style_metadata,
+        structure: parsed.structural_patterns,
       },
     });
 

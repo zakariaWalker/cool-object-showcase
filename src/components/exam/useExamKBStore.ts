@@ -21,6 +21,11 @@ export interface ExamQuestion {
   points: number;
   type: string;
   difficulty: "easy" | "medium" | "hard";
+  cognitiveLevel: string;
+  bloomLevel: number;
+  estimatedTimeMin: number;
+  stepCount: number;
+  conceptCount: number;
   concepts: string[];
   linkedPatternIds: string[];
   linkedExerciseIds: string[];
@@ -81,6 +86,11 @@ export function useExamKBStore(primaryPatterns: Pattern[] = []) {
           points: q.points || 0,
           type: q.type || "unclassified",
           difficulty: q.difficulty || "medium",
+          cognitiveLevel: q.cognitive_level || "apply",
+          bloomLevel: q.bloom_level || 3,
+          estimatedTimeMin: q.estimated_time_min || 0,
+          stepCount: q.step_count || 0,
+          conceptCount: q.concept_count || 0,
           concepts: Array.isArray(q.concepts) ? q.concepts : [],
           linkedPatternIds: Array.isArray(q.linked_pattern_ids) ? q.linked_pattern_ids : [],
           linkedExerciseIds: Array.isArray(q.linked_exercise_ids) ? q.linked_exercise_ids : [],
@@ -158,6 +168,11 @@ export function useExamKBStore(primaryPatterns: Pattern[] = []) {
         points: q.points,
         type: q.type,
         difficulty: q.difficulty,
+        cognitive_level: q.cognitiveLevel,
+        bloom_level: q.bloomLevel,
+        estimated_time_min: q.estimatedTimeMin,
+        step_count: q.stepCount,
+        concept_count: q.conceptCount,
         concepts: q.concepts,
         linked_pattern_ids: q.linkedPatternIds,
         linked_exercise_ids: q.linkedExerciseIds,
