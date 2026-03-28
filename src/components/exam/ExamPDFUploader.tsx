@@ -537,6 +537,11 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
                           {u.result.questions_count} سؤال
                         </span>
                       )}
+                      {u.status === "done" && (
+                        <span className="mr-2 text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold animate-pulse">
+                          ✨ مساهمة في التطور التربوي
+                        </span>
+                      )}
                       {u.error && <span className="text-destructive mr-2">{u.error}</span>}
                     </p>
                     {(u.status === "uploading" || u.status === "analyzing") && (

@@ -362,17 +362,34 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
                       ✨ {changeSummary}
                     </p>
                   )}
-                  {sampleSize > 0 && (
-                    <div className="flex items-center gap-1 mt-1">
-                      <div className="text-[8px] text-primary/70">دقة الذكاء الاصطناعي:</div>
-                      <div className="h-1 w-12 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-primary" style={{ width: `${Math.min((sampleSize / (format === "regular" ? 20 : 10)) * 100, 100)}%` }} />
+                  <div className="pt-2">
+                    <div className="flex justify-between items-end mb-1">
+                      <div className="text-[10px] font-black text-primary flex items-center gap-1">
+                        🏆 مستوى ذكاء المنظمة
+                        <span className="text-[8px] bg-primary/20 px-1 rounded">v{version}</span>
                       </div>
-                      <span className="text-[8px] font-bold text-primary">
-                        {sampleSize >= (format === "regular" ? 20 : 10) ? "مكتملة" : "تتطور..."}
-                      </span>
+                      <div className="text-[9px] font-bold text-primary/60">
+                        {Math.min(version * 10, 100)}%
+                        {version >= 10 && " (الذروة ✨)"}
+                      </div>
                     </div>
-                  )}
+                    <div className="h-2 bg-primary/10 rounded-full overflow-hidden border border-primary/5">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(version * 10, 100)}%` }}
+                        className={`h-full transition-all duration-1000 ${
+                          version >= 10 ? "bg-gradient-to-l from-amber-400 via-primary to-amber-400 animate-pulse" : 
+                          version >= 7 ? "bg-primary" : 
+                          "bg-primary/60"
+                        }`}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-1 px-0.5">
+                      <span className="text-[7px] text-muted-foreground">تأسيس</span>
+                      <span className="text-[7px] text-primary/40">تدرج</span>
+                      <span className="text-[7px] text-primary/80 font-bold">الذروة التربوية</span>
+                    </div>
+                  </div>
                 </div>
                 {styleProfile && (
                   <div className="text-[9px] px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-bold">
