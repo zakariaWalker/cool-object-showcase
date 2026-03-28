@@ -1,4 +1,5 @@
 // ===== App Shell — Unified layout with workflow navigation =====
+import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GamificationDashboard } from "./GamificationDashboard";
 import { QEDLogo } from "./QEDLogo";
@@ -23,9 +24,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const currentPath = location.pathname;
   const { user, profile, isAdmin, signOut } = useAuth();
+  const isGuest = !user;
+
+  // Protected routes check for guests
+  // Guests can ONLY access landing ("/") and Diagnostic Assessment ("/gaps")
+  useEffect(() => {
+    if (isGuest && currentPath !== "/" && currentPath !== "/auth" && currentPath !== "/gaps" && !currentPath.startsWith("/tma")) {
+      navigate("/auth");
+    }
+  }, [isGuest, currentPath, navigate]);
 
   // Don't show shell on landing, auth, or TMA pages
   if (currentPath === "/" || currentPath === "/auth" || currentPath.startsWith("/tma")) return <>{children}</>;
+
+  // Filter steps for navigation: Guests only see Diagnostic
+  const visibleSteps = WORKFLOW_STEPS.filter(step => {
+    if (isGuest) return step.path === "/gaps"; // Only Diagnostic for guests
+    return true;
+  });
 
   const currentStep = WORKFLOW_STEPS.find(s => s.path === currentPath)?.step ?? -1;
 
@@ -53,7 +69,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Workflow steps */}
           <div className="flex items-center gap-0.5 overflow-x-auto flex-1">
-            {WORKFLOW_STEPS.map((item, i) => {
+            {visibleSteps.map((item, i) => {
               const isActive = currentPath === item.path || 
                 (item.path === "/exercises" && ["/algebra", "/geometry", "/statistics", "/probability", "/functions"].includes(currentPath));
               const isPast = item.step > 0 && item.step < currentStep;
@@ -136,7 +152,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Progress indicator */}
-        {currentStep > 0 && (
+        {!isGuest && currentStep >= 0 && (
           <div className="h-0.5 bg-muted">
             <div
               className="h-full bg-primary transition-all duration-500"

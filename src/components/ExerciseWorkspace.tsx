@@ -541,8 +541,9 @@ export function ExerciseWorkspace({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: 32,
+                padding: "32px 16px",
                 background: "hsl(var(--background))",
+                overflowY: "auto",
               }} className="dot-grid">
                 <div style={{ textAlign: "center", maxWidth: 520 }} dir="rtl">
                   <div style={{ fontSize: 48, marginBottom: 12 }}>🎓</div>
