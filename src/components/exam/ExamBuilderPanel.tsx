@@ -1,13 +1,15 @@
-// ===== Exam Builder Panel — Template selection + exercise management =====
-import { useState, useMemo } from "react";
+// ===== Exam Builder Panel — Template selection + exercise management + auto-scoring =====
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Exam, ExamSection, ExamExercise, ExamFormat,
   ALL_TEMPLATES, GRADE_OPTIONS, TYPE_LABELS_AR,
   generateExamId, generateSectionId,
 } from "@/engine/exam-types";
+import { detectScoringParams, computeBaseScore, categorizeForExam, suggestPoints, COGNITIVE_LABELS_AR, type ExerciseScoringParams, type CognitiveLevel } from "@/engine/exercise-scoring";
 import { ExamPreview } from "./ExamPreview";
 import { ExamKBPicker } from "./ExamKBPicker";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   exam: Exam | null;
