@@ -1,38 +1,6 @@
-// ===== Exercise Scoring Engine =====
-// Computes a base score for each exercise based on multiple parameters
-// Used for exam building, categorization, and automatic point allocation
+import { CognitiveLevel, ExerciseScoringParams, ExamSection, ExamStructuralPattern, COGNITIVE_LABELS_AR } from "./exam-types";
 
-export interface ExerciseScoringParams {
-  difficulty: number;        // 1-5
-  cognitiveLevel: CognitiveLevel;
-  bloomLevel: number;        // 1-6
-  conceptCount: number;      // how many concepts involved
-  stepCount: number;         // estimated steps to solve
-  estimatedTimeMin: number;  // time in minutes
-  hasSubQuestions: boolean;
-  requiresProof: boolean;
-  requiresGraph: boolean;
-  requiresConstruction: boolean;
-  domain: string;
-  subdomain: string;
-}
-
-export type CognitiveLevel = 
-  | "remember"     // التذكر — recall facts/formulas
-  | "understand"   // الفهم — explain, interpret
-  | "apply"        // التطبيق — use formula in standard context
-  | "analyze"      // التحليل — break down, compare
-  | "evaluate"     // التقييم — justify, critique
-  | "create";      // الإبداع — design, prove, construct
-
-export const COGNITIVE_LABELS_AR: Record<CognitiveLevel, string> = {
-  remember: "تذكر",
-  understand: "فهم",
-  apply: "تطبيق",
-  analyze: "تحليل",
-  evaluate: "تقييم",
-  create: "إبداع",
-};
+export { COGNITIVE_LABELS_AR };
 
 export const BLOOM_WEIGHTS: Record<CognitiveLevel, number> = {
   remember: 1,
@@ -192,4 +160,106 @@ export function categorizeForExam(params: ExerciseScoringParams): ExerciseCatego
     suggestedPoints: baseScore,
     reasoning: `تحليل/تقييم — صعوبة ${params.difficulty}/5`,
   };
+}
+
+// ── Pedagogical Gap Analysis ──
+
+export interface PedagogicalGap {
+  id: string;
+  type: "imbalance" | "missing_skill" | "missing_level" | "structure";
+  severity: "critical" | "warning" | "tip";
+  titleAr: string;
+  messageAr: string;
+  actionAr: string;
+}
+
+/**
+ * Compares the current built exam against the AI-learned structural pattern
+ * to detect pedagogical gaps.
+ */
+export function detectPedagogicalGaps(
+  sections: ExamSection[],
+  patterns: ExamStructuralPattern
+): PedagogicalGap[] {
+  const gaps: PedagogicalGap[] = [];
+  const exercises = sections.flatMap(s => s.exercises);
+  const totalEx = exercises.length;
+  
+  if (totalEx === 0) return [];
+
+  const stats = {
+    hardCount: 0,
+    proofCount: 0,
+    cognitiveFound: new Set<CognitiveLevel>(),
+    domainsFound: new Set<string>(),
+  };
+
+  exercises.forEach(ex => {
+    const params = detectScoringParams(ex.text, ex.type);
+    if ((params.difficulty || 0) >= 4) stats.hardCount++;
+    if (params.requiresProof) stats.proofCount++;
+    if (params.cognitiveLevel) stats.cognitiveFound.add(params.cognitiveLevel as CognitiveLevel);
+    if (ex.type) stats.domainsFound.add(ex.type);
+  });
+
+  // 1. Difficulty Curve Gap
+  if (patterns.targetDifficultyDist) {
+    const hardRatio = stats.hardCount / totalEx;
+    const targetHardRatio = (patterns.targetDifficultyDist.hard || 0) / 100;
+    
+    if (hardRatio < targetHardRatio * 0.5) {
+      gaps.push({
+        id: "gap_difficulty_low",
+        type: "imbalance",
+        severity: "warning",
+        titleAr: "نقص في التحدي",
+        messageAr: `يحتوي هذا النمط عادةً على ${Math.round(targetHardRatio * 100)}% تمارين صعبة، امتحانك حالياً يحتوي على ${Math.round(hardRatio * 100)}% فقط.`,
+        actionAr: "أضف تمريناً بمستوى 'تحليل' أو 'تقييم' لرفع مستوى التحدي."
+      });
+    }
+  }
+
+  // 2. Missing Cognitive Levels
+  if (patterns.requiredCognitiveLevels) {
+    patterns.requiredCognitiveLevels.forEach(level => {
+      if (!stats.cognitiveFound.has(level)) {
+        gaps.push({
+          id: `gap_level_${level}`,
+          type: "missing_level",
+          severity: level === "evaluate" || level === "create" ? "critical" : "warning",
+          titleAr: `مهارة ${COGNITIVE_LABELS_AR[level] || level} غائبة`,
+          messageAr: `الامتحانات الرسمية لهذا المستوى تتضمن عادةً سؤالاً يقيس مهارة ${COGNITIVE_LABELS_AR[level] || level}.`,
+          actionAr: `أضف سؤالاً يتطلب ${level === "evaluate" ? "البرهنة أو تبرير الإجابة" : "الاستنتاج والتحليل"}.`
+        });
+      }
+    });
+  }
+
+  // 3. Official Partitioning Gap
+  const hasProblem = sections.some(s => s.id === "problem");
+  if (!hasProblem && totalEx > 3) {
+    gaps.push({
+      id: "gap_no_problem",
+      type: "structure",
+      severity: "critical",
+      titleAr: "الوضعية الإدماجية مفقودة",
+      messageAr: "الامتحانات الرسمية (BEM/BAC) يجب أن تنتهي دائماً بوضعية إدماجية (الجزء الثاني).",
+      actionAr: "حوّل القسم الأخير إلى 'وضعية إدماجية' باستخدام زر ★ في أعلى القسم."
+    });
+  }
+
+  // 4. Point Distribution Gap
+  const problemPoints = sections.find(s => s.id === "problem")?.exercises.reduce((sum, e) => sum + e.points, 0) || 0;
+  if (hasProblem && problemPoints < 7) {
+    gaps.push({
+      id: "gap_problem_points",
+      type: "imbalance",
+      severity: "warning",
+      titleAr: "تنقيط الوضعية الإدماجية منخفض",
+      messageAr: "في العرف التربوي الجزائري، تُنقط الوضعية الإدماجية عادةً بـ 8 نقاط (أو 7 في البكالوريا).",
+      actionAr: "ارفع نقاط المسألة لتعكس أهميتها في التقييم الكلي."
+    });
+  }
+
+  return gaps;
 }

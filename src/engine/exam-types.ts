@@ -3,6 +3,38 @@
 export type ExamFormat = "bem" | "bac" | "regular";
 export type ExamDifficulty = "easy" | "medium" | "hard" | "mixed";
 
+export type CognitiveLevel = 
+  | "remember"     // التذكر — recall facts/formulas
+  | "understand"   // الفهم — explain, interpret
+  | "apply"        // التطبيق — use formula in standard context
+  | "analyze"      // التحليل — break down, compare
+  | "evaluate"     // التقييم — justify, critique
+  | "create";      // الإبداع — design, prove, construct
+
+export interface ExerciseScoringParams {
+  difficulty: number;        // 1-5
+  cognitiveLevel: CognitiveLevel;
+  bloomLevel: number;        // 1-6
+  conceptCount: number;      // how many concepts involved
+  stepCount: number;         // estimated steps to solve
+  estimatedTimeMin: number;  // time in minutes
+  hasSubQuestions: boolean;
+  requiresProof: boolean;
+  requiresGraph: boolean;
+  requiresConstruction: boolean;
+  domain: string;
+  subdomain: string;
+}
+
+export const COGNITIVE_LABELS_AR: Record<CognitiveLevel, string> = {
+  remember: "تذكر",
+  understand: "فهم",
+  apply: "تطبيق",
+  analyze: "تحليل",
+  evaluate: "تقييم",
+  create: "إبداع",
+};
+
 export interface ExamTemplate {
   id: string;
   format: ExamFormat;
@@ -52,6 +84,9 @@ export interface ExamStyleProfile {
 export interface ExamStructuralPattern {
   difficultyCurve: "linear" | "stepped" | "u-shaped";
   explicitImplicitRatio: number;
+  targetDifficultyDist?: { easy: number; medium: number; hard: number };
+  requiredCognitiveLevels?: CognitiveLevel[];
+  expectedDomains?: string[];
   structuralNotes?: string;
 }
 

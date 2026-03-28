@@ -154,6 +154,9 @@ Deno.serve(async (req) => {
   "structural_patterns": {
     "difficulty_curve": "linear|stepped|u-shaped",
     "explicit_implicit_ratio": 0.8,
+    "targetDifficultyDist": { "easy": 30, "medium": 50, "hard": 20 },
+    "requiredCognitiveLevels": ["apply", "analyze", "evaluate"],
+    "expectedDomains": ["algebra", "geometry"],
     "structural_notes": "وصف لطريقة طرح الأسئلة والتدرج في الصعوبة"
   },
   "questions": [...]

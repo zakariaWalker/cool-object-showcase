@@ -1,13 +1,33 @@
 // ===== Exam Builder Panel — Template selection + exercise management + auto-scoring =====
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Exam, ExamSection, ExamExercise, ExamFormat,
-  ExamStyleProfile, ExamStructuralPattern,
-  ALL_TEMPLATES, GRADE_OPTIONS, TYPE_LABELS_AR,
-  generateExamId, generateSectionId,
+import { 
+  ALL_TEMPLATES, 
+  BEM_TEMPLATE, 
+  BAC_TEMPLATE, 
+  GRADE_OPTIONS, 
+  TYPE_LABELS_AR,
+  generateExamId, 
+  generateSectionId,
+  COGNITIVE_LABELS_AR,
+  type Exam,
+  type ExamSection,
+  type ExamExercise,
+  type ExamFormat,
+  type ExamStyleProfile,
+  type ExamStructuralPattern,
+  type CognitiveLevel,
+  type ExerciseScoringParams
 } from "@/engine/exam-types";
-import { detectScoringParams, computeBaseScore, categorizeForExam, suggestPoints, COGNITIVE_LABELS_AR, type ExerciseScoringParams, type CognitiveLevel } from "@/engine/exercise-scoring";
+import { 
+  detectScoringParams, 
+  computeBaseScore, 
+  categorizeForExam, 
+  suggestPoints, 
+  detectPedagogicalGaps,
+  type PedagogicalGap
+} from "@/engine/exercise-scoring";
+
 import { ExamPreview } from "./ExamPreview";
 import { ExamKBPicker } from "./ExamKBPicker";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +57,7 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
   const [sampleSize, setSampleSize] = useState(0);
   const [version, setVersion] = useState(1);
   const [changeSummary, setChangeSummary] = useState("");
+  const [gaps, setGaps] = useState<PedagogicalGap[]>([]);
 
   const template = ALL_TEMPLATES.find(t => t.id === format);
 
@@ -95,6 +116,13 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
     }
   };
 
+  useEffect(() => {
+    if (structuralPatterns) {
+      const detected = detectPedagogicalGaps(sections, structuralPatterns);
+      setGaps(detected);
+    }
+  }, [sections, structuralPatterns]);
+
   const currentPoints = sections.reduce((sum, s) => sum + s.exercises.reduce((es, e) => es + e.points, 0), 0);
 
   const addExerciseToSection = (sectionId: string, exercise: ExamExercise) => {
@@ -151,7 +179,7 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
     const fullParams: ExerciseScoringParams = {
       difficulty: params.difficulty || 2,
       cognitiveLevel: (params.cognitiveLevel || "apply") as CognitiveLevel,
-      bloomLevel: 3,
+      bloomLevel: params.bloomLevel || 3,
       conceptCount: params.conceptCount || 1,
       stepCount: params.stepCount || 2,
       estimatedTimeMin: params.estimatedTimeMin || 5,
@@ -177,31 +205,37 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
   };
 
   const achievementScore = useMemo(() => {
-    if (!structuralPatterns || sections.length === 0) return 0;
+    if (sections.length === 0) return 0;
     
-    let score = 0;
+    let base = 0;
     const totalExercises = sections.reduce((sum, s) => sum + s.exercises.length, 0);
     if (totalExercises === 0) return 0;
 
-    // 1. Points coverage (0.3)
+    // 1. Points coverage (30%)
     const pointsRatio = Math.min(currentPoints / totalPoints, 1);
-    score += pointsRatio * 30;
+    base += pointsRatio * 30;
 
-    // 2. Section density match (0.4)
-    // Check if each section has at least one exercise
+    // 2. Section density match (40%)
     const sectionsWithExercises = sections.filter(s => s.exercises.length > 0).length;
     const sectionRatio = sectionsWithExercises / sections.length;
-    score += sectionRatio * 40;
+    base += sectionRatio * 40;
 
-    // 3. Difficulty/Cognitive variety (0.3)
+    // 3. Structural variety (30%)
     const hasVariety = sections.some(s => s.exercises.some(e => {
       const p = detectScoringParams(e.text);
       return (p.difficulty || 0) >= 3 || p.requiresProof;
     }));
-    if (hasVariety) score += 30;
+    if (hasVariety) base += 30;
 
-    return Math.round(score);
-  }, [sections, structuralPatterns, currentPoints, totalPoints]);
+    // 4. Gap Penalties (Subtract from base)
+    const totalPenalty = gaps.reduce((sum, gap) => {
+      if (gap.severity === "critical") return sum + 15;
+      if (gap.severity === "warning") return sum + 5;
+      return sum;
+    }, 0);
+
+    return Math.max(Math.round(base - totalPenalty), 0);
+  }, [sections, currentPoints, totalPoints, gaps]);
 
   const handleSave = () => {
     const examData: Exam = {
