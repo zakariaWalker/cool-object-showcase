@@ -1,5 +1,5 @@
 // ===== Exam PDF Bulk Uploader — Per-file metadata, auto-detect, parallel processing =====
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Upload, FileText, CheckCircle, XCircle, Loader2, Trash2, Eye, BarChart3, ArrowLeftRight, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
@@ -143,6 +143,39 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
   const [importing, setImporting] = useState(false);
   const [defaultCategory, setDefaultCategory] = useState<ExamCategory>("bac");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [lastEnhancedBlueprint, setLastEnhancedBlueprint] = useState<string | null>(null);
+
+  // Listen for blueprint enhancements (real-time)
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("blueprint-enhancements")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "exam_blueprints",
+          filter: "version=gt.1",
+        },
+        (payload) => {
+          const newBlueprint = payload.new as any;
+          if (newBlueprint.id === lastEnhancedBlueprint) return;
+          
+          setLastEnhancedBlueprint(newBlueprint.id);
+          toast.success(`📈 تم تطوير ذكاء المنظمة (v${newBlueprint.version})`, {
+            description: `تم تحسين نمط ${formatLabel[newBlueprint.format] || newBlueprint.format} (${newBlueprint.grade}): ${newBlueprint.change_summary}`,
+            duration: 8000,
+            icon: "✨",
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, lastEnhancedBlueprint]);
 
   // Load upload history
   const loadHistory = useCallback(async () => {

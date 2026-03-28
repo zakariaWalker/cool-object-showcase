@@ -148,10 +148,8 @@ Deno.serve(async (req) => {
   "year": "2024",
   "session": "juin",
   "grade": "middle_4",
-  "style_metadata": {
-    "typography": { "math": "serif|sans", "text": "serif|sans", "hierarchy": "high|balanced" },
-    "layout": { "columns": 1|2, "spacing": "compact|normal|wide", "exercise_border": true|false },
-    "typography_notes": "وصف دقيق للخطوط والأسلوب البصري"
+    "typography_notes": "وصف دقيق للخطوط والأسلوب البصري",
+    "change_summary": "ملخص قصير للتطور التربوي أو البصري المكتشف في هذا الامتحان مقارنة بالمعايير العامة (مثلاً: تحسين تنسيق المعادلات الرياضية أو إضافة تدرج صعوبة أكثر دقة)"
   },
   "structural_patterns": {
     "difficulty_curve": "linear|stepped|u-shaped",

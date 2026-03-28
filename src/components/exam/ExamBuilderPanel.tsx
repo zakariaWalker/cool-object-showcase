@@ -34,6 +34,9 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
   const [showKBPicker, setShowKBPicker] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [loadingInsights, setLoadingInsights] = useState(false);
+  const [sampleSize, setSampleSize] = useState(0);
+  const [version, setVersion] = useState(1);
+  const [changeSummary, setChangeSummary] = useState("");
 
   const template = ALL_TEMPLATES.find(t => t.id === format);
 
@@ -54,18 +57,36 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
   const fetchStyleInsights = async (format: ExamFormat) => {
     setLoadingInsights(true);
     try {
-      const { data, error } = await supabase
-        .from("exam_uploads")
-        .select("extracted_metadata, extracted_patterns")
+      const { data, error } = await (supabase as any)
+        .from("exam_blueprints")
+        .select("aggregated_style, aggregated_patterns, sample_size, version, change_summary")
         .eq("format", format)
-        .eq("status", "completed")
-        .order("created_at", { ascending: false })
-        .limit(1)
+        .eq("grade", grade)
+        .eq("is_current", true)
         .maybeSingle();
 
       if (data) {
-        if (data.extracted_metadata) setStyleProfile(data.extracted_metadata as any);
-        if (data.extracted_patterns) setStructuralPatterns(data.extracted_patterns as any);
+        if (data.aggregated_style) setStyleProfile(data.aggregated_style as any);
+        if (data.aggregated_patterns) setStructuralPatterns(data.aggregated_patterns as any);
+        if (data.sample_size) setSampleSize(data.sample_size);
+        if (data.version) setVersion(data.version);
+        if (data.change_summary) setChangeSummary(data.change_summary);
+      } else {
+        // Fallback to latest upload if no blueprint yet
+        const { data: latest } = await supabase
+          .from("exam_uploads")
+          .select("extracted_metadata, extracted_patterns")
+          .eq("format", format)
+          .eq("status", "completed")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (latest) {
+          if (latest.extracted_metadata) setStyleProfile(latest.extracted_metadata as any);
+          if (latest.extracted_patterns) setStructuralPatterns(latest.extracted_patterns as any);
+          setSampleSize(1);
+        }
       }
     } catch (e) {
       console.error("Error fetching insights:", e);
@@ -289,12 +310,35 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
               <h3 className="text-xs font-black text-foreground">📎 معلومات إضافية (اختياري)</h3>
               <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/10 mb-2">
                 <div className="space-y-1">
-                  <div className="text-[10px] font-bold text-primary">النمط البصري والتربوي</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-[10px] font-bold text-primary">النمط البصري والتربوي</div>
+                    {version > 1 && (
+                      <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-black">
+                        v{version}
+                      </span>
+                    )}
+                  </div>
                   <div className="text-[9px] text-muted-foreground">
                     {loadingInsights ? "جاري جلب الأنماط..." : 
-                     styleProfile ? "✅ تم تطبيق نمط حقيقي من الامتحانات السابقة" : 
+                     styleProfile ? `✅ تم تطبيق نمط مجمّع (${sampleSize} امتحانات)` : 
                      "⚠️ لا يوجد نمط حقيقي متاح حالياً"}
                   </div>
+                  {changeSummary && version > 1 && (
+                    <p className="text-[8px] text-primary/60 italic line-clamp-1 hover:line-clamp-none cursor-help transition-all">
+                      ✨ {changeSummary}
+                    </p>
+                  )}
+                  {sampleSize > 0 && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <div className="text-[8px] text-primary/70">دقة الذكاء الاصطناعي:</div>
+                      <div className="h-1 w-12 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-primary" style={{ width: `${Math.min((sampleSize / (format === "regular" ? 20 : 10)) * 100, 100)}%` }} />
+                      </div>
+                      <span className="text-[8px] font-bold text-primary">
+                        {sampleSize >= (format === "regular" ? 20 : 10) ? "مكتملة" : "تتطور..."}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 {styleProfile && (
                   <div className="text-[9px] px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-bold">
@@ -385,6 +429,25 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
                       className="text-sm font-bold text-foreground bg-transparent border-none outline-none" />
                   </div>
                   <div className="flex items-center gap-2">
+                    {format === "regular" && (
+                      <button 
+                        onClick={() => {
+                          const isProblem = section.id === "problem";
+                          setSections(prev => prev.map(s => s.id === section.id ? { 
+                            ...s, 
+                            id: isProblem ? generateSectionId() : "problem",
+                            title: isProblem ? "قسم جديد" : "الوضعية الإدماجية"
+                          } : s));
+                        }}
+                        className={`text-[10px] px-2 py-0.5 rounded font-bold border transition-all ${
+                          section.id === "problem" 
+                          ? "bg-black text-white border-black" 
+                          : "bg-transparent text-muted-foreground border-border hover:border-black/30"
+                        }`}
+                      >
+                        {section.id === "problem" ? "★ وضعية إدماجية" : "تحويل لوضعية؟"}
+                      </button>
+                    )}
                     <span className="text-[10px] text-muted-foreground">
                       {section.exercises.reduce((s, e) => s + e.points, 0)} ن
                     </span>
