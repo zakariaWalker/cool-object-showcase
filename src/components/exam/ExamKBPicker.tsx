@@ -1,8 +1,9 @@
-// ===== KB Exercise Picker for Exam Builder =====
+// ===== KB Exercise Picker for Exam Builder — with scoring info =====
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useAdminKBStore } from "@/components/admin/useAdminKBStore";
 import { ExamExercise, TYPE_LABELS_AR } from "@/engine/exam-types";
+import { detectScoringParams, computeBaseScore, categorizeForExam, suggestPoints, COGNITIVE_LABELS_AR, type ExerciseScoringParams, type CognitiveLevel } from "@/engine/exercise-scoring";
 
 interface Props {
   grade: string;
