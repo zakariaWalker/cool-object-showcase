@@ -1,8 +1,11 @@
-// ===== Exam KB Analytics — Topic frequency, trends, predictions, KB gaps =====
-import { useMemo } from "react";
+// ===== Exam KB Analytics — Real data-driven analysis with scoring breakdown =====
+import { useMemo, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { TYPE_LABELS_AR } from "@/engine/exam-types";
 import { Pattern } from "@/components/admin/useAdminKBStore";
+import { COGNITIVE_LABELS_AR, detectScoringParams, computeBaseScore, categorizeForExam, type ExerciseScoringParams, type CognitiveLevel } from "@/engine/exercise-scoring";
+import { analyzeUploadedExam, buildBlueprint, PROGRESSION_LABELS_AR } from "@/engine/exam-enhancer";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   store: ReturnType<typeof import("./useExamKBStore").useExamKBStore>;
@@ -11,13 +14,98 @@ interface Props {
 
 export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
   const { analysis, questions, exams } = store;
+  const [extractedQuestions, setExtractedQuestions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  if (questions.length === 0) {
+  // Load extracted questions from DB for real analysis
+  useEffect(() => {
+    async function loadExtracted() {
+      setLoading(true);
+      const { data } = await (supabase as any)
+        .from("exam_extracted_questions")
+        .select("*, exam_uploads!inner(grade, format, year, session)")
+        .order("created_at", { ascending: false });
+      if (data) setExtractedQuestions(data);
+      setLoading(false);
+    }
+    loadExtracted();
+  }, []);
+
+  // Compute scoring analysis for each question
+  const scoringAnalysis = useMemo(() => {
+    const allQuestions = [
+      ...questions.map(q => ({
+        text: q.text,
+        section_label: q.sectionLabel,
+        points: q.points,
+        type: q.type,
+        difficulty: q.difficulty,
+        concepts: q.concepts,
+        source: "manual" as const,
+      })),
+      ...extractedQuestions.map((q: any) => ({
+        text: q.text,
+        section_label: q.section_label,
+        points: q.points || 0,
+        type: q.type || "unclassified",
+        difficulty: q.difficulty || "medium",
+        concepts: q.concepts || [],
+        source: "extracted" as const,
+      })),
+    ];
+
+    return allQuestions.map(q => {
+      const params = detectScoringParams(q.text, q.type);
+      const fullParams: ExerciseScoringParams = {
+        difficulty: params.difficulty || 2,
+        cognitiveLevel: (params.cognitiveLevel || "apply") as CognitiveLevel,
+        bloomLevel: 3,
+        conceptCount: params.conceptCount || 1,
+        stepCount: params.stepCount || 2,
+        estimatedTimeMin: params.estimatedTimeMin || 5,
+        hasSubQuestions: params.hasSubQuestions || false,
+        requiresProof: params.requiresProof || false,
+        requiresGraph: params.requiresGraph || false,
+        requiresConstruction: params.requiresConstruction || false,
+        domain: q.type,
+        subdomain: "",
+      };
+      const baseScore = computeBaseScore(fullParams);
+      const category = categorizeForExam(fullParams);
+      return { ...q, params: fullParams, baseScore, category };
+    });
+  }, [questions, extractedQuestions]);
+
+  // Build blueprint from all data
+  const blueprint = useMemo(() => {
+    if (scoringAnalysis.length === 0) return null;
+    const uploadAnalyses = exams.map(exam => {
+      const examQs = questions
+        .filter(q => q.examId === exam.id)
+        .map(q => ({
+          text: q.text,
+          section_label: q.sectionLabel,
+          points: q.points,
+          type: q.type,
+          difficulty: q.difficulty,
+          concepts: q.concepts,
+        }));
+      return analyzeUploadedExam(examQs, exam.grade, exam.format, exam.id);
+    }).filter(a => a.sections.length > 0);
+
+    if (uploadAnalyses.length === 0) return null;
+    const format = exams[0]?.format === "bac" ? "bac" : exams[0]?.format === "bem" ? "bem" : "regular";
+    return buildBlueprint(uploadAnalyses, format, exams[0]?.grade || "");
+  }, [exams, questions, scoringAnalysis]);
+
+  const totalQuestions = scoringAnalysis.length;
+
+  if (totalQuestions === 0 && !loading) {
     return (
       <div className="text-center py-20 text-muted-foreground">
         <div className="text-5xl mb-4">📊</div>
         <h2 className="text-lg font-black text-foreground">لا توجد بيانات للتحليل</h2>
-        <p className="text-sm mt-1">استورد امتحانات سابقة وصنّف أسئلتها أولاً</p>
+        <p className="text-sm mt-1">استورد امتحانات سابقة أو ارفع ملفات PDF أولاً</p>
       </div>
     );
   }
@@ -25,18 +113,137 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
   const sortedParams = Object.entries(analysis.kbPatternFrequency || {})
     .sort((a, b) => b[1].count - a[1].count);
 
-  const totalQuestions = questions.length;
   const years = [...new Set(exams.map(e => e.year))].sort();
+
+  // Cognitive level distribution
+  const cognitiveDistrib: Record<string, number> = {};
+  scoringAnalysis.forEach(q => {
+    const level = q.params.cognitiveLevel || "apply";
+    cognitiveDistrib[level] = (cognitiveDistrib[level] || 0) + 1;
+  });
+
+  // Category distribution
+  const categoryDistrib: Record<string, number> = {};
+  scoringAnalysis.forEach(q => {
+    categoryDistrib[q.category.section] = (categoryDistrib[q.category.section] || 0) + 1;
+  });
+  const categoryLabels: Record<string, string> = {
+    warmup: "🟢 تمهيدي",
+    core: "🔵 أساسي",
+    challenge: "🟠 متقدم",
+    problem: "🔴 مسألة",
+  };
 
   return (
     <div className="space-y-6">
+      {loading && (
+        <div className="text-center py-4 text-muted-foreground text-sm">جاري تحميل البيانات...</div>
+      )}
+
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <KPI icon="📝" label="أسئلة" value={totalQuestions} color="hsl(var(--primary))" />
         <KPI icon="📚" label="امتحانات" value={exams.length} color="hsl(var(--algebra))" />
         <KPI icon="📅" label="سنوات" value={years.length} color="hsl(var(--geometry))" />
         <KPI icon="✅" label="مرتبطة بـ KB" value={questions.filter(q => q.linkedPatternIds.length > 0).length} color="hsl(var(--statistics))" />
+        <KPI icon="🔍" label="PDF مستخرجة" value={extractedQuestions.length} color="hsl(var(--functions))" />
         <KPI icon="⚠️" label="ثغرات" value={analysis.kbCoverage.gaps.length} color="hsl(var(--destructive))" />
+      </div>
+
+      {/* Blueprint Summary */}
+      {blueprint && (
+        <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-5">
+          <h3 className="text-sm font-black text-foreground mb-3">🏗️ بصمة الامتحان المُستنتجة (من {blueprint.extractedFromCount} امتحان)</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-xl font-black text-primary">{blueprint.totalPoints}</div>
+              <div className="text-[10px] text-muted-foreground">مجموع النقاط</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xl font-black text-primary">{blueprint.sectionStructure.length}</div>
+              <div className="text-[10px] text-muted-foreground">أقسام</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xl font-black text-primary">{blueprint.averageExercisePoints}</div>
+              <div className="text-[10px] text-muted-foreground">معدل نقاط/تمرين</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs font-black text-primary">{PROGRESSION_LABELS_AR[blueprint.progressionStyle]}</div>
+              <div className="text-[10px] text-muted-foreground">أسلوب التدرج</div>
+            </div>
+          </div>
+          {/* Topic distribution bar */}
+          <div className="flex gap-0.5 h-4 rounded-full overflow-hidden">
+            {Object.entries(blueprint.topicDistribution)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 8)
+              .map(([topic, pct], i) => {
+                const colors = ["hsl(var(--algebra))", "hsl(var(--geometry))", "hsl(var(--statistics))", "hsl(var(--probability))", "hsl(var(--functions))", "hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--destructive))"];
+                return (
+                  <div key={topic} className="h-full relative group" style={{ width: `${pct}%`, background: colors[i % colors.length], minWidth: "4px" }}>
+                    <div className="absolute -top-8 right-0 hidden group-hover:block text-[8px] bg-foreground text-background px-1.5 py-0.5 rounded whitespace-nowrap z-10">
+                      {TYPE_LABELS_AR[topic] || topic}: {pct}%
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {Object.entries(blueprint.topicDistribution).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([topic, pct]) => (
+              <span key={topic} className="text-[9px] text-muted-foreground">{TYPE_LABELS_AR[topic] || topic}: {pct}%</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Cognitive Level Distribution */}
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h3 className="text-sm font-black text-foreground mb-4">🧠 توزيع المستويات المعرفية (Bloom)</h3>
+          <div className="space-y-2">
+            {(["remember", "understand", "apply", "analyze", "evaluate", "create"] as CognitiveLevel[]).map(level => {
+              const count = cognitiveDistrib[level] || 0;
+              const pct = totalQuestions > 0 ? Math.round((count / totalQuestions) * 100) : 0;
+              return (
+                <div key={level}>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-[11px] font-bold text-foreground">{COGNITIVE_LABELS_AR[level]}</span>
+                    <span className="text-[10px] font-bold text-primary">{count} ({pct}%)</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.8 }}
+                      className="h-full rounded-full bg-primary" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Exercise Category Distribution */}
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h3 className="text-sm font-black text-foreground mb-4">📊 تصنيف التمارين للامتحان</h3>
+          <div className="space-y-3">
+            {(["warmup", "core", "challenge", "problem"] as const).map(cat => {
+              const count = categoryDistrib[cat] || 0;
+              const pct = totalQuestions > 0 ? Math.round((count / totalQuestions) * 100) : 0;
+              return (
+                <div key={cat} className="flex items-center gap-3">
+                  <span className="text-[11px] font-bold text-foreground w-24">{categoryLabels[cat]}</span>
+                  <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.8 }}
+                      className="h-full rounded-full"
+                      style={{ background: cat === "warmup" ? "hsl(var(--geometry))" : cat === "core" ? "hsl(var(--primary))" : cat === "challenge" ? "hsl(var(--statistics))" : "hsl(var(--destructive))" }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-bold text-muted-foreground w-12 text-left">{count} ({pct}%)</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -45,7 +252,7 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
           <h3 className="text-sm font-black text-foreground mb-4">📊 تكرار أنماط KB في الامتحانات</h3>
           <div className="space-y-2">
             {sortedParams.map(([type, data]) => {
-              const pct = Math.round((data.count / totalQuestions) * 100);
+              const pct = Math.round((data.count / Math.max(totalQuestions, 1)) * 100);
               return (
                 <div key={type}>
                   <div className="flex items-center justify-between mb-0.5">
@@ -63,6 +270,9 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
                 </div>
               );
             })}
+            {sortedParams.length === 0 && (
+              <p className="text-center py-4 text-muted-foreground text-xs">صنّف الأسئلة واربطها بأنماط KB</p>
+            )}
           </div>
         </div>
 
@@ -153,6 +363,57 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
         </div>
       </div>
 
+      {/* Scoring Breakdown Table */}
+      {scoringAnalysis.length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-5 overflow-x-auto">
+          <h3 className="text-sm font-black text-foreground mb-4">⚡ تفكيك تقييم التمارين (أول 20)</h3>
+          <table className="w-full text-[10px]">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="p-2 text-right font-bold text-muted-foreground">التمرين</th>
+                <th className="p-2 text-center font-bold text-muted-foreground">المستوى</th>
+                <th className="p-2 text-center font-bold text-muted-foreground">الصعوبة</th>
+                <th className="p-2 text-center font-bold text-muted-foreground">المفاهيم</th>
+                <th className="p-2 text-center font-bold text-muted-foreground">الخطوات</th>
+                <th className="p-2 text-center font-bold text-muted-foreground">النقاط</th>
+                <th className="p-2 text-center font-bold text-muted-foreground">التصنيف</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scoringAnalysis.slice(0, 20).map((q, i) => (
+                <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
+                  <td className="p-2 text-right text-foreground max-w-[200px] truncate">{q.text.slice(0, 60)}...</td>
+                  <td className="p-2 text-center">
+                    <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
+                      {COGNITIVE_LABELS_AR[q.params.cognitiveLevel as CognitiveLevel] || q.params.cognitiveLevel}
+                    </span>
+                  </td>
+                  <td className="p-2 text-center font-bold">{q.params.difficulty}/5</td>
+                  <td className="p-2 text-center">{q.params.conceptCount}</td>
+                  <td className="p-2 text-center">{q.params.stepCount}</td>
+                  <td className="p-2 text-center font-black text-primary">{q.baseScore}</td>
+                  <td className="p-2 text-center">
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold"
+                      style={{
+                        background: q.category.section === "warmup" ? "hsl(var(--geometry) / 0.1)" :
+                          q.category.section === "core" ? "hsl(var(--primary) / 0.1)" :
+                          q.category.section === "challenge" ? "hsl(var(--statistics) / 0.1)" :
+                          "hsl(var(--destructive) / 0.1)",
+                        color: q.category.section === "warmup" ? "hsl(var(--geometry))" :
+                          q.category.section === "core" ? "hsl(var(--primary))" :
+                          q.category.section === "challenge" ? "hsl(var(--statistics))" :
+                          "hsl(var(--destructive))",
+                      }}>
+                      {q.category.sectionLabelAr}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* Year Trends Table */}
       {years.length > 1 && (
         <div className="rounded-xl border border-border bg-card p-5 overflow-x-auto">
@@ -174,7 +435,7 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
                     return (
                       <td key={y} className="p-2 text-center">
                         {count > 0 ? (
-                          <span className="inline-block w-6 h-6 rounded flex items-center justify-center text-[9px] font-bold text-primary-foreground"
+                          <span className="inline-flex w-6 h-6 rounded items-center justify-center text-[9px] font-bold text-primary-foreground"
                             style={{ background: `hsl(var(--primary) / ${Math.min(0.3 + count * 0.2, 1)})` }}>
                             {count}
                           </span>

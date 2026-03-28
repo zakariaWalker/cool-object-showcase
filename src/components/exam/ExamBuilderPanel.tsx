@@ -1,13 +1,15 @@
-// ===== Exam Builder Panel — Template selection + exercise management =====
-import { useState, useMemo } from "react";
+// ===== Exam Builder Panel — Template selection + exercise management + auto-scoring =====
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Exam, ExamSection, ExamExercise, ExamFormat,
   ALL_TEMPLATES, GRADE_OPTIONS, TYPE_LABELS_AR,
   generateExamId, generateSectionId,
 } from "@/engine/exam-types";
+import { detectScoringParams, computeBaseScore, categorizeForExam, suggestPoints, COGNITIVE_LABELS_AR, type ExerciseScoringParams, type CognitiveLevel } from "@/engine/exercise-scoring";
 import { ExamPreview } from "./ExamPreview";
 import { ExamKBPicker } from "./ExamKBPicker";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   exam: Exam | null;
@@ -91,6 +93,29 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
       source: "manual",
     };
     addExerciseToSection(sectionId, ex);
+  };
+
+  // Auto-score an exercise when text changes
+  const autoScoreExercise = (sectionId: string, exerciseId: string, text: string) => {
+    if (text.length < 20) return;
+    const params = detectScoringParams(text);
+    const fullParams: ExerciseScoringParams = {
+      difficulty: params.difficulty || 2,
+      cognitiveLevel: (params.cognitiveLevel || "apply") as CognitiveLevel,
+      bloomLevel: 3,
+      conceptCount: params.conceptCount || 1,
+      stepCount: params.stepCount || 2,
+      estimatedTimeMin: params.estimatedTimeMin || 5,
+      hasSubQuestions: params.hasSubQuestions || false,
+      requiresProof: params.requiresProof || false,
+      requiresGraph: params.requiresGraph || false,
+      requiresConstruction: params.requiresConstruction || false,
+      domain: "",
+      subdomain: "",
+    };
+    const totalEx = sections.reduce((s, sec) => s + sec.exercises.length, 0);
+    const suggested = suggestPoints(fullParams, totalPoints, Math.max(totalEx, 1));
+    updateExercisePoints(sectionId, exerciseId, suggested);
   };
 
   const updateExerciseText = (sectionId: string, exerciseId: string, text: string) => {
@@ -293,9 +318,10 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
                         <div className="flex-1 space-y-2">
                           <textarea value={ex.text}
                             onChange={e => updateExerciseText(section.id, ex.id, e.target.value)}
+                            onBlur={() => autoScoreExercise(section.id, ex.id, ex.text)}
                             className="w-full px-2 py-1.5 rounded border border-border bg-card text-sm text-foreground resize-none min-h-[60px]"
-                            placeholder="نص التمرين..." />
-                          <div className="flex items-center gap-3">
+                            placeholder="نص التمرين... (النقاط ستُحسب تلقائياً)" />
+                          <div className="flex items-center gap-3 flex-wrap">
                             <div className="flex items-center gap-1">
                               <label className="text-[10px] text-muted-foreground">النقاط:</label>
                               <input type="number" value={ex.points} min={0.5} step={0.5}
@@ -310,6 +336,15 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
                                 {ex.source === "kb" ? "من KB" : ex.source === "ai" ? "AI" : "يدوي"}
                               </span>
                             )}
+                            {/* Auto-detected scoring info */}
+                            {ex.text.length > 20 && (() => {
+                              const params = detectScoringParams(ex.text, ex.type);
+                              return (
+                                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/5 text-muted-foreground border border-border">
+                                  {COGNITIVE_LABELS_AR[(params.cognitiveLevel || "apply") as CognitiveLevel]} · صعوبة {params.difficulty}/5 · {params.conceptCount} مفهوم
+                                </span>
+                              );
+                            })()}
                           </div>
                         </div>
                         <button onClick={() => removeExercise(section.id, ex.id)}

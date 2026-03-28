@@ -1,8 +1,9 @@
-// ===== KB Exercise Picker for Exam Builder =====
+// ===== KB Exercise Picker for Exam Builder — with scoring info =====
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useAdminKBStore } from "@/components/admin/useAdminKBStore";
 import { ExamExercise, TYPE_LABELS_AR } from "@/engine/exam-types";
+import { detectScoringParams, computeBaseScore, categorizeForExam, suggestPoints, COGNITIVE_LABELS_AR, type ExerciseScoringParams, type CognitiveLevel } from "@/engine/exercise-scoring";
 
 interface Props {
   grade: string;
@@ -40,11 +41,29 @@ export function ExamKBPicker({ grade, sectionId, allowedTypes, onSelect, onClose
   }, [exercises, grade, allowedTypes]);
 
   const handleSelect = (ex: typeof exercises[0]) => {
+    // Auto-compute points based on scoring params
+    const params = detectScoringParams(ex.text, ex.type);
+    const fullParams: ExerciseScoringParams = {
+      difficulty: params.difficulty || 2,
+      cognitiveLevel: (params.cognitiveLevel || "apply") as CognitiveLevel,
+      bloomLevel: 3,
+      conceptCount: params.conceptCount || 1,
+      stepCount: params.stepCount || 2,
+      estimatedTimeMin: params.estimatedTimeMin || 5,
+      hasSubQuestions: params.hasSubQuestions || false,
+      requiresProof: params.requiresProof || false,
+      requiresGraph: params.requiresGraph || false,
+      requiresConstruction: params.requiresConstruction || false,
+      domain: ex.type,
+      subdomain: "",
+    };
+    const baseScore = computeBaseScore(fullParams);
+    
     onSelect(sectionId, {
       id: `kb_${ex.id}_${Date.now()}`,
       sectionId,
       text: ex.text,
-      points: 2,
+      points: Math.max(baseScore, 1),
       type: ex.type,
       grade: ex.grade,
       source: "kb",
@@ -85,18 +104,51 @@ export function ExamKBPicker({ grade, sectionId, allowedTypes, onSelect, onClose
           {filtered.length === 0 && (
             <p className="text-center py-8 text-muted-foreground text-sm">لا توجد تمارين مطابقة</p>
           )}
-          {filtered.map(ex => (
+          {filtered.map(ex => {
+            const params = detectScoringParams(ex.text, ex.type);
+            const category = categorizeForExam({
+              difficulty: params.difficulty || 2,
+              cognitiveLevel: (params.cognitiveLevel || "apply") as CognitiveLevel,
+              bloomLevel: 3,
+              conceptCount: params.conceptCount || 1,
+              stepCount: params.stepCount || 2,
+              estimatedTimeMin: params.estimatedTimeMin || 5,
+              hasSubQuestions: params.hasSubQuestions || false,
+              requiresProof: params.requiresProof || false,
+              requiresGraph: params.requiresGraph || false,
+              requiresConstruction: params.requiresConstruction || false,
+              domain: ex.type,
+              subdomain: "",
+            });
+            return (
             <button key={ex.id} onClick={() => handleSelect(ex)}
               className="w-full text-right p-3 rounded-lg border border-border hover:border-primary/40 hover:bg-primary/5 transition-all">
               <div className="text-xs text-foreground leading-relaxed line-clamp-3">{ex.text}</div>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
                   {TYPE_LABELS_AR[ex.type] || ex.type}
                 </span>
                 <span className="text-[9px] text-muted-foreground">{ex.grade}</span>
+                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-bold">
+                  {COGNITIVE_LABELS_AR[(params.cognitiveLevel || "apply") as CognitiveLevel]} · ≈{category.suggestedPoints}ن
+                </span>
+                <span className="text-[8px] px-1.5 py-0.5 rounded-full font-bold"
+                  style={{
+                    background: category.section === "warmup" ? "hsl(var(--geometry) / 0.1)" :
+                      category.section === "core" ? "hsl(var(--primary) / 0.1)" :
+                      category.section === "challenge" ? "hsl(var(--statistics) / 0.1)" :
+                      "hsl(var(--destructive) / 0.1)",
+                    color: category.section === "warmup" ? "hsl(var(--geometry))" :
+                      category.section === "core" ? "hsl(var(--primary))" :
+                      category.section === "challenge" ? "hsl(var(--statistics))" :
+                      "hsl(var(--destructive))",
+                  }}>
+                  {category.sectionLabelAr}
+                </span>
               </div>
             </button>
-          ))}
+            );
+          })}
         </div>
       </motion.div>
     </motion.div>
