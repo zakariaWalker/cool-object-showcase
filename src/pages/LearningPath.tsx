@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ExerciseRenderer } from "@/components/ExerciseRenderer";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Exercise {
   id: string; text: string; type: string; grade: string;
@@ -25,6 +26,74 @@ const TYPE_LABELS: Record<string, string> = {
   functions: "دوال", trigonometry: "مثلثات", sequences: "متتاليات", calculus: "تحليل",
   systems: "جمل معادلات", proportionality: "تناسبية", transformations: "تحويلات",
 };
+
+import { Lightbulb, MessageSquare, ChevronLeft, Brain } from "lucide-react";
+
+function ExerciseItem({ ex, isCompleted, onToggle }: { ex: Exercise; isCompleted: boolean; onToggle: () => void }) {
+  const [showHint, setShowHint] = useState(false);
+  
+  return (
+    <div className="relative group">
+      <div 
+        onClick={onToggle}
+        className="flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all border bg-card hover:shadow-md"
+        style={{
+          background: isCompleted ? "hsl(var(--primary) / 0.04)" : "hsl(var(--card))",
+          borderColor: isCompleted ? "hsl(var(--primary) / 0.2)" : "hsl(var(--border))",
+        }}
+      >
+        <div className="w-6 h-6 rounded-lg border-2 flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5 transition-all"
+          style={{
+            borderColor: isCompleted ? "hsl(var(--primary))" : "hsl(var(--border))",
+            background: isCompleted ? "hsl(var(--primary))" : "transparent",
+            color: isCompleted ? "hsl(var(--primary-foreground))" : "transparent",
+          }}>
+          {isCompleted && "✓"}
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-foreground font-medium leading-relaxed" style={{
+            textDecoration: isCompleted ? "line-through" : "none",
+            opacity: isCompleted ? 0.6 : 1,
+          }}>
+            {ex.text}
+          </div>
+          
+          <AnimatePresence>
+            {showHint && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="mt-2 p-2 rounded-lg bg-primary/5 border border-primary/10 flex items-start gap-2 overflow-hidden"
+              >
+                <Brain size={12} className="text-primary mt-0.5" />
+                <p className="text-[10px] text-primary/80 font-bold leading-tight">
+                  تلميح: حاول البدء بتحديد المجهول الأساسي أولاً (عادة ما يكون أصغر طول) ثم عبّر عن البقية بدلالته.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={(e) => { e.stopPropagation(); setShowHint(!showHint); }}
+            className={`p-1.5 rounded-lg transition-all ${showHint ? "bg-primary text-primary-foreground shadow-inner" : "hover:bg-primary/10 text-muted-foreground hover:text-primary"}`}
+            title="تلميح للتفكير"
+          >
+            <Lightbulb size={14} />
+          </button>
+          <a href={`/tutor`} onClick={e => e.stopPropagation()}
+            className="flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary font-black hover:bg-primary/20 transition-all">
+            <MessageSquare size={12} />
+            شرح
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function LearningPath() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -218,58 +287,57 @@ export default function LearningPath() {
                     }}>
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <h3 className="text-sm font-bold text-foreground">{group.pattern.name}</h3>
+                        <h3 className="text-sm font-black text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
+                          {group.pattern.name}
+                          {!groupDone && gi === 0 && (
+                            <span className="flex h-2 w-2 rounded-full bg-primary animate-ping" />
+                          )}
+                        </h3>
                         <div className="flex gap-2 mt-1">
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{group.pattern.type}</span>
-                          <span className="text-[10px] text-muted-foreground">{groupCompleted}/{group.exercises.length} تمرين</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold border border-primary/20">{TYPE_LABELS[group.pattern.type] || group.pattern.type}</span>
+                          <span className="text-[10px] text-muted-foreground font-medium">{groupCompleted}/{group.exercises.length} تمرين</span>
                         </div>
                       </div>
                       {group.pattern.concepts && group.pattern.concepts.length > 0 && (
-                        <div className="flex gap-1 flex-wrap justify-end">
+                        <div className="flex gap-1.5 flex-wrap justify-end">
                           {group.pattern.concepts.slice(0, 4).map((c, ci) => (
-                            <span key={ci} className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">{c}</span>
+                            <span key={ci} className="text-[9px] px-2 py-1 rounded-lg bg-card border border-border/50 text-muted-foreground font-bold shadow-sm group-hover:border-primary/20 transition-all flex items-center gap-1">
+                              <Brain size={10} className="text-primary/40" />
+                              {c}
+                            </span>
                           ))}
                         </div>
                       )}
                     </div>
 
-                    {/* Steps */}
+                    {/* Thinking Pattern Steps - Improved Structure */}
                     {group.pattern.steps.length > 0 && (
-                      <div className="flex gap-2 flex-wrap mb-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-4">
                         {group.pattern.steps.map((s, si) => (
-                          <div key={si} className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                            <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[8px] font-bold">{si + 1}</span>
-                            {s}
-                            {si < group.pattern.steps.length - 1 && <span className="text-border mr-1">→</span>}
+                          <div key={si} className="relative group/step">
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-card border border-border/50 group-hover/step:border-primary/30 transition-all shadow-subtle min-h-[40px]">
+                              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black">{si + 1}</span>
+                              <span className="text-[10px] text-foreground leading-tight font-medium">{s}</span>
+                            </div>
+                            {si < group.pattern.steps.length - 1 && (si + 1) % 4 !== 0 && (
+                              <div className="hidden md:block absolute -left-1 top-1/2 -translate-y-1/2 z-10 text-border">
+                                <span className="text-[8px]">←</span>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
                     )}
 
-                    {/* Exercises */}
-                    <div className="space-y-1.5">
+                    {/* Exercises with Hint Support */}
+                    <div className="space-y-2">
                       {group.exercises.slice(0, 5).map((ex, ei) => (
-                        <div key={ei} onClick={() => toggleComplete(ex.id)}
-                          className="flex items-start gap-3 p-2.5 rounded-lg cursor-pointer transition-all border"
-                          style={{
-                            background: completedExIds.has(ex.id) ? "hsl(var(--primary) / 0.05)" : "hsl(var(--muted) / 0.3)",
-                            borderColor: completedExIds.has(ex.id) ? "hsl(var(--primary) / 0.2)" : "transparent",
-                          }}>
-                          <div className="w-5 h-5 rounded border-2 flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5"
-                            style={{
-                              borderColor: completedExIds.has(ex.id) ? "hsl(var(--primary))" : "hsl(var(--border))",
-                              background: completedExIds.has(ex.id) ? "hsl(var(--primary))" : "transparent",
-                              color: completedExIds.has(ex.id) ? "hsl(var(--primary-foreground))" : "transparent",
-                            }}>✓</div>
-                          <div className="text-xs text-foreground line-clamp-2 flex-1" style={{
-                            textDecoration: completedExIds.has(ex.id) ? "line-through" : "none",
-                            opacity: completedExIds.has(ex.id) ? 0.5 : 1,
-                          }}>{ex.text}</div>
-                          <a href={`/tutor`} onClick={e => e.stopPropagation()}
-                            className="text-[9px] px-2 py-0.5 rounded bg-primary/10 text-primary font-bold flex-shrink-0 hover:bg-primary/20 transition-all">
-                            🤖 شرح
-                          </a>
-                        </div>
+                        <ExerciseItem 
+                          key={ex.id} 
+                          ex={ex} 
+                          isCompleted={completedExIds.has(ex.id)}
+                          onToggle={() => toggleComplete(ex.id)}
+                        />
                       ))}
                       {group.exercises.length > 5 && (
                         <div className="text-[10px] text-muted-foreground text-center py-1">
