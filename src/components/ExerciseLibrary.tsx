@@ -87,7 +87,7 @@ const STREAMS: Record<string, { id: string; label: string; color: string }[]> = 
 };
 
 export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
-  const { profile, isStudent } = useAuth();
+  const { profile, isAdmin, isTeacher } = useAuth();
 
   // Initialize from profile or localStorage
   const initGrade = (() => {
@@ -218,7 +218,7 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Level & Grade Tabs - Only for Admin/Teacher */}
-      {!isStudent && (
+      {(isAdmin || isTeacher) && (
         <div className="px-3 py-2 border-b border-border bg-muted/30">
           <div className="flex gap-2 mb-2">
             {GRADE_LEVELS.map(level => (
@@ -255,7 +255,7 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
       )}
 
       {/* Stream Selector for Secondary - Only for Admin/Teacher */}
-      {!isStudent && hasStreams && (
+      {(isAdmin || isTeacher) && hasStreams && (
         <div className="px-3 py-2 border-b border-border bg-accent/10">
           <div className="text-[10px] text-muted-foreground font-semibold mb-1.5" dir="rtl">🎯 الشعبة:</div>
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
