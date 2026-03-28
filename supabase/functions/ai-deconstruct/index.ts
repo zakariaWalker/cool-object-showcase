@@ -55,7 +55,7 @@ ${e.text}`).join("\n\n")}
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-2.0-flash",
           messages: [
             { role: "system", content: "أنت مساعد تعليمي متخصص في تحليل التمارين الرياضية. أجب دائماً بـ JSON صالح فقط." },
             { role: "user", content: prompt },

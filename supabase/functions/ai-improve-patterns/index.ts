@@ -49,7 +49,7 @@ ${batch.map((p: any) => `ID: ${p.id}
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-2.0-flash",
           messages: [
             { role: "system", content: "أنت مساعد تعليمي متخصص في تنظيم أنماط حل التمارين الرياضية. أجب باستخدام tool calling فقط." },
             { role: "user", content: prompt },
