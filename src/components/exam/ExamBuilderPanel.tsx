@@ -321,7 +321,7 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
                             onBlur={() => autoScoreExercise(section.id, ex.id, ex.text)}
                             className="w-full px-2 py-1.5 rounded border border-border bg-card text-sm text-foreground resize-none min-h-[60px]"
                             placeholder="نص التمرين... (النقاط ستُحسب تلقائياً)" />
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 flex-wrap">
                             <div className="flex items-center gap-1">
                               <label className="text-[10px] text-muted-foreground">النقاط:</label>
                               <input type="number" value={ex.points} min={0.5} step={0.5}
@@ -336,6 +336,15 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
                                 {ex.source === "kb" ? "من KB" : ex.source === "ai" ? "AI" : "يدوي"}
                               </span>
                             )}
+                            {/* Auto-detected scoring info */}
+                            {ex.text.length > 20 && (() => {
+                              const params = detectScoringParams(ex.text, ex.type);
+                              return (
+                                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/5 text-muted-foreground border border-border">
+                                  {COGNITIVE_LABELS_AR[(params.cognitiveLevel || "apply") as CognitiveLevel]} · صعوبة {params.difficulty}/5 · {params.conceptCount} مفهوم
+                                </span>
+                              );
+                            })()}
                           </div>
                         </div>
                         <button onClick={() => removeExercise(section.id, ex.id)}
