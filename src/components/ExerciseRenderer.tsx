@@ -125,7 +125,7 @@ export function ExerciseRenderer({ text, className = "" }: Props) {
   }
 
   return (
-    <div className={`space-y-3 ${className}`} dir="rtl">
+    <div className={`space-y-2 ${className}`} dir="rtl">
       {segments.map((seg, i) => {
         switch (seg.type) {
           case "table": {
@@ -192,8 +192,8 @@ export function ExerciseRenderer({ text, className = "" }: Props) {
             const marker = markerMatch ? (markerMatch[1] || markerMatch[2] || markerMatch[3]) : null;
             
             return (
-              <div key={i} className="flex gap-4 items-start p-4 rounded-xl bg-card border border-border shadow-sm hover:border-primary/30 transition-all hover:shadow-md group">
-                <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-[12px] font-black flex-shrink-0 mt-0.5 shadow-inner group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+              <div key={i} className="flex gap-3 items-start p-2.5 px-3 rounded-xl bg-card border border-border shadow-sm hover:border-primary/30 transition-all hover:shadow-md group">
+                <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-[11px] font-black flex-shrink-0 mt-0.5 shadow-inner group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                   {marker || "•"}
                 </div>
                 <div className="text-[13px] text-foreground/90 leading-relaxed flex-1 font-medium">
@@ -206,7 +206,7 @@ export function ExerciseRenderer({ text, className = "" }: Props) {
           default: {
             const isPotentialHeader = seg.content.length < 60 && (/^(\d+[\.\)]|إليك|ليكن|نعتبر|في الشكل|لاحظ)/i.test(seg.content));
             return (
-              <div key={i} className={`text-sm leading-relaxed ${isPotentialHeader ? "font-black text-foreground border-r-4 border-primary/40 pr-3 py-1 my-2 bg-muted/20 rounded-l-md" : "text-foreground/70"}`}>
+              <div key={i} className={`text-sm leading-relaxed ${isPotentialHeader ? "font-black text-foreground border-r-4 border-primary/40 pr-3 py-0.5 my-1 bg-muted/20 rounded-l-md" : "text-foreground/70"}`}>
                 <RenderLatexText text={seg.content} />
               </div>
             );
