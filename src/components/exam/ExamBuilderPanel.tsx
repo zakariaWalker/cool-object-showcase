@@ -197,12 +197,11 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
     setGenerating(true);
     setIsComparing(true);
     try {
-      const [kb, ai, hybrid] = await Promise.all([
-        generateKBOnlyExam(template, grade),
-        generateAIOnlyExam(template, grade, structuralPatterns, styleProfile),
-        generateHybridExam(template, grade, structuralPatterns)
-      ]);
-      setComparisonResults([kb, ai, hybrid]);
+      const results: GenerationResult[] = [];
+      try { results.push(await generateKBOnlyExam(template, grade)); } catch {}
+      try { results.push(await generateAIOnlyExam(template, grade, structuralPatterns, styleProfile)); } catch {}
+      try { results.push(await generateHybridExam(template, grade, structuralPatterns)); } catch {}
+      setComparisonResults(results.filter(r => r?.exam?.sections));
     } catch (e) {
       console.error(e);
       toast.error("فشل التوليد التلقائي. تأكد من إعداد مفتاح AI.");
