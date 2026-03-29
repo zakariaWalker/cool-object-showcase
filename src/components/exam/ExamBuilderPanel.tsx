@@ -771,7 +771,7 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
 
                   <div className="flex-1 bg-muted/30 rounded-lg p-3 text-[10px] space-y-2 overflow-hidden border border-border/50">
                     <p className="font-black border-b border-border pb-1">محتوى العينة:</p>
-                    {res.exam.sections[0]?.exercises[0]?.text && (
+                    {res.exam?.sections?.[0]?.exercises?.[0]?.text && (
                       <p className="line-clamp-6 text-muted-foreground whitespace-pre-wrap leading-relaxed">
                         {res.exam.sections[0].exercises[0].text}
                       </p>
