@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
@@ -10,8 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { 
   AlertCircle, CheckCircle, Flag, MessageSquare, 
-  ExternalLink, Save, ArrowRight, Loader2, ShieldCheck
+  ExternalLink, Save, ArrowRight, Loader2, ShieldCheck,
+  Lock
 } from "lucide-react";
+import katex from "katex";
+import "katex/dist/katex.min.css";
+
 
 const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN || "2026";
 const PIN_STORAGE_KEY = "elmentor_admin_auth";
@@ -38,19 +43,28 @@ interface ExerciseReport {
   status: string;
   created_at: string;
   student_id: string;
-  kb_exercises: {
+  kb_exercises?: {
     text: string;
-    title?: string;
+    label?: string;
   };
 }
 
 export default function AdminReports() {
-  const [unlocked, setUnlocked] = useState(isPinValid);
+  const { isAdmin, loading: authLoading } = useAuth();
+  const [unlocked, setUnlocked] = useState(isPinValid());
   const [reports, setReports] = useState<ExerciseReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeReport, setActiveReport] = useState<ExerciseReport | null>(null);
   const [editText, setEditText] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Auto-unlock if user is verified Supabase admin
+  useEffect(() => {
+    if (isAdmin) {
+      setUnlocked(true);
+      savePinSession();
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     if (unlocked) {
@@ -61,22 +75,16 @@ export default function AdminReports() {
   async function fetchReports() {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("exercise_reports")
-        .select(`
-          *,
-          kb_exercises (
-            text,
-            label
-          )
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       setReports(data as any);
     } catch (error) {
       console.error("Error fetching reports:", error);
-      toast.error("خطأ في تحميل البلاغات");
+      toast.error("خطأ في تحميل البلاغات. قد تحتاج لصلاحيات مسؤول.");
     } finally {
       setLoading(false);
     }
@@ -94,7 +102,7 @@ export default function AdminReports() {
       if (exError) throw exError;
 
       // 2. Mark report as resolved
-      const { error: repError } = await supabase
+      const { error: repError } = await (supabase as any)
         .from("exercise_reports")
         .update({ status: "resolved" })
         .eq("id", report.id);
@@ -112,9 +120,18 @@ export default function AdminReports() {
     }
   }
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
   if (!unlocked) {
     return <PinGate onUnlock={() => setUnlocked(true)} />;
   }
+
 
   return (
     <div className="min-h-screen bg-muted/30 rtl" dir="rtl">
@@ -176,9 +193,16 @@ export default function AdminReports() {
                       <TableRow 
                         key={report.id} 
                         className={`cursor-pointer transition-colors ${activeReport?.id === report.id ? "bg-primary/5" : "hover:bg-muted/50"}`}
-                        onClick={() => {
+                        onClick={async () => {
                           setActiveReport(report);
-                          setEditText(report.kb_exercises.text);
+                          setEditText("جاري تحميل نص التمرين...");
+                          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(report.exercise_id);
+                          if (isUUID) {
+                            const { data } = await (supabase as any).from("kb_exercises").select("text").eq("id", report.exercise_id).maybeSingle();
+                            setEditText(data?.text || "تعذر العثور على نص التمرين في قاعدة البيانات (UUID)");
+                          } else {
+                            setEditText(`تنبيه: هذا التمرين لا ينتمي إلى مكتبة المصادر. معرفه هو: ${report.exercise_id}`);
+                          }
                         }}
                       >
                         <TableCell>
@@ -187,7 +211,7 @@ export default function AdminReports() {
                               {getIssueTypeLabel(report.issue_type)}
                             </span>
                             <span className="text-[10px] text-muted-foreground block truncate max-w-[200px]">
-                              {report.description || "بدون وصف"}
+                              {report.description || "لا يوجد وصف إضافي"}
                             </span>
                           </div>
                         </TableCell>
@@ -257,14 +281,47 @@ export default function AdminReports() {
                   <label className="text-xs font-black text-foreground flex items-center gap-2">
                     <Save className="w-3.5 h-3.5 text-primary" /> تعديل نص التمرين:
                   </label>
-                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded font-mono">Markdown/LaTeX Supported</span>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 text-[10px] font-bold text-primary gap-1.5"
+                      onClick={() => {
+                        let text = editText;
+                        // Common fix: 2 after parenthesis -> ^2
+                        text = text.replace(/\)(\d)/g, ")^$1");
+                        // Common fix: duplicate sentences
+                        const sentences = text.split(" — ");
+                        if (sentences.length > 1 && sentences[0].trim() === sentences[1].trim()) {
+                          text = sentences[1] + (text.includes(" — ") ? text.split(" — ").slice(2).join(" — ") : "");
+                        }
+                        setEditText(text);
+                        toast.info("تم تطبيق تصحيحات تلقائية سريعة");
+                      }}
+                    >
+                      ✨ تصحيح سريع
+                    </Button>
+                    <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded font-mono">Markdown/LaTeX Supported</span>
+                  </div>
                 </div>
                 <Textarea 
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
-                  className="min-h-[300px] font-mono text-sm leading-relaxed p-4 bg-muted/20 border-2 focus-visible:border-primary/50 transition-all rounded-xl shadow-inner whitespace-pre-wrap"
+                  className="min-h-[200px] font-mono text-sm leading-relaxed p-4 bg-muted/20 border-2 focus-visible:border-primary/50 transition-all rounded-xl shadow-inner whitespace-pre-wrap"
                   dir="ltr"
                 />
+              </div>
+
+              {/* Live Preview */}
+              <div className="space-y-3">
+                <label className="text-xs font-black text-foreground flex items-center gap-2">
+                  <ExternalLink className="w-3.5 h-3.5 text-primary" /> معاينة مباشرة (كيف سيراها الطالب):
+                </label>
+                <div className="p-6 bg-card border-2 border-dashed border-border rounded-xl min-h-[100px] flex items-center justify-center text-center text-lg leading-relaxed shadow-sm">
+                  <div className="max-w-full overflow-x-auto">
+                    <InlineMathPreview text={editText} />
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center gap-3 pt-4 border-t border-border">
@@ -302,6 +359,70 @@ function getIssueTypeLabel(type: string) {
   };
   return map[type] || type;
 }
+
+// ─── Inline Math Preview ───────────────────────────────────────────────────
+function InlineMathPreview({ text }: { text: string }) {
+  if (!text) return null;
+  const segments: { content: string; isDisplay: boolean; isMath: boolean }[] = [];
+  let remaining = text;
+  while (remaining.length > 0) {
+    const displayIdx = remaining.indexOf("$$");
+    const inlineIdx = remaining.indexOf("$");
+    if (inlineIdx === -1) {
+      segments.push({ content: remaining, isDisplay: false, isMath: false });
+      break;
+    }
+    if (displayIdx !== -1 && displayIdx === inlineIdx) {
+      const end = remaining.indexOf("$$", displayIdx + 2);
+      if (end === -1) {
+        segments.push({ content: remaining, isDisplay: false, isMath: false });
+        break;
+      }
+      if (displayIdx > 0) segments.push({ content: remaining.slice(0, displayIdx), isDisplay: false, isMath: false });
+      segments.push({ content: remaining.slice(displayIdx + 2, end), isDisplay: true, isMath: true });
+      remaining = remaining.slice(end + 2);
+    } else {
+      const end = remaining.indexOf("$", inlineIdx + 1);
+      if (end === -1) {
+        segments.push({ content: remaining, isDisplay: false, isMath: false });
+        break;
+      }
+      if (inlineIdx > 0) segments.push({ content: remaining.slice(0, inlineIdx), isDisplay: false, isMath: false });
+      segments.push({ content: remaining.slice(inlineIdx + 1, end), isDisplay: false, isMath: true });
+      remaining = remaining.slice(end + 1);
+    }
+  }
+  return (
+    <>
+      {segments.map((seg, i) =>
+        seg.isMath ? (
+          <KatexSpan key={i} latex={seg.content} display={seg.isDisplay} />
+        ) : (
+          <bdi key={i} dir="auto" className="math-text-preserve break-words">
+            {seg.content}
+          </bdi>
+        )
+      )}
+    </>
+  );
+}
+
+function KatexSpan({ latex, display }: { latex: string; display: boolean }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (ref.current) {
+      try {
+        katex.render(latex, ref.current, { displayMode: display, throwOnError: false, trust: true });
+      } catch { if (ref.current) ref.current.textContent = latex; }
+    }
+  }, [latex, display]);
+  return (
+    <span ref={ref} dir="ltr" className="inline-math-isolate"
+      style={{ display: display ? "block" : "inline-block", unicodeBidi: "isolate", direction: "ltr", maxWidth: "100%", overflowX: "auto", overflowY: "hidden" }} 
+    />
+  );
+}
+
 
 // ─── PIN Gate ─────────────────────────────────────────────────────────────────
 

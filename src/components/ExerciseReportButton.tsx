@@ -14,10 +14,10 @@ export function ExerciseReportButton({ exerciseId }: ExerciseReportButtonProps) 
         <Button 
           variant="ghost" 
           size="sm" 
-          className="h-7 px-2 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/5 transition-colors gap-1.5 group"
+          className="h-7 px-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all gap-1.5 group border border-dashed border-muted-foreground/20 rounded-lg"
         >
-          <Flag className="h-3 w-3 group-hover:fill-destructive/20" />
-          <span className="text-[10px] font-black uppercase tracking-tight">إبلاغ</span>
+          <Flag className="h-3.5 w-3.5 group-hover:fill-destructive/10" />
+          <span className="text-[10px] font-black uppercase tracking-tight">إبلاغ عن خطأ</span>
         </Button>
       }
     />

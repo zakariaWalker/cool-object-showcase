@@ -17,6 +17,7 @@ import { FunctionAnalysis } from "@/engine/functions-engine";
 import { KnowledgeGapVisual } from "./KnowledgeGapVisual";
 import { KnowledgeBase } from "@/engine/knowledge/types";
 import { ExerciseRenderer } from "./ExerciseRenderer";
+import { ExerciseReportButton } from "./ExerciseReportButton";
 
 interface ExerciseResultProps {
   exercise: ParsedExercise;
@@ -68,9 +69,14 @@ export function ExerciseResult({
             {config.labelAr} — {config.label}
           </span>
           <span className="text-[10px] text-muted-foreground">{exercise.classification.subdomain}</span>
-          <span className="text-[10px] text-muted-foreground/50 ml-auto">
+          <span className="text-[10px] text-muted-foreground/50">
             {exercise.source.language === "ar" ? "عربي" : exercise.source.language === "fr" ? "Français" : "English"}
           </span>
+          {(exerciseId || (exercise as any).id || (exercise as any).url) && (
+            <div className="ml-auto">
+              <ExerciseReportButton exerciseId={exerciseId || (exercise as any).id || (exercise as any).url || "unknown"} />
+            </div>
+          )}
         </div>
         <div className="bg-background border border-border rounded-sm p-4 text-[13px] text-foreground leading-relaxed" dir="auto">
           <ExerciseRenderer text={exercise.source.text} />

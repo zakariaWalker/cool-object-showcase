@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { AdminView } from "./useAdminKBStore";
 
 interface Props {
@@ -24,6 +25,8 @@ const NAV_ITEMS: { id: AdminView; icon: string; label: string; badge?: keyof Pro
 ];
 
 export function AdminSidebar({ view, setView, stats, onImport, onExport }: Props) {
+  const navigate = useNavigate();
+
   return (
     <aside className="w-[260px] flex-shrink-0 flex flex-col overflow-hidden"
       style={{ background: "hsl(var(--primary))" }}>
@@ -98,7 +101,14 @@ export function AdminSidebar({ view, setView, stats, onImport, onExport }: Props
           <span className="text-base w-5 text-center">↓</span>
           <span>تصدير الكل</span>
         </div>
+        <div onClick={() => navigate("/admin/reports")}
+          className="flex items-center gap-3 px-5 py-2.5 cursor-pointer text-sm font-medium transition-all"
+          style={{ color: "hsl(var(--primary-foreground) / 0.72)" }}>
+          <span className="text-base w-5 text-center">🚩</span>
+          <span>بلاغات الأخطاء</span>
+        </div>
       </nav>
+
 
       {/* Footer */}
       <div className="px-5 py-3 text-xs leading-relaxed"

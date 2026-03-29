@@ -46,13 +46,15 @@ export function ExerciseReportModal({ exerciseId, trigger }: ExerciseReportModal
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("exercise_reports").insert({
-        exercise_id: exerciseId,
-        student_id: user.id,
-        issue_type: issueType,
-        description: description,
-        status: "pending",
-      });
+      const { data, error } = await (supabase as any)
+        .from("exercise_reports")
+        .insert({
+          exercise_id: exerciseId,
+          student_id: user.id,
+          issue_type: issueType,
+          description: description,
+          status: "pending",
+        });
 
       if (error) throw error;
 
@@ -98,7 +100,7 @@ export function ExerciseReportModal({ exerciseId, trigger }: ExerciseReportModal
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="text_issue" className="text-right">خطأ في نص التمرين (كلمات ناقصة/غير مفهومة)</SelectItem>
-                <SelectItem value="math_issue" className="text-right">خطأ في الصيغ الرياضية (LaTeX)</SelectItem>
+                <SelectItem value="math_issue" className="text-right">خطأ في الرموز أو المعادلات الرياضية</SelectItem>
                 <SelectItem value="answer_issue" className="text-right">خطأ في الإجابة الصحيحة أو الخيارات</SelectItem>
                 <SelectItem value="image_issue" className="text-right">مشكلة في الصورة المرفقة (إن وجدت)</SelectItem>
                 <SelectItem value="other" className="text-right">أخرى</SelectItem>

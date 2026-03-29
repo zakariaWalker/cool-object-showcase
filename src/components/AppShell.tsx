@@ -120,19 +120,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {/* Right side: admin + user */}
           <div className="flex-shrink-0 flex items-center gap-4 mr-4">
             {isAdmin && (
-              <Link
-                to={ADMIN_LINK.path}
-                className={`
-                  flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12px] font-black transition-all border-2
-                  ${currentPath === ADMIN_LINK.path
-                    ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20"
-                    : "border-border/40 text-muted-foreground hover:border-primary/40 hover:text-primary"
-                  }
-                `}
-              >
-                {ADMIN_LINK.emoji} <span className="hidden lg:inline">{ADMIN_LINK.label}</span>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/admin"
+                  className={`
+                    flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12px] font-black transition-all border-2
+                    ${currentPath === "/admin"
+                      ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20"
+                      : "border-border/40 text-muted-foreground hover:border-primary/40 hover:text-primary"
+                    }
+                  `}
+                >
+                  ⚙️ <span className="hidden lg:inline">قاعدة المعرفة</span>
+                </Link>
+                <Link
+                  to="/admin/reports"
+                  className={`
+                    flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12px] font-black transition-all border-2
+                    ${currentPath === "/admin/reports"
+                      ? "bg-destructive/10 border-destructive/20 text-destructive shadow-lg shadow-destructive/5"
+                      : "border-border/40 text-muted-foreground hover:border-destructive/40 hover:text-destructive"
+                    }
+                  `}
+                >
+                  🚩 <span className="hidden lg:inline">البلاغات</span>
+                </Link>
+              </div>
             )}
+
 
             {user ? (
               <Link to="/profile" className="flex items-center gap-3 group">

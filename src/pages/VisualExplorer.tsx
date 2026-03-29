@@ -1,6 +1,6 @@
-// ===== Visual Explorer — Interactive function plotter, geometry manipulator, concept map =====
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 
 type ExplorerTab = "functions" | "geometry" | "concepts" | "fractions" | "symmetry" | "thales" | "trigonometry" | "absolute";
 
@@ -465,8 +465,7 @@ function GeometryPlayground() {
 // 3. CONCEPT MAP EXPLORER — Interactive knowledge graph
 // ═══════════════════════════════════════════════════════════════
 
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+
 
 interface ConceptNode {
   id: string;
