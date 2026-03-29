@@ -197,12 +197,11 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
     setGenerating(true);
     setIsComparing(true);
     try {
-      const [kb, ai, hybrid] = await Promise.all([
-        generateKBOnlyExam(template, grade),
-        generateAIOnlyExam(template, grade, structuralPatterns, styleProfile),
-        generateHybridExam(template, grade, structuralPatterns)
-      ]);
-      setComparisonResults([kb, ai, hybrid]);
+      const results: GenerationResult[] = [];
+      try { results.push(await generateKBOnlyExam(template, grade)); } catch {}
+      try { results.push(await generateAIOnlyExam(template, grade, structuralPatterns, styleProfile)); } catch {}
+      try { results.push(await generateHybridExam(template, grade, structuralPatterns)); } catch {}
+      setComparisonResults(results.filter(r => r?.exam?.sections));
     } catch (e) {
       console.error(e);
       toast.error("فشل التوليد التلقائي. تأكد من إعداد مفتاح AI.");
@@ -213,9 +212,9 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
   };
 
   const selectGeneratedExam = (res: GenerationResult) => {
+    if (!res?.exam?.sections) return;
     setSections(res.exam.sections);
-    setTitle(res.exam.title);
-    setIsComparing(false);
+    setTitle(res.exam.title || title);
     toast.success(`تم تطبيق ${res.engine === 'kb_only' ? 'النموذج الواقعي' : res.engine === 'ai_only' ? 'النموذج الابتكاري' : 'النموذج الهجين'}`);
   };
 
@@ -772,7 +771,7 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
 
                   <div className="flex-1 bg-muted/30 rounded-lg p-3 text-[10px] space-y-2 overflow-hidden border border-border/50">
                     <p className="font-black border-b border-border pb-1">محتوى العينة:</p>
-                    {res.exam.sections[0]?.exercises[0]?.text && (
+                    {res.exam?.sections?.[0]?.exercises?.[0]?.text && (
                       <p className="line-clamp-6 text-muted-foreground whitespace-pre-wrap leading-relaxed">
                         {res.exam.sections[0].exercises[0].text}
                       </p>

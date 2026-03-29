@@ -7,10 +7,10 @@ import { GamificationDashboard } from "@/components/GamificationDashboard";
 const WORKFLOW = [
   {
     step: 1,
-    path: "/gaps",
+    path: "/diagnostic",
     title: "التقييم التشخيصي",
-    subtitle: "حدد مستواك واكتشف ثغراتك",
-    description: "تقييم تكيّفي يعرض عليك تمارين من قاعدة المعرفة ويحلل إجاباتك لتحديد المفاهيم الغائبة والأنماط الضعيفة.",
+    subtitle: "امتحان تفاعلي من PDF حقيقي",
+    description: "حوّل أي امتحان مرفوع إلى تجربة تفاعلية — أجب بالمحررات المتخصصة واحصل على تحليل ذكي لثغراتك ونقاط قوتك.",
     emoji: "🔍",
     colorVar: "--algebra",
   },

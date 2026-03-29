@@ -1,9 +1,7 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -12,6 +10,7 @@ Deno.serve(async (req) => {
   try {
     const { mode, template, grade, patterns, kbExam, style } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     let prompt = "";
     if (mode === "synthetic") {
@@ -57,7 +56,6 @@ Deno.serve(async (req) => {
   }
 }`;
     } else {
-      // Hybrid mode
       prompt = `أنت خبير تربوي. قم بتطوير وتحسين هذا الامتحان المقترح المستخرج من قاعدة البيانات ليطابق المعايير البيداغوجية الحديثة.
 الامتحان الحالي: ${JSON.stringify(kbExam)}
 
@@ -69,32 +67,48 @@ Deno.serve(async (req) => {
 أعد النتيجة بنفس هيكل JSON الخاص بالامتحان المرفق.`;
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
-
-    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      },
       body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: "application/json",
-        },
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: "أنت خبير في بناء امتحانات الرياضيات الجزائرية. أجب دائماً بـ JSON صالح فقط." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.2,
       }),
     });
 
     if (!aiResponse.ok) {
+      if (aiResponse.status === 429) {
+        return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول مرة أخرى لاحقاً." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ error: "يرجى إضافة رصيد للاستمرار في استخدام AI." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const errText = await aiResponse.text();
-      throw new Error(`Gemini API error ${aiResponse.status}: ${errText}`);
+      throw new Error(`AI gateway error ${aiResponse.status}: ${errText}`);
     }
 
     const aiData = await aiResponse.json();
-    const aiText = aiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!aiText) throw new Error("Empty AI response from Gemini");
+    const aiText = aiData?.choices?.[0]?.message?.content;
+    if (!aiText) throw new Error("Empty AI response");
 
-    return new Response(aiText, {
+    // Extract JSON from response
+    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Could not parse AI response as JSON");
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
