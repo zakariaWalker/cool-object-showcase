@@ -35,7 +35,16 @@ export default function AITutor() {
   const [kbPattern, setKbPattern] = useState<any>(null);
   const [kbLoading, setKbLoading] = useState(false);
 
-  useEffect(() => { loadExercises(); }, []);
+  useEffect(() => { 
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.user_metadata?.grade) {
+        setGradeFilter(user.user_metadata.grade);
+      }
+      loadExercises();
+    }
+    init();
+  }, []);
 
   async function loadExercises() {
     setLoading(true);
@@ -43,7 +52,11 @@ export default function AITutor() {
     const all: any[] = [];
     let from = 0;
     while (true) {
-      const { data } = await (supabase as any).from("kb_exercises").select("id,text,type,grade").order("grade").range(from, from + PAGE - 1);
+      const { data } = await (supabase as any)
+        .from("kb_exercises")
+        .select("id,text,type,grade")
+        .order("grade")
+        .range(from, from + PAGE - 1);
       if (!data || data.length === 0) break;
       all.push(...data);
       if (data.length < PAGE) break;

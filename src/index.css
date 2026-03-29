@@ -137,6 +137,18 @@
   .katex {
     font-size: 1.15em !important;
     color: hsl(var(--foreground)) !important;
+    white-space: nowrap !important;
+  }
+
+  .katex-display {
+    @apply my-4 overflow-x-auto overflow-y-hidden py-2;
+  }
+
+  .inline-math-isolate {
+    display: inline-flex !important;
+    align-items: center;
+    white-space: nowrap !important;
+    vertical-align: middle;
   }
 }
 

@@ -32,6 +32,8 @@ import { ProgressChart } from "@/components/profile/ProgressChart";
 import { KnowledgeGaps } from "@/components/profile/KnowledgeGaps";
 import { AchievementGallery } from "@/components/profile/AchievementGallery";
 
+import { getGradeLabel } from "@/lib/grade-utils";
+
 export default function StudentProfile() {
   const navigate = useNavigate();
   const { profile: cognitiveProfile } = useProfile();
@@ -56,7 +58,7 @@ export default function StudentProfile() {
         .from("profiles")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       setDbProfile(profileData);
 
       // Fetch Progress
@@ -64,7 +66,7 @@ export default function StudentProfile() {
         .from("student_progress")
         .select("*")
         .eq("student_id", user.id)
-        .single();
+        .maybeSingle();
       setProgress(progressData);
 
       // Fetch Knowledge Gaps
@@ -95,8 +97,9 @@ export default function StudentProfile() {
     );
   }
 
-  const userGrade = user?.user_metadata?.grade || "N/A";
-  const userStream = user?.user_metadata?.stream || "";
+  const userGrade = dbProfile?.grade || user?.user_metadata?.grade || "N/A";
+  const gradeLabel = getGradeLabel(userGrade);
+  const isSecondary = userGrade.startsWith("secondary") || userGrade === "3AS";
 
   return (
     <div className="min-h-screen bg-background/50 pb-20 pt-6 px-4 md:px-8 mt-16" dir="rtl">
@@ -152,7 +155,7 @@ export default function StudentProfile() {
                   <CardTitle className="text-xl font-black flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-primary" /> المسار الحالي
                   </CardTitle>
-                  <CardDescription>أنت تدرس حالياً برنامج {userGrade}</CardDescription>
+                  <CardDescription>أنت تدرس حالياً برنامج {gradeLabel}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="p-4 rounded-2xl bg-muted/50 border border-border/50">

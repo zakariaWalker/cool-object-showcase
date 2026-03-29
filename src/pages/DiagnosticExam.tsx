@@ -109,16 +109,16 @@ export default function DiagnosticExam() {
               <div className="max-w-xl mx-auto space-y-4">
                 <p className="text-center text-xs font-black text-muted-foreground uppercase tracking-widest">اختر مستواك الدراسي لتخصيص التقييم</p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {["4AM", "1AS", "2AS", "3AS"].map((grade) => (
+                  {["1AM", "2AM", "3AM", "4AM", "1AS", "2AS", "3AS"].map((grade) => (
                     <button
                       key={grade}
                       onClick={() => setSelectedGrade(grade)}
                       className={`
-                        px-6 py-3 rounded-xl border-2 font-black transition-all
+                        px-4 py-3 rounded-xl border-2 font-black transition-all text-sm
                         ${selectedGrade === grade ? "border-primary bg-primary/10 text-primary scale-105" : "border-border hover:border-primary/40 text-muted-foreground"}
                       `}
                     >
-                      {grade === "4AM" ? "رابعة متوسط (BEM)" : grade === "1AS" ? "أولى ثانوي" : grade === "2AS" ? "ثانية ثانوي" : "بكالوريا (BAC)"}
+                      {grade === "1AM" ? "أولى متوسط" : grade === "2AM" ? "ثانية متوسط" : grade === "3AM" ? "ثالثة متوسط" : grade === "4AM" ? "رابعة متوسط (BEM)" : grade === "1AS" ? "أولى ثانوي" : grade === "2AS" ? "ثانية ثانوي" : "بكالوريا (BAC)"}
                     </button>
                   ))}
                 </div>

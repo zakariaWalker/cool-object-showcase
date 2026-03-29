@@ -5,6 +5,7 @@ import { Settings, LogOut, Brain, Target, Award, ShieldCheck } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { getGradeLabel } from "@/lib/grade-utils";
 
 export function ProfileHeader({ user, dbProfile, progress, cognitiveProfile }: any) {
   const navigate = useNavigate();
@@ -17,9 +18,8 @@ export function ProfileHeader({ user, dbProfile, progress, cognitiveProfile }: a
   const fullName = dbProfile?.full_name || user?.user_metadata?.full_name || "تلميذ QED";
   const xp = progress?.xp || 0;
   const level = progress?.level || 1;
-  const grade = user?.user_metadata?.grade || "N/A";
-
-  const gradeLabel = grade === "middle_4" ? "4AM (BEM)" : grade === "secondary_3" ? "3AS (BAC)" : grade;
+  const grade = dbProfile?.grade || user?.user_metadata?.grade;
+  const gradeLabel = getGradeLabel(grade);
 
   return (
     <motion.div 
