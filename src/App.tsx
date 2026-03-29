@@ -49,6 +49,7 @@ const App = () => (
             <Route path="/whatif" element={<WhatIf />} />
             <Route path="/exams" element={<ExamBuilderPage />} />
             <Route path="/exam-kb" element={<ExamKBPage />} />
+            <Route path="/diagnostic" element={<DiagnosticExam />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppShell>
