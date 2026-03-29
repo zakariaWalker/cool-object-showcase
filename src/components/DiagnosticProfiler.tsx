@@ -2,68 +2,23 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProfile, computeProfileFromRecords, DiagnosticRecord, PROFILES, ProfileType } from "@/engine/profile-store";
 import { LatexRenderer } from "@/components/LatexRenderer";
-import { CheckCircle2, AlertTriangle, HelpCircle, Brain, Target, Zap, Puzzle, BarChart3, Clock, ArrowRight } from "lucide-react";
+import { generateDiagnosticExercises, DiagnosticExercise } from "@/engine/DiagnosticGeneratorService";
+import { CheckCircle2, AlertTriangle, HelpCircle, Brain, Target, Zap, Puzzle, BarChart3, Clock, ArrowRight, Loader2 } from "lucide-react";
 
-// ─── Fair Diagnostic Questions ─────────────────────────────────────────────
-const EXERCISES = [
-  {
-    id: 1, type: "logic" as const, typeName: "تحليل منطقي",
-    question: "قالت آمال: $(x+5)^2 = x^2 + 25$. هل هي محقة؟",
-    options: ["نعم، صحيحة", "لا، ينقصها حد الوسط ($2ab$)"],
-    answer: "لا، ينقصها حد الوسط ($2ab$)",
-    hint: "تذكر نشر المتطابقات الشهيرة $(a+b)^2 = a^2 + 2ab + b^2$.",
-    kind: "qcm" as const, icon: "💡",
-    misconception: "نسيان الحد الأوسط عند نشر المربع",
-    badgeColor: "var(--algebra)", badgeBg: "rgba(167,139,250,0.08)"
-  },
-  {
-    id: 2, type: "trap" as const, typeName: "فخ المتراجحات",
-    question: "ما هو حل المتراجحة: $-3x > 9$؟",
-    options: ["$x > -3$", "$x < -3$", "$x > 3$", "$x < 3$"],
-    answer: "$x < -3$",
-    hint: "تنبيه: ماذا يحدث لجهة المتراجحة عند القسمة على عدد سالب؟",
-    kind: "qcm" as const, icon: "🪤",
-    misconception: "عدم قلب المتراجحة عند القسمة على سالب",
-    badgeColor: "var(--destructive)", badgeBg: "rgba(248,113,113,0.08)"
-  },
-  {
-    id: 3, type: "standard" as const, typeName: "النسب المئوية",
-    question: "سلعة سعرها $100$ دج، ارتفعت بـ $20\\%$ ثم انخفضت بـ $20\\%$. هل السعر النهائي $100$ دج؟",
-    options: ["نعم، يبقى نفسه", "لا، السعر الجديد يختلف"],
-    answer: "لا، السعر الجديد يختلف",
-    hint: "الثمن زاد بـ $20$ دج (أصبح $120$)، ثم نقص بـ $20\\%$ من الـ $120$ دج.",
-    kind: "qcm" as const, icon: "📊",
-    misconception: "التفكير الخطي في تغيرات النسب المئوية",
-    badgeColor: "var(--statistics)", badgeBg: "rgba(245,158,11,0.08)"
-  },
-  {
-    id: 4, type: "open" as const, typeName: "هندسة ذكية",
-    question: "محيط مستطيل هو $20$ سم. ما هو طول الضلع $x$ الذي يعطي أكبر مساحة ممكنة؟",
-    answer: "5",
-    hint: "المربع هو الحالة التي تعطي أكبر مساحة لمحيط ثابت. جرب تقسيم المحيط على 4.",
-    kind: "numeric" as const, placeholder: "x = ?",
-    icon: "📐",
-    misconception: "صعوبة الربط بين المحيط والمساحة القصوى",
-    badgeColor: "var(--geometry)", badgeBg: "rgba(34,211,238,0.08)"
-  },
-  {
-    id: 5, type: "strategic" as const, typeName: "ذكاء عدد",
-    question: "بكم طريقة يمكنك دفع مبلغ $10$ دج باستعمال قطع $2$ دج و $5$ دج فقط؟",
-    answer: "2",
-    hint: "الطرق هي: (5 قطع من $2$ دج) أو (قطعتان من $5$ دج).",
-    kind: "numeric" as const, placeholder: "عدد الطرق = ؟",
-    icon: "🧩",
-    misconception: "صعوبة الحصر المنطقي للاحتمالات",
-    badgeColor: "var(--cyan)", badgeBg: "rgba(6,182,212,0.08)"
-  }
-];
-
-export function DiagnosticProfiler({ onClose }: { onClose: () => void }) {
+export function DiagnosticProfiler({ 
+  level, 
+  onClose 
+}: { 
+  level: string;
+  onClose: () => void;
+}) {
   const { setProfile } = useProfile();
+  const [exercises, setExercises] = useState<DiagnosticExercise[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentEx, setCurrentEx] = useState(0);
   const [records, setRecords] = useState<DiagnosticRecord[]>([]);
 
-  // State
+  // Per-exercise state
   const [timeSecs, setTimeSecs] = useState(0);
   const [startTime, setStartTime] = useState(0);
   const [firstActionTime, setFirstActionTime] = useState<number | null>(null);
@@ -78,10 +33,23 @@ export function DiagnosticProfiler({ onClose }: { onClose: () => void }) {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Load dynamic exercises on mount
   useEffect(() => {
-    resetExState();
+    async function load() {
+      setLoading(true);
+      const data = await generateDiagnosticExercises(level);
+      setExercises(data);
+      setLoading(false);
+    }
+    load();
+  }, [level]);
+
+  useEffect(() => {
+    if (!loading && exercises.length > 0) {
+      resetExState();
+    }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [currentEx]);
+  }, [currentEx, loading, exercises]);
 
   function resetExState() {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -105,11 +73,10 @@ export function DiagnosticProfiler({ onClose }: { onClose: () => void }) {
   }
 
   function submitAnswer() {
-    const ex = EXERCISES[currentEx];
+    const ex = exercises[currentEx];
     let isCorrect = false;
     let errorType = "none";
 
-    // Logic for checking correctness
     if (ex.kind === "qcm") {
       isCorrect = inputValue === ex.answer;
       if (!isCorrect) errorType = "misconception";
@@ -141,7 +108,7 @@ export function DiagnosticProfiler({ onClose }: { onClose: () => void }) {
     const newRecords = [...records, record];
     setRecords(newRecords);
 
-    if (currentEx < EXERCISES.length - 1) {
+    if (currentEx < exercises.length - 1) {
       setCurrentEx(prev => prev + 1);
     } else {
       runAnalysis(newRecords);
@@ -152,11 +119,9 @@ export function DiagnosticProfiler({ onClose }: { onClose: () => void }) {
     setAnalyzing(true);
     setTimeout(() => {
       const { type } = computeProfileFromRecords(finalRecords);
-      
-      // Detect misconceptions based on wrong answers in EXERCISES
       const detected = finalRecords
         .filter(r => !r.correct)
-        .map(r => EXERCISES.find(e => e.id === r.exerciseId)?.misconception)
+        .map(r => exercises.find(e => e.id === r.exerciseId)?.misconception)
         .filter(Boolean) as string[];
 
       setProfile(type);
@@ -164,8 +129,6 @@ export function DiagnosticProfiler({ onClose }: { onClose: () => void }) {
       setAnalyzing(false);
     }, 2000);
   }
-
-  // --- Rendering Helpers ---
 
   function renderMath(text: string) {
     const parts = text.split(/(\$[^$]+\$)/g);
@@ -177,7 +140,19 @@ export function DiagnosticProfiler({ onClose }: { onClose: () => void }) {
     });
   }
 
-  // --- Main Render Logic ---
+  if (loading) {
+    return (
+      <div className="py-20 text-center space-y-6">
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }}>
+          <Brain className="w-16 h-16 mx-auto text-primary/40" />
+        </motion.div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-black text-foreground">جاري توليد التقييم العادل...</h2>
+          <p className="text-xs text-muted-foreground">نختار أسئلة ذكية تناسب مستواك ({level}) وتكشف طريقة تفكيرك.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (result) {
     const p = PROFILES[result.profile!];
@@ -238,16 +213,17 @@ export function DiagnosticProfiler({ onClose }: { onClose: () => void }) {
     );
   }
 
-  const ex = EXERCISES[currentEx];
-  const progress = (currentEx / EXERCISES.length) * 100;
+  const ex = exercises[currentEx];
+  if (!ex) return null;
+  const progress = (currentEx / exercises.length) * 100;
 
   return (
     <div className="space-y-6 rtl text-right">
       {/* Progress */}
       <div className="space-y-2">
         <div className="flex justify-between items-end">
-          <span className="text-[10px] font-black text-primary uppercase tracking-tight">التشخيص العادل (Fair Diagnostic)</span>
-          <span className="text-[10px] text-muted-foreground font-bold">سؤال {currentEx + 1} من {EXERCISES.length}</span>
+          <span className="text-[10px] font-black text-primary uppercase tracking-tight">التشخيص العادل ({level})</span>
+          <span className="text-[10px] text-muted-foreground font-bold">سؤال {currentEx + 1} من {exercises.length}</span>
         </div>
         <div className="h-1.5 bg-muted rounded-full overflow-hidden">
           <motion.div animate={{ width: `${progress}%` }} className="h-full bg-primary" />
@@ -359,11 +335,12 @@ export function DiagnosticProfiler({ onClose }: { onClose: () => void }) {
             ${inputValue ? "bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02]" : "bg-muted text-muted-foreground cursor-not-allowed"}
           `}
         >
-          {currentEx === EXERCISES.length - 1 ? "إنهاء والتحليل" : "السؤال التالي"}
+          {currentEx === exercises.length - 1 ? "إنهاء والتحليل" : "السؤال التالي"}
           <ArrowRight className="w-5 h-5 ml-2" />
         </button>
       </div>
     </div>
   );
 }
+
 

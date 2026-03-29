@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 export default function DiagnosticExam() {
   const navigate = useNavigate();
   const [isStarted, setIsStarted] = useState(false);
+  const [selectedGrade, setSelectedGrade] = useState<string | null>(null);
 
   return (
     <div className="h-full w-full bg-background overflow-y-auto" dir="rtl">
@@ -57,23 +58,35 @@ export default function DiagnosticExam() {
                   <h3 className="font-bold text-foreground mb-1">قياس التردد وسرعة البديهة</h3>
                   <p className="text-sm text-muted-foreground">نحلل الوقت المستغرق وتغييرات استراتيجيتك أثناء الحل.</p>
                 </div>
+              </div>
 
-                <div className="p-5 rounded-2xl border border-border bg-card md:col-span-2">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-3">
-                    <Puzzle className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-bold text-foreground mb-1">تحديد النمط المعرفي</h3>
-                  <p className="text-sm text-muted-foreground">في النهاية، سنحدد ما إذا كنت: استراتيجياً، مفاهيمياً، إجرائياً، أو تفاعلياً لتخصيص محرك AI لك.</p>
+              {/* Level Selector */}
+              <div className="max-w-xl mx-auto space-y-4">
+                <p className="text-center text-xs font-black text-muted-foreground uppercase tracking-widest">اختر مستواك الدراسي لتخصيص التقييم</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {["4AM", "1AS", "2AS", "3AS"].map((grade) => (
+                    <button
+                      key={grade}
+                      onClick={() => setSelectedGrade(grade)}
+                      className={`
+                        px-6 py-3 rounded-xl border-2 font-black transition-all
+                        ${selectedGrade === grade ? "border-primary bg-primary/10 text-primary scale-105" : "border-border hover:border-primary/40 text-muted-foreground"}
+                      `}
+                    >
+                      {grade === "4AM" ? "رابعة متوسط (BEM)" : grade === "1AS" ? "أولى ثانوي" : grade === "2AS" ? "ثانية ثانوي" : "بكالوريا (BAC)"}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               <div className="flex justify-center mt-12">
                 <Button 
                   size="lg" 
+                  disabled={!selectedGrade}
                   onClick={() => setIsStarted(true)}
                   className="gap-3 px-8 text-lg font-bold rounded-2xl h-14"
                 >
-                  <Play className="w-5 h-5" /> ابدأ التقييم الآن
+                  <Play className="w-5 h-5" /> {selectedGrade ? "ابدأ التقييم المخصص" : "اختر مستواك أولاً"}
                 </Button>
               </div>
             </motion.div>
@@ -85,7 +98,10 @@ export default function DiagnosticExam() {
               exit={{ opacity: 0, y: 20 }}
               className="max-w-2xl mx-auto w-full bg-card p-6 md:p-8 rounded-3xl border border-border shadow-2xl"
             >
-              <DiagnosticProfiler onClose={() => setIsStarted(false)} />
+              <DiagnosticProfiler 
+                level={selectedGrade || "3AS"} 
+                onClose={() => setIsStarted(false)} 
+              />
             </motion.div>
           )}
         </AnimatePresence>
