@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useProfile, computeProfileFromRecords, DiagnosticRecord, PROFILES, ProfileType } from "@/engine/profile-store";
 import { LatexRenderer } from "@/components/LatexRenderer";
 import { generateDiagnosticExercises, DiagnosticExercise } from "@/engine/DiagnosticGeneratorService";
+import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, AlertTriangle, HelpCircle, Brain, Target, Zap, Puzzle, BarChart3, Clock, ArrowRight, Loader2 } from "lucide-react";
 
 export function DiagnosticProfiler({ 
@@ -115,19 +116,50 @@ export function DiagnosticProfiler({
     }
   }
 
-  function runAnalysis(finalRecords: DiagnosticRecord[]) {
+  async function runAnalysis(finalRecords: DiagnosticRecord[]) {
     setAnalyzing(true);
-    setTimeout(() => {
-      const { type } = computeProfileFromRecords(finalRecords);
-      const detected = finalRecords
-        .filter(r => !r.correct)
-        .map(r => exercises.find(e => e.id === r.exerciseId)?.misconception)
-        .filter(Boolean) as string[];
+    
+    // Artificial delay for 'analysis' feel
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const { type } = computeProfileFromRecords(finalRecords);
+    const detected = finalRecords
+      .filter(r => !r.correct)
+      .map(r => exercises.find(e => e.id === r.exerciseId)?.misconception)
+      .filter(Boolean) as string[];
 
-      setProfile(type);
-      setResult({ profile: type, detectedMisconceptions: detected });
-      setAnalyzing(false);
-    }, 2000);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      // 1. Save Activity Log
+      await supabase.from("student_activity_log").insert({
+        student_id: user.id,
+        action: "diagnostic_completed",
+        xp_earned: 100,
+        metadata: { profile: type, level, date: new Date().toISOString() }
+      });
+
+      // 2. Save Knowledge Gaps
+      if (detected.length > 0) {
+        const gapInserts = detected.map(topic => ({
+          student_id: user.id,
+          topic,
+          severity: "medium", // Default
+          detected_at: new Date().toISOString()
+        }));
+        await supabase.from("student_knowledge_gaps").insert(gapInserts);
+      }
+
+      // 3. Update Progress (XP)
+      const { data: prog } = await supabase.from("student_progress").select("xp").eq("student_id", user.id).single();
+      await supabase.from("student_progress").update({
+        xp: (prog?.xp || 0) + 100,
+        updated_at: new Date().toISOString()
+      }).eq("student_id", user.id);
+    }
+
+    setProfile(type);
+    setResult({ profile: type, detectedMisconceptions: detected });
+    setAnalyzing(false);
   }
 
   function renderMath(text: string) {
