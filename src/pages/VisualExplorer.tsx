@@ -466,7 +466,7 @@ function GeometryPlayground() {
 // ═══════════════════════════════════════════════════════════════
 
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface ConceptNode {
   id: string;
@@ -474,11 +474,14 @@ interface ConceptNode {
   type: string;
   x: number;
   y: number;
+  vx: number;
+  vy: number;
   exerciseCount: number;
 }
 
 function ConceptMapExplorer() {
   const [nodes, setNodes] = useState<ConceptNode[]>([]);
+  const [edges, setEdges] = useState<[number, number][]>([]);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [exercises, setExercises] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -496,20 +499,75 @@ function ConceptMapExplorer() {
       const countMap: Record<string, number> = {};
       decons?.forEach((d: any) => { countMap[d.pattern_id] = (countMap[d.pattern_id] || 0) + 1; });
 
-      const W = 700, H = 500;
-      const mapped = patterns.map((p: any, i: number) => {
-        const angle = (i / patterns.length) * 2 * Math.PI;
-        const radius = 150 + Math.random() * 80;
-        return {
-          id: p.id,
-          name: p.name,
-          type: p.type || "",
-          x: W / 2 + Math.cos(angle) * radius,
-          y: H / 2 + Math.sin(angle) * radius,
-          exerciseCount: countMap[p.id] || 0,
-        };
-      });
+      const W = 1600, H = 1200;
+      const mapped = patterns.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        type: p.type || "",
+        x: W / 2 + (Math.random() - 0.5) * 400,
+        y: H / 2 + (Math.random() - 0.5) * 400,
+        vx: 0,
+        vy: 0,
+        exerciseCount: countMap[p.id] || 0,
+      }));
+
+      // Create edges (simplified topological connection for Demo forces)
+      const graphEdges: [number, number][] = [];
+      for (let i = 0; i < mapped.length; i++) {
+        for (let j = i + 1; j < Math.min(i + 3, mapped.length); j++) {
+          graphEdges.push([i, j]);
+        }
+      }
+
+      // Physics Simulation (Force-Directed Graph: 150 iterations)
+      const iterations = 150;
+      const k = Math.sqrt((W * H) / (mapped.length || 1)) * 0.8; // Spring length
+      
+      for (let iter = 0; iter < iterations; iter++) {
+        // 1. Repulsion (Coulomb)
+        for (let i = 0; i < mapped.length; i++) {
+          for (let j = i + 1; j < mapped.length; j++) {
+            const dx = mapped[i].x - mapped[j].x;
+            const dy = mapped[i].y - mapped[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            if (dist < 400) {
+              const force = (k * k) / dist;
+              const fx = (dx / dist) * force * 0.6;
+              const fy = (dy / dist) * force * 0.6;
+              mapped[i].vx += fx; mapped[i].vy += fy;
+              mapped[j].vx -= fx; mapped[j].vy -= fy;
+            }
+          }
+        }
+        // 2. Attraction (Hooke)
+        for (const [a, b] of graphEdges) {
+          const dx = mapped[a].x - mapped[b].x;
+          const dy = mapped[a].y - mapped[b].y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const force = (dist * dist) / k;
+          const fx = (dx / dist) * force * 0.04;
+          const fy = (dy / dist) * force * 0.04;
+          mapped[a].vx -= fx; mapped[a].vy -= fy;
+          mapped[b].vx += fx; mapped[b].vy += fy;
+        }
+        // 3. Gravity & Integration
+        for (let i = 0; i < mapped.length; i++) {
+          mapped[i].vx += (W / 2 - mapped[i].x) * 0.015;
+          mapped[i].vy += (H / 2 - mapped[i].y) * 0.015;
+          
+          mapped[i].x += mapped[i].vx * 0.1;
+          mapped[i].y += mapped[i].vy * 0.1;
+          
+          mapped[i].vx *= 0.6;
+          mapped[i].vy *= 0.6;
+          
+          mapped[i].x = Math.max(150, Math.min(W - 150, mapped[i].x));
+          mapped[i].y = Math.max(150, Math.min(H - 150, mapped[i].y));
+        }
+      }
+
       setNodes(mapped);
+      setEdges(graphEdges);
     }
     setLoading(false);
   };
@@ -526,58 +584,60 @@ function ConceptMapExplorer() {
 
   const selected = nodes.find(n => n.id === selectedNode);
 
-  if (loading) return <div className="text-center py-20 text-muted-foreground">جاري تحميل الخريطة...</div>;
+  if (loading) return <div className="text-center py-20 text-muted-foreground">جاري بناء خريطة المفاهيم...</div>;
 
-  const W = 700, H = 500;
-
-  // Edges: connect nodes that share concepts (simplified: connect neighbors)
-  const edges: [number, number][] = [];
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < Math.min(i + 3, nodes.length); j++) {
-      edges.push([i, j]);
-    }
-  }
+  const W = 1600, H = 1200;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Map */}
-        <div className="lg:col-span-2 rounded-2xl border border-border bg-card overflow-hidden">
-          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 500 }}>
+        {/* Map (Draggable Container) */}
+        <div className="lg:col-span-2 rounded-2xl border border-border bg-card overflow-hidden relative cursor-grab active:cursor-grabbing">
+          <div className="absolute top-4 right-4 z-10 bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-border text-[10px] font-bold text-muted-foreground flex gap-2">
+            <span>🖱️ اسحب الخريطة للتصفح</span>
+            <span>•</span>
+            <span>{nodes.length} مفهوم</span>
+          </div>
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full min-h-[500px]" preserveAspectRatio="xMidYMid slice">
             <rect width={W} height={H} className="fill-card" />
-            {/* Edges */}
-            {edges.map(([a, b], i) => (
-              <motion.line
-                key={i}
-                initial={{ x1: W / 2, y1: H / 2, x2: W / 2, y2: H / 2, opacity: 0 }}
-                animate={{ x1: nodes[a].x, y1: nodes[a].y, x2: nodes[b].x, y2: nodes[b].y, opacity: 0.4 }}
-                transition={{ type: "spring", stiffness: 50, damping: 10, delay: 0.1 }}
-                className="stroke-border" strokeWidth={0.5}
-              />
-            ))}
-            {/* Nodes */}
-            {nodes.map(n => {
-              const isSelected = n.id === selectedNode;
-              const r = 8 + n.exerciseCount * 2;
-              return (
-                <motion.g
-                  key={n.id}
-                  onClick={() => selectNode(n.id)}
-                  style={{ cursor: "pointer" }}
-                  initial={{ x: W / 2, y: H / 2, opacity: 0, scale: 0.5 }}
-                  animate={{ x: n.x, y: n.y, opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.15 }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ type: "spring", stiffness: 60, damping: 12 }}
-                >
-                  <circle r={r + 6} className={isSelected ? "fill-primary/20" : "fill-transparent"} />
-                  <circle r={r} className={isSelected ? "fill-primary" : "fill-primary/40"} />
-                  <text y={r + 14} className="fill-foreground text-[9px] font-bold" textAnchor="middle">
-                    {n.name.length > 15 ? n.name.slice(0, 13) + "…" : n.name}
-                  </text>
-                </motion.g>
-              );
-            })}
+            
+            <motion.g drag dragConstraints={{ left: -W/2, right: W/2, top: -H/2, bottom: H/2 }} dragElastic={0.2} initial={{ x: 0, y: 0 }}>
+              {/* Edges */}
+              {edges.map(([a, b], i) => (
+                <motion.line
+                  key={i}
+                  initial={{ x1: W / 2, y1: H / 2, x2: W / 2, y2: H / 2, opacity: 0 }}
+                  animate={{ x1: nodes[a].x, y1: nodes[a].y, x2: nodes[b].x, y2: nodes[b].y, opacity: 0.2 }}
+                  transition={{ type: "spring", stiffness: 40, damping: 15, delay: 0.1 }}
+                  className="stroke-border" strokeWidth={1.5} strokeDasharray="4 4"
+                />
+              ))}
+              {/* Nodes */}
+              {nodes.map(n => {
+                const isSelected = n.id === selectedNode;
+                const r = 10 + Math.min(n.exerciseCount * 2, 20); // Cap radius size
+                return (
+                  <motion.g
+                    key={n.id}
+                    onClick={() => selectNode(n.id)}
+                    style={{ cursor: "pointer" }}
+                    initial={{ x: W / 2, y: H / 2, opacity: 0, scale: 0.5 }}
+                    animate={{ x: n.x, y: n.y, opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.15 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 60, damping: 12 }}
+                  >
+                    <circle r={r + 8} className={isSelected ? "fill-primary/20" : "fill-transparent"} />
+                    <circle r={r} className={isSelected ? "fill-primary shadow-lg" : "fill-primary/80"} />
+                    {/* Background pill for text so it's readable */}
+                    <rect x={-45} y={r + 6} width={90} height={18} rx={9} className="fill-background/90 stroke-border shadow-sm" strokeWidth={1} />
+                    <text y={r + 18} className="fill-foreground text-[10px] font-black drop-shadow-sm" textAnchor="middle">
+                      {n.name.length > 18 ? n.name.slice(0, 16) + "…" : n.name}
+                    </text>
+                  </motion.g>
+                );
+              })}
+            </motion.g>
           </svg>
         </div>
 
@@ -587,19 +647,25 @@ function ConceptMapExplorer() {
             <>
               <h3 className="text-sm font-black text-foreground">{selected.name}</h3>
               <div className="text-[10px] text-muted-foreground">{selected.type}</div>
-              <div className="text-xs text-muted-foreground">{selected.exerciseCount} تمارين مرتبطة</div>
-              <div className="space-y-2 mt-4">
-                <h4 className="text-[11px] font-bold text-foreground">التمارين:</h4>
-                {exercises.map((ex: any) => (
-                  <div key={ex.id} className="p-3 rounded-xl bg-muted/30 border border-border text-xs text-foreground line-clamp-3">
-                    {ex.text?.slice(0, 120)}...
-                  </div>
-                ))}
+              <div className="text-xs font-bold text-primary mt-2">{selected.exerciseCount} تمارين مرتبطة به</div>
+              <div className="space-y-2 mt-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                <h4 className="text-[11px] font-bold text-muted-foreground">التطبيقات (التمارين):</h4>
+                {exercises.length === 0 ? (
+                  <p className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl border border-border">لا توجد تمارين حالية مرتبطة بهذه العقدة.</p>
+                ) : (
+                  exercises.map((ex: any) => (
+                    <div key={ex.id} className="p-3 rounded-xl bg-muted/20 border border-border text-xs text-foreground leading-relaxed hover:bg-muted/40 transition-colors">
+                      {ex.text?.slice(0, 140)}...
+                    </div>
+                  ))
+                )}
               </div>
             </>
           ) : (
-            <div className="text-center py-10 text-muted-foreground text-xs">
-              👆 اضغط على عقدة لاستكشاف المفهوم والتمارين المرتبطة
+            <div className="flex flex-col items-center justify-center p-8 bg-muted/30 border border-border rounded-xl text-center h-full min-h-[200px]">
+              <div className="text-4xl mb-3 opacity-80">🕸️</div>
+              <h3 className="text-sm font-bold text-foreground">الشبكة المعرفية</h3>
+              <p className="text-xs text-muted-foreground mt-2">اضغط على أي عقدة (مفهوم) لاستكشاف التطبيقات والمسائل المرتبطة بها في قواعد البيانات.</p>
             </div>
           )}
         </div>
