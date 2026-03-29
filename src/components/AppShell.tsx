@@ -7,14 +7,15 @@ import { useAuth } from "@/hooks/useAuth";
 
 const WORKFLOW_STEPS = [
   { path: "/home",   label: "الرئيسية",      emoji: "🏠", step: 0 },
-  { path: "/gaps",   label: "التقييم التشخيصي", emoji: "🔍", step: 1 },
-  { path: "/learn",  label: "مسار التعلم",    emoji: "🗺️", step: 2 },
-  { path: "/exercises", label: "التمارين",    emoji: "📝", step: 3 },
-  { path: "/tutor",  label: "المدرّس الذكي",  emoji: "🤖", step: 4 },
-  { path: "/explore", label: "الاستكشاف",    emoji: "🔭", step: 5 },
-  { path: "/whatif", label: "ماذا لو؟",       emoji: "🔬", step: 6 },
-  { path: "/exams", label: "الامتحانات",     emoji: "🏗️", step: 7 },
-  { path: "/exam-kb", label: "KB امتحانات",  emoji: "📚", step: 8 },
+  { path: "/diagnostic", label: "التقييم التشخيصي", emoji: "🔍", step: 1 },
+  { path: "/gaps",   label: "كشف الثغرات", emoji: "🎯", step: 2 },
+  { path: "/learn",  label: "مسار التعلم",    emoji: "🗺️", step: 3 },
+  { path: "/exercises", label: "التمارين",    emoji: "📝", step: 4 },
+  { path: "/tutor",  label: "المدرّس الذكي",  emoji: "🤖", step: 5 },
+  { path: "/explore", label: "الاستكشاف",    emoji: "🔭", step: 6 },
+  { path: "/whatif", label: "ماذا لو؟",       emoji: "🔬", step: 7 },
+  { path: "/exams", label: "الامتحانات",     emoji: "🏗️", step: 8 },
+  { path: "/exam-kb", label: "KB امتحانات",  emoji: "📚", step: 9 },
 ];
 
 const ADMIN_LINK = { path: "/admin", label: "لوحة الإدارة", emoji: "⚙️" };
@@ -29,7 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Protected routes check for guests
   // Guests can ONLY access landing ("/") and Diagnostic Assessment ("/gaps")
   useEffect(() => {
-    if (isGuest && currentPath !== "/" && currentPath !== "/auth" && currentPath !== "/gaps" && !currentPath.startsWith("/tma")) {
+    if (isGuest && currentPath !== "/" && currentPath !== "/auth" && currentPath !== "/gaps" && currentPath !== "/diagnostic" && !currentPath.startsWith("/tma")) {
       navigate("/auth");
     }
   }, [isGuest, currentPath, navigate]);
@@ -39,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Filter steps for navigation: Guests only see Diagnostic, Students only see learning/practice
   const visibleSteps = WORKFLOW_STEPS.filter(step => {
-    if (isGuest) return step.path === "/gaps"; 
+    if (isGuest) return step.path === "/gaps" || step.path === "/diagnostic"; 
     // Admin only steps
     if (!isAdmin && (step.path === "/exams" || step.path === "/exam-kb")) return false;
     return true;
