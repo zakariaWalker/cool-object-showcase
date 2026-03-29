@@ -238,6 +238,45 @@ export type Database = {
           },
         ]
       }
+      exam_blueprints: {
+        Row: {
+          aggregated_patterns: Json | null
+          aggregated_style: Json | null
+          change_summary: string | null
+          created_at: string | null
+          format: string
+          grade: string
+          id: string
+          is_current: boolean | null
+          sample_size: number | null
+          version: number
+        }
+        Insert: {
+          aggregated_patterns?: Json | null
+          aggregated_style?: Json | null
+          change_summary?: string | null
+          created_at?: string | null
+          format: string
+          grade: string
+          id?: string
+          is_current?: boolean | null
+          sample_size?: number | null
+          version?: number
+        }
+        Update: {
+          aggregated_patterns?: Json | null
+          aggregated_style?: Json | null
+          change_summary?: string | null
+          created_at?: string | null
+          format?: string
+          grade?: string
+          id?: string
+          is_current?: boolean | null
+          sample_size?: number | null
+          version?: number
+        }
+        Relationships: []
+      }
       exam_corrections: {
         Row: {
           answers: Json
@@ -296,15 +335,20 @@ export type Database = {
       }
       exam_extracted_questions: {
         Row: {
+          bloom_level: number | null
+          cognitive_level: string | null
+          concept_count: number | null
           concepts: string[] | null
           created_at: string
           difficulty: string | null
+          estimated_time_min: number | null
           id: string
           linked_pattern_ids: string[] | null
           points: number | null
           question_number: number
           raw_latex: string | null
           section_label: string
+          step_count: number | null
           sub_question: string | null
           text: string
           type: string | null
@@ -312,15 +356,20 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bloom_level?: number | null
+          cognitive_level?: string | null
+          concept_count?: number | null
           concepts?: string[] | null
           created_at?: string
           difficulty?: string | null
+          estimated_time_min?: number | null
           id?: string
           linked_pattern_ids?: string[] | null
           points?: number | null
           question_number: number
           raw_latex?: string | null
           section_label: string
+          step_count?: number | null
           sub_question?: string | null
           text: string
           type?: string | null
@@ -328,15 +377,20 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bloom_level?: number | null
+          cognitive_level?: string | null
+          concept_count?: number | null
           concepts?: string[] | null
           created_at?: string
           difficulty?: string | null
+          estimated_time_min?: number | null
           id?: string
           linked_pattern_ids?: string[] | null
           points?: number | null
           question_number?: number
           raw_latex?: string | null
           section_label?: string
+          step_count?: number | null
           sub_question?: string | null
           text?: string
           type?: string | null
@@ -388,9 +442,13 @@ export type Database = {
       }
       exam_kb_questions: {
         Row: {
+          bloom_level: number | null
+          cognitive_level: string | null
+          concept_count: number | null
           concepts: string[] | null
           created_at: string
           difficulty: string
+          estimated_time_min: number | null
           exam_id: string
           id: string
           linked_exercise_ids: string[] | null
@@ -398,15 +456,20 @@ export type Database = {
           points: number
           question_number: number
           section_label: string
+          step_count: number | null
           sub_question: string | null
           text: string
           type: string
           user_id: string
         }
         Insert: {
+          bloom_level?: number | null
+          cognitive_level?: string | null
+          concept_count?: number | null
           concepts?: string[] | null
           created_at?: string
           difficulty?: string
+          estimated_time_min?: number | null
           exam_id: string
           id?: string
           linked_exercise_ids?: string[] | null
@@ -414,15 +477,20 @@ export type Database = {
           points?: number
           question_number?: number
           section_label?: string
+          step_count?: number | null
           sub_question?: string | null
           text: string
           type?: string
           user_id: string
         }
         Update: {
+          bloom_level?: number | null
+          cognitive_level?: string | null
+          concept_count?: number | null
           concepts?: string[] | null
           created_at?: string
           difficulty?: string
+          estimated_time_min?: number | null
           exam_id?: string
           id?: string
           linked_exercise_ids?: string[] | null
@@ -430,6 +498,7 @@ export type Database = {
           points?: number
           question_number?: number
           section_label?: string
+          step_count?: number | null
           sub_question?: string | null
           text?: string
           type?: string
@@ -761,6 +830,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          metadata?: Json | null
+          title: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       parent_students: {
         Row: {
