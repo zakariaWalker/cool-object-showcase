@@ -68,7 +68,9 @@ function InlineMath({ text }: { text: string }) {
         seg.isMath ? (
           <KatexSpan key={i} latex={seg.content} display={seg.isDisplay} />
         ) : (
-          <span key={i}>{seg.content}</span>
+          <bdi key={i} dir="auto" className="math-text-preserve break-words">
+            {seg.content}
+          </bdi>
         )
       )}
     </>
@@ -86,7 +88,14 @@ function KatexSpan({ latex, display }: { latex: string; display: boolean }) {
       } catch { if (ref.current) ref.current.textContent = latex; }
     }
   }, [latex, display]);
-  return <span ref={ref} style={{ display: display ? "block" : "inline" }} />;
+  return (
+    <span 
+      ref={ref} 
+      dir="ltr" 
+      className="inline-math-isolate"
+      style={{ display: display ? "block" : "inline-block", unicodeBidi: "isolate", direction: "ltr", maxWidth: "100%", overflowX: "auto", overflowY: "hidden" }} 
+    />
+  );
 }
 
 /* ─── Domain colour tokens ─────────────────────────────────────────────────── */
@@ -335,10 +344,8 @@ export function TMAExerciseView({
             <div style={{ background: d.pill, padding: "10px 16px", borderBottom: `1px solid ${d.accentLight}` }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: d.accentText }}>📝 نص التمرين</span>
             </div>
-            <div style={{ padding: "14px 16px", fontSize: 15, lineHeight: 1.9, color: "#1e293b" }} dir="auto">
-              {exercise.statement.split("\n").map((line, i) => (
-                <div key={i}><InlineMath text={line} /></div>
-              ))}
+            <div style={{ padding: "14px 16px", fontSize: 15, lineHeight: 1.9, color: "#1e293b", whiteSpace: "pre-wrap" }} dir="auto">
+              <InlineMath text={exercise.statement} />
             </div>
           </motion.div>
         )}
@@ -390,19 +397,45 @@ export function TMAExerciseView({
               ✅ المطلوب
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {exercise.questions.map((q, i) => (
-                <motion.div key={i}
-                  initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.25, delay: 0.1 + i * 0.06 }}
-                  style={{ background: "#fff", borderRadius: 14, padding: "14px 14px", boxShadow: "0 1px 10px rgba(0,0,0,0.05)", display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <div style={{ minWidth: 34, height: 34, borderRadius: "50%", background: d.banner, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
-                    {i + 1}
-                  </div>
-                  <span style={{ fontSize: 15, lineHeight: 1.8, color: "#1e293b", paddingTop: 4, flex: 1 }} dir="auto">
-                    <InlineMath text={q.replace(/^\d+[\.\)]\s*/, "")} />
-                  </span>
-                </motion.div>
-              ))}
+              {(() => {
+                // Recombine fragmented questions (if the DB stored multiline LaTeX across multiple array entries)
+                const assembledQuestions: string[] = [];
+                let buffer = "";
+                let inMath = false;
+
+                for (const line of exercise.questions) {
+                  const dollarCount = (line.match(/\$/g) || []).length;
+                  if (inMath) {
+                    buffer += "\n" + line;
+                  } else {
+                    buffer = line;
+                  }
+                  
+                  if (dollarCount % 2 !== 0) {
+                    inMath = !inMath;
+                  }
+
+                  if (!inMath && buffer) {
+                    assembledQuestions.push(buffer);
+                    buffer = "";
+                  }
+                }
+                if (buffer) assembledQuestions.push(buffer);
+
+                return assembledQuestions.map((q, i) => (
+                  <motion.div key={i}
+                    initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.25, delay: 0.1 + i * 0.06 }}
+                    style={{ background: "#fff", borderRadius: 14, padding: "14px 14px", boxShadow: "0 1px 10px rgba(0,0,0,0.05)", display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <div style={{ minWidth: 34, height: 34, borderRadius: "50%", background: d.banner, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+                      {i + 1}
+                    </div>
+                    <span style={{ fontSize: 15, lineHeight: 1.8, color: "#1e293b", paddingTop: 4, flex: 1, whiteSpace: "pre-wrap" }} dir="auto">
+                      <InlineMath text={q.replace(/^\d+[\.\)]\s*/, "")} />
+                    </span>
+                  </motion.div>
+                ));
+              })()}
             </div>
           </motion.div>
         )}
