@@ -6,17 +6,17 @@ import { QEDLogo } from "./QEDLogo";
 import { useAuth } from "@/hooks/useAuth";
 
 const WORKFLOW_STEPS = [
-  { path: "/home",   label: "الرئيسية",      emoji: "🏠", step: 0 },
-  { path: "/diagnostic", label: "التقييم التشخيصي", emoji: "🔍", step: 1 },
-  { path: "/gaps",   label: "كشف الثغرات", emoji: "🎯", step: 2 },
-  { path: "/learn",  label: "مسار التعلم",    emoji: "🗺️", step: 3 },
-  { path: "/exercises", label: "التمارين",    emoji: "📝", step: 4 },
-  { path: "/tutor",  label: "المدرّس الذكي",  emoji: "🤖", step: 5 },
-  { path: "/explore", label: "الاستكشاف",    emoji: "🔭", step: 6 },
-  { path: "/whatif", label: "ماذا لو؟",       emoji: "🔬", step: 7 },
-  { path: "/exams", label: "الامتحانات",     emoji: "🏗️", step: 8 },
-  { path: "/exam-kb", label: "KB امتحانات",  emoji: "📚", step: 9 },
-  { path: "/profile", label: "الملف الشخصي",  emoji: "👤", step: 10 },
+  { path: "/profile", label: "الملف الشخصي",  emoji: "👤", step: 0 },
+  { path: "/home",   label: "الرئيسية",      emoji: "🏠", step: 1 },
+  { path: "/diagnostic", label: "التقييم التشخيصي", emoji: "🔍", step: 2 },
+  { path: "/gaps",   label: "كشف الثغرات", emoji: "🎯", step: 3 },
+  { path: "/learn",  label: "مسار التعلم",    emoji: "🗺️", step: 4 },
+  { path: "/exercises", label: "التمارين",    emoji: "📝", step: 5 },
+  { path: "/tutor",  label: "المدرّس الذكي",  emoji: "🤖", step: 6 },
+  { path: "/explore", label: "الاستكشاف",    emoji: "🔭", step: 7 },
+  { path: "/whatif", label: "ماذا لو؟",       emoji: "🔬", step: 8 },
+  { path: "/exams", label: "الامتحانات",     emoji: "🏗️", step: 9 },
+  { path: "/exam-kb", label: "KB امتحانات",  emoji: "📚", step: 10 },
 ];
 
 const ADMIN_LINK = { path: "/admin", label: "لوحة الإدارة", emoji: "⚙️" };

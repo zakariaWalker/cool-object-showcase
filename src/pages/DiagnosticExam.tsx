@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 const GRADE_MAPPING: Record<string, string> = {
+  "middle_1": "1AM",
+  "middle_2": "2AM",
+  "middle_3": "3AM",
   "middle_4": "4AM",
   "secondary_1": "1AS",
   "secondary_2": "2AS",
