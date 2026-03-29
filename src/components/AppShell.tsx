@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Filter steps for navigation: Guests only see Diagnostic, Students only see learning/practice
   const visibleSteps = WORKFLOW_STEPS.filter(step => {
-    if (isGuest) return step.path === "/gaps"; 
+    if (isGuest) return step.path === "/gaps" || step.path === "/diagnostic"; 
     // Admin only steps
     if (!isAdmin && (step.path === "/exams" || step.path === "/exam-kb")) return false;
     return true;
