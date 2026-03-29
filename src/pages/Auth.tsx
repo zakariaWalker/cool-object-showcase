@@ -51,13 +51,16 @@ export default function Auth() {
   const [stream, setStream] = useState("");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<1 | 2>(1); // signup steps
+  
+  const queryParams = new URLSearchParams(window.location.search);
+  const redirectPath = queryParams.get("redirect") || "/home";
 
   // Redirect if already logged in
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/home");
+      if (session) navigate(redirectPath);
     });
-  }, [navigate]);
+  }, [navigate, redirectPath]);
 
   const hasStreams = grade.startsWith("secondary_") && STREAMS[grade];
 
@@ -68,7 +71,7 @@ export default function Auth() {
     if (error) {
       toast({ title: "خطأ في الدخول", description: error.message, variant: "destructive" });
     } else {
-      navigate("/home");
+      navigate(redirectPath);
     }
   };
 

@@ -1,14 +1,56 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Brain, Zap, Target, Puzzle, ArrowLeft, Play } from "lucide-react";
+import { Brain, Zap, Target, Puzzle, ArrowLeft, Play, Loader2 } from "lucide-react";
 import { DiagnosticProfiler } from "@/components/DiagnosticProfiler";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+
+const GRADE_MAPPING: Record<string, string> = {
+  "middle_4": "4AM",
+  "secondary_1": "1AS",
+  "secondary_2": "2AS",
+  "secondary_3": "3AS",
+};
 
 export default function DiagnosticExam() {
   const navigate = useNavigate();
   const [isStarted, setIsStarted] = useState(false);
   const [selectedGrade, setSelectedGrade] = useState<string | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        // Redirect if not registered
+        navigate("/auth?redirect=/diagnostic");
+        return;
+      }
+
+      // Retrieve level from user metadata (stored during signup)
+      const userGrade = user.user_metadata?.grade;
+      if (userGrade && GRADE_MAPPING[userGrade]) {
+        setSelectedGrade(GRADE_MAPPING[userGrade]);
+      } else {
+        // Fallback or if user is a teacher/parent (not a student)
+        // We can let them pick a grade manually or redirect
+      }
+      
+      setIsCheckingAuth(false);
+    }
+    
+    checkAuth();
+  }, [navigate]);
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full w-full bg-background overflow-y-auto" dir="rtl">
