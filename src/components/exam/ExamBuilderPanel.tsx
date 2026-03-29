@@ -212,9 +212,9 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
   };
 
   const selectGeneratedExam = (res: GenerationResult) => {
+    if (!res?.exam?.sections) return;
     setSections(res.exam.sections);
-    setTitle(res.exam.title);
-    setIsComparing(false);
+    setTitle(res.exam.title || title);
     toast.success(`تم تطبيق ${res.engine === 'kb_only' ? 'النموذج الواقعي' : res.engine === 'ai_only' ? 'النموذج الابتكاري' : 'النموذج الهجين'}`);
   };
 
