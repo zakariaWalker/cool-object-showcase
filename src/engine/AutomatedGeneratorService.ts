@@ -34,9 +34,8 @@ export async function generateKBOnlyExam(
     const { data: questions } = await supabase
       .from("exam_kb_questions")
       .select("*")
-      .eq("grade", grade)
       .ilike("section_label", `%${st.titleAr}%`)
-      .limit(3) as any;
+      .limit(3);
 
     const exercises: ExamExercise[] = (questions || []).map((q: any) => ({
       id: q.id,

@@ -356,6 +356,11 @@ export function useExamKBStore(primaryPatterns: Pattern[] = []) {
             concepts: [],
             linkedPatternIds: [],
             linkedExerciseIds: [],
+            cognitiveLevel: "apply",
+            bloomLevel: 3,
+            estimatedTimeMin: 5,
+            stepCount: 2,
+            conceptCount: 1,
           });
           buffer = "";
         }
@@ -381,6 +386,11 @@ export function useExamKBStore(primaryPatterns: Pattern[] = []) {
         concepts: [],
         linkedPatternIds: [],
         linkedExerciseIds: [],
+        cognitiveLevel: "apply",
+        bloomLevel: 3,
+        estimatedTimeMin: 5,
+        stepCount: 2,
+        conceptCount: 1,
       });
     }
 
