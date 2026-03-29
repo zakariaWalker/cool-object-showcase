@@ -18,6 +18,7 @@ import WhatIf from "./pages/WhatIf";
 import ExamBuilderPage from "./pages/ExamBuilder";
 import ExamKBPage from "./pages/ExamKB";
 import DiagnosticExam from "./pages/DiagnosticExam";
+import StudentProfile from "./pages/StudentProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/exams" element={<ExamBuilderPage />} />
             <Route path="/exam-kb" element={<ExamKBPage />} />
             <Route path="/diagnostic" element={<DiagnosticExam />} />
+            <Route path="/profile" element={<StudentProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppShell>
