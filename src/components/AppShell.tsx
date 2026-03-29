@@ -7,14 +7,15 @@ import { useAuth } from "@/hooks/useAuth";
 
 const WORKFLOW_STEPS = [
   { path: "/home",   label: "الرئيسية",      emoji: "🏠", step: 0 },
-  { path: "/gaps",   label: "التقييم التشخيصي", emoji: "🔍", step: 1 },
-  { path: "/learn",  label: "مسار التعلم",    emoji: "🗺️", step: 2 },
-  { path: "/exercises", label: "التمارين",    emoji: "📝", step: 3 },
-  { path: "/tutor",  label: "المدرّس الذكي",  emoji: "🤖", step: 4 },
-  { path: "/explore", label: "الاستكشاف",    emoji: "🔭", step: 5 },
-  { path: "/whatif", label: "ماذا لو؟",       emoji: "🔬", step: 6 },
-  { path: "/exams", label: "الامتحانات",     emoji: "🏗️", step: 7 },
-  { path: "/exam-kb", label: "KB امتحانات",  emoji: "📚", step: 8 },
+  { path: "/diagnostic", label: "التقييم التشخيصي", emoji: "🔍", step: 1 },
+  { path: "/gaps",   label: "كشف الثغرات", emoji: "🎯", step: 2 },
+  { path: "/learn",  label: "مسار التعلم",    emoji: "🗺️", step: 3 },
+  { path: "/exercises", label: "التمارين",    emoji: "📝", step: 4 },
+  { path: "/tutor",  label: "المدرّس الذكي",  emoji: "🤖", step: 5 },
+  { path: "/explore", label: "الاستكشاف",    emoji: "🔭", step: 6 },
+  { path: "/whatif", label: "ماذا لو؟",       emoji: "🔬", step: 7 },
+  { path: "/exams", label: "الامتحانات",     emoji: "🏗️", step: 8 },
+  { path: "/exam-kb", label: "KB امتحانات",  emoji: "📚", step: 9 },
 ];
 
 const ADMIN_LINK = { path: "/admin", label: "لوحة الإدارة", emoji: "⚙️" };
