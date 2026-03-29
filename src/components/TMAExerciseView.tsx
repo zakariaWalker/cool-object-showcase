@@ -16,7 +16,7 @@ import { FeatureTabs } from "./FeatureTabs";
 import { ExerciseResult } from "./ExerciseResult";
 import { motion, AnimatePresence } from "framer-motion";
 import katex from "katex";
-import "katex/dist/katex.min.css";
+import { ExerciseReportButton } from "./ExerciseReportButton";
 
 /* ─── Inline math renderer ─────────────────────────────────────────────────── */
 // Splits text on $...$ markers and renders math segments with KaTeX.
@@ -333,9 +333,14 @@ export function TMAExerciseView({
               </span>
             )}
           </div>
-          <h1 style={{ fontSize: 18, fontWeight: 900, color: "#fff", lineHeight: 1.45, marginBottom: 4, wordBreak: "break-word" }}>
-            {exercise.title || "تمرين رياضي"}
-          </h1>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+            <h1 style={{ fontSize: 18, fontWeight: 900, color: "#fff", lineHeight: 1.45, marginBottom: 4, wordBreak: "break-word", flex: 1 }}>
+              {exercise.title || "تمرين رياضي"}
+            </h1>
+            <div style={{ flexShrink: 0, marginTop: -2 }}>
+              <ExerciseReportButton exerciseId={(exercise as any)._meta?.question_id || exercise.id} />
+            </div>
+          </div>
           {(meta.unit || meta.topic) && (
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", fontWeight: 500, margin: 0 }}>
               {[meta.unit, meta.topic].filter(Boolean).join("  •  ")}

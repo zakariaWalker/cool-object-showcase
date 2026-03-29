@@ -5,6 +5,7 @@ import { LatexRenderer } from "@/components/LatexRenderer";
 import { generateDiagnosticExercises, DiagnosticExercise } from "@/engine/DiagnosticGeneratorService";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, AlertTriangle, HelpCircle, Brain, Target, Zap, Puzzle, BarChart3, Clock, ArrowRight, Loader2 } from "lucide-react";
+import { ExerciseReportButton } from "./ExerciseReportButton";
 
 export function DiagnosticProfiler({ 
   level, 
@@ -271,9 +272,12 @@ export function DiagnosticProfiler({
           >
             {ex.icon} {ex.typeName}
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground/40 font-mono text-sm font-bold">
-            <Clock className="w-3.5 h-3.5" />
-            {Math.floor(timeSecs / 60).toString().padStart(2, '0')}:{(timeSecs % 60).toString().padStart(2, '0')}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-muted-foreground/40 font-mono text-sm font-bold">
+              <Clock className="w-3.5 h-3.5" />
+              {Math.floor(timeSecs / 60).toString().padStart(2, '0')}:{(timeSecs % 60).toString().padStart(2, '0')}
+            </div>
+            {ex.id && String(ex.id).length > 2 && <ExerciseReportButton exerciseId={String(ex.id)} />}
           </div>
         </div>
 

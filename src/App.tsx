@@ -17,8 +17,9 @@ import VisualExplorer from "./pages/VisualExplorer";
 import WhatIf from "./pages/WhatIf";
 import ExamBuilderPage from "./pages/ExamBuilder";
 import ExamKBPage from "./pages/ExamKB";
+import AdminReports from "./pages/AdminReports";
 import DiagnosticExam from "./pages/DiagnosticExam";
-import StudentProfile from "./pages/StudentProfile";
+import StudentProfile from "@/pages/StudentProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/probability" element={<ExercisePage />} />
             <Route path="/functions" element={<ExercisePage />} />
             <Route path="/admin" element={<AdminKBPage />} />
+            <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/gaps" element={<GapDetector />} />
             <Route path="/tutor" element={<AITutor />} />
             <Route path="/solve/:id" element={<StudentSolver />} />

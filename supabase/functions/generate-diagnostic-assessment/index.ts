@@ -8,12 +8,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { level, purpose, count = 5 } = await req.json();
+    const { level, purpose, count = 5, seed = Math.random() } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const prompt = `أنت خبير بيداغوجي في الرياضيات (المنهاج الجزائري). 
 المهمة: توليد "تقييم تشخيصي عادل" (Fair Diagnostic) للمستوى ${level}.
+البصمة العشوائية لهذا الطلب: ${seed} (يجب توليد أسئلة مختلفة عن المرات السابقة).
 
 مبادئ التقييم العادل:
 1. التفكير > النتيجة: لا تسأل "احسب x"، بل اسأل "آمال حسبت x بهذه الطريقة، هل هي محقة؟ لماذا؟".
@@ -52,12 +53,12 @@ Deno.serve(async (req) => {
         "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "openai/gpt-4o-mini",
         messages: [
           { role: "system", content: "أنت خبير في بناء التقييمات التشخيصية العادلة. أجب دائماً بـ JSON صالح فقط." },
           { role: "user", content: prompt },
         ],
-        temperature: 0.4,
+        temperature: 0.8,
       }),
     });
 
