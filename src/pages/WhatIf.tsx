@@ -2,12 +2,14 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-type ScenarioTab = "algebra" | "geometry" | "probability";
+type ScenarioTab = "algebra" | "geometry" | "probability" | "projectile" | "grades";
 
 const TABS: { id: ScenarioTab; label: string; emoji: string }[] = [
   { id: "algebra", label: "المعادلات", emoji: "📊" },
   { id: "geometry", label: "الهندسة", emoji: "📐" },
   { id: "probability", label: "الاحتمالات", emoji: "🎲" },
+  { id: "projectile", label: "قذف الأجسام", emoji: "🚀" },
+  { id: "grades", label: "توقع المعدل", emoji: "🎓" },
 ];
 
 export default function WhatIf() {
@@ -34,9 +36,158 @@ export default function WhatIf() {
           {tab === "algebra" && <AlgebraWhatIf key="alg" />}
           {tab === "geometry" && <GeometryWhatIf key="geo" />}
           {tab === "probability" && <ProbabilityWhatIf key="prob" />}
+          {tab === "projectile" && <ProjectileWhatIf key="proj" />}
+          {tab === "grades" && <GradeSimulator key="grade" />}
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 1.5 PROJECTILE MOTION — Physics/Math integration (Parabola)
+// ═══════════════════════════════════════════════════════════════
+
+function ProjectileWhatIf() {
+  const [v0, setV0] = useState(25);
+  const [angle, setAngle] = useState(45);
+  const [g, setG] = useState(9.8);
+
+  const rad = (angle * Math.PI) / 180;
+  const vx = v0 * Math.cos(rad);
+  const vy = v0 * Math.sin(rad);
+  
+  const timeOfFlight = (2 * vy) / (g || 1);
+  const maxRange = (v0 * v0 * Math.sin(2 * rad)) / (g || 1);
+  const maxHeight = (vy * vy) / (2 * (g || 1));
+
+  // Trajectory points
+  const W = 600, H = 400;
+  const padding = 40;
+  const scale = Math.min((W - 2 * padding) / (maxRange || 1), (H - 2 * padding) / (maxHeight || 1), 5);
+  
+  const toSVG = (x: number, y: number) => ({
+    sx: padding + x * scale,
+    sy: H - padding - y * scale,
+  });
+
+  const steps = 100;
+  let pathD = "";
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * timeOfFlight;
+    const x = vx * t;
+    const y = vy * t - 0.5 * g * t * t;
+    const { sx, sy } = toSVG(x, y);
+    pathD += i === 0 ? `M${sx},${sy}` : `L${sx},${sy}`;
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-5">
+          <h2 className="text-base font-black text-foreground">🚀 ماذا لو قذفت جسماً؟</h2>
+          <p className="text-xs text-muted-foreground">تحصل حركة القذيفة في مسار تدرسه في الرياضيات (القطع المكافئ)</p>
+
+          <ParamSlider label="السرعة الابتدائية (m/s)" value={v0} onChange={setV0} min={1} max={100} step={1} color="text-primary" />
+          <ParamSlider label="زاوية القذف (°)" value={angle} onChange={setAngle} min={0} max={90} step={1} color="text-accent-foreground" />
+          <ParamSlider label="الجاذبية (m/s²)" value={g} onChange={setG} min={1} max={30} step={0.1} color="text-muted-foreground" desc="9.8 للأرض، 1.6 للقمر" />
+
+          <div className="space-y-2 mt-4">
+            <InfoCard label="زمن التحليق" value={`${timeOfFlight.toFixed(2)} ثا`} />
+            <InfoCard label="أقصى مدى (الأفقي)" value={`${maxRange.toFixed(1)} م`} color="text-primary" />
+            <InfoCard label="أقصى ارتفاع (الذروة)" value={`${maxHeight.toFixed(1)} م`} color="text-accent-foreground" />
+            <InfoCard label="معادلة المسار" value="y = ax² + bx" />
+          </div>
+        </div>
+
+        <div className="lg:col-span-2 rounded-2xl border border-border bg-card overflow-hidden">
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 450 }}>
+            <rect width={W} height={H} className="fill-card" />
+            <line x1={padding} y1={H - padding} x2={W - padding} y2={H - padding} className="stroke-muted-foreground/30" strokeWidth={1} />
+            <line x1={padding} y1={padding} x2={padding} y2={H - padding} className="stroke-muted-foreground/30" strokeWidth={1} />
+            <path d={pathD} fill="none" className="stroke-primary" strokeWidth={3} strokeLinecap="round" />
+            {(() => {
+              const peak = toSVG(maxRange / 2, maxHeight);
+              const end = toSVG(maxRange, 0);
+              return (
+                <g>
+                  <circle cx={peak.sx} cy={peak.sy} r={5} className="fill-accent stroke-background" strokeWidth={2} />
+                  <text x={peak.sx} y={peak.sy - 12} className="fill-accent text-[10px] font-black" textAnchor="middle">الذروة</text>
+                  <circle cx={end.sx} cy={end.sy} r={5} className="fill-destructive stroke-background" strokeWidth={2} />
+                  <text x={end.sx} y={end.sy - 12} className="fill-destructive text-[10px] font-black" textAnchor="middle">المدى</text>
+                </g>
+              );
+            })()}
+          </svg>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 1.7 GRADE SIMULATOR — Target vs Expected BAC results
+// ═══════════════════════════════════════════════════════════════
+
+function GradeSimulator() {
+  const Subjects = [
+    { id: "math", name: "الرياضيات", coef: 7, color: "bg-primary" },
+    { id: "phys", name: "الفيزياء", coef: 6, color: "bg-accent" },
+    { id: "nature", name: "العلوم", coef: 6, color: "bg-geometry" },
+    { id: "arab", name: "العربية", coef: 3, color: "bg-statistics" },
+    { id: "phil", name: "الفلسفة", coef: 2, color: "bg-destructive" },
+  ];
+
+  const [scores, setScores] = useState<Record<string, number>>(
+    Subjects.reduce((acc, s) => ({ ...acc, [s.id]: 10 }), {})
+  );
+
+  const totalCoef = Subjects.reduce((acc, s) => acc + s.coef, 0);
+  const average = Subjects.reduce((acc, s) => acc + (scores[s.id] * s.coef), 0) / totalCoef;
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-4">
+          <h2 className="text-base font-black text-foreground">🎓 ماذا لو حصلت على هذه العلامات؟</h2>
+          <p className="text-xs text-muted-foreground">توقع معدلك في البكالوريا بناءً على معاملات المواد العلمية</p>
+          
+          <div className="grid grid-cols-1 gap-4">
+            {Subjects.map(s => (
+              <div key={s.id} className="p-3 rounded-xl border border-border bg-card">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-bold">{s.name} <span className="text-[10px] text-muted-foreground opacity-60">(معامل {s.coef})</span></span>
+                  <span className="text-sm font-black font-mono">{scores[s.id]}</span>
+                </div>
+                <input 
+                  type="range" min={0} max={20} step={0.25} value={scores[s.id]}
+                  onChange={(e) => setScores(prev => ({ ...prev, [s.id]: Number(e.target.value) }))}
+                  className="w-full h-1.5 rounded-full bg-muted accent-primary"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-primary/5 border-2 border-primary/20 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-primary/20" />
+          <div className="text-sm font-bold text-muted-foreground mb-2">المعدل المتوقع</div>
+          <div className="text-7xl font-black text-primary mb-2 drop-shadow-sm">{average.toFixed(2)}</div>
+          <div className={`px-4 py-1.5 rounded-full text-xs font-bold ${average >= 16 ? "bg-geometry text-geometry-foreground" : average >= 10 ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"}`}>
+            {average >= 16 ? "ممتاز (تقدير جيد جداً)" : average >= 12 ? "جيد (تقدير قريب من الجيد)" : average >= 10 ? "ناجح" : "راسب"}
+          </div>
+          
+          <div className="mt-8 w-full p-4 rounded-xl bg-background border border-border space-y-2">
+            <h4 className="text-[10px] font-bold text-muted-foreground uppercase opacity-50">توزيع النقاط</h4>
+            <div className="flex h-3 w-full rounded-full overflow-hidden">
+              {Subjects.map(s => (
+                <div key={s.id} style={{ width: `${(scores[s.id] * s.coef / (average * totalCoef)) * 100}%` }} className={`${s.color}`} title={s.name} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -382,5 +533,152 @@ function ProbBar({ label, percent, color }: { label: string; percent: number; co
         {percent.toFixed(1)}%
       </span>
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 1.5 PROJECTILE MOTION — Physics/Math integration (Parabola)
+// ═══════════════════════════════════════════════════════════════
+
+function ProjectileWhatIf() {
+  const [v0, setV0] = useState(25);
+  const [angle, setAngle] = useState(45);
+  const [g, setG] = useState(9.8);
+
+  const rad = (angle * Math.PI) / 180;
+  const vx = v0 * Math.cos(rad);
+  const vy = v0 * Math.sin(rad);
+  
+  const timeOfFlight = (2 * vy) / (g || 1);
+  const maxRange = (v0 * v0 * Math.sin(2 * rad)) / (g || 1);
+  const maxHeight = (vy * vy) / (2 * (g || 1));
+
+  // Trajectory points
+  const W = 600, H = 400;
+  const padding = 40;
+  const scale = Math.min((W - 2 * padding) / (maxRange || 1), (H - 2 * padding) / (maxHeight || 1), 5);
+  
+  const toSVG = (x: number, y: number) => ({
+    sx: padding + x * scale,
+    sy: H - padding - y * scale,
+  });
+
+  const steps = 100;
+  let pathD = "";
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * timeOfFlight;
+    const x = vx * t;
+    const y = vy * t - 0.5 * g * t * t;
+    const { sx, sy } = toSVG(x, y);
+    pathD += i === 0 ? `M${sx},${sy}` : `L${sx},${sy}`;
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-5">
+          <h2 className="text-base font-black text-foreground">🚀 ماذا لو قذفت جسماً؟</h2>
+          <p className="text-xs text-muted-foreground">تحصل حركة القذيفة في مسار تدرسه في الرياضيات (القطع المكافئ)</p>
+
+          <ParamSlider label="السرعة الابتدائية (m/s)" value={v0} onChange={setV0} min={1} max={100} step={1} color="text-primary" />
+          <ParamSlider label="زاوية القذف (°)" value={angle} onChange={setAngle} min={0} max={90} step={1} color="text-accent-foreground" />
+          <ParamSlider label="الجاذبية (m/s²)" value={g} onChange={setG} min={1} max={30} step={0.1} color="text-muted-foreground" desc="9.8 للأرض، 1.6 للقمر" />
+
+          <div className="space-y-2 mt-4">
+            <InfoCard label="زمن التحليق" value={`${timeOfFlight.toFixed(2)} ثا`} />
+            <InfoCard label="أقصى مدى (الأفقي)" value={`${maxRange.toFixed(1)} م`} color="text-primary" />
+            <InfoCard label="أقصى ارتفاع (الذروة)" value={`${maxHeight.toFixed(1)} م`} color="text-accent-foreground" />
+            <InfoCard label="معادلة المسار" value="y = ax² + bx" />
+          </div>
+        </div>
+
+        <div className="lg:col-span-2 rounded-2xl border border-border bg-card overflow-hidden">
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 450 }}>
+            <rect width={W} height={H} className="fill-card" />
+            <line x1={padding} y1={H - padding} x2={W - padding} y2={H - padding} className="stroke-muted-foreground/30" strokeWidth={1} />
+            <line x1={padding} y1={padding} x2={padding} y2={H - padding} className="stroke-muted-foreground/30" strokeWidth={1} />
+            <path d={pathD} fill="none" className="stroke-primary" strokeWidth={3} strokeLinecap="round" />
+            {(() => {
+              const peak = toSVG(maxRange / 2, maxHeight);
+              const end = toSVG(maxRange, 0);
+              return (
+                <g>
+                  <circle cx={peak.sx} cy={peak.sy} r={5} className="fill-accent stroke-background" strokeWidth={2} />
+                  <text x={peak.sx} y={peak.sy - 12} className="fill-accent text-[10px] font-black" textAnchor="middle">الذروة</text>
+                  <circle cx={end.sx} cy={end.sy} r={5} className="fill-destructive stroke-background" strokeWidth={2} />
+                  <text x={end.sx} y={end.sy - 12} className="fill-destructive text-[10px] font-black" textAnchor="middle">المدى</text>
+                </g>
+              );
+            })()}
+          </svg>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 1.7 GRADE SIMULATOR — Target vs Expected BAC results
+// ═══════════════════════════════════════════════════════════════
+
+function GradeSimulator() {
+  const Subjects = [
+    { id: "math", name: "الرياضيات", coef: 7, color: "bg-primary" },
+    { id: "phys", name: "الفيزياء", coef: 6, color: "bg-accent" },
+    { id: "nature", name: "العلوم", coef: 6, color: "bg-geometry" },
+    { id: "arab", name: "العربية", coef: 3, color: "bg-statistics" },
+    { id: "phil", name: "الفلسفة", coef: 2, color: "bg-destructive" },
+  ];
+
+  const [scores, setScores] = useState<Record<string, number>>(
+    Subjects.reduce((acc, s) => ({ ...acc, [s.id]: 10 }), {})
+  );
+
+  const totalCoef = Subjects.reduce((acc, s) => acc + s.coef, 0);
+  const average = Subjects.reduce((acc, s) => acc + (scores[s.id] * s.coef), 0) / (totalCoef || 1);
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-4">
+          <h2 className="text-base font-black text-foreground">🎓 ماذا لو حصلت على هذه العلامات؟</h2>
+          <p className="text-xs text-muted-foreground">توقع معدلك في البكالوريا بناءً على معاملات المواد العلمية</p>
+          
+          <div className="grid grid-cols-1 gap-4">
+            {Subjects.map(s => (
+              <div key={s.id} className="p-3 rounded-xl border border-border bg-card">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-bold">{s.name} <span className="text-[10px] text-muted-foreground opacity-60">(معامل {s.coef})</span></span>
+                  <span className="text-sm font-black font-mono">{scores[s.id]}</span>
+                </div>
+                <input 
+                  type="range" min={0} max={20} step={0.25} value={scores[s.id]}
+                  onChange={(e) => setScores(prev => ({ ...prev, [s.id]: Number(e.target.value) }))}
+                  className="w-full h-1.5 rounded-full bg-muted accent-primary"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-primary/5 border-2 border-primary/20 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-primary/20" />
+          <div className="text-sm font-bold text-muted-foreground mb-2">المعدل المتوقع</div>
+          <div className="text-7xl font-black text-primary mb-2 drop-shadow-sm">{average.toFixed(2)}</div>
+          <div className={`px-4 py-1.5 rounded-full text-xs font-bold ${average >= 16 ? "bg-geometry text-geometry-foreground" : average >= 10 ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"}`}>
+            {average >= 16 ? "ممتاز (تقدير جيد جداً)" : average >= 12 ? "جيد (تقدير قريب من الجيد)" : average >= 10 ? "ناجح" : "راسب"}
+          </div>
+          
+          <div className="mt-8 w-full p-4 rounded-xl bg-background border border-border space-y-2">
+            <h4 className="text-[10px] font-bold text-muted-foreground uppercase opacity-50">توزيع النقاط</h4>
+            <div className="flex h-3 w-full rounded-full overflow-hidden">
+              {Subjects.map(s => (
+                <div key={s.id} style={{ width: `${(scores[s.id] * s.coef / ((average * totalCoef) || 1)) * 100}%` }} className={`${s.color}`} title={s.name} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }

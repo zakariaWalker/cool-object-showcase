@@ -54,6 +54,8 @@ function FunctionPlotter() {
   const [xMax, setXMax] = useState(10);
   const [yMin, setYMin] = useState(-10);
   const [yMax, setYMax] = useState(10);
+  const [showDerivative, setShowDerivative] = useState(false);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
 
   // Parse and evaluate function
   const evalExpr = (x: number): number | null => {
@@ -79,6 +81,11 @@ function FunctionPlotter() {
   const toSVG = (x: number, y: number) => ({
     sx: ((x - xMin) / (xMax - xMin)) * W,
     sy: H - ((y - yMin) / (yMax - yMin)) * H,
+  });
+  
+  const fromSVG = (sx: number, sy: number) => ({
+    x: (sx / W) * (xMax - xMin) + xMin,
+    y: ((H - sy) / H) * (yMax - yMin) + yMin,
   });
 
   // Generate points
@@ -160,6 +167,14 @@ function FunctionPlotter() {
             </button>
           ))}
         </div>
+        <button
+          onClick={() => setShowDerivative(!showDerivative)}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+            showDerivative ? "bg-accent text-accent-foreground border-accent" : "border-border text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          {showDerivative ? "✨ إيقاف المتتبع" : "📏 تفعيل متتبع المشتقة"}
+        </button>
       </div>
 
       {/* Range sliders */}
@@ -171,11 +186,56 @@ function FunctionPlotter() {
       </div>
 
       {/* Graph */}
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 500 }}>
+      <div className="rounded-2xl border border-border bg-card overflow-hidden cursor-crosshair relative group">
+        <svg 
+          viewBox={`0 0 ${W} ${H}`} 
+          className="w-full" 
+          style={{ maxHeight: 500 }}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const sx = ((e.clientX - rect.left) / rect.width) * W;
+            const sy = ((e.clientY - rect.top) / rect.height) * H;
+            setMousePos({ x: sx, y: sy });
+          }}
+          onMouseLeave={() => setMousePos(null)}
+        >
           <rect width={W} height={H} className="fill-card" />
           {gridLines}
           <path d={pathD} fill="none" className="stroke-primary" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+          
+          {/* Derivative/Tangent Line */}
+          {showDerivative && mousePos && (() => {
+            const { x: curX } = fromSVG(mousePos.x, mousePos.y);
+            const curY = evalExpr(curX);
+            if (curY === null) return null;
+            
+            const h = 0.001;
+            const y1 = evalExpr(curX - h);
+            const y2 = evalExpr(curX + h);
+            if (y1 === null || y2 === null) return null;
+            
+            const slope = (y2 - y1) / (2 * h);
+            const intercept = curY - slope * curX;
+            
+            // Draw tangent line
+            const x1 = curX - 5, x2 = curX + 5;
+            const yStart = slope * x1 + intercept;
+            const yEnd = slope * x2 + intercept;
+            
+            const p1 = toSVG(x1, yStart);
+            const p2 = toSVG(x2, yEnd);
+            const center = toSVG(curX, curY);
+            
+            return (
+              <g>
+                <line x1={p1.sx} y1={p1.sy} x2={p2.sx} y2={p2.sy} className="stroke-accent" strokeWidth={2} strokeDasharray="4 2" />
+                <circle cx={center.sx} cy={center.sy} r={4} className="fill-accent stroke-background" strokeWidth={1.5} />
+                <rect x={center.sx + 10} y={center.sy - 40} width={80} height={35} rx={6} className="fill-background/90 stroke-border shadow-sm" />
+                <text x={center.sx + 15} y={center.sy - 25} className="fill-foreground text-[10px] font-black" style={{ direction: 'ltr' }}>f'({curX.toFixed(1)}) ≈ {slope.toFixed(2)}</text>
+                <text x={center.sx + 15} y={center.sy - 12} className="fill-muted-foreground text-[8px]">الميل (المشتقة)</text>
+              </g>
+            );
+          })()}
         </svg>
       </div>
     </motion.div>
@@ -444,11 +504,12 @@ function ConceptMapExplorer() {
             <rect width={W} height={H} className="fill-card" />
             {/* Edges */}
             {edges.map(([a, b], i) => (
-              <line
+              <motion.line
                 key={i}
-                x1={nodes[a].x} y1={nodes[a].y}
-                x2={nodes[b].x} y2={nodes[b].y}
-                className="stroke-border" strokeWidth={0.5} opacity={0.4}
+                initial={{ x1: W / 2, y1: H / 2, x2: W / 2, y2: H / 2, opacity: 0 }}
+                animate={{ x1: nodes[a].x, y1: nodes[a].y, x2: nodes[b].x, y2: nodes[b].y, opacity: 0.4 }}
+                transition={{ type: "spring", stiffness: 50, damping: 10, delay: 0.1 }}
+                className="stroke-border" strokeWidth={0.5}
               />
             ))}
             {/* Nodes */}
@@ -456,13 +517,22 @@ function ConceptMapExplorer() {
               const isSelected = n.id === selectedNode;
               const r = 8 + n.exerciseCount * 2;
               return (
-                <g key={n.id} onClick={() => selectNode(n.id)} style={{ cursor: "pointer" }}>
-                  <circle cx={n.x} cy={n.y} r={r + 6} className={isSelected ? "fill-primary/20" : "fill-transparent"} />
-                  <circle cx={n.x} cy={n.y} r={r} className={isSelected ? "fill-primary" : "fill-primary/40"} />
-                  <text x={n.x} y={n.y + r + 14} className="fill-foreground text-[9px] font-bold" textAnchor="middle">
+                <motion.g
+                  key={n.id}
+                  onClick={() => selectNode(n.id)}
+                  style={{ cursor: "pointer" }}
+                  initial={{ x: W / 2, y: H / 2, opacity: 0, scale: 0.5 }}
+                  animate={{ x: n.x, y: n.y, opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.15 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 60, damping: 12 }}
+                >
+                  <circle r={r + 6} className={isSelected ? "fill-primary/20" : "fill-transparent"} />
+                  <circle r={r} className={isSelected ? "fill-primary" : "fill-primary/40"} />
+                  <text y={r + 14} className="fill-foreground text-[9px] font-bold" textAnchor="middle">
                     {n.name.length > 15 ? n.name.slice(0, 13) + "…" : n.name}
                   </text>
-                </g>
+                </motion.g>
               );
             })}
           </svg>
