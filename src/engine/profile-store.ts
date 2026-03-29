@@ -5,7 +5,7 @@ export type ProfileType = "reactive" | "procedural" | "conceptual" | "strategic"
 
 export interface DiagnosticRecord {
   exerciseId: number;
-  type: "standard" | "trap" | "logic" | "open";
+  type: "standard" | "trap" | "logic" | "open" | "strategic";
   timeToFirstAction: number;
   totalTime: number;
   attempts: number;
