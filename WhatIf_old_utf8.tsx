@@ -2,62 +2,27 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-type ScenarioTab = "algebra" | "geometry" | "probability" | "projectile" | "grades" | "perimeter" | "balance" | "scientific" | "pgcd";
+type ScenarioTab = "algebra" | "geometry" | "probability" | "projectile" | "grades";
 
-const GRADES = [
-  { id: "1am", label: "1AM" },
-  { id: "2am", label: "2AM" },
-  { id: "3am", label: "3AM" },
-  { id: "bem", label: "4AM (BEM)" },
-  { id: "1as", label: "1AS" },
-  { id: "2as", label: "2AS" },
-  { id: "bac", label: "3AS (BAC)" },
-];
-
-const ALL_TABS: { id: ScenarioTab; label: string; emoji: string; grades: string[] }[] = [
-  { id: "perimeter", label: "المساحة والمحيط", emoji: "🟩", grades: ["1am"] },
-  { id: "balance", label: "الميزان (معادلات)", emoji: "⚖️", grades: ["2am"] },
-  { id: "scientific", label: "الكتابة العلمية", emoji: "🔬", grades: ["3am"] },
-  { id: "pgcd", label: "القاسم المشترك (PGCD)", emoji: "➗", grades: ["bem"] },
-  { id: "geometry", label: "فيثاغورس", emoji: "📐", grades: ["3am", "bem"] },
-  { id: "algebra", label: "المعادلات (الدرجة 2)", emoji: "📊", grades: ["1as", "2as", "bac"] },
-  { id: "probability", label: "الاحتمالات", emoji: "🎲", grades: ["2as", "bac"] },
-  { id: "projectile", label: "قذف الأجسام", emoji: "🚀", grades: ["bac"] },
-  { id: "grades", label: "توقع المعدل", emoji: "🎓", grades: ["bem", "bac"] },
+const TABS: { id: ScenarioTab; label: string; emoji: string }[] = [
+  { id: "algebra", label: "المعادلات", emoji: "📊" },
+  { id: "geometry", label: "الهندسة", emoji: "📐" },
+  { id: "probability", label: "الاحتمالات", emoji: "🎲" },
+  { id: "projectile", label: "قذف الأجسام", emoji: "🚀" },
+  { id: "grades", label: "توقع المعدل", emoji: "🎓" },
 ];
 
 export default function WhatIf() {
-  const [grade, setGrade] = useState("bem");
-  const visibleTabs = ALL_TABS.filter(t => t.grades.includes(grade));
-  const [tab, setTab] = useState<ScenarioTab>("pgcd");
-
-  if (!visibleTabs.find(t => t.id === tab)) {
-    setTab(visibleTabs[0].id);
-  }
+  const [tab, setTab] = useState<ScenarioTab>("algebra");
 
   return (
     <div className="h-full flex flex-col overflow-hidden" dir="rtl">
-      {/* Grade Selector */}
-      <div className="flex-shrink-0 bg-muted/30 border-b border-border px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar">
-        {GRADES.map(g => (
-          <button
-            key={g.id}
-            onClick={() => setGrade(g.id)}
-            className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition-all ${
-              grade === g.id ? "bg-foreground text-background" : "bg-card text-muted-foreground border border-border hover:bg-muted"
-            }`}
-          >
-            {g.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex-shrink-0 border-b border-border px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar" style={{ background: "linear-gradient(to left, hsl(var(--probability) / 0.08), hsl(var(--probability) / 0.03), hsl(var(--background)))" }}>
-        {visibleTabs.map(t => (
+      <div className="flex-shrink-0 border-b border-border px-4 py-2 flex gap-2" style={{ background: "linear-gradient(to left, hsl(var(--probability) / 0.08), hsl(var(--probability) / 0.03), hsl(var(--background)))" }}>
+        {TABS.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
               tab === t.id ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-muted"
             }`}
           >
@@ -73,10 +38,6 @@ export default function WhatIf() {
           {tab === "probability" && <ProbabilityWhatIf key="prob" />}
           {tab === "projectile" && <ProjectileWhatIf key="proj" />}
           {tab === "grades" && <GradeSimulator key="grade" />}
-          {tab === "perimeter" && <PerimeterWhatIf key="perim" />}
-          {tab === "balance" && <BalanceWhatIf key="bal" />}
-          {tab === "scientific" && <ScientificWhatIf key="sci" />}
-          {tab === "pgcd" && <PGCDWhatIf key="pgcd" />}
         </AnimatePresence>
       </div>
     </div>
@@ -575,152 +536,80 @@ function ProbBar({ label, percent, color }: { label: string; percent: number; co
   );
 }
 
-
 // ═══════════════════════════════════════════════════════════════
-// 1.8 PERIMETER VS AREA (1AM)
+// 1.5 PROJECTILE MOTION — Physics/Math integration (Parabola)
 // ═══════════════════════════════════════════════════════════════
-function PerimeterWhatIf() {
-  const [width, setWidth] = useState(5);
-  const [height, setHeight] = useState(5);
 
-  const perimeter = 2 * (width + height);
-  const area = width * height;
+function ProjectileWhatIf() {
+  const [v0, setV0] = useState(25);
+  const [angle, setAngle] = useState(45);
+  const [g, setG] = useState(9.8);
 
-  const W = 400, H = 300;
-  const padding = 40;
-  // max allowable w/h is 15 so max scale is ~15
-  const scale = Math.min((W - 2*padding)/15, (H - 2*padding)/15);
-  const rw = width * scale;
-  const rh = height * scale;
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-4 bg-muted/20 p-6 rounded-3xl border border-border">
-          <h2 className="text-base font-black">المساحة والمحيط 🟩</h2>
-          <p className="text-[11px] text-muted-foreground">لاحظ الفرق بين المحيط (طول الإطار الخارجي) والمساحة (المربعات الداخلية).</p>
-          
-          <ParamSlider label="الطول (L)" value={width} onChange={setWidth} min={1} max={15} step={1} color="text-primary" />
-          <ParamSlider label="العرض (l)" value={height} onChange={setHeight} min={1} max={15} step={1} color="text-destructive" />
-          
-          <div className="grid grid-cols-2 gap-4 mt-6">
-            <div className="p-4 rounded-xl border border-border bg-card text-center">
-              <div className="text-xs font-bold text-muted-foreground mb-1">المحيط (P)</div>
-              <div className="font-mono text-xl font-black text-primary">{perimeter} <span className="text-xs">cm</span></div>
-              <div className="text-[10px] mt-1 text-muted-foreground" style={{ direction: "ltr" }}>2 × ({width} + {height})</div>
-            </div>
-            <div className="p-4 rounded-xl border border-border bg-card text-center">
-              <div className="text-xs font-bold text-muted-foreground mb-1">المساحة (A)</div>
-              <div className="font-mono text-xl font-black text-destructive">{area} <span className="text-xs">cm²</span></div>
-              <div className="text-[10px] mt-1 text-muted-foreground" style={{ direction: "ltr" }}>{width} × {height}</div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex justify-center items-center bg-card rounded-3xl border border-border p-6 overflow-hidden">
-          <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
-            <g transform={`translate(${(W-rw)/2}, ${(H-rh)/2})`}>
-              <rect width={rw} height={rh} className="fill-destructive/10 stroke-primary" strokeWidth={4} />
-              
-              {/* Grid to show area */}
-              {Array.from({length: width}).map((_, i) => (
-                <line key={`v${i}`} x1={i*scale} y1={0} x2={i*scale} y2={rh} className="stroke-destructive/20" strokeWidth={1} />
-              ))}
-              {Array.from({length: height}).map((_, i) => (
-                <line key={`h${i}`} x1={0} y1={i*scale} x2={rw} y2={i*scale} className="stroke-destructive/20" strokeWidth={1} />
-              ))}
-              
-              <text x={rw/2} y={-10} textAnchor="middle" className="text-xs font-bold fill-primary">{width}</text>
-              <text x={-20} y={rh/2} textAnchor="middle" className="text-xs font-bold fill-destructive">{height}</text>
-            </g>
-          </svg>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// 1.9 BALANCE SCALES EQUATIONS (2AM)
-// ═══════════════════════════════════════════════════════════════
-function BalanceWhatIf() {
-  const [a, setA] = useState(3);
-  const [b, setB] = useState(8);
-  const [step, setStep] = useState(0);
-
-  // equation: x + a = b
-  const x = b - a;
+  const rad = (angle * Math.PI) / 180;
+  const vx = v0 * Math.cos(rad);
+  const vy = v0 * Math.sin(rad);
   
-  const wX = step === 0 ? a : 0;
-  const wB = step === 0 ? b : b - a;
+  const timeOfFlight = (2 * vy) / (g || 1);
+  const maxRange = (v0 * v0 * Math.sin(2 * rad)) / (g || 1);
+  const maxHeight = (vy * vy) / (2 * (g || 1));
+
+  // Trajectory points
+  const W = 600, H = 400;
+  const padding = 40;
+  const scale = Math.min((W - 2 * padding) / (maxRange || 1), (H - 2 * padding) / (maxHeight || 1), 5);
+  
+  const toSVG = (x: number, y: number) => ({
+    sx: padding + x * scale,
+    sy: H - padding - y * scale,
+  });
+
+  const steps = 100;
+  let pathD = "";
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * timeOfFlight;
+    const x = vx * t;
+    const y = vy * t - 0.5 * g * t * t;
+    const { sx, sy } = toSVG(x, y);
+    pathD += i === 0 ? `M${sx},${sy}` : `L${sx},${sy}`;
+  }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-4 bg-muted/20 p-6 rounded-3xl border border-border">
-          <h2 className="text-base font-black">طريقة الميزان لحل المعادلات ⚖️</h2>
-          <p className="text-[11px] text-muted-foreground">للحفاظ على توازن الميزان، ما نفعله في الكفة اليمنى يجب أن نفعله في اليسرى.</p>
-          
-          <ParamSlider label="الكتلة المعلومة (a)" value={a} onChange={(v) => {setA(v); setStep(0);}} min={1} max={10} step={1} color="text-destructive" />
-          <ParamSlider label="كتلة الطرف الثاني (b)" value={b} onChange={(v) => {setB(v); setStep(0);}} min={a+1} max={20} step={1} color="text-primary" />
-          
-          <div className="flex gap-2 mt-4">
-            <button 
-              onClick={() => setStep(0)} 
-              className={`flex-1 py-2 rounded-xl text-xs font-bold border ${step === 0 ? "bg-foreground text-background" : "bg-card"}`}
-            >
-              1. المعادلة الأصلية
-            </button>
-            <button 
-              onClick={() => setStep(1)} 
-              className={`flex-1 py-2 rounded-xl text-xs font-bold border ${step === 1 ? "bg-primary text-primary-foreground" : "bg-card"}`}
-            >
-              2. إضافة (-a) للطرفين
-            </button>
-          </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-5">
+          <h2 className="text-base font-black text-foreground">🚀 ماذا لو قذفت جسماً؟</h2>
+          <p className="text-xs text-muted-foreground">تحصل حركة القذيفة في مسار تدرسه في الرياضيات (القطع المكافئ)</p>
 
-          <div className="p-4 rounded-xl border border-border bg-card text-center font-mono font-black text-lg mt-4" style={{ direction: "ltr" }}>
-            {step === 0 ? (
-              <span>x + <span className="text-destructive">{a}</span> = <span className="text-primary">{b}</span></span>
-            ) : (
-              <span>x = <span className="text-primary">{b}</span> - <span className="text-destructive">{a}</span> = <span className="text-geometry">{x}</span></span>
-            )}
+          <ParamSlider label="السرعة الابتدائية (m/s)" value={v0} onChange={setV0} min={1} max={100} step={1} color="text-primary" />
+          <ParamSlider label="زاوية القذف (°)" value={angle} onChange={setAngle} min={0} max={90} step={1} color="text-accent-foreground" />
+          <ParamSlider label="الجاذبية (m/s²)" value={g} onChange={setG} min={1} max={30} step={0.1} color="text-muted-foreground" desc="9.8 للأرض، 1.6 للقمر" />
+
+          <div className="space-y-2 mt-4">
+            <InfoCard label="زمن التحليق" value={`${timeOfFlight.toFixed(2)} ثا`} />
+            <InfoCard label="أقصى مدى (الأفقي)" value={`${maxRange.toFixed(1)} م`} color="text-primary" />
+            <InfoCard label="أقصى ارتفاع (الذروة)" value={`${maxHeight.toFixed(1)} م`} color="text-accent-foreground" />
+            <InfoCard label="معادلة المسار" value="y = ax² + bx" />
           </div>
         </div>
-        
-        <div className="flex flex-col items-center justify-center p-6 bg-card rounded-3xl border border-border">
-          <svg viewBox="0 0 400 300" className="w-full">
-            {/* Base line */}
-            <line x1={50} y1={250} x2={350} y2={250} className="stroke-foreground" strokeWidth={6} strokeLinecap="round" />
-            {/* Pivot */}
-            <polygon points="200,250 180,290 220,290" className="fill-foreground" />
-            
-            {/* Left Box (x + a) */}
-            <g transform="translate(100, 250)">
-              {/* X Box */}
-              <rect x={-30} y={-40} width={60} height={40} className="fill-geometry stroke-background" strokeWidth={2} />
-              <text x={0} y={-15} textAnchor="middle" className="text-xs font-black fill-geometry-foreground">x</text>
-              {/* A Box */}
-              <rect x={-15} y={-40 - (wX * 5)} width={30} height={wX * 5} className="fill-destructive stroke-background transition-all duration-500" strokeWidth={2} />
-              {wX > 0 && <text x={0} y={-45 - (wX * 2.5)} textAnchor="middle" className="text-[10px] font-black fill-destructive-foreground">{a}</text>}
-            </g>
 
-            {/* Right Box (b) */}
-            <g transform="translate(300, 250)">
-              {/* B Box */}
-              <rect x={-20} y={-(wB * 5)} width={40} height={wB * 5} className="fill-primary stroke-background transition-all duration-500" strokeWidth={2} />
-              <text x={0} y={-(wB * 2.5) + 5} textAnchor="middle" className="text-xs font-black fill-primary-foreground">{wB}</text>
-            </g>
-            
-            {/* Flying out blocks animation during step 1 */}
-            <AnimatePresence>
-              {step === 1 && (
-                <motion.g initial={{y: 250 - 40 - (a*5), opacity: 1}} animate={{y: -50, opacity: 0}} transition={{duration: 1}}>
-                  <rect x={100 - 15} y={0} width={30} height={a * 5} className="fill-destructive stroke-background" strokeWidth={2} />
-                  <text x={100} y={(a*2.5) + 5} textAnchor="middle" className="text-[10px] font-black fill-destructive-foreground">-{a}</text>
-                </motion.g>
-              )}
-            </AnimatePresence>
+        <div className="lg:col-span-2 rounded-2xl border border-border bg-card overflow-hidden">
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 450 }}>
+            <rect width={W} height={H} className="fill-card" />
+            <line x1={padding} y1={H - padding} x2={W - padding} y2={H - padding} className="stroke-muted-foreground/30" strokeWidth={1} />
+            <line x1={padding} y1={padding} x2={padding} y2={H - padding} className="stroke-muted-foreground/30" strokeWidth={1} />
+            <path d={pathD} fill="none" className="stroke-primary" strokeWidth={3} strokeLinecap="round" />
+            {(() => {
+              const peak = toSVG(maxRange / 2, maxHeight);
+              const end = toSVG(maxRange, 0);
+              return (
+                <g>
+                  <circle cx={peak.sx} cy={peak.sy} r={5} className="fill-accent stroke-background" strokeWidth={2} />
+                  <text x={peak.sx} y={peak.sy - 12} className="fill-accent text-[10px] font-black" textAnchor="middle">الذروة</text>
+                  <circle cx={end.sx} cy={end.sy} r={5} className="fill-destructive stroke-background" strokeWidth={2} />
+                  <text x={end.sx} y={end.sy - 12} className="fill-destructive text-[10px] font-black" textAnchor="middle">المدى</text>
+                </g>
+              );
+            })()}
           </svg>
         </div>
       </div>
@@ -729,154 +618,63 @@ function BalanceWhatIf() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 1.10 SCIENTIFIC NOTATION (3AM)
+// 1.7 GRADE SIMULATOR — Target vs Expected BAC results
 // ═══════════════════════════════════════════════════════════════
-function ScientificWhatIf() {
-  const [power, setPower] = useState(0);
 
-  const MACRO = [
-    { p: 0, label: "متر واحد — طول إنسان تقريباً", emoji: "🚶" },
-    { p: 3, label: "كيلومتر — المسافة بين المدن", emoji: "🏙️" },
-    { p: 6, label: "ميجامتر — مساحة قارة", emoji: "🌍" },
-    { p: 9, label: "جيجامتر — قطر الشمس", emoji: "☀️" },
-    { p: 12, label: "تيرامتر — النظام الشمسي", emoji: "🪐" },
-  ];
-  const MICRO = [
-    { p: -3, label: "ميليمتر — حشرة صغيرة", emoji: "🐜" },
-    { p: -6, label: "ميكرومتر — خلية بكتيرية", emoji: "🦠" },
-    { p: -9, label: "نانومتر — جزيء DNA", emoji: "🧬" },
-    { p: -10, label: "أنغستروم — ذرة", emoji: "⚛️" },
-    { p: -15, label: "فيمتومتر — نواة الذرة", emoji: "🌌" },
+function GradeSimulator() {
+  const Subjects = [
+    { id: "math", name: "الرياضيات", coef: 7, color: "bg-primary" },
+    { id: "phys", name: "الفيزياء", coef: 6, color: "bg-accent" },
+    { id: "nature", name: "العلوم", coef: 6, color: "bg-geometry" },
+    { id: "arab", name: "العربية", coef: 3, color: "bg-statistics" },
+    { id: "phil", name: "الفلسفة", coef: 2, color: "bg-destructive" },
   ];
 
-  const getLabel = (p: number) => {
-    const found = [...MACRO, ...MICRO].find(m => m.p === p) || [...MACRO, ...MICRO].reduce((prev, curr) => Math.abs(curr.p - p) < Math.abs(prev.p - p) ? curr : prev);
-    return found;
-  };
-
-  const scaleInfo = getLabel(power);
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-4 bg-muted/20 p-6 rounded-3xl border border-border">
-          <h2 className="text-base font-black">الكتابة العلمية ومقاييس الكون 🔬</h2>
-          <p className="text-[11px] text-muted-foreground">الكتابة العلمية a × 10ⁿ تسمح بوصف المجرات البعيدة والذرات المتناهية الدقة.</p>
-          
-          <ParamSlider label="القوة (n)" value={power} onChange={setPower} min={-15} max={15} step={1} color={power > 0 ? "text-primary" : "text-geometry"} desc="يتحكم في عدد الأصفار ومقاس الوحدة" />
-          
-          <div className="text-center bg-card border border-border p-8 rounded-2xl mt-4">
-            <div className="text-xs text-muted-foreground mb-4">الصيغة العلمية:</div>
-            <div className="text-5xl font-black font-mono text-foreground" style={{ direction: "ltr" }}>
-              10<sup className={power > 0 ? "text-primary" : "text-geometry"}>{power}</sup>
-            </div>
-            <div className="text-[10px] mt-4 text-muted-foreground break-all px-4" style={{ direction: "ltr" }}>
-              {power >= 0 ? "1" + "0".repeat(power) : "0." + "0".repeat(Math.abs(power)-1) + "1"}
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex flex-col items-center justify-center p-8 bg-card rounded-3xl border border-border text-center overflow-hidden relative">
-          <motion.div 
-            key={power}
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring" }}
-            className="text-8xl mb-6 shadow-2xl drop-shadow-[0_0_30px_rgba(0,0,0,0.2)]"
-          >
-            {scaleInfo.emoji}
-          </motion.div>
-          <h3 className="text-lg font-black">{scaleInfo.label}</h3>
-          <p className="text-xs text-muted-foreground mt-2" style={{ direction: "ltr" }}>~ 10^{scaleInfo.p} m</p>
-          
-          {/* Zoom lines visual effect */}
-          <div className="absolute inset-0 pointer-events-none opacity-10">
-            {Array.from({length: 10}).map((_, i) => (
-              <motion.circle 
-                key={i}
-                cx="50%" cy="50%" 
-                r={10 + i * 30} 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth={1}
-                animate={{ r: [10 + i * 30, 40 + i * 30] }}
-                transition={{ repeat: Infinity, duration: Math.abs(power) ? 2 : 10, ease: "linear" }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </motion.div>
+  const [scores, setScores] = useState<Record<string, number>>(
+    Subjects.reduce((acc, s) => ({ ...acc, [s.id]: 10 }), {})
   );
-}
 
-// ═══════════════════════════════════════════════════════════════
-// 1.11 PGCD EXPLORER (4AM)
-// ═══════════════════════════════════════════════════════════════
-function PGCDWhatIf() {
-  const [a, setA] = useState(1053);
-  const [b, setB] = useState(325);
-
-  const calculatePGCD = (x: number, y: number) => {
-    let steps = [];
-    let A = Math.max(x, y);
-    let B = Math.min(x, y);
-    if (B === 0) return { pgcd: A, steps };
-    
-    while (B !== 0) {
-      let q = Math.floor(A / B);
-      let r = A % B;
-      steps.push({ a: A, b: B, q, r });
-      A = B;
-      B = r;
-    }
-    return { pgcd: A, steps };
-  };
-
-  const { pgcd, steps } = calculatePGCD(a, b);
+  const totalCoef = Subjects.reduce((acc, s) => acc + s.coef, 0);
+  const average = Subjects.reduce((acc, s) => acc + (scores[s.id] * s.coef), 0) / (totalCoef || 1);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-4 bg-muted/20 p-6 rounded-3xl border border-border">
-          <h2 className="text-base font-black">القاسم المشترك الأكبر PGCD ➗</h2>
-          <p className="text-[11px] text-muted-foreground">حوارية خوارزمية إقليدس (القسمات المتتالية). آخر باقٍ غير معدوم هو الـ PGCD.</p>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-4">
+          <h2 className="text-base font-black text-foreground">🎓 ماذا لو حصلت على هذه العلامات؟</h2>
+          <p className="text-xs text-muted-foreground">توقع معدلك في البكالوريا بناءً على معاملات المواد العلمية</p>
           
-          <div className="flex gap-4">
-            <div className="flex-1 space-y-1">
-              <label className="text-[10px] font-bold text-muted-foreground">العدد a</label>
-              <input type="number" value={a} onChange={e => setA(Math.max(1, parseInt(e.target.value)||1))} className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm font-mono font-bold" />
-            </div>
-            <div className="flex-1 space-y-1">
-              <label className="text-[10px] font-bold text-muted-foreground">العدد b</label>
-              <input type="number" value={b} onChange={e => setB(Math.max(1, parseInt(e.target.value)||1))} className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm font-mono font-bold" />
-            </div>
-          </div>
-          
-          <div className="p-6 rounded-2xl bg-card border border-border mt-4 text-center">
-            <h3 className="text-xs font-bold text-muted-foreground mb-2">النتيجة النهائية</h3>
-            <div className="text-2xl font-black text-primary font-mono" style={{ direction: "ltr" }}>
-              PGCD({a}, {b}) = {pgcd}
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-card rounded-3xl border border-border overflow-hidden">
-          <div className="p-4 bg-muted/30 border-b border-border text-xs font-bold">خوارزمية إقليدس a = b × q + r</div>
-          <div className="max-h-[300px] overflow-auto p-4 space-y-2">
-            {steps.map((s, i) => (
-              <div key={i} className={`flex justify-center p-3 rounded-xl border font-mono text-sm shadow-sm transition-all ${s.r === pgcd ? "bg-primary/10 border-primary" : s.r === 0 ? "bg-muted/30 border-border text-muted-foreground" : "bg-background border-border"}`} style={{ direction: "ltr" }}>
-                <span className="font-bold">{s.a}</span> 
-                <span className="mx-2 text-muted-foreground">=</span> 
-                <span className="text-primary font-bold">{s.b}</span> 
-                <span className="mx-2 text-muted-foreground">×</span> 
-                <span>{s.q}</span> 
-                <span className="mx-2 text-muted-foreground">+</span> 
-                <span className={`font-black ${s.r === pgcd ? "text-destructive" : s.r === 0 ? "" : "text-geometry"}`}>{s.r}</span>
+          <div className="grid grid-cols-1 gap-4">
+            {Subjects.map(s => (
+              <div key={s.id} className="p-3 rounded-xl border border-border bg-card">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-bold">{s.name} <span className="text-[10px] text-muted-foreground opacity-60">(معامل {s.coef})</span></span>
+                  <span className="text-sm font-black font-mono">{scores[s.id]}</span>
+                </div>
+                <input 
+                  type="range" min={0} max={20} step={0.25} value={scores[s.id]}
+                  onChange={(e) => setScores(prev => ({ ...prev, [s.id]: Number(e.target.value) }))}
+                  className="w-full h-1.5 rounded-full bg-muted accent-primary"
+                />
               </div>
             ))}
-            <div className="text-center text-[10px] text-muted-foreground mt-4 pt-4 border-t border-dashed border-border/50">
-              بما أن الباقي معدوم (0)، فإن آخر باقٍ غير معدوم وهو <span className="text-destructive font-bold">{pgcd}</span> يمثل القاسم المشترك الأكبر.
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-primary/5 border-2 border-primary/20 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-primary/20" />
+          <div className="text-sm font-bold text-muted-foreground mb-2">المعدل المتوقع</div>
+          <div className="text-7xl font-black text-primary mb-2 drop-shadow-sm">{average.toFixed(2)}</div>
+          <div className={`px-4 py-1.5 rounded-full text-xs font-bold ${average >= 16 ? "bg-geometry text-geometry-foreground" : average >= 10 ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"}`}>
+            {average >= 16 ? "ممتاز (تقدير جيد جداً)" : average >= 12 ? "جيد (تقدير قريب من الجيد)" : average >= 10 ? "ناجح" : "راسب"}
+          </div>
+          
+          <div className="mt-8 w-full p-4 rounded-xl bg-background border border-border space-y-2">
+            <h4 className="text-[10px] font-bold text-muted-foreground uppercase opacity-50">توزيع النقاط</h4>
+            <div className="flex h-3 w-full rounded-full overflow-hidden">
+              {Subjects.map(s => (
+                <div key={s.id} style={{ width: `${(scores[s.id] * s.coef / ((average * totalCoef) || 1)) * 100}%` }} className={`${s.color}`} title={s.name} />
+              ))}
             </div>
           </div>
         </div>
