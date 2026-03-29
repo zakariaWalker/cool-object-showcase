@@ -17,6 +17,7 @@ import VisualExplorer from "./pages/VisualExplorer";
 import WhatIf from "./pages/WhatIf";
 import ExamBuilderPage from "./pages/ExamBuilder";
 import ExamKBPage from "./pages/ExamKB";
+import DiagnosticExam from "./pages/DiagnosticExam";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
