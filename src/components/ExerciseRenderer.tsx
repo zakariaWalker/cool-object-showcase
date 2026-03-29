@@ -89,7 +89,7 @@ function RenderLatexText({ text }: { text: string }) {
   const parts = text.split(/(\$[^$]+\$)/g);
 
   return (
-    <span>
+    <span className="leading-loose text-foreground">
       {parts.map((part, i) => {
         if (part.startsWith("$") && part.endsWith("$")) {
           const latex = part.slice(1, -1);
@@ -99,7 +99,7 @@ function RenderLatexText({ text }: { text: string }) {
         // Automated highlighting for numbers outside of LaTeX
         const subParts = part.split(/(\d+[\.,]?\d*)/g);
         return (
-          <span key={i}>
+          <bdi key={i} dir="auto" className="math-text-preserve whitespace-pre-wrap break-words">
             {subParts.map((sp, j) => {
               if (/^\d+[\.,]?\d*$/.test(sp) && sp.length > 0) {
                 return (
@@ -110,7 +110,7 @@ function RenderLatexText({ text }: { text: string }) {
               }
               return <span key={j}>{sp}</span>;
             })}
-          </span>
+          </bdi>
         );
       })}
     </span>

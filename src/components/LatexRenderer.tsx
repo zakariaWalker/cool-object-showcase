@@ -25,5 +25,12 @@ export function LatexRenderer({ latex, className = "", displayMode = false }: La
     }
   }, [latex, displayMode]);
 
-  return <span ref={ref} className={className} />;
+  return (
+    <span 
+      ref={ref} 
+      dir="ltr"
+      className={`inline-math-isolate ${className}`}
+      style={{ display: displayMode ? "block" : "inline-block", unicodeBidi: "isolate", direction: "ltr", maxWidth: "100%", overflowX: "auto", overflowY: "hidden" }} 
+    />
+  );
 }

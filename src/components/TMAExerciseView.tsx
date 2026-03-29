@@ -265,8 +265,28 @@ export function TMAExerciseView({
     return wrongs.slice(0, count);
   }
 
-  const correctAnswer = exercise.answers.find(isValidAnswer) ?? "";
-  const rawWrong = exercise.answers.slice(1).filter(isValidAnswer);
+  // Recombine fragmented answers (if the DB stored multiline LaTeX across multiple array entries)
+  const assembledAnswers: string[] = [];
+  let ansBuffer = "";
+  let ansInMath = false;
+
+  for (const line of exercise.answers) {
+    const dollarCount = (line.match(/\$/g) || []).length;
+    if (ansInMath) {
+      ansBuffer += "\n" + line;
+    } else {
+      ansBuffer = line;
+    }
+    if (dollarCount % 2 !== 0) ansInMath = !ansInMath;
+    if (!ansInMath && ansBuffer) {
+      assembledAnswers.push(ansBuffer);
+      ansBuffer = "";
+    }
+  }
+  if (ansBuffer) assembledAnswers.push(ansBuffer);
+
+  const correctAnswer = assembledAnswers.find(isValidAnswer) ?? "";
+  const rawWrong = assembledAnswers.slice(1).filter(isValidAnswer);
   const extraWrong = rawWrong.length < 3
     ? generateWrongAnswers(correctAnswer, 3 - rawWrong.length, domain)
     : [];
