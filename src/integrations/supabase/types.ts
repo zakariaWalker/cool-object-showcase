@@ -652,6 +652,36 @@ export type Database = {
         }
         Relationships: []
       }
+      exercise_reports: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          exercise_id: string
+          id: string
+          issue_type: string
+          status: string | null
+          student_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          exercise_id: string
+          id?: string
+          issue_type: string
+          status?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          exercise_id?: string
+          id?: string
+          issue_type?: string
+          status?: string | null
+          student_id?: string | null
+        }
+        Relationships: []
+      }
       kb_deconstructions: {
         Row: {
           ai_generated: boolean | null
