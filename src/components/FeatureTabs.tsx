@@ -161,7 +161,7 @@ function GapDetector() {
   // ── Quiz Mode UI ──────────────────────────────────────────────────────────
   if (quizMode) {
     return (
-      <DiagnosticProfiler onClose={() => { setQuizMode(false); setQuizDone(true); }} />
+      <DiagnosticProfiler level="3AS" onClose={() => { setQuizMode(false); setQuizDone(true); }} />
     );
   }
 
