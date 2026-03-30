@@ -13,6 +13,7 @@ import { astToLatex } from "@/engine/ast-utils"; // used in KatexSpan (KB patter
 import { recordExercise } from "@/engine/progress-store";
 import { useProfile, PROFILES } from "@/engine/profile-store";
 import { FeatureTabs } from "./FeatureTabs";
+import { ExerciseRenderer } from "./ExerciseRenderer";
 import { ExerciseResult } from "./ExerciseResult";
 import { motion, AnimatePresence } from "framer-motion";
 import katex from "katex";
@@ -369,8 +370,8 @@ export function TMAExerciseView({
             <div style={{ background: d.pill, padding: "10px 16px", borderBottom: `1px solid ${d.accentLight}` }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: d.accentText }}>📝 نص التمرين</span>
             </div>
-            <div style={{ padding: "14px 16px", fontSize: 15, lineHeight: 1.9, color: "#1e293b", whiteSpace: "pre-wrap" }} dir="auto">
-              <InlineMath text={exercise.statement} />
+            <div style={{ padding: "14px 16px", fontSize: 15, lineHeight: 1.9, color: "#1e293b" }} dir="auto">
+              <ExerciseRenderer text={exercise.statement} />
             </div>
           </motion.div>
         )}
@@ -455,8 +456,8 @@ export function TMAExerciseView({
                     <div style={{ minWidth: 34, height: 34, borderRadius: "50%", background: d.banner, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
                       {i + 1}
                     </div>
-                    <span style={{ fontSize: 15, lineHeight: 1.8, color: "#1e293b", paddingTop: 4, flex: 1, whiteSpace: "pre-wrap" }} dir="auto">
-                      <InlineMath text={q.replace(/^\d+[\.\)]\s*/, "")} />
+                    <span style={{ fontSize: 15, lineHeight: 1.8, color: "#1e293b", paddingTop: 4, flex: 1 }} dir="auto">
+                      <ExerciseRenderer text={q.replace(/^\d+[\.\)]\s*/, "")} />
                     </span>
                   </motion.div>
                 ));
@@ -563,7 +564,7 @@ export function TMAExerciseView({
                       <span style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${isSelected ? d.accent : "#CBD5E1"}`, background: isSelected ? d.accent : "transparent", flexShrink: 0 }} />
                     )}
                     <span style={{ fontSize: 15, color: textColor, fontWeight: item.isCorrect && revealAnswers ? 800 : 600, lineHeight: 1.6, flex: 1 }}>
-                      <InlineMath text={item.text} />
+                      <ExerciseRenderer text={item.text} />
                     </span>
                   </motion.button>
                 );

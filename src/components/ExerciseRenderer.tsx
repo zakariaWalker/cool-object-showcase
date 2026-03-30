@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { LatexRenderer } from "@/components/LatexRenderer";
+import { MathContent } from "@/components/MathContent";
 
 interface Props {
   text: string;
@@ -11,7 +11,8 @@ function detectContent(text: string) {
   const segments: { type: "text" | "latex" | "table" | "list" | "geometric" | "header"; content: string }[] = [];
 
   // Split by common section separators: —, –, |, and newlines
-  const sections = text.split(/\s*(?:—|–|\||\n)\s*/);
+  // We added \n\n to ensure paragraph separation
+  const sections = text.split(/\s*(?:—|–|\||\n\n|\n(?=[أ-ي]\)|سؤال \d+|[\d]+[\)\.]))\s*/);
 
   for (const section of sections) {
     const trimmed = section.trim();
@@ -28,7 +29,6 @@ function detectContent(text: string) {
     }
 
     // Check for list/numbered items within this section
-    // Common markers: سؤال 1, أ), 1., etc. OR just "/" between questions
     if (/سؤال \d+|[أ-ي]\)|^\d+[\)\.]/m.test(trimmed) || trimmed.includes(" / ")) {
       // Split by question markers or "/"
       const subItems = trimmed.split(/\s*(?:\/|(?=سؤال \d+)|(?=[أ-ي]\))|(?=[\d]+[\)\.]))\s*/);
@@ -36,7 +36,6 @@ function detectContent(text: string) {
         subItems.forEach(item => {
           const itrim = item.trim();
           if (itrim && itrim !== "/") {
-            // If it starts with a marker, it's a list item
             if (/^سؤال \d+|[أ-ي]\)|^\d+[\)\.]/.test(itrim) || itrim.length > 5) {
               segments.push({ type: "list", content: itrim });
             } else {
@@ -50,7 +49,7 @@ function detectContent(text: string) {
 
     // Check for geometric construction instructions
     if (/ارسم|أنشئ|المثلث|الدائرة|المستقيم|المستوي|القطعة|الزاوية|التحويل|الإنشاء/i.test(trimmed) &&
-        /\$[A-Z]\$/i.test(trimmed)) {
+        (/\$[A-Z]\$/i.test(trimmed) || trimmed.includes("cm") || trimmed.includes("سم"))) {
       segments.push({ type: "geometric", content: trimmed });
       continue;
     }
@@ -61,6 +60,8 @@ function detectContent(text: string) {
 
   return segments;
 }
+
+// ... remaining parseTable and other functions (kept unchanged except for using MathContent)
 
 // Try to parse table data from text
 function parseTable(text: string): { headers: string[]; rows: string[][] } | null {
@@ -84,39 +85,6 @@ function parseTable(text: string): { headers: string[]; rows: string[][] } | nul
   return null;
 }
 
-function RenderLatexText({ text }: { text: string }) {
-  // Split text by $...$ patterns for inline LaTeX
-  const parts = text.split(/(\$[^$]+\$)/g);
-
-  return (
-    <span className="leading-loose text-foreground">
-      {parts.map((part, i) => {
-        if (part.startsWith("$") && part.endsWith("$")) {
-          const latex = part.slice(1, -1);
-          return <LatexRenderer key={i} latex={latex} />;
-        }
-        
-        // Automated highlighting for numbers outside of LaTeX
-        const subParts = part.split(/(\d+[\.,]?\d*)/g);
-        return (
-          <bdi key={i} dir="auto" className="math-text-preserve whitespace-pre-wrap break-words">
-            {subParts.map((sp, j) => {
-              if (/^\d+[\.,]?\d*$/.test(sp) && sp.length > 0) {
-                return (
-                  <span key={j} className="font-black text-primary bg-primary/5 px-1 rounded mx-0.5 border-b border-primary/20">
-                    {sp}
-                  </span>
-                );
-              }
-              return <span key={j}>{sp}</span>;
-            })}
-          </bdi>
-        );
-      })}
-    </span>
-  );
-}
-
 export function ExerciseRenderer({ text, className = "" }: Props) {
   const segments = useMemo(() => detectContent(text), [text]);
 
@@ -138,7 +106,7 @@ export function ExerciseRenderer({ text, className = "" }: Props) {
                       <tr>
                         {table.headers.map((h, j) => (
                           <th key={j} className="px-3 py-2 text-center font-bold border border-border bg-muted/50 text-foreground">
-                            <RenderLatexText text={h} />
+                            <MathContent text={h} />
                           </th>
                         ))}
                       </tr>
@@ -148,7 +116,7 @@ export function ExerciseRenderer({ text, className = "" }: Props) {
                         <tr key={j}>
                           {row.map((cell, k) => (
                             <td key={k} className="px-3 py-2 text-center border border-border text-foreground">
-                              <RenderLatexText text={cell} />
+                              <MathContent text={cell} />
                             </td>
                           ))}
                         </tr>
@@ -157,7 +125,7 @@ export function ExerciseRenderer({ text, className = "" }: Props) {
                   </table>
                   {/* Also show raw text for context */}
                   <div className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                    <RenderLatexText text={seg.content} />
+                    <MathContent text={seg.content} />
                   </div>
                 </div>
               );
@@ -169,7 +137,7 @@ export function ExerciseRenderer({ text, className = "" }: Props) {
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/20 text-accent-foreground font-bold">📊 جدول</span>
                 </div>
                 <div className="text-sm text-foreground leading-relaxed">
-                  <RenderLatexText text={seg.content} />
+                  <MathContent text={seg.content} />
                 </div>
               </div>
             );
@@ -182,7 +150,7 @@ export function ExerciseRenderer({ text, className = "" }: Props) {
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/20 text-primary font-bold">📐 هندسة</span>
                 </div>
                 <div className="text-sm text-foreground leading-relaxed">
-                  <RenderLatexText text={seg.content} />
+                  <MathContent text={seg.content} />
                 </div>
               </div>
             );
@@ -197,7 +165,7 @@ export function ExerciseRenderer({ text, className = "" }: Props) {
                   {marker || "•"}
                 </div>
                 <div className="text-[13px] text-foreground/90 leading-relaxed flex-1 font-medium">
-                  <RenderLatexText text={seg.content.replace(/^سؤال \d+\s*|^\d+[\)\.]\s*|^[أ-ي]\)\s*/, "").trim()} />
+                  <MathContent text={seg.content.replace(/^سؤال \d+\s*|^\d+[\)\.]\s*|^[أ-ي]\)\s*/, "").trim()} />
                 </div>
               </div>
             );
@@ -207,7 +175,7 @@ export function ExerciseRenderer({ text, className = "" }: Props) {
             const isPotentialHeader = seg.content.length < 60 && (/^(\d+[\.\)]|إليك|ليكن|نعتبر|في الشكل|لاحظ)/i.test(seg.content));
             return (
               <div key={i} className={`text-sm leading-relaxed ${isPotentialHeader ? "font-black text-foreground border-r-4 border-primary/40 pr-3 py-0.5 my-1 bg-muted/20 rounded-l-md" : "text-foreground/70"}`}>
-                <RenderLatexText text={seg.content} />
+                <MathContent text={seg.content} />
               </div>
             );
           }

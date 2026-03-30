@@ -6,6 +6,7 @@ import { Upload, FileText, CheckCircle, XCircle, Loader2, Trash2, Eye, BarChart3
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { GRADE_OPTIONS } from "@/engine/exam-types";
+import { ExerciseRenderer } from "@/components/ExerciseRenderer";
 
 type ExamCategory = "bac" | "bem" | "regular" | "devoir";
 
@@ -695,7 +696,7 @@ export function ExamPDFUploader({ onQuestionsExtracted }: ExamPDFUploaderProps) 
                   <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{q.difficulty}</span>
                   <span className="text-xs font-bold text-foreground mr-auto">{q.points} نقطة</span>
                 </div>
-                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{q.text}</p>
+                <ExerciseRenderer text={q.text} />
                 {q.concepts.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {q.concepts.map((c, ci) => (

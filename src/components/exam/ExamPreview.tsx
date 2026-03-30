@@ -2,6 +2,7 @@
 import { motion } from "framer-motion";
 import { Exam, GRADE_OPTIONS } from "@/engine/exam-types";
 import { LatexRenderer } from "@/components/LatexRenderer";
+import { ExerciseRenderer } from "@/components/ExerciseRenderer";
 
 interface Props {
   exam: Exam;
@@ -169,10 +170,10 @@ export function ExamPreview({ exam, onClose }: Props) {
                         <div className="flex items-start gap-2">
                           <div className="flex-1">
                             <div 
-                              className="text-[13px] leading-relaxed whitespace-pre-wrap text-justify"
+                              className="text-[13px] leading-relaxed text-justify"
                               style={{ fontFamily: style.typography.math === "serif" ? 'serif' : 'inherit' }}
                             >
-                              <LatexRenderer latex={ex.text} />
+                              <ExerciseRenderer text={ex.text} />
                             </div>
                           </div>
                           {section.exercises.length > 1 && (
@@ -203,9 +204,9 @@ export function ExamPreview({ exam, onClose }: Props) {
                 {exam.sections.filter(s => s.id === "problem").map((section) => (
                   <div key={section.id} className="space-y-4">
                     {section.exercises.map((ex) => (
-                      <div key={ex.id} className="text-[14px] leading-loose whitespace-pre-wrap text-justify italic"
+                      <div key={ex.id} className="text-[14px] leading-loose text-justify italic"
                         style={{ fontFamily: style.typography.math === "serif" ? 'serif' : 'inherit' }}>
-                        <LatexRenderer latex={ex.text} />
+                        <ExerciseRenderer text={ex.text} />
                       </div>
                     ))}
                   </div>

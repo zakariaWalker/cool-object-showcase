@@ -106,11 +106,12 @@ Deno.serve(async (req) => {
     );
 
     // Use Native Google Gemini API
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
-    if (!GEMINI_API_KEY) {
+    // Use Lovable AI Gateway instead of direct Gemini API
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
       await supabase
         .from("exam_uploads")
-        .update({ status: "failed", error_message: "GEMINI_API_KEY not set" })
+        .update({ status: "failed", error_message: "LOVABLE_API_KEY not set" })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "AI key not configured" }), {
         status: 500,
@@ -135,7 +136,7 @@ Deno.serve(async (req) => {
 - section_label: اسم القسم (التمرين الأول، التمرين الثاني...)
 - question_number: رقم السؤال
 - sub_question: السؤال الفرعي أو null
-- text: نص السؤال كاملاً
+- text: نص السؤال كاملاً (يجب أن تستخدم LaTeX لكل الصيغ الرياضية وتضعها بين علامتي $، مثلاً $x^2 + 5x = 0$. تأكد من الحفاظ على الأسس والقوى بشكل صحيح $x^2$ وليس x2)
 - points: عدد النقاط
 - type: نوع السؤال (algebra, geometry, functions...)
 - difficulty: (easy, medium, hard)
@@ -166,43 +167,52 @@ Deno.serve(async (req) => {
     "structural_notes": "وصف لطريقة طرح الأسئلة والتدرج في الصعوبة"
   },
   "questions": [...]
-} (تأكد من إرجاع JSON صالح فقط)`;
+} (تأكد من إرجاع JSON صالح فقط وأن النصوص بداخلها تستخدم LaTeX بشكل مكثف لكل ما هو رياضي)`;
 
     const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${LOVABLE_API_KEY}`
+        },
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              {
-                inlineData: {
-                  mimeType: "application/pdf",
-                  data: base64,
+          model: "google/gemini-2.0-flash", // Use 2.0 flash via gateway
+          messages: [
+            {
+              role: "system",
+              content: "أنت محلل امتحانات رياضيات بيداغوجي خبير. استخرج البيانات بدقة بصيغة JSON مع تحويل كل الصيغ الرياضية إلى LaTeX بين علامتي $."
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: prompt
                 },
-              },
-              {
-                text: prompt,
-              },
-            ],
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 8192,
-            responseMimeType: "application/json",
-          },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:application/pdf;base64,${base64}`
+                  }
+                }
+              ]
+            }
+          ],
+          temperature: 0.1,
+          response_format: { type: "json_object" }
         }),
       }
     );
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error("Gemini API error:", aiResponse.status, errText);
+      console.error("AI Gateway error:", aiResponse.status, errText);
       
       await supabase
         .from("exam_uploads")
-        .update({ status: "failed", error_message: `Gemini API error: ${aiResponse.status}` })
+        .update({ status: "failed", error_message: `AI Gateway error: ${aiResponse.status}` })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "AI analysis failed" }), {
         status: 500,
@@ -211,9 +221,8 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    const parsed = aiData?.candidates?.[0]?.content?.parts?.[0]?.text 
-      ? JSON.parse(aiData.candidates[0].content.parts[0].text) 
-      : null;
+    const aiText = aiData?.choices?.[0]?.message?.content;
+    const parsed = aiText ? JSON.parse(aiText) : null;
 
     if (!parsed) {
       await supabase
