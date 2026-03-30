@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { ExerciseRenderer } from "@/components/ExerciseRenderer";
+import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
 import { recordExerciseCompletion, XPEvent, Badge } from "@/engine/gamification";
 import { XPPopup, BadgeUnlockOverlay } from "@/components/GamificationDashboard";
@@ -366,7 +366,7 @@ export default function GapDetector() {
             </div>
 
             <div className="text-base leading-relaxed text-foreground mb-6">
-              <ExerciseRenderer text={q.exercise.text} />
+              <MathExerciseRenderer text={q.exercise.text} />
             </div>
 
             {/* Answer with editor or self-assessment */}

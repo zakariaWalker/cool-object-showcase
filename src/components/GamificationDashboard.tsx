@@ -5,7 +5,7 @@ import {
   loadProgress, StudentStats, BADGES, Badge,
   xpProgress, LEVEL_TITLES, getDailyChallenge, completeDailyChallenge,
 } from "@/engine/gamification";
-import { ExerciseRenderer } from "./ExerciseRenderer";
+import { MathExerciseRenderer } from "./MathExerciseRenderer";
 
 interface GamificationDashboardProps {
   onStartDailyChallenge?: (exerciseId: string) => void;
@@ -143,7 +143,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
             </span>
           </div>
           <div className="text-xs text-foreground leading-relaxed mb-3 line-clamp-3">
-            <ExerciseRenderer text={dailyChallenge.text} />
+            <MathExerciseRenderer text={dailyChallenge.text} />
           </div>
           {onStartDailyChallenge && (
             <button

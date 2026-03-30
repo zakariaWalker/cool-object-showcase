@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Exercise } from "./useAdminKBStore";
-import { ExerciseRenderer } from "@/components/ExerciseRenderer";
+import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 
 interface Props {
   exercises: Exercise[];
@@ -115,7 +115,7 @@ export function AdminClassify({ exercises, searchQuery, setSearchQuery, gradeFil
               onChange={() => toggleSelect(ex.id)}
               className="mt-1 accent-primary" />
             <div className="flex-1 min-w-0">
-              <div className="text-sm leading-relaxed line-clamp-3" dir="rtl"><ExerciseRenderer text={ex.text} /></div>
+              <div className="text-sm leading-relaxed line-clamp-3" dir="rtl"><MathExerciseRenderer text={ex.text} /></div>
               <div className="flex gap-2 mt-2 flex-wrap">
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                   {ex.grade} {ex.stream && `• ${ex.stream}`}

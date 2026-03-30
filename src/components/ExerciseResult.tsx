@@ -16,7 +16,7 @@ import { Link } from "react-router-dom";
 import { FunctionAnalysis } from "@/engine/functions-engine";
 import { KnowledgeGapVisual } from "./KnowledgeGapVisual";
 import { KnowledgeBase } from "@/engine/knowledge/types";
-import { ExerciseRenderer } from "./ExerciseRenderer";
+import { MathExerciseRenderer } from "./MathExerciseRenderer";
 import { ExerciseReportButton } from "./ExerciseReportButton";
 
 interface ExerciseResultProps {
@@ -79,7 +79,7 @@ export function ExerciseResult({
           )}
         </div>
         <div className="bg-background border border-border rounded-sm p-4 text-[13px] text-foreground leading-relaxed" dir="auto">
-          <ExerciseRenderer text={exercise.source.text} />
+          <MathExerciseRenderer text={exercise.source.text} />
         </div>
       </motion.div>
 
@@ -148,7 +148,7 @@ export function ExerciseResult({
               <div key={i} className="flex items-start gap-2 text-[13px]">
                 <span className="text-primary font-mono text-[11px] mt-0.5 shrink-0">Q{i + 1}</span>
                 <span className="text-foreground" dir="auto">
-                   <ExerciseRenderer text={q} />
+                   <MathExerciseRenderer text={q} />
                 </span>
               </div>
             ))}

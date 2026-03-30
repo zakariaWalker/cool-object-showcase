@@ -13,7 +13,7 @@ import { astToLatex } from "@/engine/ast-utils"; // used in KatexSpan (KB patter
 import { recordExercise } from "@/engine/progress-store";
 import { useProfile, PROFILES } from "@/engine/profile-store";
 import { FeatureTabs } from "./FeatureTabs";
-import { ExerciseRenderer } from "./ExerciseRenderer";
+import { MathExerciseRenderer } from "./MathExerciseRenderer";
 import { ExerciseResult } from "./ExerciseResult";
 import { motion, AnimatePresence } from "framer-motion";
 import katex from "katex";
@@ -371,7 +371,7 @@ export function TMAExerciseView({
               <span style={{ fontSize: 13, fontWeight: 700, color: d.accentText }}>📝 نص التمرين</span>
             </div>
             <div style={{ padding: "14px 16px", fontSize: 15, lineHeight: 1.9, color: "#1e293b" }} dir="auto">
-              <ExerciseRenderer text={exercise.statement} />
+              <MathExerciseRenderer text={exercise.statement} />
             </div>
           </motion.div>
         )}
@@ -457,7 +457,7 @@ export function TMAExerciseView({
                       {i + 1}
                     </div>
                     <span style={{ fontSize: 15, lineHeight: 1.8, color: "#1e293b", paddingTop: 4, flex: 1 }} dir="auto">
-                      <ExerciseRenderer text={q.replace(/^\d+[\.\)]\s*/, "")} />
+                      <MathExerciseRenderer text={q.replace(/^\d+[\.\)]\s*/, "")} />
                     </span>
                   </motion.div>
                 ));
@@ -564,7 +564,7 @@ export function TMAExerciseView({
                       <span style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${isSelected ? d.accent : "#CBD5E1"}`, background: isSelected ? d.accent : "transparent", flexShrink: 0 }} />
                     )}
                     <span style={{ fontSize: 15, color: textColor, fontWeight: item.isCorrect && revealAnswers ? 800 : 600, lineHeight: 1.6, flex: 1 }}>
-                      <ExerciseRenderer text={item.text} />
+                      <MathExerciseRenderer text={item.text} />
                     </span>
                   </motion.button>
                 );

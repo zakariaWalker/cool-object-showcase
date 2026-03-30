@@ -4,7 +4,7 @@
 
 import { useState, useRef } from "react";
 import { ImadrassaDataset, ImadrassaExercise } from "@/engine/dataset-types";
-import { ExerciseRenderer } from "./ExerciseRenderer";
+import { MathExerciseRenderer } from "./MathExerciseRenderer";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface DatasetBrowserProps {
@@ -165,7 +165,7 @@ function ExerciseDetail({
       <div>
         <div className="text-[14px] text-primary font-semibold mb-2">{exercise.title}</div>
         <div className="text-[13px]" dir="rtl">
-          <ExerciseRenderer text={exercise.statement} />
+          <MathExerciseRenderer text={exercise.statement} />
         </div>
       </div>
 
@@ -179,7 +179,7 @@ function ExerciseDetail({
                 {i + 1}
               </span>
               <div className="flex-1 text-[12px]" dir="auto">
-                <ExerciseRenderer text={q} />
+                <MathExerciseRenderer text={q} />
               </div>
             </div>
           ))}

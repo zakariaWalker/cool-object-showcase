@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ExerciseRenderer } from "@/components/ExerciseRenderer";
+import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -57,7 +57,7 @@ function ExerciseItem({ ex, isCompleted, onToggle }: { ex: Exercise; isCompleted
             textDecoration: isCompleted ? "line-through" : "none",
             opacity: isCompleted ? 0.6 : 1,
           }}>
-            <ExerciseRenderer text={ex.text} />
+            <MathExerciseRenderer text={ex.text} />
           </div>
           
           <AnimatePresence>

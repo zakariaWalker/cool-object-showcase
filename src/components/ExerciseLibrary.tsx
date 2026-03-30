@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ExerciseRenderer } from "./ExerciseRenderer";
+import { MathExerciseRenderer } from "./MathExerciseRenderer";
 
 interface ExerciseItem {
   id: string;
@@ -373,7 +373,7 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
                         </div>
                         
                         <div className={`text-[12px] leading-relaxed text-right w-full ${isSelected ? "text-foreground font-medium" : "text-muted-foreground"}`}>
-                          <ExerciseRenderer text={ex.text} className="line-clamp-3" />
+                          <MathExerciseRenderer text={ex.text} className="line-clamp-3" />
                         </div>
 
                         {isSelected && (

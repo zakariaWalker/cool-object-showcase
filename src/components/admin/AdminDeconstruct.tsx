@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Exercise, Pattern, Deconstruction } from "./useAdminKBStore";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ExerciseRenderer } from "@/components/ExerciseRenderer";
+import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 
 interface Props {
   exercises: Exercise[];
@@ -302,7 +302,7 @@ export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, 
                   </div>
                 </div>
                 <div className="p-4 bg-muted/30 rounded-lg border border-border">
-                  <ExerciseRenderer text={selectedEx.text} />
+                  <MathExerciseRenderer text={selectedEx.text} />
                 </div>
               </div>
 

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ExerciseRenderer } from "@/components/ExerciseRenderer";
+import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 
 interface Exercise {
   id: string; text: string; type: string; grade: string;
@@ -217,7 +217,7 @@ export default function AITutor() {
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{TYPE_LABELS[selectedEx.type] || selectedEx.type}</span>
                   </div>
                   <div className="p-4 bg-muted/30 rounded-lg border border-border">
-                    <ExerciseRenderer text={selectedEx.text} />
+                    <MathExerciseRenderer text={selectedEx.text} />
                   </div>
                 </div>
 

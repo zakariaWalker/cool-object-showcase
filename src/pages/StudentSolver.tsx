@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ExerciseRenderer } from "@/components/ExerciseRenderer";
+import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 
 interface Step {
   id: number;
@@ -143,7 +143,7 @@ export default function StudentSolver() {
         <div className="p-5 rounded-xl border border-border bg-card shadow-sm">
           <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wider">سياق التمرين</h3>
           <div className="text-sm">
-            <ExerciseRenderer text={exercise.text} />
+            <MathExerciseRenderer text={exercise.text} />
           </div>
         </div>
 
