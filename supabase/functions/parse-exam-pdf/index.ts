@@ -37,17 +37,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const anonClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: { user }, error: userError } = await anonClient.auth.getUser();
+    const anonClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const {
+      data: { user },
+      error: userError,
+    } = await anonClient.auth.getUser();
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -77,14 +75,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    await supabase
-      .from("exam_uploads")
-      .update({ status: "processing" })
-      .eq("id", upload_id);
+    await supabase.from("exam_uploads").update({ status: "processing" }).eq("id", upload_id);
 
-    const { data: fileData, error: dlErr } = await supabase.storage
-      .from("exam-pdfs")
-      .download(upload.file_path);
+    const { data: fileData, error: dlErr } = await supabase.storage.from("exam-pdfs").download(upload.file_path);
 
     if (dlErr || !fileData) {
       await supabase
@@ -98,19 +91,14 @@ Deno.serve(async (req) => {
     }
 
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(
-      new Uint8Array(arrayBuffer).reduce(
-        (data, byte) => data + String.fromCharCode(byte),
-        ""
-      )
-    );
+    const base64 = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ""));
 
-    // Use Native Google Gemini API
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
+    // Use LOVABLE_API_KEY with fallback to GEMINI_API_KEY
+    const GEMINI_API_KEY = Deno.env.get("LOVABLE_API_KEY") || Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
       await supabase
         .from("exam_uploads")
-        .update({ status: "failed", error_message: "GEMINI_API_KEY not set" })
+        .update({ status: "failed", error_message: "LOVABLE_API_KEY not set" })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "AI key not configured" }), {
         status: 500,
@@ -169,67 +157,39 @@ Deno.serve(async (req) => {
 } (تأكد من إرجاع JSON صالح فقط)`;
 
     const aiResponse = await fetch(
-
-
-      curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent" \
-  -H 'Content-Type: application/json' \
-  -H 'X-goog-api-key: AIzaSyCdB6iYbesgWF_GLsALe1Gn8A0ggqGhKzA' \
-  -X POST \
-  -d '{
-    "contents": [
-      {
-        "parts": [
-          {
-            "text": "Explain how AI works in a few words"
-          }
-        ]
-      }
-    ]
-  }'
-
-
-
-
-
-
-
-
-
-
-      
-
-      
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              {
-                inlineData: {
-                  mimeType: "application/pdf",
-                  data: base64,
+          contents: [
+            {
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: "application/pdf",
+                    data: base64,
+                  },
                 },
-              },
-              {
-                text: prompt,
-              },
-            ],
-          }],
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
           generationConfig: {
             temperature: 0.1,
             maxOutputTokens: 8192,
             responseMimeType: "application/json",
           },
         }),
-      }
+      },
     );
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
       console.error("Gemini API error:", aiResponse.status, errText);
-      
+
       await supabase
         .from("exam_uploads")
         .update({ status: "failed", error_message: `Gemini API error: ${aiResponse.status}` })
@@ -241,8 +201,8 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    const parsed = aiData?.candidates?.[0]?.content?.parts?.[0]?.text 
-      ? JSON.parse(aiData.candidates[0].content.parts[0].text) 
+    const parsed = aiData?.candidates?.[0]?.content?.parts?.[0]?.text
+      ? JSON.parse(aiData.candidates[0].content.parts[0].text)
       : null;
 
     if (!parsed) {
@@ -295,14 +255,18 @@ Deno.serve(async (req) => {
       await supabase.from("exam_extracted_questions").insert(questionsToInsert);
 
       // Also insert into exam_kb_entries + exam_kb_questions so they appear in the Questions tab
-      const { data: kbEntry } = await supabase.from("exam_kb_entries").insert({
-        user_id: user.id,
-        year: parsed.year || "",
-        session: parsed.session || "juin",
-        format: parsed.format || "unknown",
-        grade: parsed.grade || "",
-        stream: null,
-      }).select("id").single();
+      const { data: kbEntry } = await supabase
+        .from("exam_kb_entries")
+        .insert({
+          user_id: user.id,
+          year: parsed.year || "",
+          session: parsed.session || "juin",
+          format: parsed.format || "unknown",
+          grade: parsed.grade || "",
+          stream: null,
+        })
+        .select("id")
+        .single();
 
       if (kbEntry) {
         const kbQuestions = questions.map((q, i) => ({
@@ -370,16 +334,13 @@ Deno.serve(async (req) => {
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (err) {
     console.error("Parse exam error:", err);
-    return new Response(
-      JSON.stringify({ error: (err as Error).message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
