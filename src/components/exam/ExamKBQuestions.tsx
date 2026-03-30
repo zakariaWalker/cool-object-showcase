@@ -1,6 +1,7 @@
-// ===== Exam KB Questions — View, classify, edit imported questions =====
+// ===== Exam KB Questions — View, classify, edit with enhanced rendering =====
 import { useState } from "react";
 import { TYPE_LABELS_AR } from "@/engine/exam-types";
+import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 
 interface Props {
   store: ReturnType<typeof import("./useExamKBStore").useExamKBStore>;
@@ -9,6 +10,13 @@ interface Props {
 const DIFFICULTY_LABELS: Record<string, string> = { easy: "سهل", medium: "متوسط", hard: "صعب" };
 const DIFFICULTY_COLORS: Record<string, string> = {
   easy: "hsl(var(--geometry))", medium: "hsl(var(--statistics))", hard: "hsl(var(--destructive))"
+};
+
+const BLOOM_LABELS: Record<number, string> = {
+  1: "تذكر", 2: "فهم", 3: "تطبيق", 4: "تحليل", 5: "تقييم", 6: "إبداع"
+};
+const BLOOM_COLORS: Record<number, string> = {
+  1: "#94a3b8", 2: "#60a5fa", 3: "#34d399", 4: "#f59e0b", 5: "#f97316", 6: "#ef4444"
 };
 
 const ALL_TYPES = Object.keys(TYPE_LABELS_AR).filter(t => t !== "unclassified" && t !== "other");
@@ -50,25 +58,35 @@ export function ExamKBQuestions({ store }: Props) {
           <p className="text-sm">لا توجد أسئلة. استورد امتحاناً أولاً.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {filtered.map(q => {
             const exam = store.exams.find(e => e.id === q.examId);
             const isEditing = editingId === q.id;
+            const bloom = q.bloomLevel || 0;
+
             return (
-              <div key={q.id} className="rounded-xl border border-border bg-card p-4">
+              <div key={q.id} className="rounded-xl border border-border bg-card p-5 hover:border-primary/30 transition-colors">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
                       {exam?.format.toUpperCase()} {exam?.year}
                     </span>
                     <span className="text-xs font-bold text-foreground">{q.sectionLabel}</span>
+                    {bloom > 0 && (
+                      <span
+                        className="text-[9px] px-2 py-0.5 rounded-full font-bold"
+                        style={{ background: BLOOM_COLORS[bloom] + "20", color: BLOOM_COLORS[bloom] }}
+                      >
+                        🧠 {BLOOM_LABELS[bloom]} (B{bloom})
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[9px] font-bold" style={{ color: DIFFICULTY_COLORS[q.difficulty] }}>
                       {DIFFICULTY_LABELS[q.difficulty]}
                     </span>
-                    <span className="text-[9px] text-muted-foreground">{q.points} ن</span>
+                    <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{q.points} ن</span>
                     {q.linkedPatternIds.length > 0 && (
                       <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/10 text-accent-foreground font-bold">
                         🔗 {q.linkedPatternIds.length}
@@ -77,12 +95,16 @@ export function ExamKBQuestions({ store }: Props) {
                   </div>
                 </div>
 
-                {/* Text */}
-                <div className="text-xs text-foreground leading-relaxed bg-muted/20 rounded-lg p-3 mb-3 whitespace-pre-wrap">
-                  {q.text}
+                {/* Exercise text — rendered with math support */}
+                <div className="bg-muted/20 rounded-lg p-4 mb-3 border border-border/30">
+                  <MathExerciseRenderer
+                    text={q.text}
+                    showDiagram
+                    className="text-foreground"
+                  />
                 </div>
 
-                {/* Classification */}
+                {/* Classification controls */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <label className="text-[9px] text-muted-foreground">النوع:</label>
                   <select value={q.type}
@@ -104,6 +126,18 @@ export function ExamKBQuestions({ store }: Props) {
                       {DIFFICULTY_LABELS[d]}
                     </button>
                   ))}
+
+                  <label className="text-[9px] text-muted-foreground mr-2">بلوم:</label>
+                  <select
+                    value={bloom}
+                    onChange={e => store.updateQuestion(q.id, { bloomLevel: Number(e.target.value) })}
+                    className="text-[10px] px-2 py-0.5 rounded border border-border bg-background text-foreground"
+                  >
+                    <option value={0}>—</option>
+                    {[1, 2, 3, 4, 5, 6].map(b => (
+                      <option key={b} value={b}>{BLOOM_LABELS[b]}</option>
+                    ))}
+                  </select>
 
                   <button onClick={() => store.deleteQuestion(q.id)}
                     className="mr-auto text-[9px] text-destructive/50 hover:text-destructive">🗑️</button>
