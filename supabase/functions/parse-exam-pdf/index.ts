@@ -37,17 +37,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const anonClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: { user }, error: userError } = await anonClient.auth.getUser();
+    const anonClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const {
+      data: { user },
+      error: userError,
+    } = await anonClient.auth.getUser();
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -77,14 +75,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    await supabase
-      .from("exam_uploads")
-      .update({ status: "processing" })
-      .eq("id", upload_id);
+    await supabase.from("exam_uploads").update({ status: "processing" }).eq("id", upload_id);
 
-    const { data: fileData, error: dlErr } = await supabase.storage
-      .from("exam-pdfs")
-      .download(upload.file_path);
+    const { data: fileData, error: dlErr } = await supabase.storage.from("exam-pdfs").download(upload.file_path);
 
     if (dlErr || !fileData) {
       await supabase
@@ -98,20 +91,13 @@ Deno.serve(async (req) => {
     }
 
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(
-      new Uint8Array(arrayBuffer).reduce(
-        (data, byte) => data + String.fromCharCode(byte),
-        ""
-      )
-    );
+    const base64 = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ""));
 
-    // Use Native Google Gemini API
-    // Use Lovable AI Gateway instead of direct Gemini API
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
+    const AI_API_KEY = Deno.env.get("LOVABLE_API_KEY") || Deno.env.get("ANTHROPIC_API_KEY");
+    if (!AI_API_KEY) {
       await supabase
         .from("exam_uploads")
-        .update({ status: "failed", error_message: "LOVABLE_API_KEY not set" })
+        .update({ status: "failed", error_message: "AI API key (LOVABLE_API_KEY or ANTHROPIC_API_KEY) not set" })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "AI key not configured" }), {
         status: 500,
@@ -119,18 +105,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const prompt = `أنت محلل امتحانات رياضيات جزائرية خبير. حلل هذا الامتحان بدقة واستخرج كل الأسئلة بالإضافة إلى تحليل معمق للهيكل والأسلوب التربوي والبصري.
+    const prompt = `انت محلل امتحانات رياضيات جزائرية خبير. حلل هذا الامتحان بدقة واستخرج كل الاسئلة بالاضافة الى تحليل معمق للهيكل والاسلوب التربوي والبصري.
 
 تحديد نوع الامتحان (format):
-- bem: إذا وجد مفردات "شهادة التعليم المتوسط" أو "BEM" أو "دورة جوان" في ترويسة رسمية.
-- bac: إذا وجد "شهادة البكالوريا" أو "BAC" أو "دورة جوان" في ترويسة رسمية.
-- regular: إذا كان "فرض"، "اختبار فصلي"، "سلسلة تمارين"، أو امتحان مدرسي عادي لا يتبع الترويسة الوطنية الرسمية.
-
-تحليل الأسلوب والهيكل (style_metadata):
-- typography: نوع الخطوط المستخدمة (هل هي Serif للرياضيات و Sans-serif للنصوص؟)، أحجام الخطوط النسبية (العناوين، النصوص)، هل هناك خطوط غليظة للأرقام؟
-- layout: هل التنسيق عمود واحد أم عمودين؟ هل المسافات بين الأسطر واسعة أم ضيقة؟ هل هناك صناديق أو حدود حول التمارين؟
-- structure: كيف يتم ترتيب التمارين؟ هل هناك تدرج واضح في الصعوبة (تدرج خطي)؟ هل البداية بتمارين بسيطة ثم مسألة مركبة؟
-- questioning_approach: هل الأسئلة مباشرة (Explicit) أم غامضة تتطلب استنتاجاً (Implicit)؟ ما هي نسبة الأسئلة التي تتطلب برهاناً؟
+- bem: اذا وجد مفردات "شهادة التعليم المتوسط" او "BEM"
+- bac: اذا وجد "شهادة البكالوريا" او "BAC"
+- regular: اذا كان "فرض" او "اختبار فصلي" او "سلسلة تمارين"
 
 لكل سؤال استخرج:
 - section_label: اسم القسم (التمرين الأول، التمرين الثاني...)
@@ -138,81 +118,77 @@ Deno.serve(async (req) => {
 - sub_question: السؤال الفرعي أو null
 - text: نص السؤال كاملاً (يجب أن تستخدم LaTeX لكل الصيغ الرياضية وتضعها بين علامتي $، مثلاً $x^2 + 5x = 0$. تأكد من الحفاظ على الأسس والقوى بشكل صحيح $x^2$ وليس x2)
 - points: عدد النقاط
-- type: نوع السؤال (algebra, geometry, functions...)
+- type: نوع السؤال (algebra, geometry, functions, statistics, numbers, trigonometry)
 - difficulty: (easy, medium, hard)
 - cognitive_level: (remember, understand, apply, analyze, evaluate, create)
-- bloom_level: (1, 2, 3, 4, 5, 6)
-- estimated_time_min: عدد دقائق تقريبي للحل
-- step_count: عدد الخطوات المتوقع للحل
-- concept_count: عدد المفاهيم الرياضية المتداخلة
+- bloom_level: (1-6)
+- estimated_time_min, step_count, concept_count
 - concepts: قائمة المفاهيم الرياضية
 - raw_latex: الصيغة الرياضية بتنسيق LaTeX
 
-أعد النتيجة كـ JSON فقط بالهيكل التالي:
+اعد النتيجة كـ JSON فقط بدون اي نص اضافي او markdown:
 {
   "format": "bem|bac|regular",
   "year": "2024",
   "session": "juin",
   "grade": "middle_4",
   "style_metadata": {
-    "typography_notes": "وصف دقيق للخطوط والأسلوب البصري",
-    "change_summary": "ملخص قصير للتطور التربوي أو البصري المكتشف في هذا الامتحان مقارنة بالمعايير العامة"
+    "typography_notes": "وصف الخطوط والأسلوب البصري",
+    "change_summary": "ملخص التطور التربوي أو البصري المكتشف"
   },
   "structural_patterns": {
     "difficulty_curve": "linear|stepped|u-shaped",
     "explicit_implicit_ratio": 0.8,
     "targetDifficultyDist": { "easy": 30, "medium": 50, "hard": 20 },
-    "requiredCognitiveLevels": ["apply", "analyze", "evaluate"],
+    "requiredCognitiveLevels": ["apply", "analyze"],
     "expectedDomains": ["algebra", "geometry"],
-    "structural_notes": "وصف لطريقة طرح الأسئلة والتدرج في الصعوبة"
+    "structural_notes": "وصف طريقة طرح الأسئلة والتدرج"
   },
-  "questions": [...]
-} (تأكد من إرجاع JSON صالح فقط وأن النصوص بداخلها تستخدم LaTeX بشكل مكثف لكل ما هو رياضي)`;
+  "questions": []
+}`;
 
-    const aiResponse = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.0-flash", // Use 2.0 flash via gateway
-          messages: [
-            {
-              role: "system",
-              content: "أنت محلل امتحانات رياضيات بيداغوجي خبير. استخرج البيانات بدقة بصيغة JSON مع تحويل كل الصيغ الرياضية إلى LaTeX بين علامتي $."
-            },
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: prompt
+    // Call Anthropic Claude API — supports PDF as base64 document block
+    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": AI_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-3-5-sonnet-20240620",
+        max_tokens: 8192,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "document",
+                source: {
+                  type: "base64",
+                  media_type: "application/pdf",
+                  data: base64,
                 },
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: `data:application/pdf;base64,${base64}`
-                  }
-                }
-              ]
-            }
-          ],
-          temperature: 0.1,
-          response_format: { type: "json_object" }
-        }),
-      }
-    );
+              },
+              {
+                type: "text",
+                text: prompt,
+              },
+            ],
+          },
+        ],
+      }),
+    });
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error("AI Gateway error:", aiResponse.status, errText);
-      
+      console.error("AI API error:", aiResponse.status, errText);
       await supabase
         .from("exam_uploads")
-        .update({ status: "failed", error_message: `AI Gateway error: ${aiResponse.status}` })
+        .update({
+          status: "failed",
+          error_message: `AI API error: ${aiResponse.status} — ${errText.slice(0, 200)}`,
+        })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "AI analysis failed" }), {
         status: 500,
@@ -221,15 +197,38 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    const aiText = aiData?.choices?.[0]?.message?.content;
-    const parsed = aiText ? JSON.parse(aiText) : null;
 
-    if (!parsed) {
+    // Extract text from Anthropic response format: data.content[0].text
+    const rawText = aiData?.content?.[0]?.type === "text" ? aiData.content[0].text : null;
+
+    if (!rawText) {
       await supabase
         .from("exam_uploads")
         .update({ status: "failed", error_message: "Empty or invalid AI response" })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "Parse failed" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Strip possible markdown code fences before parsing
+    const cleanText = rawText
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(cleanText);
+    } catch (parseErr) {
+      console.error("JSON parse error:", parseErr, "Raw:", cleanText.slice(0, 500));
+      await supabase
+        .from("exam_uploads")
+        .update({ status: "failed", error_message: "Failed to parse AI JSON response" })
+        .eq("id", upload_id);
+      return new Response(JSON.stringify({ error: "JSON parse failed" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -273,15 +272,18 @@ Deno.serve(async (req) => {
 
       await supabase.from("exam_extracted_questions").insert(questionsToInsert);
 
-      // Also insert into exam_kb_entries + exam_kb_questions so they appear in the Questions tab
-      const { data: kbEntry } = await supabase.from("exam_kb_entries").insert({
-        user_id: user.id,
-        year: parsed.year || "",
-        session: parsed.session || "juin",
-        format: parsed.format || "unknown",
-        grade: parsed.grade || "",
-        stream: null,
-      }).select("id").single();
+      const { data: kbEntry } = await supabase
+        .from("exam_kb_entries")
+        .insert({
+          user_id: user.id,
+          year: parsed.year || "",
+          session: parsed.session || "juin",
+          format: parsed.format || "unknown",
+          grade: parsed.grade || "",
+          stream: null,
+        })
+        .select("id")
+        .single();
 
       if (kbEntry) {
         const kbQuestions = questions.map((q, i) => ({
@@ -349,16 +351,13 @@ Deno.serve(async (req) => {
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (err) {
     console.error("Parse exam error:", err);
-    return new Response(
-      JSON.stringify({ error: (err as Error).message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

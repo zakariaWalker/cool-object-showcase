@@ -339,7 +339,7 @@ export function TMAExerciseView({
               {exercise.title || "تمرين رياضي"}
             </h1>
             <div style={{ flexShrink: 0, marginTop: -2 }}>
-              <ExerciseReportButton exerciseId={(exercise as any)._meta?.question_id || exercise.id} />
+              <ExerciseReportButton exerciseId={(exercise as any)._meta?.question_id || (exercise as any).id || exercise.url} />
             </div>
           </div>
           {(meta.unit || meta.topic) && (
