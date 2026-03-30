@@ -93,9 +93,9 @@ Deno.serve(async (req) => {
     const arrayBuffer = await fileData.arrayBuffer();
     const base64 = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ""));
 
-    // Use LOVABLE_API_KEY with fallback to GEMINI_API_KEY
-    const GEMINI_API_KEY = Deno.env.get("LOVABLE_API_KEY") || Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
+    // LOVABLE_API_KEY is used as the Anthropic API key via Lovable's AI gateway
+    const AI_API_KEY = Deno.env.get("LOVABLE_API_KEY") || Deno.env.get("ANTHROPIC_API_KEY");
+    if (!AI_API_KEY) {
       await supabase
         .from("exam_uploads")
         .update({ status: "failed", error_message: "LOVABLE_API_KEY not set" })
@@ -106,93 +106,86 @@ Deno.serve(async (req) => {
       });
     }
 
-    const prompt = `أنت محلل امتحانات رياضيات جزائرية خبير. حلل هذا الامتحان بدقة واستخرج كل الأسئلة بالإضافة إلى تحليل معمق للهيكل والأسلوب التربوي والبصري.
+    const prompt = `انت محلل امتحانات رياضيات جزائرية خبير. حلل هذا الامتحان بدقة واستخرج كل الاسئلة بالاضافة الى تحليل معمق للهيكل والاسلوب التربوي والبصري.
 
 تحديد نوع الامتحان (format):
-- bem: إذا وجد مفردات "شهادة التعليم المتوسط" أو "BEM" أو "دورة جوان" في ترويسة رسمية.
-- bac: إذا وجد "شهادة البكالوريا" أو "BAC" أو "دورة جوان" في ترويسة رسمية.
-- regular: إذا كان "فرض"، "اختبار فصلي"، "سلسلة تمارين"، أو امتحان مدرسي عادي لا يتبع الترويسة الوطنية الرسمية.
-
-تحليل الأسلوب والهيكل (style_metadata):
-- typography: نوع الخطوط المستخدمة (هل هي Serif للرياضيات و Sans-serif للنصوص؟)، أحجام الخطوط النسبية (العناوين، النصوص)، هل هناك خطوط غليظة للأرقام؟
-- layout: هل التنسيق عمود واحد أم عمودين؟ هل المسافات بين الأسطر واسعة أم ضيقة؟ هل هناك صناديق أو حدود حول التمارين؟
-- structure: كيف يتم ترتيب التمارين؟ هل هناك تدرج واضح في الصعوبة (تدرج خطي)؟ هل البداية بتمارين بسيطة ثم مسألة مركبة؟
-- questioning_approach: هل الأسئلة مباشرة (Explicit) أم غامضة تتطلب استنتاجاً (Implicit)؟ ما هي نسبة الأسئلة التي تتطلب برهاناً؟
+- bem: اذا وجد مفردات شهادة التعليم المتوسط او BEM
+- bac: اذا وجد شهادة البكالوريا او BAC
+- regular: اذا كان فرض او اختبار فصلي او سلسلة تمارين
 
 لكل سؤال استخرج:
-- section_label: اسم القسم (التمرين الأول، التمرين الثاني...)
-- question_number: رقم السؤال
-- sub_question: السؤال الفرعي أو null
-- text: نص السؤال كاملاً
-- points: عدد النقاط
-- type: نوع السؤال (algebra, geometry, functions...)
+- section_label, question_number, sub_question, text, points
+- type: (algebra, geometry, functions, statistics, numbers, trigonometry)
 - difficulty: (easy, medium, hard)
 - cognitive_level: (remember, understand, apply, analyze, evaluate, create)
-- bloom_level: (1, 2, 3, 4, 5, 6)
-- estimated_time_min: عدد دقائق تقريبي للحل
-- step_count: عدد الخطوات المتوقع للحل
-- concept_count: عدد المفاهيم الرياضية المتداخلة
+- bloom_level: (1-6)
+- estimated_time_min, step_count, concept_count
 - concepts: قائمة المفاهيم الرياضية
 - raw_latex: الصيغة الرياضية بتنسيق LaTeX
 
-أعد النتيجة كـ JSON فقط بالهيكل التالي:
+اعد النتيجة كـ JSON فقط بدون اي نص اضافي او markdown:
 {
   "format": "bem|bac|regular",
   "year": "2024",
   "session": "juin",
   "grade": "middle_4",
   "style_metadata": {
-    "typography_notes": "وصف دقيق للخطوط والأسلوب البصري",
-    "change_summary": "ملخص قصير للتطور التربوي أو البصري المكتشف في هذا الامتحان مقارنة بالمعايير العامة"
+    "typography_notes": "وصف الخطوط",
+    "change_summary": "ملخص التطور التربوي"
   },
   "structural_patterns": {
     "difficulty_curve": "linear|stepped|u-shaped",
     "explicit_implicit_ratio": 0.8,
     "targetDifficultyDist": { "easy": 30, "medium": 50, "hard": 20 },
-    "requiredCognitiveLevels": ["apply", "analyze", "evaluate"],
+    "requiredCognitiveLevels": ["apply", "analyze"],
     "expectedDomains": ["algebra", "geometry"],
-    "structural_notes": "وصف لطريقة طرح الأسئلة والتدرج في الصعوبة"
+    "structural_notes": "وصف طريقة الاسئلة"
   },
-  "questions": [...]
-} (تأكد من إرجاع JSON صالح فقط)`;
+  "questions": []
+}`;
 
-    const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  inlineData: {
-                    mimeType: "application/pdf",
-                    data: base64,
-                  },
-                },
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 8192,
-            responseMimeType: "application/json",
-          },
-        }),
+    // Call Anthropic Claude API — supports PDF as base64 document block
+    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": AI_API_KEY,
+        "anthropic-version": "2023-06-01",
       },
-    );
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 8192,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "document",
+                source: {
+                  type: "base64",
+                  media_type: "application/pdf",
+                  data: base64,
+                },
+              },
+              {
+                type: "text",
+                text: prompt,
+              },
+            ],
+          },
+        ],
+      }),
+    });
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error("Gemini API error:", aiResponse.status, errText);
-
+      console.error("Claude API error:", aiResponse.status, errText);
       await supabase
         .from("exam_uploads")
-        .update({ status: "failed", error_message: `Gemini API error: ${aiResponse.status}` })
+        .update({
+          status: "failed",
+          error_message: `AI API error: ${aiResponse.status} — ${errText.slice(0, 200)}`,
+        })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "AI analysis failed" }), {
         status: 500,
@@ -201,16 +194,38 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    const parsed = aiData?.candidates?.[0]?.content?.parts?.[0]?.text
-      ? JSON.parse(aiData.candidates[0].content.parts[0].text)
-      : null;
 
-    if (!parsed) {
+    // Extract text from Anthropic response format: data.content[0].text
+    const rawText = aiData?.content?.[0]?.type === "text" ? aiData.content[0].text : null;
+
+    if (!rawText) {
       await supabase
         .from("exam_uploads")
         .update({ status: "failed", error_message: "Empty or invalid AI response" })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "Parse failed" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Strip possible markdown code fences before parsing
+    const cleanText = rawText
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(cleanText);
+    } catch (parseErr) {
+      console.error("JSON parse error:", parseErr, "Raw:", cleanText.slice(0, 500));
+      await supabase
+        .from("exam_uploads")
+        .update({ status: "failed", error_message: "Failed to parse AI JSON response" })
+        .eq("id", upload_id);
+      return new Response(JSON.stringify({ error: "JSON parse failed" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -254,7 +269,6 @@ Deno.serve(async (req) => {
 
       await supabase.from("exam_extracted_questions").insert(questionsToInsert);
 
-      // Also insert into exam_kb_entries + exam_kb_questions so they appear in the Questions tab
       const { data: kbEntry } = await supabase
         .from("exam_kb_entries")
         .insert({
