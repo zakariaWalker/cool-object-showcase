@@ -252,6 +252,43 @@ export function ExamKBAnalytics({ store, primaryPatterns }: Props) {
         </div>
       </div>
 
+      {/* Bloom's Taxonomy Pyramid */}
+      <div className="rounded-xl border border-border bg-card p-5">
+        <h3 className="text-sm font-black text-foreground mb-4">🔺 هرم بلوم التصنيفي — توزيع الأسئلة</h3>
+        <div className="flex flex-col items-center gap-1 py-4">
+          {([
+            { level: 6, label: "إبداع", color: "hsl(0, 70%, 50%)", key: "create" },
+            { level: 5, label: "تقييم", color: "hsl(25, 80%, 50%)", key: "evaluate" },
+            { level: 4, label: "تحليل", color: "hsl(45, 80%, 50%)", key: "analyze" },
+            { level: 3, label: "تطبيق", color: "hsl(140, 60%, 45%)", key: "apply" },
+            { level: 2, label: "فهم", color: "hsl(210, 70%, 55%)", key: "understand" },
+            { level: 1, label: "تذكر", color: "hsl(220, 20%, 60%)", key: "remember" },
+          ] as const).map((tier, i) => {
+            const count = cognitiveDistrib[tier.key] || 0;
+            const widthPct = 30 + i * 12; // pyramid grows wider at bottom
+            return (
+              <div key={tier.level} className="relative flex items-center justify-center"
+                style={{ width: `${widthPct}%`, minWidth: 120 }}>
+                <div
+                  className="w-full py-2 text-center text-[11px] font-black text-white rounded-sm relative overflow-hidden"
+                  style={{ background: tier.color, opacity: count > 0 ? 1 : 0.35 }}
+                >
+                  B{tier.level} {tier.label}
+                  {count > 0 && (
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/30 rounded-full px-2 py-0.5 text-[9px]">
+                      {count}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-[9px] text-center text-muted-foreground mt-2">
+          الامتحان المتوازن يغطي B1-B4 في الجزء الأول و B4-B6 في المسألة الإدماجية
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Topic Frequency */}
         <div className="rounded-xl border border-border bg-card p-5">
