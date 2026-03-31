@@ -610,9 +610,6 @@ function ConceptMapView({ domain }: { domain?: Domain }) {
 
 // ─── 4. المدرّس الآلي ────────────────────────────────────────────────────────
 
-const GEMINI_KEY = (import.meta.env.VITE_GEMINI_KEY ?? import.meta.env.VITE_GEMINI_API_KEY ?? "");
-const GEMINI_MODEL = "gemini-2.0-flash";
-
 function AITutor({ exercise, kbPattern }: { exercise: ImadrassaExercise; kbPattern: KBPattern | null }) {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<{ role: "user"|"assistant"; content: string }[]>([]);
