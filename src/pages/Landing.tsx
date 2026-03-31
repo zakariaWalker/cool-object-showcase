@@ -1,390 +1,230 @@
-// ═══════════════════════════════════════════════════════════════════════
-//  Landing.tsx — QED · صفحة الهبوط
-//  Real platform features: KB, math solving, gap detection, learning path
-// ═══════════════════════════════════════════════════════════════════════
 import { Link } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { QEDLogo } from "@/components/QEDLogo";
+import { ArrowLeft, Search, TrendingUp, Users } from "lucide-react";
 
-// ─── Feature Sections ───────────────────────────────────────────────────
-const FEATURES = [
+const RESULTS = [
   {
-    id: "kb",
-    emoji: "🧩",
-    title: "قاعدة معرفة رياضية ذكية",
-    subtitle: "أنماط حل مصنّفة ومنظّمة — جاهزة لتفكيك أي تمرين",
-    description: "قاعدة المعرفة (KB) تحتوي على مئات الأنماط الرياضية المصنّفة: جبر، هندسة، دوال، احتمالات. كل نمط فيه خطوات الحل، المفاهيم المطلوبة، والأخطاء الشائعة.",
-    details: ["أنماط مصنّفة حسب المنهج الجزائري", "خطوات حل واضحة لكل نمط", "ربط المفاهيم ببعضها"],
-    colorVar: "--algebra",
+    icon: <Search className="w-7 h-7" />,
+    title: "نعرفك بالضبط علاش تخسر النقاط",
+    description: "تقييم تشخيصي ذكي يحلل أخطاءك ويكتشف الثغرات المخفية في طريقة تفكيرك — مش بس الإجابات الخاطئة.",
+    color: "from-blue-500 to-cyan-400",
+    shadowColor: "shadow-blue-500/20",
   },
   {
-    id: "solve",
-    emoji: "⚡",
-    title: "محرك حل التمارين",
-    subtitle: "أدخل أي تمرين واحصل على الحل كاملاً مع الشرح",
-    description: "محرك SOTA يحل التمارين محلياً — جبر، هندسة، إحصاء، احتمالات، دوال. يكشف الأخطاء المفاهيمية ويشرح كل خطوة بالتفصيل.",
-    details: ["حل محلي بدون إنترنت", "كشف الأخطاء المفاهيمية", "شرح كل خطوة بالعربية"],
-    colorVar: "--geometry",
+    icon: <TrendingUp className="w-7 h-7" />,
+    title: "نرسملك خطة تحسين مباشرة",
+    description: "تمارين مستهدفة مرتبة من الأسهل للأصعب، كل وحدة تسد ثغرة محددة. ما تضيعش وقتك في حاجة تعرفها.",
+    color: "from-emerald-500 to-teal-400",
+    shadowColor: "shadow-emerald-500/20",
   },
   {
-    id: "gaps",
-    emoji: "🔍",
-    title: "كاشف الثغرات الذكي",
-    subtitle: "يحلل إجاباتك ويحدد بالضبط أين الخلل في فهمك",
-    description: "بدل ما تضيع وقتك في مراجعة كل شيء، الكاشف يحدد الأنماط الضعيفة والمفاهيم الغائبة — ويقترح تمارين مستهدفة لسد كل ثغرة.",
-    details: ["تحليل أنماط الأخطاء", "خريطة ثغرات بصرية", "تمارين مستهدفة لكل ثغرة"],
-    colorVar: "--functions",
-  },
-  {
-    id: "path",
-    emoji: "📚",
-    title: "مسار تعلّم مخصص",
-    subtitle: "تسلسل تمارين مرتّب من الأسهل إلى الأصعب",
-    description: "بعد التشخيص، QED يرسم لك مسار تعلم مرتّب حسب التعقيد — يبدأ من الأساسيات ويصعد تدريجياً حتى تُتقن كل مفهوم في المنهج.",
-    details: ["ترتيب حسب المتطلبات المسبقة", "تتبع التقدم في كل مفهوم", "تمارين متدرجة الصعوبة"],
-    colorVar: "--statistics",
-  },
-  {
-    id: "deconstruct",
-    emoji: "🔬",
-    title: "تفكيك التمارين خطوة بخطوة",
-    subtitle: "تفكيك بصري يربط كل خطوة بالمفهوم الرياضي المناسب من KB",
-    description: "اكتب أي تمرين وشاهد تفكيكه البصري: مخطط تدفق يوضح كل خطوة حل مع القانون المستخدم والسبب — مباشرة من قاعدة المعرفة.",
-    details: ["مخطط تدفق بصري تفاعلي", "ربط كل خطوة بنمط KB", "عرض الصيغ الرياضية بـ LaTeX"],
-    colorVar: "--probability",
-  },
-  {
-    id: "parent",
-    emoji: "👨‍👩‍👧",
-    title: "لوحة ولي الأمر",
-    subtitle: "تابع تقدّم ابنك بشفافية كاملة — بدون انتظار النتائج",
-    description: "تقارير واضحة عن التقدم اليومي، خريطة الثغرات، مؤشر التحسن الأسبوعي. اعرف بالضبط أين يحتاج ابنك للمساعدة.",
-    details: ["تقارير يومية وأسبوعية", "خريطة ثغرات بصرية", "مقارنة التقدم عبر الزمن"],
-    colorVar: "--accent",
+    icon: <Users className="w-7 h-7" />,
+    title: "ولي الأمر يتابع كل شيء",
+    description: "تقارير واضحة توري الأب بالضبط وين ابنه ضعيف، وكيفاش يتحسن أسبوعياً — بلا ما يحتاج يسأل.",
+    color: "from-amber-500 to-orange-400",
+    shadowColor: "shadow-amber-500/20",
   },
 ];
 
-// ─── Stat component ─────────────────────────────────────────────────────
-function StatBadge({ value, label, color }: { value: string; label: string; color: string }) {
-  return (
-    <div className="text-center px-5">
-      <div className="text-2xl lg:text-3xl font-black" style={{ color }}>{value}</div>
-      <div className="text-[10px] text-muted-foreground mt-1 font-semibold">{label}</div>
-    </div>
-  );
-}
-
-// ─── Feature Card ───────────────────────────────────────────────────────
-function FeatureCard({ feature, index, isVisible }: { feature: typeof FEATURES[number]; index: number; isVisible: boolean }) {
-  const flip = index % 2 !== 0;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0.1, y: 30 }}
-      transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}
-      className={`flex flex-col ${flip ? "lg:flex-row-reverse" : "lg:flex-row"} items-stretch gap-8 lg:gap-12 rounded-3xl overflow-hidden transition-all duration-700`}
-      style={{
-        background: isVisible ? `hsl(var(${feature.colorVar}) / 0.06)` : "transparent",
-        border: isVisible ? "1px solid hsl(var(--border))" : "1px solid transparent",
-      }}
-    >
-      {/* Text side */}
-      <div className="flex-1 min-w-0 p-8 lg:p-10 text-right" dir="rtl">
-        <div className="text-4xl mb-4">{feature.emoji}</div>
-        <h2 className={`text-2xl lg:text-3xl font-black leading-tight mb-3 transition-colors duration-500 ${
-          isVisible ? "text-foreground" : "text-muted-foreground/20"
-        }`}>
-          {feature.title}
-        </h2>
-        <p className={`text-sm lg:text-base font-bold mb-3 transition-colors duration-500 ${
-          isVisible ? "text-foreground/70" : "text-foreground/10"
-        }`}>
-          {feature.subtitle}
-        </p>
-        <p className={`text-sm leading-relaxed mb-6 transition-colors duration-500 ${
-          isVisible ? "text-muted-foreground" : "text-muted-foreground/10"
-        }`}>
-          {feature.description}
-        </p>
-
-        {/* Detail chips */}
-        {isVisible && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="flex flex-wrap gap-2"
-          >
-            {feature.details.map((d, i) => (
-              <span key={i} className="text-xs font-bold px-3 py-1.5 rounded-full bg-foreground/5 text-foreground/70 border border-border">
-                ✓ {d}
-              </span>
-            ))}
-          </motion.div>
-        )}
-      </div>
-
-      {/* Visual side — gradient block */}
-      <div className="flex-shrink-0 w-full lg:w-[320px] flex items-center justify-center p-8 relative overflow-hidden" style={{ background: `linear-gradient(135deg, hsl(var(${feature.colorVar})), hsl(var(${feature.colorVar}) / 0.7))` }}>
-        <div className="absolute inset-0 opacity-10">
-          <svg viewBox="0 0 200 200" className="w-full h-full">
-            {/* Grid pattern */}
-            {Array.from({ length: 8 }).map((_, i) => (
-              <g key={i}>
-                <line x1={i * 28} y1="0" x2={i * 28} y2="200" stroke="white" strokeWidth="0.5" opacity="0.3" />
-                <line x1="0" y1={i * 28} x2="200" y2={i * 28} stroke="white" strokeWidth="0.5" opacity="0.3" />
-              </g>
-            ))}
-          </svg>
-        </div>
-        <div className="relative text-center text-white z-10">
-          <div className="text-6xl mb-3">{feature.emoji}</div>
-          <div className="text-sm font-black opacity-90">{feature.title.split(" ").slice(0, 3).join(" ")}</div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Domain Tags ────────────────────────────────────────────────────────
-const DOMAINS = [
-  { name: "الجبر", colorVar: "--algebra", icon: "📐" },
-  { name: "الهندسة", colorVar: "--geometry", icon: "📏" },
-  { name: "الدوال", colorVar: "--functions", icon: "📈" },
-  { name: "الإحصاء", colorVar: "--statistics", icon: "📊" },
-  { name: "الاحتمالات", colorVar: "--probability", icon: "🎲" },
+const TESTIMONIALS = [
+  { text: "قبل QED كنت نراجع كلش عشوائي. دابا نعرف بالضبط وين مشكلتي.", name: "سارة، 3AS" },
+  { text: "ولدي طلع معدله من 8 لـ 13 في شهرين فقط.", name: "أم أنس، ولية أمر" },
+  { text: "أحسن حاجة هي التقييم التشخيصي. وراني أخطاء ما كنتش حاسب بيها.", name: "يوسف، BAC 2025" },
 ];
 
-// ═══════════════════════════════════════════════════════════════════════
-//  Main Landing Component
-// ═══════════════════════════════════════════════════════════════════════
 export default function Landing() {
-  const [activeFeature, setActiveFeature] = useState(-1);
-  const featureRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const { scrollYProgress } = useScroll({ target: containerRef });
-
-  // Intersection observer for features
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting && e.intersectionRatio > 0.3) {
-            const idx = Number((e.target as HTMLElement).dataset.idx);
-            if (!isNaN(idx)) setActiveFeature(idx);
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
-    featureRefs.current.forEach((el) => { if (el) obs.observe(el); });
-    return () => obs.disconnect();
-  }, []);
-
-  const featureCount = useTransform(scrollYProgress, [0, 1], [0, FEATURES.length]);
-  const [displayCount, setDisplayCount] = useState(0);
-  useEffect(() => {
-    const unsub = featureCount.on("change", (v) => setDisplayCount(Math.round(v)));
-    return unsub;
-  }, [featureCount]);
-
   return (
-    <div ref={containerRef} className="relative bg-background min-h-screen" dir="rtl">
+    <div className="relative bg-background min-h-screen overflow-x-hidden" dir="rtl">
 
-      {/* Progress bar */}
-      <motion.div
-        className="fixed top-0 left-0 right-0 h-1 z-50 origin-right"
-        style={{ scaleX: scrollYProgress, background: `linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))` }}
-      />
-
-      {/* Feature counter */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
-        className="fixed top-4 left-4 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full bg-foreground/90 text-background text-xs backdrop-blur-md"
-      >
-        <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "hsl(var(--geometry))" }} />
-        <span className="font-mono font-bold">ميزات مكتشفة:</span>
-        <span className="font-black">{displayCount}</span>
-      </motion.div>
-
-      {/* Progress dots */}
-      <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2.5 z-40">
-        {FEATURES.map((_, i) => (
-          <div
-            key={i}
-            className={`w-2 h-2 rounded-full transition-all duration-500 ${
-              i <= activeFeature
-                ? "bg-foreground scale-125"
-                : "bg-muted-foreground/20"
-            }`}
-          />
-        ))}
-      </div>
-
-      {/* ── Fixed top bar with QED logo ── */}
-      <div className="fixed top-0 right-0 z-40 p-4">
-        <QEDLogo size="md" />
-      </div>
-
-      {/* ── Hero ── */}
-      <div className="relative min-h-screen flex flex-col justify-center items-center px-6 text-center">
-        {/* Background math symbols */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03]">
-          <div className="absolute text-[200px] font-black text-foreground -top-10 -right-10 rotate-12">∑</div>
-          <div className="absolute text-[180px] font-black text-foreground bottom-20 -left-10 -rotate-12">∫</div>
-          <div className="absolute text-[150px] font-black text-foreground top-1/3 left-1/4 rotate-6">π</div>
-          <div className="absolute text-[120px] font-black text-foreground bottom-1/3 right-1/4 -rotate-6">√</div>
+      {/* Nav */}
+      <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
+        <div className="max-w-5xl mx-auto flex items-center justify-between px-6 h-16">
+          <QEDLogo size="md" />
+          <Link
+            to="/auth"
+            className="text-sm font-bold text-primary hover:text-primary/80 transition-colors"
+          >
+            دخول ←
+          </Link>
         </div>
+      </nav>
+
+      {/* ── HERO ── */}
+      <section className="relative min-h-[90vh] flex flex-col justify-center items-center px-6 pt-24 text-center">
+        {/* Subtle bg */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-destructive/5 rounded-full blur-[150px] -mr-64 -mt-64 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[120px] -ml-48 -mb-48 pointer-events-none" />
 
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.3 }}
-          className="relative z-10 max-w-2xl"
+          transition={{ duration: 0.8 }}
+          className="relative z-10 max-w-3xl space-y-8"
         >
-          {/* Badge */}
-          <div className="inline-flex items-center gap-3 mb-6">
-            <div className="h-px w-10 bg-foreground/20" />
-            <span className="font-mono text-[10px] tracking-[0.3em] text-foreground/50 uppercase font-bold">
-              QED · محرك الرياضيات الذكي
-            </span>
-            <div className="h-px w-10 bg-foreground/20" />
+          {/* Problem hook */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-destructive/10 border border-destructive/20 text-destructive text-xs font-black">
+            ⚠️ ٪٧٠ من الطلاب يخسرون نقاط في حاجات يقدرو يتجنبوها
           </div>
 
-          <div className="text-5xl mb-4">🧠</div>
-
-          <h1 className="text-4xl lg:text-6xl font-black text-foreground leading-[1.1] mb-6">
-            تعلّم الرياضيات
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-foreground leading-[1.1]">
+            راك تخسر نقاط
             <br />
-            <span style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              بطريقة ذكية
+            في الرياضيات...
+            <br />
+            <span className="bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
+              و ماكش عارف فين
             </span>
           </h1>
 
-          <p className="text-foreground/60 text-sm lg:text-base max-w-lg mx-auto leading-relaxed mb-6">
-            قاعدة معرفة رياضية + محرك حل ذكي + كاشف ثغرات + مسار تعلّم مخصص.
-            <br />
-            كل ما تحتاجه لإتقان الرياضيات في مكان واحد.
+          <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed font-medium">
+            QED يوريك <strong className="text-foreground">بالضبط وين تخسر</strong> — و يعطيك خطة مباشرة باش تربحهم.
           </p>
 
-          {/* Domain tags */}
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
-            {DOMAINS.map((d) => (
-              <span key={d.name} className="text-xs font-bold px-3 py-1.5 rounded-full border border-border bg-card" style={{ color: `hsl(var(${d.colorVar}))` }}>
-                {d.icon} {d.name}
-              </span>
-            ))}
-          </div>
-
-          {/* Stats */}
-          <div className="flex items-center justify-center gap-1 mb-10">
-            <StatBadge value="+٥٠٠" label="نمط في KB" color="hsl(var(--algebra))" />
-            <div className="w-px h-8 bg-border mx-2" />
-            <StatBadge value="٥ مجالات" label="رياضية" color="hsl(var(--geometry))" />
-            <div className="w-px h-8 bg-border mx-2" />
-            <StatBadge value="مجاني" label="بالكامل" color="hsl(var(--functions))" />
-          </div>
-
-          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
             <Link
               to="/home"
-              className="inline-block px-10 py-4 rounded-2xl font-black text-lg text-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] hover:shadow-[0_14px_50px_rgba(0,0,0,0.25)] transition-shadow"
-              style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))" }}
+              className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-primary-foreground shadow-2xl shadow-primary/25 hover:shadow-primary/40 transition-all bg-gradient-to-l from-primary to-primary/80"
             >
-              ابدأ الآن — مجاني ←
+              اكتشف وين تضيع نقاطك
+              <span className="text-xs font-bold opacity-75 bg-primary-foreground/20 px-2 py-0.5 rounded-full">دقيقتين فقط</span>
+              <ArrowLeft className="w-5 h-5" />
             </Link>
           </motion.div>
+
+          <p className="text-xs text-muted-foreground/60">مجاني بالكامل · بدون تسجيل إلزامي · نتائج فورية</p>
         </motion.div>
 
         {/* Scroll cue */}
         <motion.div
-          animate={{ y: [0, 10, 0] }}
+          animate={{ y: [0, 8, 0] }}
           transition={{ repeat: Infinity, duration: 2.5 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2"
         >
-          <div className="w-5 h-8 rounded-full border-2 border-foreground/15 flex items-start justify-center p-1">
+          <div className="w-5 h-9 rounded-full border-2 border-foreground/10 flex items-start justify-center p-1.5">
             <motion.div
-              animate={{ y: [0, 12, 0] }}
+              animate={{ y: [0, 14, 0] }}
               transition={{ repeat: Infinity, duration: 2.5 }}
-              className="w-1 h-1 rounded-full bg-foreground/30"
+              className="w-1 h-1 rounded-full bg-foreground/20"
             />
           </div>
-          <span className="font-mono text-[8px] tracking-[0.2em] text-foreground/20 font-bold">اكتشف الميزات</span>
         </motion.div>
-      </div>
+      </section>
 
-      {/* ── Feature Sections ── */}
-      <div className="max-w-5xl mx-auto px-6 pb-20">
-        {FEATURES.map((feature, idx) => (
-          <div
-            key={feature.id}
-            ref={(el) => { featureRefs.current[idx] = el; }}
-            data-idx={idx}
-            className="min-h-[70vh] flex flex-col justify-center py-10"
-          >
-            <FeatureCard feature={feature} index={idx} isVisible={activeFeature >= idx} />
+      {/* ── 3 RESULTS (not features) ── */}
+      <section className="max-w-5xl mx-auto px-6 py-24 space-y-16">
+        <div className="text-center space-y-3">
+          <h2 className="text-3xl md:text-4xl font-black text-foreground">
+            كيفاش QED يرفع معدلك؟
+          </h2>
+          <p className="text-muted-foreground text-sm max-w-md mx-auto">
+            ثلاث خطوات بسيطة — نتائج ملموسة
+          </p>
+        </div>
 
-            {idx < FEATURES.length - 1 && (
-              <div className="flex justify-center my-6">
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={activeFeature >= idx ? { height: 50 } : { height: 0 }}
-                  transition={{ duration: 1, delay: 0.5 }}
-                  className="w-px bg-gradient-to-b from-foreground/20 to-transparent"
-                />
+        <div className="grid md:grid-cols-3 gap-8">
+          {RESULTS.map((r, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.15 }}
+              className="relative bg-card border border-border rounded-3xl p-8 space-y-5 hover:border-primary/30 hover:shadow-xl transition-all duration-500 group"
+            >
+              {/* Step number */}
+              <div className="absolute -top-4 -right-2 w-9 h-9 rounded-xl bg-foreground text-background flex items-center justify-center text-sm font-black shadow-lg">
+                {i + 1}
               </div>
-            )}
-          </div>
-        ))}
-      </div>
 
-      {/* ── Final CTA ── */}
-      <div className="min-h-[60vh] flex flex-col justify-center items-center text-center px-6 pb-20">
+              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${r.color} ${r.shadowColor} shadow-xl flex items-center justify-center text-white group-hover:rotate-6 group-hover:scale-110 transition-transform duration-500`}>
+                {r.icon}
+              </div>
+
+              <h3 className="text-lg font-black text-foreground leading-snug">
+                {r.title}
+              </h3>
+
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {r.description}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── SOCIAL PROOF ── */}
+      <section className="bg-muted/30 border-y border-border py-20 px-6">
+        <div className="max-w-4xl mx-auto space-y-12">
+          <div className="text-center space-y-3">
+            <h2 className="text-2xl md:text-3xl font-black text-foreground">
+              طلاب حقيقيين، نتائج حقيقية
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {TESTIMONIALS.map((t, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="bg-card border border-border rounded-2xl p-6 space-y-4"
+              >
+                <p className="text-sm text-foreground/80 leading-relaxed italic">
+                  "{t.text}"
+                </p>
+                <p className="text-xs font-bold text-muted-foreground">— {t.name}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FINAL CTA ── */}
+      <section className="py-24 px-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="max-w-xl"
+          className="max-w-2xl mx-auto text-center space-y-8"
         >
-          <div className="text-4xl mb-4">🚀</div>
-          <h2 className="text-3xl lg:text-5xl font-black text-foreground leading-tight mb-6">
-            جاهز تبدأ؟
+          <h2 className="text-3xl md:text-5xl font-black text-foreground leading-tight">
+            معدلك يقدر يتحسن
             <br />
-            <span style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              اكتشف ثغراتك الآن
+            <span className="bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
+              ابدأ من هنا
             </span>
           </h2>
-          <p className="text-muted-foreground text-sm lg:text-base mb-10 leading-relaxed">
-            قاعدة معرفة + محرك حل + كاشف ثغرات + مسار تعلّم — كلها مجانية.
-            <br />
-            بدون حساب · بدون بطاقة بنكية · نتائج فورية.
+
+          <p className="text-muted-foreground max-w-md mx-auto">
+            دقيقتين تقييم — و تعرف بالضبط وين لازم تركز. بلا تضييع وقت.
           </p>
-          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
             <Link
               to="/home"
-              className="inline-block px-12 py-5 rounded-2xl font-black text-xl text-white shadow-[0_0_50px_hsl(var(--algebra)/0.2),0_16px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_0_70px_hsl(var(--algebra)/0.35),0_20px_60px_rgba(0,0,0,0.15)] transition-shadow"
-              style={{ background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--geometry)))" }}
+              className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-primary-foreground shadow-2xl shadow-primary/25 transition-all bg-gradient-to-l from-primary to-primary/80"
             >
-              ابدأ الآن — مجاني ←
+              اكتشف ثغراتك الآن
+              <ArrowLeft className="w-5 h-5" />
             </Link>
           </motion.div>
-          <div className="mt-4 text-[10px] text-muted-foreground/40 font-mono tracking-wider">
-            بدون حساب · بدون بطاقة بنكية · نتائج فورية
-          </div>
+
+          <p className="text-xs text-muted-foreground/50">
+            مجاني · بدون بطاقة بنكية · نتائج فورية
+          </p>
         </motion.div>
-      </div>
+      </section>
 
       {/* Footer */}
-      <div className="text-center py-8 border-t border-border">
-        <p className="text-[10px] text-muted-foreground/40 font-mono tracking-[0.15em]">
-          © 2025 QED ALGERIA · MATH LEARNING ENGINE · مبني بحب للطالب الجزائري 🇩🇿
-        </p>
-      </div>
+      <footer className="border-t border-border py-8 px-6 text-center">
+        <div className="flex items-center justify-center gap-3 text-muted-foreground text-xs">
+          <QEDLogo size="sm" />
+          <span>© {new Date().getFullYear()} QED — محرك الرياضيات الذكي</span>
+        </div>
+      </footer>
     </div>
   );
 }
