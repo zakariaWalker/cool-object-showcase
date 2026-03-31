@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { supabase } from "@/integrations/supabase/client";
 import { ImadrassaExercise } from "@/engine/dataset-types";
 import { ParsedExercise } from "@/engine/exercise-parser";
 import { Domain } from "@/engine/types";
