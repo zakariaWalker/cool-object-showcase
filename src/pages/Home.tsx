@@ -62,6 +62,17 @@ const WORKFLOW = [
     color: "from-purple-500 to-pink-400",
     shadow: "shadow-purple-500/20",
   },
+  {
+    step: 5,
+    id: "annales",
+    path: "/annales",
+    title: "المواضيع السابقة",
+    subtitle: "تدريب نهائي",
+    description: "حل امتحانات رسمية سابقة في بيئة تحاكي الواقع لكسر حاجز الرهبة.",
+    icon: <FileText className="w-6 h-6" />,
+    color: "from-rose-500 to-red-400",
+    shadow: "shadow-rose-500/20",
+  },
 ];
 
 export default function Home() {
@@ -71,6 +82,7 @@ export default function Home() {
     learn: false,
     exercises: false,
     tutor: false,
+    annales: false,
   });
   const [loading, setLoading] = useState(true);
 
@@ -99,6 +111,7 @@ export default function Home() {
         learn: !!prog.data?.mastery,
         exercises: (prog.data?.total_exercises ?? 0) > 0,
         tutor: (logs.data?.length ?? 0) > 0,
+        annales: false, // Default to false for now, can be linked to logs if needed
       });
 
       setLoading(false);
@@ -190,7 +203,7 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground mt-1 text-right">خطوات مدروسة لبناء عقلك الرياضي</p>
               </div>
               <div className="flex -space-x-2 space-x-reverse">
-                 {[1,2,3,4].map(n => (
+                 {[1,2,3,4,5].map(n => (
                    <div key={n} className={`w-8 h-8 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-black shadow-sm ${n <= (Object.values(progress).filter(Boolean).length + 1) ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
                      {n}
                    </div>
@@ -203,7 +216,7 @@ export default function Home() {
              <div className="absolute right-[31px] top-10 bottom-10 w-1 bg-muted rounded-full overflow-hidden hidden md:block">
                 <motion.div 
                    initial={{ height: 0 }}
-                   animate={{ height: `${(Object.values(progress).filter(Boolean).length / 4) * 100}%` }}
+                   animate={{ height: `${(Object.values(progress).filter(Boolean).length / 5) * 100}%` }}
                    className="w-full bg-primary"
                    transition={{ duration: 1.5, ease: "easeInOut" }}
                 />

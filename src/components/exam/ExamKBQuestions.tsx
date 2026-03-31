@@ -1,5 +1,6 @@
 // ===== Exam KB Questions — View, classify, edit with enhanced rendering =====
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { TYPE_LABELS_AR } from "@/engine/exam-types";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 
@@ -25,6 +26,7 @@ export function ExamKBQuestions({ store }: Props) {
   const [examFilter, setExamFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const filtered = store.questions.filter(q => {
     if (examFilter !== "all" && q.examId !== examFilter) return false;
@@ -87,6 +89,13 @@ export function ExamKBQuestions({ store }: Props) {
                       {DIFFICULTY_LABELS[q.difficulty]}
                     </span>
                     <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{q.points} ن</span>
+                    <button 
+                      onClick={() => navigate(`/archive-solve/${q.examId}`)}
+                      className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-bold hover:bg-emerald-500/20 transition-all ml-1"
+                      title="تجربة الحل"
+                    >
+                      🚀 حل
+                    </button>
                     {q.linkedPatternIds.length > 0 && (
                       <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/10 text-accent-foreground font-bold">
                         🔗 {q.linkedPatternIds.length}

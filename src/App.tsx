@@ -21,6 +21,8 @@ import AdminReports from "./pages/AdminReports";
 import DiagnosticExam from "./pages/DiagnosticExam";
 import StudentProfile from "@/pages/StudentProfile";
 import NotFound from "./pages/NotFound";
+import ExamArchive from "./pages/ExamArchive";
+import ExamArchiveSolver from "./pages/ExamArchiveSolver";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +54,8 @@ const App = () => (
             <Route path="/whatif" element={<WhatIf />} />
             <Route path="/exams" element={<ExamBuilderPage />} />
             <Route path="/exam-kb" element={<ExamKBPage />} />
+            <Route path="/annales" element={<ExamArchive />} />
+            <Route path="/archive-solve/:examId" element={<ExamArchiveSolver />} />
             <Route path="/diagnostic" element={<DiagnosticExam />} />
             <Route path="/profile" element={<StudentProfile />} />
             <Route path="*" element={<NotFound />} />
