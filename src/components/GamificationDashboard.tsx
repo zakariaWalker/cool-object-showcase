@@ -1,5 +1,4 @@
-// ===== Gamification Dashboard — Visual progress, streaks, badges, daily challenge =====
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   loadProgress, StudentStats, BADGES, Badge,
@@ -12,8 +11,9 @@ interface GamificationDashboardProps {
   compact?: boolean;
 }
 
-export function GamificationDashboard({ onStartDailyChallenge, compact = false }: GamificationDashboardProps) {
-  const [stats, setStats] = useState<StudentStats | null>(null);
+export const GamificationDashboard = forwardRef<HTMLDivElement, GamificationDashboardProps>(
+  ({ onStartDailyChallenge, compact = false }, ref) => {
+    const [stats, setStats] = useState<StudentStats | null>(null);
   const [dailyChallenge, setDailyChallenge] = useState<any>(null);
   const [showBadges, setShowBadges] = useState(false);
 
@@ -30,7 +30,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
 
   if (compact) {
     return (
-      <div className="flex items-center gap-3 px-4 py-2 bg-card/50 border-b border-border" dir="rtl">
+      <div ref={ref} className="flex items-center gap-3 px-4 py-2 bg-card/50 border-b border-border" dir="rtl">
         {/* Streak */}
         <div className="flex items-center gap-1.5">
           <span className={`text-sm ${stats.streak_days > 0 ? "animate-pulse" : ""}`}>
@@ -65,7 +65,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
   }
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div ref={ref} className="space-y-4" dir="rtl">
       {/* Hero stats card */}
       <div className="rounded-2xl border border-border bg-gradient-to-bl from-primary/5 via-card to-card p-5 space-y-4">
         <div className="flex items-center justify-between">
@@ -215,7 +215,7 @@ export function GamificationDashboard({ onStartDailyChallenge, compact = false }
       </div>
     </div>
   );
-}
+});
 
 function QuickStat({ value, label, emoji }: { value: string | number; label: string; emoji: string }) {
   return (
