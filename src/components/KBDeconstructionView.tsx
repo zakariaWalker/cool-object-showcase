@@ -197,6 +197,24 @@ export function KBDeconstructionView({ exerciseId, exerciseText, exerciseSteps, 
     <div>
       {deconstructions.map((decon) => {
         const stepsToShow = decon.steps.length > 0 ? decon.steps : (decon.pattern?.steps || []);
+        
+        if (guided) {
+          return (
+            <GuidedStepView
+              key={decon.id}
+              exerciseText={exerciseText || ""}
+              patternName={decon.pattern?.name || decon.pattern_id}
+              patternType={decon.pattern?.type || ""}
+              patternDescription={decon.pattern?.description}
+              steps={stepsToShow}
+              needs={decon.needs}
+              concepts={decon.pattern?.concepts || []}
+              notes={decon.notes}
+              aiGenerated={decon.ai_generated}
+            />
+          );
+        }
+        
         return (
           <DeconstructionFlowchart
             key={decon.id}
