@@ -649,32 +649,40 @@ ${kbPattern ? `النمط المعرفي: ${kbPattern.name} — ${kbPattern.desc
     setLoading(true);
 
     try {
-      const key = GEMINI_KEY;
-      if (!key) {
-        setError("مفتاح Gemini غير مُهيَّأ — أضف VITE_GEMINI_KEY في ملف .env");
+      // Use ai-tutor edge function via Lovable AI Gateway
+      const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tutor`;
+      
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          exerciseId: (exercise as any)?._kb?.id || "inline",
+          studentLevel: "intermediate",
+          mode: "solve",
+        }),
+      });
+
+      if (!resp.ok) {
+        if (resp.status === 429) {
+          setError("تم تجاوز حد الطلبات. حاول لاحقاً.");
+        } else if (resp.status === 402) {
+          setError("يرجى إضافة رصيد للاستمرار.");
+        } else {
+          setError("حدث خطأ في الاتصال.");
+        }
         setLoading(false);
         return;
       }
-      const genAI = new GoogleGenerativeAI(key);
-      const model = genAI.getGenerativeModel({
-        model: GEMINI_MODEL,
-        systemInstruction: systemPrompt,
-      });
 
-      // Build chat history (all except last user message)
-      const history = newMessages.slice(0, -1).map(m => ({
-        role: m.role === "user" ? "user" : "model",
-        parts: [{ text: m.content }],
-      }));
-
-      const chat = model.startChat({ history });
-      const result = await chat.sendMessage(q);
-      const reply = result.response.text();
-
+      const data = await resp.json();
+      const reply = data?.explanation || "لم أتمكن من الإجابة. حاول مرة أخرى.";
       setMessages([...newMessages, { role: "assistant", content: reply }]);
     } catch (e) {
       setError("حدث خطأ في الاتصال — تحقق من الشبكة.");
-      console.error("[AITutor Gemini]", e);
+      console.error("[AITutor]", e);
     } finally {
       setLoading(false);
     }
