@@ -18,7 +18,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const db = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch exercise + its deconstructions + pattern
     const { data: exercise } = await db.from("kb_exercises").select("*").eq("id", exerciseId).single();
     if (!exercise) throw new Error("التمرين غير موجود");
 
@@ -32,12 +31,7 @@ serve(async (req) => {
       if (patterns && patterns.length > 0) {
         patternInfo = patterns.map((p: any) => {
           const decon = deconstructions.find((d: any) => d.pattern_id === p.id);
-          return `النمط: ${p.name}
-النوع: ${p.type}
-الوصف: ${p.description || ""}
-الخطوات: ${(decon?.steps || p.steps || []).join(" → ")}
-المفاهيم المطلوبة: ${(decon?.needs || p.concepts || []).join("، ")}
-ملاحظات: ${decon?.notes || ""}`;
+          return `النمط: ${p.name}\nالنوع: ${p.type}\nالوصف: ${p.description || ""}\nالخطوات: ${(decon?.steps || p.steps || []).join(" → ")}\nالمفاهيم المطلوبة: ${(decon?.needs || p.concepts || []).join("، ")}\nملاحظات: ${decon?.notes || ""}`;
         }).join("\n\n");
       }
     }
@@ -75,30 +69,40 @@ ${modePrompt}
 - في النهاية اذكر الأخطاء الشائعة إن وجدت
 - اجعل الشرح مناسباً لتلميذ جزائري`;
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      },
       body: JSON.stringify({
-        contents: [
-          { role: "user", parts: [{ text: "أنت مدرّس رياضيات خبير متخصص في المنهاج الجزائري. تشرح بالعربية بوضوح وبساطة." }] },
-          { role: "user", parts: [{ text: prompt }] },
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: "أنت مدرّس رياضيات خبير متخصص في المنهاج الجزائري. تشرح بالعربية بوضوح وبساطة." },
+          { role: "user", content: prompt },
         ],
-        generationConfig: {
-          temperature: 0.2,
-        },
+        temperature: 0.2,
       }),
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول مرة أخرى لاحقاً." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "يرجى إضافة رصيد للاستمرار في استخدام AI." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const text = await response.text();
-      console.error("Gemini error:", response.status, text);
-      throw new Error(`Gemini API error: ${response.status}`);
+      console.error("AI gateway error:", response.status, text);
+      throw new Error(`AI gateway error: ${response.status}`);
     }
 
     const data = await response.json();
-    const explanation = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const explanation = data?.choices?.[0]?.message?.content || "";
 
     return new Response(JSON.stringify({ 
       success: true, 

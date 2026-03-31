@@ -90,20 +90,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ""));
-
-    const AI_API_KEY = Deno.env.get("LOVABLE_API_KEY") || Deno.env.get("ANTHROPIC_API_KEY");
-    if (!AI_API_KEY) {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
       await supabase
         .from("exam_uploads")
-        .update({ status: "failed", error_message: "AI API key (LOVABLE_API_KEY or ANTHROPIC_API_KEY) not set" })
+        .update({ status: "failed", error_message: "LOVABLE_API_KEY not set" })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "AI key not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Convert PDF to base64 for vision model
+    const arrayBuffer = await fileData.arrayBuffer();
+    const base64 = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ""));
 
     const prompt = `انت محلل امتحانات رياضيات جزائرية خبير. حلل هذا الامتحان بدقة واستخرج كل الاسئلة بالاضافة الى تحليل معمق للهيكل والاسلوب التربوي والبصري.
 
@@ -116,7 +117,7 @@ Deno.serve(async (req) => {
 - section_label: اسم القسم (التمرين الأول، التمرين الثاني...)
 - question_number: رقم السؤال
 - sub_question: السؤال الفرعي أو null
-- text: نص السؤال كاملاً (يجب أن تستخدم LaTeX لكل الصيغ الرياضية وتضعها بين علامتي $، مثلاً $x^2 + 5x = 0$. تأكد من الحفاظ على الأسس والقوى بشكل صحيح $x^2$ وليس x2)
+- text: نص السؤال كاملاً (يجب أن تستخدم LaTeX لكل الصيغ الرياضية وتضعها بين علامتي $، مثلاً $x^2 + 5x = 0$)
 - points: عدد النقاط
 - type: نوع السؤال (algebra, geometry, functions, statistics, numbers, trigonometry)
 - difficulty: (easy, medium, hard)
@@ -147,27 +148,23 @@ Deno.serve(async (req) => {
   "questions": []
 }`;
 
-    // Call Anthropic Claude API — supports PDF as base64 document block
-    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
+    // Use Lovable AI Gateway with vision (Gemini supports PDF as base64 image)
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": AI_API_KEY,
-        "anthropic-version": "2023-06-01",
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20240620",
-        max_tokens: 8192,
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "user",
             content: [
               {
-                type: "document",
-                source: {
-                  type: "base64",
-                  media_type: "application/pdf",
-                  data: base64,
+                type: "image_url",
+                image_url: {
+                  url: `data:application/pdf;base64,${base64}`,
                 },
               },
               {
@@ -177,18 +174,30 @@ Deno.serve(async (req) => {
             ],
           },
         ],
+        temperature: 0.1,
       }),
     });
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error("AI API error:", aiResponse.status, errText);
+      console.error("AI gateway error:", aiResponse.status, errText);
+      
+      if (aiResponse.status === 429) {
+        await supabase.from("exam_uploads").update({ status: "failed", error_message: "Rate limit exceeded" }).eq("id", upload_id);
+        return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول لاحقاً." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (aiResponse.status === 402) {
+        await supabase.from("exam_uploads").update({ status: "failed", error_message: "Credits exhausted" }).eq("id", upload_id);
+        return new Response(JSON.stringify({ error: "يرجى إضافة رصيد." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       await supabase
         .from("exam_uploads")
-        .update({
-          status: "failed",
-          error_message: `AI API error: ${aiResponse.status} — ${errText.slice(0, 200)}`,
-        })
+        .update({ status: "failed", error_message: `AI error: ${aiResponse.status} — ${errText.slice(0, 200)}` })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "AI analysis failed" }), {
         status: 500,
@@ -197,9 +206,7 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-
-    // Extract text from Anthropic response format: data.content[0].text
-    const rawText = aiData?.content?.[0]?.type === "text" ? aiData.content[0].text : null;
+    const rawText = aiData?.choices?.[0]?.message?.content;
 
     if (!rawText) {
       await supabase
@@ -223,15 +230,32 @@ Deno.serve(async (req) => {
     try {
       parsed = JSON.parse(cleanText);
     } catch (parseErr) {
-      console.error("JSON parse error:", parseErr, "Raw:", cleanText.slice(0, 500));
-      await supabase
-        .from("exam_uploads")
-        .update({ status: "failed", error_message: "Failed to parse AI JSON response" })
-        .eq("id", upload_id);
-      return new Response(JSON.stringify({ error: "JSON parse failed" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // Try extracting JSON from the text
+      const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+        } catch {
+          console.error("JSON parse error:", parseErr, "Raw:", cleanText.slice(0, 500));
+          await supabase
+            .from("exam_uploads")
+            .update({ status: "failed", error_message: "Failed to parse AI JSON response" })
+            .eq("id", upload_id);
+          return new Response(JSON.stringify({ error: "JSON parse failed" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } else {
+        await supabase
+          .from("exam_uploads")
+          .update({ status: "failed", error_message: "Failed to parse AI JSON response" })
+          .eq("id", upload_id);
+        return new Response(JSON.stringify({ error: "JSON parse failed" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const questions: ExtractedQuestion[] = parsed.questions || [];

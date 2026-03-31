@@ -18,7 +18,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const db = createClient(supabaseUrl, supabaseKey);
 
-    // Process patterns in batches of 10
     const BATCH = 10;
     let improved = 0;
 
@@ -28,7 +27,7 @@ serve(async (req) => {
       const prompt = `أنت خبير رياضيات تعليمي متخصص في المنهج الجزائري.
 
 لديك الأنماط التالية وأريد تحسين تسميتها ووصفها وخطواتها. يجب أن تكون:
-1. **الاسم**: واضح ودقيق يصف العملية الرياضية بالضبط (مثال: "حل معادلة من الدرجة الثانية بالمميز" بدل "نمط حل المعادلات")
+1. **الاسم**: واضح ودقيق يصف العملية الرياضية بالضبط
 2. **الوصف**: جملة أو اثنتين تشرح متى ولماذا يُستخدم هذا النمط
 3. **الخطوات**: واضحة ومرتبة ومحددة (4-7 خطوات)
 4. **المفاهيم**: قائمة المفاهيم الرياضية المطلوبة (3-5 مفاهيم)
@@ -42,18 +41,21 @@ ${batch.map((p: any) => `ID: ${p.id}
 المفاهيم: ${(p.concepts || []).join(", ") || "غير متوفرة"}
 ---`).join("\n")}`;
 
-      const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        },
         body: JSON.stringify({
-          contents: [
-            { role: "user", parts: [{ text: "أنت مساعد تعليمي متخصص في تنظيم أنماط حل التمارين الرياضية. أجب باستخدام الأدوات المتاحة فقط." }] },
-            { role: "user", parts: [{ text: prompt }] },
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: "أنت مساعد تعليمي متخصص في تنظيم أنماط حل التمارين الرياضية. أجب باستخدام الأدوات المتاحة فقط." },
+            { role: "user", content: prompt },
           ],
           tools: [{
-            function_declarations: [{
+            type: "function",
+            function: {
               name: "submit_improved_patterns",
               description: "Submit improved pattern names and descriptions",
               parameters: {
@@ -75,15 +77,11 @@ ${batch.map((p: any) => `ID: ${p.id}
                   },
                 },
                 required: ["patterns"],
+                additionalProperties: false,
               },
-            }],
-          }],
-          tool_config: {
-            function_calling_config: {
-              mode: "ANY",
-              allowed_function_names: ["submit_improved_patterns"],
             },
-          },
+          }],
+          tool_choice: { type: "function", function: { name: "submit_improved_patterns" } },
         }),
       });
 
@@ -98,15 +96,21 @@ ${batch.map((p: any) => `ID: ${p.id}
             status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
+        const errText = await response.text();
+        console.error("AI error:", response.status, errText);
         continue;
       }
 
       const data = await response.json();
-      const toolCall = data.candidates?.[0]?.content?.parts?.[0]?.functionCall;
+      const toolCall = data?.choices?.[0]?.message?.tool_calls?.[0];
       if (!toolCall) continue;
 
-      const parsed = toolCall.args;
-      if (!parsed) continue;
+      let parsed: any;
+      try {
+        parsed = JSON.parse(toolCall.function.arguments);
+      } catch {
+        continue;
+      }
 
       for (const p of (parsed.patterns || [])) {
         const { error } = await db.from("kb_patterns").update({

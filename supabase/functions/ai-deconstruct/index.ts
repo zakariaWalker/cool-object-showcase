@@ -18,14 +18,12 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const db = createClient(supabaseUrl, supabaseKey);
 
-    // Build pattern context
     const patternList = patterns.map((p: any) =>
       `- ID: ${p.id} | Name: ${p.name} | Type: ${p.type} | Steps: ${(p.steps || []).join(" → ")}`
     ).join("\n");
 
     const results: any[] = [];
 
-    // Process in batches
     for (let i = 0; i < exercises.length; i += batchSize) {
       const batch = exercises.slice(i, i + batchSize);
 
@@ -44,22 +42,23 @@ ${e.text}`).join("\n\n")}
 2. steps: خطوات الحل المحددة لهذا التمرين (3-6 خطوات)
 3. needs: المفاهيم المسبقة المطلوبة (2-4 مفاهيم)
 4. notes: ملاحظة قصيرة عن صعوبة أو خصوصية التمرين
-5. new_pattern: إذا اقترحت نمطاً جديداً، أعطني: name, type, description, steps, concepts
+5. new_pattern: إذا اقترحت نمطاً جديداً، أعطني: name, type, description, steps, concepts`;
 
-أجب بـ JSON فقط.`;
-
-      const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        },
         body: JSON.stringify({
-          contents: [
-            { role: "user", parts: [{ text: "أنت مساعد تعليمي متخصص في تحليل التمارين الرياضية. أجب دائماً باستخدام الأدوات المتاحة." }] },
-            { role: "user", parts: [{ text: prompt }] },
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: "أنت مساعد تعليمي متخصص في تحليل التمارين الرياضية. أجب دائماً باستخدام الأدوات المتاحة." },
+            { role: "user", content: prompt },
           ],
           tools: [{
-            function_declarations: [{
+            type: "function",
+            function: {
               name: "submit_deconstructions",
               description: "Submit exercise deconstructions",
               parameters: {
@@ -91,15 +90,11 @@ ${e.text}`).join("\n\n")}
                   },
                 },
                 required: ["deconstructions"],
+                additionalProperties: false,
               },
-            }],
-          }],
-          tool_config: {
-            function_calling_config: {
-              mode: "ANY",
-              allowed_function_names: ["submit_deconstructions"],
             },
-          },
+          }],
+          tool_choice: { type: "function", function: { name: "submit_deconstructions" } },
         }),
       });
 
@@ -108,9 +103,8 @@ ${e.text}`).join("\n\n")}
         const text = await response.text();
         console.error(`AI error ${status}:`, text);
         if (status === 429) {
-          // Wait and retry
           await new Promise(r => setTimeout(r, 5000));
-          i -= batchSize; // retry this batch
+          i -= batchSize;
           continue;
         }
         if (status === 402) {
@@ -118,20 +112,23 @@ ${e.text}`).join("\n\n")}
             status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        continue; // skip this batch on other errors
+        continue;
       }
 
       const data = await response.json();
-      const toolCall = data.candidates?.[0]?.content?.parts?.[0]?.functionCall;
+      const toolCall = data?.choices?.[0]?.message?.tool_calls?.[0];
       if (!toolCall) continue;
 
-      const parsed = toolCall.args;
-      if (!parsed) continue;
+      let parsed: any;
+      try {
+        parsed = JSON.parse(toolCall.function.arguments);
+      } catch {
+        continue;
+      }
 
       const deconstructions = parsed.deconstructions || [];
 
       for (const d of deconstructions) {
-        // If new pattern suggested, create it
         if (d.new_pattern && d.new_pattern.name) {
           const newPatId = crypto.randomUUID();
           await db.from("kb_patterns").upsert({
@@ -145,7 +142,6 @@ ${e.text}`).join("\n\n")}
           d.pattern_id = newPatId;
         }
 
-        // Insert deconstruction
         const { error: deconErr } = await db.from("kb_deconstructions").insert({
           exercise_id: d.exercise_id,
           pattern_id: d.pattern_id,
@@ -156,8 +152,6 @@ ${e.text}`).join("\n\n")}
         });
 
         if (!deconErr) {
-          // Mark exercise as AI deconstructed
-          await db.from("kb_exercises").update({ ai_deconstructed: true }).eq("id", d.exercise_id);
           results.push({ exerciseId: d.exercise_id, patternId: d.pattern_id, success: true });
         } else {
           console.error("Insert error:", deconErr);
@@ -165,7 +159,6 @@ ${e.text}`).join("\n\n")}
         }
       }
 
-      // Small delay between batches
       if (i + batchSize < exercises.length) {
         await new Promise(r => setTimeout(r, 1500));
       }
