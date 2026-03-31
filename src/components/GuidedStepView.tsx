@@ -286,10 +286,10 @@ export function GuidedStepView({
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="rounded-xl border-2 border-green-500/30 bg-green-500/5 p-4 text-center"
+                className="rounded-xl border-2 border-accent/30 bg-accent/5 p-4 text-center"
               >
                 <div className="text-2xl mb-2">🎉</div>
-                <h4 className="text-sm font-bold text-green-700 dark:text-green-400 mb-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+                <h4 className="text-sm font-bold text-accent mb-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
                   أحسنت! أكملت كل الخطوات
                 </h4>
                 {notes && (
