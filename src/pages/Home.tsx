@@ -16,7 +16,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { GuidingTooltip } from "@/components/GuidingTooltip";
+import { GuidingTooltip } from "@/components/ui/GuidingTooltip";
 
 const WORKFLOW = [
   {
