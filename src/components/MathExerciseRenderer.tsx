@@ -50,7 +50,9 @@ export function MathExerciseRenderer({
         <ol className={`exercise-questions list-none pr-0 mt-2 space-y-2 ${examMode ? "" : ""}`}>
           {questions.map((q, i) => (
             <li key={i} className="flex items-start gap-2">
-              <span className={`question-number flex-shrink-0 font-black ${examMode ? "text-[12px] min-w-[24px]" : "text-xs min-w-[20px]"} text-foreground`}>
+              <span
+                className={`question-number flex-shrink-0 font-black ${examMode ? "text-[12px] min-w-[24px]" : "text-xs min-w-[20px]"} text-foreground`}
+              >
                 {q.label || `${i + 1})`}
               </span>
               <div className={`flex-1 ${examMode ? "text-[13px] leading-[2]" : "text-sm leading-[1.9]"}`}>
@@ -62,9 +64,7 @@ export function MathExerciseRenderer({
       )}
 
       {/* Geometry diagram placeholder */}
-      {showDiagram && detectGeometry(text) && (
-        <GeometrySketch text={text} />
-      )}
+      {showDiagram && detectGeometry(text) && <GeometrySketch text={text} />}
     </div>
   );
 }
@@ -82,10 +82,7 @@ function MixedMathLine({ text, mathFont = "serif" }: { text: string; mathFont?: 
           {seg.type === "text" ? (
             <span>{seg.content}</span>
           ) : (
-            <KatexSpan
-              latex={seg.content}
-              displayMode={seg.type === "display"}
-            />
+            <KatexSpan latex={seg.content} displayMode={seg.type === "display"} />
           )}
         </Fragment>
       ))}
@@ -137,7 +134,8 @@ interface Segment {
 function parseMathSegments(text: string): Segment[] {
   const segments: Segment[] = [];
   // Pattern matches: $$...$$, $...$, \[...\], \(...\)
-  const regex = /(\$\$[\s\S]*?\$\$|\$[^$\n]+?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g;
+  const regex =
+    /(\$\$[\s\S]*?\$\$|\$(?!\s)([^$\n]+?)\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{([^}]+)\}[\s\S]*?\\end\{\3\}|^\s*\d+\)\s.*)/gm;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
@@ -183,7 +181,10 @@ interface ParsedQuestion {
 
 function splitExercise(text: string): { statement: string; questions: ParsedQuestion[] } {
   // Normalize line breaks
-  const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
+  const lines = text
+    .split(/\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
 
   if (lines.length <= 1) {
     // Try splitting by numbered patterns within a single line
@@ -263,14 +264,28 @@ function splitExercise(text: string): { statement: string; questions: ParsedQues
 // ─── Geometry detection & simple diagram ──────────────────────────────────────
 
 const GEOMETRY_KEYWORDS = [
-  "مثلث", "مستطيل", "مربع", "دائرة", "متوازي", "شبه منحرف",
-  "triangle", "rectangle", "circle", "carré", "parallélogramme",
-  "ABC", "ABCD", "زاوية", "angle", "perpendicular", "عمودي",
+  "مثلث",
+  "مستطيل",
+  "مربع",
+  "دائرة",
+  "متوازي",
+  "شبه منحرف",
+  "triangle",
+  "rectangle",
+  "circle",
+  "carré",
+  "parallélogramme",
+  "ABC",
+  "ABCD",
+  "زاوية",
+  "angle",
+  "perpendicular",
+  "عمودي",
 ];
 
 function detectGeometry(text: string): boolean {
   const lower = text.toLowerCase();
-  return GEOMETRY_KEYWORDS.some(kw => lower.includes(kw.toLowerCase()));
+  return GEOMETRY_KEYWORDS.some((kw) => lower.includes(kw.toLowerCase()));
 }
 
 function GeometrySketch({ text }: { text: string }) {
@@ -294,7 +309,8 @@ function GeometrySketch({ text }: { text: string }) {
 
     if (lower.includes("مثلث") || lower.includes("triangle") || /\bABC\b/.test(text)) {
       // Draw triangle ABC
-      const cx = w / 2, cy = h / 2;
+      const cx = w / 2,
+        cy = h / 2;
       const A = { x: cx, y: cy - 60 };
       const B = { x: cx - 70, y: cy + 50 };
       const C = { x: cx + 70, y: cy + 50 };
@@ -316,16 +332,23 @@ function GeometrySketch({ text }: { text: string }) {
         ctx.strokeStyle = "hsl(0, 70%, 50%)";
         ctx.strokeRect(B.x, B.y - 10, 10, 10);
       }
-    } else if (lower.includes("مربع") || lower.includes("مستطيل") || lower.includes("rectangle") || /\bABCD\b/.test(text)) {
+    } else if (
+      lower.includes("مربع") ||
+      lower.includes("مستطيل") ||
+      lower.includes("rectangle") ||
+      /\bABCD\b/.test(text)
+    ) {
       // Draw rectangle ABCD
-      const rx = w / 2 - 60, ry = h / 2 - 40;
+      const rx = w / 2 - 60,
+        ry = h / 2 - 40;
       ctx.strokeRect(rx, ry, 120, 80);
       ctx.fillText("A", rx - 15, ry + 5);
       ctx.fillText("B", rx + 122, ry + 5);
       ctx.fillText("C", rx + 122, ry + 85);
       ctx.fillText("D", rx - 15, ry + 85);
     } else if (lower.includes("دائرة") || lower.includes("circle")) {
-      const cx = w / 2, cy = h / 2;
+      const cx = w / 2,
+        cy = h / 2;
       ctx.beginPath();
       ctx.arc(cx, cy, 50, 0, Math.PI * 2);
       ctx.stroke();

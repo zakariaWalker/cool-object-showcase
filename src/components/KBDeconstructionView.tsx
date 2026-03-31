@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DeconstructionFlowchart } from "./DeconstructionFlowchart";
+import { GuidedStepView } from "./GuidedStepView";
 import { toast } from "sonner";
 
 interface DeconstructionData {
@@ -27,9 +28,10 @@ interface Props {
   exerciseId: string;
   exerciseText?: string;
   exerciseSteps?: string[];
+  guided?: boolean; // default true — step-by-step mode
 }
 
-export function KBDeconstructionView({ exerciseId, exerciseText, exerciseSteps }: Props) {
+export function KBDeconstructionView({ exerciseId, exerciseText, exerciseSteps, guided = true }: Props) {
   const [deconstructions, setDeconstructions] = useState<DeconstructionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
@@ -195,6 +197,24 @@ export function KBDeconstructionView({ exerciseId, exerciseText, exerciseSteps }
     <div>
       {deconstructions.map((decon) => {
         const stepsToShow = decon.steps.length > 0 ? decon.steps : (decon.pattern?.steps || []);
+        
+        if (guided) {
+          return (
+            <GuidedStepView
+              key={decon.id}
+              exerciseText={exerciseText || ""}
+              patternName={decon.pattern?.name || decon.pattern_id}
+              patternType={decon.pattern?.type || ""}
+              patternDescription={decon.pattern?.description}
+              steps={stepsToShow}
+              needs={decon.needs}
+              concepts={decon.pattern?.concepts || []}
+              notes={decon.notes}
+              aiGenerated={decon.ai_generated}
+            />
+          );
+        }
+        
         return (
           <DeconstructionFlowchart
             key={decon.id}

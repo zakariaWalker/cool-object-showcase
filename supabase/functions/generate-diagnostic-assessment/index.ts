@@ -18,12 +18,9 @@ Deno.serve(async (req) => {
 
 مبادئ التقييم العادل:
 1. التفكير > النتيجة: لا تسأل "احسب x"، بل اسأل "آمال حسبت x بهذه الطريقة، هل هي محقة؟ لماذا؟".
-2. كشف المفاهيم الخاطئة: ركز على الأخطاء الشائعة (Misconceptions) مثل نسيان حد الوسط، عدم قلب المتراجحة، خطأ في توزيع ln أو exp، إلخ.
+2. كشف المفاهيم الخاطئة: ركز على الأخطاء الشائعة (Misconceptions).
 3. التنوع: ولد ${count} أسئلة تشمل: تحليل منطقي، فخ رياضي، لغز عددي، ومسألة مفتوحة.
 4. التنوع النوعي: استخدم "qcm" للخيارات و "numeric" للتوقعات العددية.
-
-المستوى المستهدف: ${level} 
-(4AM = متوسط، 1AS/2AS = ثانوي، 3AS = بكالوريا).
 
 المطلوب: توليد JSON فقط بالهيكل التالي:
 {
@@ -50,10 +47,10 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: "أنت خبير في بناء التقييمات التشخيصية العادلة. أجب دائماً بـ JSON صالح فقط." },
           { role: "user", content: prompt },
@@ -63,12 +60,24 @@ Deno.serve(async (req) => {
     });
 
     if (!aiResponse.ok) {
+      if (aiResponse.status === 429) {
+        return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول لاحقاً." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ error: "يرجى إضافة رصيد للاستمرار." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const errText = await aiResponse.text();
       throw new Error(`AI gateway error: ${errText}`);
     }
 
     const aiData = await aiResponse.json();
     const aiText = aiData?.choices?.[0]?.message?.content;
+    if (!aiText) throw new Error("Empty AI response");
+
     const jsonMatch = aiText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("Could not parse AI response");
 
