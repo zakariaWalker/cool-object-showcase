@@ -31,7 +31,7 @@ interface Props {
   guided?: boolean; // default true — step-by-step mode
 }
 
-export function KBDeconstructionView({ exerciseId, exerciseText, exerciseSteps }: Props) {
+export function KBDeconstructionView({ exerciseId, exerciseText, exerciseSteps, guided = true }: Props) {
   const [deconstructions, setDeconstructions] = useState<DeconstructionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
