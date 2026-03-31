@@ -28,6 +28,7 @@ interface Props {
   exerciseId: string;
   exerciseText?: string;
   exerciseSteps?: string[];
+  guided?: boolean; // default true — step-by-step mode
 }
 
 export function KBDeconstructionView({ exerciseId, exerciseText, exerciseSteps }: Props) {
