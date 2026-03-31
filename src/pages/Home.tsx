@@ -332,6 +332,7 @@ function CardGradient({ children, className }: { children: React.ReactNode, clas
   return (
     <div className={`relative bg-card border border-border/60 rounded-[2.5rem] overflow-hidden shadow-xl ${className}`}>
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16" />
+        <div className="relative">{children}</div>
     </div>
   );
 }
