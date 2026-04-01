@@ -71,9 +71,38 @@ export function MathExerciseRenderer({
 
 // ─── Mixed Arabic + LaTeX line renderer ───────────────────────────────────────
 
+/**
+ * Auto-wraps raw math patterns (like 3^2, x+3, 2x-1) in KaTeX
+ * so students see proper formatted math instead of confusing plain text.
+ */
+function autoWrapMath(text: string): string {
+  // Don't process if already contains $ delimiters
+  if (/\$/.test(text)) return text;
+  
+  // Wrap expressions containing ^, common algebraic patterns
+  // e.g. "3^2" → "$3^2$", "(x+3)^2" → "$(x+3)^2$"
+  let result = text;
+  
+  // Wrap power expressions: number^number, (expr)^number, var^number
+  result = result.replace(
+    /(\([^)]+\)\s*\^\s*\{?[^}\s]+\}?|\b[a-zA-Z0-9]+\s*\^\s*\{?[^}\s]+\}?)/g,
+    ' $$$1$$ '
+  );
+  
+  // Wrap fraction-like patterns: a/b when surrounded by math context
+  // Wrap expressions with ×, ÷ 
+  result = result.replace(
+    /(\d+\s*[×÷]\s*\d+)/g,
+    ' $$$1$$ '
+  );
+  
+  return result;
+}
+
 function MixedMathLine({ text, mathFont = "serif" }: { text: string; mathFont?: string }) {
-  // Split on math delimiters: $...$, $$...$$, \(...\), \[...\]
-  const segments = parseMathSegments(text);
+  // Auto-wrap raw math before parsing
+  const processedText = autoWrapMath(text);
+  const segments = parseMathSegments(processedText);
 
   return (
     <span style={{ fontFamily: mathFont === "serif" ? "serif" : "inherit" }}>
