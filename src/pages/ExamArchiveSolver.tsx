@@ -3,11 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
+import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
 import { Button } from "@/components/ui/button";
 import { 
   ChevronRight, 
   ChevronLeft, 
-  FileText, 
   Clock, 
   CheckCircle2, 
   HelpCircle, 
@@ -15,7 +15,8 @@ import {
   Timer,
   Layout,
   Maximize2,
-  Minimize2
+  PenTool,
+  FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import { GRADE_OPTIONS } from "@/engine/exam-types";
@@ -48,7 +49,7 @@ export default function ExamArchiveSolver() {
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showFullPaper, setShowFullPaper] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(120 * 60); // Default 2 hours
+  const [timeLeft, setTimeLeft] = useState(120 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   useEffect(() => {
@@ -58,9 +59,7 @@ export default function ExamArchiveSolver() {
   useEffect(() => {
     let interval: any;
     if (isTimerRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
+      interval = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     }
     return () => clearInterval(interval);
   }, [isTimerRunning, timeLeft]);
@@ -69,27 +68,17 @@ export default function ExamArchiveSolver() {
     setLoading(true);
     try {
       const { data: entry, error: entryErr } = await supabase
-        .from("exam_kb_entries")
-        .select("*")
-        .eq("id", examId)
-        .single();
-      
+        .from("exam_kb_entries").select("*").eq("id", examId).single();
       if (entryErr) throw entryErr;
       setExam(entry);
 
       const { data: qs, error: qsErr } = await supabase
-        .from("exam_kb_questions")
-        .select("*")
-        .eq("exam_id", examId)
-        .order("question_number");
-
+        .from("exam_kb_questions").select("*").eq("exam_id", examId).order("question_number");
       if (qsErr) throw qsErr;
       setQuestions(qs || []);
 
-      // Set default time based on format
       if (entry.format === 'bac') setTimeLeft(180 * 60);
       else if (entry.format === 'bem') setTimeLeft(120 * 60);
-      
       setIsTimerRunning(true);
     } catch (e) {
       console.error("Error loading exam:", e);
@@ -100,15 +89,10 @@ export default function ExamArchiveSolver() {
   }
 
   const handleNext = () => {
-    if (activeQuestionIndex < questions.length - 1) {
-      setActiveQuestionIndex(prev => prev + 1);
-    }
+    if (activeQuestionIndex < questions.length - 1) setActiveQuestionIndex(prev => prev + 1);
   };
-
   const handlePrev = () => {
-    if (activeQuestionIndex > 0) {
-      setActiveQuestionIndex(prev => prev - 1);
-    }
+    if (activeQuestionIndex > 0) setActiveQuestionIndex(prev => prev - 1);
   };
 
   const formatTime = (seconds: number) => {
@@ -118,14 +102,25 @@ export default function ExamArchiveSolver() {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
+  const handleAlgebraSubmit = (steps: string[]) => {
+    if (!currentQuestion) return;
+    setAnswers(prev => ({ ...prev, [currentQuestion.id]: steps.join("\n") }));
+    toast.success("تم حفظ الإجابة");
+    handleNext();
+  };
+
+  const handleGeometrySubmit = (data: any) => {
+    if (!currentQuestion) return;
+    setAnswers(prev => ({ ...prev, [currentQuestion.id]: JSON.stringify(data) }));
+    toast.success("تم حفظ الإجابة");
+    handleNext();
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center space-y-6">
-        <div className="relative">
-          <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center text-primary font-black">...</div>
-        </div>
-        <p className="text-muted-foreground font-bold animate-pulse">جاري تهيئة بيئة الامتحان الرسمية...</p>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <p className="text-sm text-muted-foreground font-bold">جاري تحميل الامتحان...</p>
       </div>
     );
   }
@@ -133,206 +128,164 @@ export default function ExamArchiveSolver() {
   if (!exam) return null;
 
   const currentQuestion = questions[activeQuestionIndex];
-  const progress = ((Object.keys(answers).length) / questions.length) * 100;
+  const progress = ((Object.keys(answers).length) / Math.max(questions.length, 1)) * 100;
+  const gradeLabel = GRADE_OPTIONS.find(g => g.value === exam.grade)?.label || exam.grade;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col h-screen overflow-hidden" dir="rtl">
-      {/* Top Header Navigation */}
-      <div className="bg-card border-b border-border px-6 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate("/annales")} className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors">
-             <ArrowLeft className="w-5 h-5" />
+      {/* Header */}
+      <div className="bg-card border-b border-border px-4 py-2.5 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate("/annales")} className="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors">
+            <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h1 className="text-base font-black leading-tight">{exam.format.toUpperCase()} — {exam.year}</h1>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{exam.session === "juin" ? "دورة جوان" : exam.session}</p>
+            <h1 className="text-sm font-black leading-tight">{exam.format.toUpperCase()} — {exam.year}</h1>
+            <p className="text-[9px] text-muted-foreground font-bold">{exam.session === "juin" ? "دورة جوان" : exam.session} · {gradeLabel}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black tabular-nums transition-colors ${timeLeft < 300 ? 'bg-destructive/10 text-destructive animate-pulse' : 'bg-primary/5 text-primary'}`}>
-             <Timer className="w-4 h-4" />
-             {formatTime(timeLeft)}
+        <div className="flex items-center gap-3">
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-black text-xs tabular-nums ${timeLeft < 300 ? 'bg-destructive/10 text-destructive animate-pulse' : 'bg-muted text-foreground'}`}>
+            <Timer className="w-3.5 h-3.5" />
+            {formatTime(timeLeft)}
           </div>
-          <div className="h-8 w-px bg-border" />
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setShowFullPaper(!showFullPaper)}
-            className="rounded-xl font-bold gap-2"
-          >
-            {showFullPaper ? <Layout className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            {showFullPaper ? "العرض المسنن" : "الورقة الكاملة"}
+          <Button variant="ghost" size="sm" onClick={() => setShowFullPaper(!showFullPaper)} className="rounded-lg text-xs gap-1.5">
+            {showFullPaper ? <Layout className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            {showFullPaper ? "حل تفاعلي" : "الورقة"}
           </Button>
-          <Button className="rounded-xl font-black bg-primary px-6 shadow-lg shadow-primary/20">
-            إنهاء وتسليم
-          </Button>
+          <Button size="sm" className="rounded-lg font-black text-xs px-4 bg-primary">إنهاء</Button>
         </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar / Question List */}
-        <div className="w-80 bg-card border-l border-border flex flex-col shrink-0 overflow-y-auto hidden lg:flex">
-          <div className="p-6 space-y-6">
-             <div className="space-y-4">
-               <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">تقدم الحل</h3>
-               <div className="h-2 bg-muted rounded-full overflow-hidden">
-                 <motion.div 
-                   initial={{ width: 0 }}
-                   animate={{ width: `${progress}%` }}
-                   className="h-full bg-primary"
-                 />
-               </div>
-               <p className="text-[10px] text-muted-foreground font-bold">{Object.keys(answers).length} من أصل {questions.length} سؤال تم التعامل معه</p>
-             </div>
+        {/* Sidebar */}
+        <div className="w-64 bg-card border-l border-border flex flex-col shrink-0 overflow-y-auto hidden lg:flex">
+          <div className="p-4 space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">التقدم</h3>
+                <span className="text-[10px] font-black text-primary">{Object.keys(answers).length}/{questions.length}</span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} className="h-full bg-primary rounded-full" />
+              </div>
+            </div>
 
-             <div className="space-y-2">
-               <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-4">هيكل الموضوع</h3>
-               {questions.map((q, i) => (
-                 <button
-                    key={q.id}
-                    onClick={() => { setActiveQuestionIndex(i); setShowFullPaper(false); }}
-                    className={`
-                      w-full text-right p-4 rounded-2xl border-2 transition-all group
-                      ${activeQuestionIndex === i && !showFullPaper ? 'border-primary bg-primary/5' : 'border-transparent hover:bg-muted/50'}
-                    `}
-                 >
-                   <div className="flex items-center justify-between mb-1">
-                      <span className={`text-[10px] font-black uppercase ${activeQuestionIndex === i ? 'text-primary' : 'text-muted-foreground'}`}>{q.section_label}</span>
+            <div className="space-y-1">
+              <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">الأسئلة</h3>
+              {questions.map((q, i) => (
+                <button
+                  key={q.id}
+                  onClick={() => { setActiveQuestionIndex(i); setShowFullPaper(false); }}
+                  className={`w-full text-right p-3 rounded-lg border transition-all text-xs
+                    ${activeQuestionIndex === i && !showFullPaper ? 'border-primary bg-primary/5 font-black' : 'border-transparent hover:bg-muted/50'}
+                  `}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold text-muted-foreground">{q.section_label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] text-muted-foreground">{q.points}ن</span>
                       {answers[q.id] && <CheckCircle2 className="w-3 h-3 text-primary" />}
-                   </div>
-                   <div className="text-xs font-bold text-foreground line-clamp-1">{q.text.substring(0, 40)}...</div>
-                 </button>
-               ))}
-             </div>
+                    </div>
+                  </div>
+                  <div className="text-foreground line-clamp-1 mt-0.5">{q.text.substring(0, 50)}...</div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Main Workspace */}
-        <main className="flex-1 bg-muted/20 overflow-y-auto p-8 relative">
+        {/* Main */}
+        <main className="flex-1 overflow-y-auto p-6 bg-muted/10">
           <AnimatePresence mode="wait">
             {showFullPaper ? (
-              <motion.div
-                key="full-paper"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className="max-w-4xl mx-auto space-y-12 pb-32"
-              >
-                {/* Simulated Exam Header */}
-                <div className="bg-white border-2 border-black p-8 text-center space-y-4 relative overflow-hidden">
-                   <div className="absolute top-0 left-0 w-full h-1 bg-black" />
-                   <div className="text-sm font-black uppercase tracking-widest">الجمهورية الجزائرية الديمقراطية الشعبية</div>
-                   <div className="text-xs font-bold">وزارة التربية الوطنية</div>
-                   <div className="flex justify-between items-center text-[10px] font-black border-y border-black/10 py-4 mt-6">
-                      <div className="text-right">دورة: {exam.year}</div>
-                      <div className="text-center text-lg">{exam.format.toUpperCase()} — {GRADE_OPTIONS.find(g => g.value === exam.grade)?.label}</div>
-                      <div className="text-left">المدة: {exam.format === 'bac' ? '03 سا و 30 د' : '02 سا'}</div>
-                   </div>
-                   <div className="text-xl font-black underline decoration-double underline-offset-8 pt-4">اختبار في مادة: الرياضيات</div>
+              <motion.div key="full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="max-w-3xl mx-auto space-y-8 pb-20">
+                {/* Paper header */}
+                <div className="bg-card border border-border p-6 rounded-xl text-center space-y-2">
+                  <div className="text-xs font-black text-muted-foreground">الجمهورية الجزائرية الديمقراطية الشعبية — وزارة التربية الوطنية</div>
+                  <div className="text-lg font-black">{exam.format.toUpperCase()} — {exam.year}</div>
+                  <div className="text-xs text-muted-foreground">{gradeLabel} · المدة: {exam.format === 'bac' ? '03 سا و 30 د' : '02 سا'}</div>
+                  <div className="text-base font-black border-t border-border pt-3 mt-3">اختبار في مادة: الرياضيات</div>
                 </div>
 
-                <div className="space-y-16">
-                  {questions.map((q, i) => (
-                    <div key={q.id} className="space-y-6 relative">
-                       <div className="flex items-center gap-4">
-                          <div className="px-4 py-1 border-2 border-black font-black text-sm">{q.section_label} ({q.points} نقاط)</div>
-                          <div className="flex-1 h-px bg-black/10" />
-                       </div>
-                       <div className="text-lg leading-relaxed antialiased">
-                          <MathExerciseRenderer text={q.text} />
-                       </div>
-                       <Button 
-                         variant="outline" 
-                         onClick={() => { setActiveQuestionIndex(i); setShowFullPaper(false); }}
-                         className="rounded-xl border-dashed border-2 hover:border-primary hover:text-primary transition-all"
-                       >
-                         تفعيل بيئة الحل لهذا الجزء ←
-                       </Button>
+                {questions.map((q, i) => (
+                  <div key={q.id} className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="px-3 py-1 border border-border rounded font-black text-xs">{q.section_label} ({q.points} ن)</div>
+                      <div className="flex-1 h-px bg-border" />
                     </div>
-                  ))}
+                    <div className="text-sm leading-relaxed">
+                      <MathExerciseRenderer text={q.text} />
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => { setActiveQuestionIndex(i); setShowFullPaper(false); }}
+                      className="rounded-lg text-xs border-dashed gap-1.5">
+                      <PenTool className="w-3 h-3" /> حل هذا السؤال
+                    </Button>
+                  </div>
+                ))}
+              </motion.div>
+            ) : currentQuestion ? (
+              <motion.div key={currentQuestion.id} initial={{ opacity: 0, x: 15 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -15 }}
+                className="max-w-3xl mx-auto space-y-5 pb-20">
+                {/* Question */}
+                <div className="bg-card border border-border p-6 rounded-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="px-3 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-black">{currentQuestion.section_label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[9px] px-2 py-0.5 rounded font-bold ${
+                        currentQuestion.difficulty === 'hard' ? 'bg-destructive/10 text-destructive' :
+                        currentQuestion.difficulty === 'easy' ? 'bg-green-500/10 text-green-600' :
+                        'bg-muted text-muted-foreground'
+                      }`}>{currentQuestion.difficulty === 'hard' ? 'صعب' : currentQuestion.difficulty === 'easy' ? 'سهل' : 'متوسط'}</span>
+                      <span className="text-xs font-black text-muted-foreground">{currentQuestion.points} نقاط</span>
+                    </div>
+                  </div>
+                  <div className="text-base leading-relaxed">
+                    <MathExerciseRenderer text={currentQuestion.text} />
+                  </div>
+                </div>
+
+                {/* Editor - Algebra or Geometry auto-detected */}
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="bg-muted/30 border-b border-border px-4 py-2.5 flex items-center justify-between">
+                    <h3 className="text-xs font-black flex items-center gap-1.5">
+                      <PenTool className="w-3.5 h-3.5 text-primary" /> مساحة الحل
+                    </h3>
+                    <span className="text-[9px] text-muted-foreground font-bold">
+                      {currentQuestion.type?.includes("هندس") || /ارسم|المثلث|الدائرة|المستقيم/.test(currentQuestion.text)
+                        ? "🔷 محرر هندسي" : "📐 محرر جبري"}
+                    </span>
+                  </div>
+                  <div className="p-4">
+                    <StudentAnswerEditor
+                      exerciseType={currentQuestion.type}
+                      exerciseLevel={exam.grade?.includes("bac") ? "secondary" : "middle"}
+                      exerciseText={currentQuestion.text}
+                      onSubmitAlgebra={handleAlgebraSubmit}
+                      onSubmitGeometry={handleGeometrySubmit}
+                    />
+                  </div>
+                </div>
+
+                {/* Navigation */}
+                <div className="flex items-center justify-between pt-2">
+                  <Button variant="ghost" size="sm" onClick={handlePrev} disabled={activeQuestionIndex === 0} className="rounded-lg text-xs gap-1.5">
+                    <ChevronRight className="w-3.5 h-3.5" /> السابق
+                  </Button>
+                  <div className="flex gap-1">
+                    {questions.map((_, i) => (
+                      <button key={i} onClick={() => setActiveQuestionIndex(i)}
+                        className={`w-2 h-2 rounded-full transition-all ${i === activeQuestionIndex ? 'w-6 bg-primary' : answers[questions[i]?.id] ? 'bg-primary/40' : 'bg-border'}`} />
+                    ))}
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={handleNext} disabled={activeQuestionIndex === questions.length - 1} className="rounded-lg text-xs gap-1.5">
+                    التالي <ChevronLeft className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
               </motion.div>
-            ) : (
-              <motion.div
-                key={currentQuestion.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="max-w-3xl mx-auto space-y-8 h-full flex flex-col pb-32"
-              >
-                 {/* Question Card */}
-                 <div className="bg-card border border-border p-8 rounded-[2.5rem] shadow-xl shadow-black/5 shrink-0">
-                    <div className="flex items-center justify-between mb-6">
-                       <span className="px-4 py-1.5 rounded-xl bg-primary/10 text-primary text-xs font-black">{currentQuestion.section_label}</span>
-                       <span className="text-xs font-black text-muted-foreground">{currentQuestion.points} نقاط</span>
-                    </div>
-                    <div className="text-xl leading-relaxed font-tajawal">
-                       <MathExerciseRenderer text={currentQuestion.text} />
-                    </div>
-                 </div>
-
-                 {/* Solver Area */}
-                 <div className="flex-1 bg-card border border-border rounded-[2.5rem] shadow-xl shadow-black/5 overflow-hidden flex flex-col">
-                    <div className="bg-muted/30 border-b border-border px-6 py-4 flex items-center justify-between">
-                       <h3 className="text-sm font-black flex items-center gap-2">
-                          <Layout className="w-4 h-4 text-primary" /> مساحة التفكير والحل
-                       </h3>
-                       <div className="flex items-center gap-2">
-                          <kbd className="px-2 py-1 bg-muted rounded text-[10px] font-mono">Control + Enter للتحقق</kbd>
-                       </div>
-                    </div>
-                    <div className="flex-1 relative">
-                       <textarea 
-                          value={answers[currentQuestion.id] || ""}
-                          onChange={(e) => setAnswers(prev => ({ ...prev, [currentQuestion.id]: e.target.value }))}
-                          placeholder="اكتب خطوات حلك هنا... يمكنك استخدام الرموز الرياضية"
-                          className="w-full h-full p-8 bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none font-tajawal"
-                          dir="ltr"
-                       />
-                       <div className="absolute bottom-6 left-6 flex gap-2">
-                          <Button variant="outline" className="rounded-xl font-bold gap-2">
-                             <HelpCircle className="w-4 h-4" /> طلب تلميح ذكي
-                          </Button>
-                          <Button 
-                             onClick={() => {
-                                toast.success("تم حفظ مسودة الحل لهذه الخطوة");
-                                handleNext();
-                             }}
-                             className="rounded-xl font-black bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
-                          >
-                             حفظ وانتقال
-                          </Button>
-                       </div>
-                    </div>
-                 </div>
-
-                 {/* Navigation controls (fixed-ish or bottom-sticky) */}
-                 <div className="flex items-center justify-between pt-4">
-                    <Button 
-                      variant="ghost" 
-                      onClick={handlePrev} 
-                      disabled={activeQuestionIndex === 0}
-                      className="rounded-xl font-bold gap-2"
-                    >
-                       <ChevronRight className="w-4 h-4" /> الجزء السابق
-                    </Button>
-                    <div className="flex gap-1">
-                       {questions.map((_, i) => (
-                         <div key={i} className={`w-2 h-2 rounded-full transition-all ${i === activeQuestionIndex ? 'w-8 bg-primary' : 'bg-border'}`} />
-                       ))}
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      onClick={handleNext} 
-                      disabled={activeQuestionIndex === questions.length - 1}
-                      className="rounded-xl font-bold gap-2"
-                    >
-                       الجزء التالي <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                 </div>
-              </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
         </main>
       </div>
