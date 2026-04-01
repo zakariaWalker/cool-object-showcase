@@ -71,9 +71,38 @@ export function MathExerciseRenderer({
 
 // ─── Mixed Arabic + LaTeX line renderer ───────────────────────────────────────
 
+/**
+ * Auto-wraps raw math patterns (like 3^2, x+3, 2x-1) in KaTeX
+ * so students see proper formatted math instead of confusing plain text.
+ */
+function autoWrapMath(text: string): string {
+  // Don't process if already contains $ delimiters
+  if (/\$/.test(text)) return text;
+  
+  // Wrap expressions containing ^, common algebraic patterns
+  // e.g. "3^2" → "$3^2$", "(x+3)^2" → "$(x+3)^2$"
+  let result = text;
+  
+  // Wrap power expressions: number^number, (expr)^number, var^number
+  result = result.replace(
+    /(\([^)]+\)\s*\^\s*\{?[^}\s]+\}?|\b[a-zA-Z0-9]+\s*\^\s*\{?[^}\s]+\}?)/g,
+    ' $$$1$$ '
+  );
+  
+  // Wrap fraction-like patterns: a/b when surrounded by math context
+  // Wrap expressions with ×, ÷ 
+  result = result.replace(
+    /(\d+\s*[×÷]\s*\d+)/g,
+    ' $$$1$$ '
+  );
+  
+  return result;
+}
+
 function MixedMathLine({ text, mathFont = "serif" }: { text: string; mathFont?: string }) {
-  // Split on math delimiters: $...$, $$...$$, \(...\), \[...\]
-  const segments = parseMathSegments(text);
+  // Auto-wrap raw math before parsing
+  const processedText = autoWrapMath(text);
+  const segments = parseMathSegments(processedText);
 
   return (
     <span style={{ fontFamily: mathFont === "serif" ? "serif" : "inherit" }}>
@@ -180,37 +209,30 @@ interface ParsedQuestion {
 }
 
 function splitExercise(text: string): { statement: string; questions: ParsedQuestion[] } {
-  // Normalize line breaks
-  const lines = text
+  // Step 1: Normalize — replace common inline separators with newlines
+  let normalized = text
+    // "—" dash separator between questions
+    .replace(/\s*[—–]\s*/g, "\n")
+    // "/" separator between questions (but not inside math like a/b)
+    .replace(/(?<=[^\d\\])\s*\/\s*(?=[^\d])/g, "\n")
+    // ";" separator
+    .replace(/\s*;\s*/g, "\n")
+    // "سؤال N" or "السؤال N"
+    .replace(/(?:ال)?سؤال\s*(\d+)\s*[:\-]?\s*/g, "\n$1) ");
+
+  // Step 2: Split into lines
+  const lines = normalized
     .split(/\n/)
     .map((l) => l.trim())
     .filter(Boolean);
 
   if (lines.length <= 1) {
-    // Try splitting by numbered patterns within a single line
-    const questionPattern = /(?:^|\s)(\d+[\)\-\.])(?:\s)/g;
-    const parts: ParsedQuestion[] = [];
-    let lastIdx = 0;
-    let statement = "";
-    let match: RegExpExecArray | null;
-    let firstMatchPos = -1;
-
     const singleLine = text;
-    while ((match = questionPattern.exec(singleLine)) !== null) {
-      if (firstMatchPos === -1) {
-        firstMatchPos = match.index;
-        statement = singleLine.slice(0, match.index).trim();
-      } else {
-        const prevLabel = parts.length > 0 ? "" : "";
-        // close previous question
-      }
-      // We'll use a different approach below
-    }
 
-    // Better approach: split by common question markers
+    // Try splitting by numbered patterns: 1) 2. 3-
     const qSplit = singleLine.split(/(?<=\s|^)(\d+[\)\.\-])\s/);
     if (qSplit.length > 2) {
-      statement = qSplit[0].trim();
+      const statement = qSplit[0].trim();
       const questions: ParsedQuestion[] = [];
       for (let i = 1; i < qSplit.length; i += 2) {
         const label = qSplit[i];
@@ -220,14 +242,24 @@ function splitExercise(text: string): { statement: string; questions: ParsedQues
       if (questions.length > 0) return { statement, questions };
     }
 
-    // Also try Arabic question markers: أ) ب) ج) or bullet •
-    const arabicQSplit = singleLine.split(/(?<=\s|^)([أبجدهو][\)\.])\s/);
+    // Try Arabic question markers: أ) ب) ج)
+    const arabicQSplit = singleLine.split(/(?<=\s|^)([أبجدهوز][\)\.])\s/);
     if (arabicQSplit.length > 2) {
-      statement = arabicQSplit[0].trim();
+      const statement = arabicQSplit[0].trim();
       const questions: ParsedQuestion[] = [];
       for (let i = 1; i < arabicQSplit.length; i += 2) {
         questions.push({ label: arabicQSplit[i], text: arabicQSplit[i + 1]?.trim() || "" });
       }
+      if (questions.length > 0) return { statement, questions };
+    }
+
+    // Try bullet • separator
+    const bulletParts = singleLine.split(/\s*•\s*/);
+    if (bulletParts.length > 1) {
+      const statement = bulletParts[0].trim();
+      const questions = bulletParts.slice(1)
+        .filter(p => p.trim())
+        .map((p, i) => ({ label: `${i + 1})`, text: p.trim() }));
       if (questions.length > 0) return { statement, questions };
     }
 
@@ -240,18 +272,27 @@ function splitExercise(text: string): { statement: string; questions: ParsedQues
   let inQuestions = false;
 
   for (const line of lines) {
-    // Detect question lines: starts with number, letter bullet, or •
-    const qMatch = line.match(/^(\d+[\)\.\-]|[أبجدهو][\)\.]|•)\s*(.*)/);
+    // Detect question lines: starts with number, letter bullet, •, or standalone short question
+    const qMatch = line.match(/^(\d+[\)\.\-]|[أبجدهوز][\)\.]|•)\s*(.*)/);
     if (qMatch) {
       inQuestions = true;
       questions.push({ label: qMatch[1], text: qMatch[2] });
     } else if (inQuestions) {
-      // Continuation of last question
-      if (questions.length > 0) {
+      // If line looks like a new question (starts with action verb in Arabic), make it a new question
+      if (/^(أحسب|أنشر|بسط|حل|بيّن|أكتب|عيّن|أوجد|استنتج|تحقق|اعتمادا|بالاعتماد)/.test(line)) {
+        questions.push({ label: `${questions.length + 1})`, text: line });
+      } else if (questions.length > 0) {
+        // Continuation of last question
         questions[questions.length - 1].text += " " + line;
       }
     } else {
-      statementLines.push(line);
+      // Check if line starts with a verb (could be a question without numbering)
+      if (statementLines.length > 0 && /^(أحسب|أنشر|بسط|حل|بيّن|أكتب|عيّن|أوجد|استنتج|تحقق|اعتمادا|بالاعتماد)/.test(line)) {
+        inQuestions = true;
+        questions.push({ label: `${questions.length + 1})`, text: line });
+      } else {
+        statementLines.push(line);
+      }
     }
   }
 

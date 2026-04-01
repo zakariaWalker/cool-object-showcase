@@ -32,7 +32,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Protected routes check for guests
   // Guests can ONLY access landing ("/") and Diagnostic Assessment ("/gaps")
   useEffect(() => {
-    if (isGuest && currentPath !== "/" && currentPath !== "/auth" && currentPath !== "/gaps" && currentPath !== "/diagnostic" && !currentPath.startsWith("/tma")) {
+    const publicPaths = ["/", "/auth", "/gaps", "/diagnostic", "/annales"];
+    const isPublic = publicPaths.includes(currentPath) || currentPath.startsWith("/tma") || currentPath.startsWith("/archive-solve");
+    if (isGuest && !isPublic) {
       navigate("/auth");
     }
   }, [isGuest, currentPath, navigate]);
