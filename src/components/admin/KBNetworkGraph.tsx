@@ -1,6 +1,4 @@
-// ===== KB Insights Dashboard — Clean, actionable admin overview =====
-// Replaces chaotic force graph with structured insights at a glance
-
+// ===== KB Insights Dashboard — Premium Visual Analytics =====
 import { useState, useMemo } from "react";
 import { Exercise, Pattern, Deconstruction } from "./useAdminKBStore";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,56 +21,29 @@ const TYPE_LABELS_AR: Record<string, string> = {
   unclassified: "غير مصنف", other: "أخرى",
 };
 
-const DOMAIN_COLORS: Record<string, string> = {
-  algebra: "243 75% 58%", equations: "243 75% 58%",
-  advanced_algebra: "243 60% 50%", factor: "243 65% 55%",
-  solve_equation: "243 70% 52%", systems: "243 55% 48%",
-  geometry_construction: "158 64% 40%", triangle_circle: "158 55% 45%",
-  parallelogram: "158 50% 42%", angles: "158 60% 38%",
-  analytic_geometry: "158 45% 48%", statistics: "38 92% 50%",
-  probability: "277 65% 52%", functions: "340 80% 52%",
-  calculus: "340 70% 48%", trigonometry: "340 60% 55%",
-  arithmetic: "200 70% 50%", fractions: "200 60% 45%",
-  proportionality: "200 55% 48%", number_sets: "200 50% 52%",
-  sequences: "20 80% 50%", transformations: "120 50% 40%",
-  solids: "280 40% 50%", prove: "0 60% 50%", bac_prep: "45 80% 45%",
-  unclassified: "220 10% 60%", other: "220 10% 55%",
-};
-
-function getHSL(type?: string) {
-  return DOMAIN_COLORS[type || "other"] || DOMAIN_COLORS.other;
-}
-
-// Group similar types into super-domains for cleaner display
-const SUPER_DOMAINS: Record<string, { label: string; color: string; types: string[] }> = {
+const SUPER_DOMAINS: Record<string, { label: string; icon: string; gradient: string; types: string[] }> = {
   algebra: {
-    label: "الجبر",
-    color: "243 75% 58%",
+    label: "الجبر", icon: "𝑥", gradient: "from-indigo-500 to-purple-600",
     types: ["algebra", "equations", "advanced_algebra", "factor", "solve_equation", "systems"],
   },
   geometry: {
-    label: "الهندسة",
-    color: "158 64% 40%",
+    label: "الهندسة", icon: "△", gradient: "from-emerald-500 to-teal-600",
     types: ["geometry_construction", "triangle_circle", "parallelogram", "angles", "analytic_geometry", "solids", "transformations"],
   },
   analysis: {
-    label: "التحليل والدوال",
-    color: "340 80% 52%",
+    label: "التحليل والدوال", icon: "∫", gradient: "from-rose-500 to-pink-600",
     types: ["functions", "calculus", "trigonometry", "sequences"],
   },
   numbers: {
-    label: "الأعداد والحساب",
-    color: "200 70% 50%",
+    label: "الأعداد والحساب", icon: "∑", gradient: "from-sky-500 to-blue-600",
     types: ["arithmetic", "fractions", "proportionality", "number_sets"],
   },
   stats: {
-    label: "الإحصاء والاحتمالات",
-    color: "277 65% 52%",
+    label: "الإحصاء والاحتمالات", icon: "📊", gradient: "from-violet-500 to-purple-600",
     types: ["statistics", "probability"],
   },
   other: {
-    label: "أخرى",
-    color: "220 10% 55%",
+    label: "أخرى", icon: "…", gradient: "from-slate-400 to-slate-500",
     types: ["prove", "bac_prep", "unclassified", "other"],
   },
 };
@@ -85,21 +56,12 @@ export function KBNetworkGraph({ exercises, patterns, deconstructions }: Props) 
   const [selectedPattern, setSelectedPattern] = useState<Pattern | null>(null);
 
   const insights = useMemo(() => {
-    // Exercises by type
     const exByType: Record<string, number> = {};
-    exercises.forEach(e => {
-      const t = e.type || "unclassified";
-      exByType[t] = (exByType[t] || 0) + 1;
-    });
+    exercises.forEach(e => { const t = e.type || "unclassified"; exByType[t] = (exByType[t] || 0) + 1; });
 
-    // Patterns by type
     const patByType: Record<string, number> = {};
-    patterns.forEach(p => {
-      const t = p.type || "unclassified";
-      patByType[t] = (patByType[t] || 0) + 1;
-    });
+    patterns.forEach(p => { const t = p.type || "unclassified"; patByType[t] = (patByType[t] || 0) + 1; });
 
-    // Deconstructions per pattern
     const deconByPattern: Record<string, number> = {};
     const deconExIds = new Set<string>();
     deconstructions.forEach(d => {
@@ -107,14 +69,10 @@ export function KBNetworkGraph({ exercises, patterns, deconstructions }: Props) 
       deconExIds.add(d.exerciseId);
     });
 
-    // Coverage: exercises with at least one deconstruction
     const coveredExercises = exercises.filter(e => deconExIds.has(e.id)).length;
     const coverageRate = exercises.length > 0 ? Math.round((coveredExercises / exercises.length) * 100) : 0;
-
-    // Orphan patterns (0 deconstructions)
     const orphanPatterns = patterns.filter(p => !deconByPattern[p.id]);
 
-    // Super-domain stats
     const domainStats = Object.entries(SUPER_DOMAINS).map(([key, sd]) => {
       const exCount = sd.types.reduce((s, t) => s + (exByType[t] || 0), 0);
       const patCount = sd.types.reduce((s, t) => s + (patByType[t] || 0), 0);
@@ -125,408 +83,429 @@ export function KBNetworkGraph({ exercises, patterns, deconstructions }: Props) 
       return { key, ...sd, exCount, patCount, subTypes };
     }).filter(d => d.exCount > 0 || d.patCount > 0).sort((a, b) => b.exCount - a.exCount);
 
-    // Top patterns by usage
     const topPatterns = patterns
       .map(p => ({ ...p, usage: deconByPattern[p.id] || 0 }))
       .sort((a, b) => b.usage - a.usage)
-      .slice(0, 15);
+      .slice(0, 12);
 
-    // Grade distribution
     const byGrade: Record<string, number> = {};
-    exercises.forEach(e => {
-      const g = e.grade || "غير محدد";
-      byGrade[g] = (byGrade[g] || 0) + 1;
-    });
+    exercises.forEach(e => { const g = e.grade || "غير محدد"; byGrade[g] = (byGrade[g] || 0) + 1; });
 
-    // All concepts across patterns
     const conceptFreq: Record<string, number> = {};
-    patterns.forEach(p => {
-      (p.concepts || []).forEach(c => {
-        conceptFreq[c] = (conceptFreq[c] || 0) + 1;
-      });
-    });
-    const topConcepts = Object.entries(conceptFreq)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 20);
+    patterns.forEach(p => { (p.concepts || []).forEach(c => { conceptFreq[c] = (conceptFreq[c] || 0) + 1; }); });
+    const topConcepts = Object.entries(conceptFreq).sort((a, b) => b[1] - a[1]).slice(0, 20);
 
-    return {
-      exByType, patByType, deconByPattern,
-      coveredExercises, coverageRate, orphanPatterns,
-      domainStats, topPatterns, byGrade, topConcepts,
-    };
+    return { exByType, patByType, deconByPattern, coveredExercises, coverageRate, orphanPatterns, domainStats, topPatterns, byGrade, topConcepts };
   }, [exercises, patterns, deconstructions]);
 
   const views: { id: ViewMode; label: string; icon: string }[] = [
-    { id: "overview", label: "نظرة شاملة", icon: "📊" },
-    { id: "domains", label: "المجالات", icon: "🧩" },
-    { id: "patterns", label: "الأنماط", icon: "🔬" },
-    { id: "coverage", label: "التغطية", icon: "📡" },
+    { id: "overview", label: "نظرة شاملة", icon: "◉" },
+    { id: "domains", label: "المجالات", icon: "⬡" },
+    { id: "patterns", label: "الأنماط", icon: "◈" },
+    { id: "coverage", label: "التغطية", icon: "◎" },
   ];
 
   return (
-    <div className="space-y-5" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h3 className="text-base font-black text-foreground">🔍 رؤية تحليلية لقاعدة المعرفة</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {exercises.length} تمرين · {patterns.length} نمط · {deconstructions.length} تفكيك
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg p-1">
-          {views.map(v => (
-            <button key={v.id} onClick={() => setView(v.id)}
-              className="text-xs px-3 py-1.5 rounded-md font-bold transition-all"
-              style={{
-                background: view === v.id ? "hsl(var(--primary))" : "transparent",
-                color: view === v.id ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
-              }}>
-              {v.icon} {v.label}
-            </button>
-          ))}
+    <div className="space-y-6" dir="rtl">
+      {/* ── Header ── */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-l from-primary/8 via-accent/5 to-transparent border border-border p-6">
+        <div className="absolute top-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="relative flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h3 className="text-lg font-black text-foreground flex items-center gap-2">
+              <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-sm font-black">KB</span>
+              رؤية تحليلية لقاعدة المعرفة
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              {exercises.length} تمرين · {patterns.length} نمط · {deconstructions.length} تفكيك
+            </p>
+          </div>
+
+          {/* Pill nav */}
+          <div className="flex items-center gap-1 bg-card/80 backdrop-blur-sm rounded-xl p-1 border border-border shadow-sm">
+            {views.map(v => (
+              <button key={v.id} onClick={() => setView(v.id)}
+                className="relative text-xs px-4 py-2 rounded-lg font-bold transition-all duration-300"
+                style={{
+                  color: view === v.id ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
+                }}>
+                {view === v.id && (
+                  <motion.div layoutId="activeTab" className="absolute inset-0 bg-gradient-to-l from-primary to-primary/90 rounded-lg shadow-lg" 
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.5 }} />
+                )}
+                <span className="relative z-10">{v.icon} {v.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* KPI Cards — always visible */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard label="التمارين" value={exercises.length} icon="📝" color="200 70% 50%" />
-        <KPICard label="الأنماط" value={patterns.length} icon="🧬"
-          sub={`${insights.orphanPatterns.length} يتيم`}
-          subColor={insights.orphanPatterns.length > 5 ? "0 70% 55%" : undefined}
-          color="243 75% 58%" />
-        <KPICard label="التغطية" value={`${insights.coverageRate}%`} icon="📡"
-          sub={`${insights.coveredExercises} مفكك`}
-          color={insights.coverageRate > 60 ? "158 64% 40%" : "38 92% 50%"} />
-        <KPICard label="التفكيكات" value={deconstructions.length} icon="🔗" color="340 80% 52%" />
+      {/* ── KPI Row ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <GlassKPI label="التمارين" value={exercises.length} icon="📝" accent="primary" />
+        <GlassKPI label="الأنماط" value={patterns.length} icon="🧬" accent="accent"
+          badge={insights.orphanPatterns.length > 0 ? `${insights.orphanPatterns.length} يتيم` : undefined}
+          badgeType={insights.orphanPatterns.length > 5 ? "danger" : "warn"} />
+        <GlassKPI label="التغطية" value={`${insights.coverageRate}%`} icon="📡"
+          accent={insights.coverageRate > 60 ? "success" : "warn"}
+          badge={`${insights.coveredExercises} مفكك`} />
+        <GlassKPI label="التفكيكات" value={deconstructions.length} icon="🔗" accent="primary" />
       </div>
 
-      {/* View content */}
+      {/* ── View Content ── */}
       <AnimatePresence mode="wait">
         {view === "overview" && (
-          <motion.div key="overview" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Domain Treemap */}
-            <InsightCard title="📊 توزيع المجالات" subtitle="نسبة التمارين حسب المجال">
-              <div className="flex flex-wrap gap-1.5">
-                {insights.domainStats.map(d => {
+          <motion.div key="overview" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+            {/* Domain Blocks */}
+            <GlassCard title="توزيع المجالات" icon="📊">
+              <div className="grid grid-cols-2 gap-3">
+                {insights.domainStats.map((d, i) => {
                   const pct = exercises.length > 0 ? (d.exCount / exercises.length) * 100 : 0;
                   return (
                     <motion.div key={d.key}
-                      whileHover={{ scale: 1.03 }}
-                      onClick={() => { setExpandedDomain(expandedDomain === d.key ? null : d.key); setView("domains"); }}
-                      className="rounded-lg cursor-pointer p-3 flex flex-col justify-between transition-all"
-                      style={{
-                        background: `hsl(${d.color} / 0.12)`,
-                        border: `1px solid hsl(${d.color} / 0.25)`,
-                        width: `${Math.max(pct * 2.2, 18)}%`,
-                        minWidth: 90,
-                        minHeight: 72,
-                      }}>
-                      <div className="text-[10px] font-bold" style={{ color: `hsl(${d.color})` }}>{d.label}</div>
-                      <div>
-                        <div className="text-lg font-black text-foreground">{d.exCount}</div>
-                        <div className="text-[9px] text-muted-foreground">{d.patCount} نمط · {pct.toFixed(0)}%</div>
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.05 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      onClick={() => { setExpandedDomain(d.key); setView("domains"); }}
+                      className={`relative overflow-hidden rounded-xl p-4 cursor-pointer border border-white/10 bg-gradient-to-br ${d.gradient} text-white shadow-lg`}>
+                      <div className="absolute top-2 left-2 text-3xl opacity-20 font-black">{d.icon}</div>
+                      <div className="relative">
+                        <div className="text-[10px] font-bold opacity-80">{d.label}</div>
+                        <div className="text-2xl font-black mt-1">{d.exCount}</div>
+                        <div className="text-[9px] opacity-70 mt-0.5">{d.patCount} نمط · {pct.toFixed(0)}%</div>
                       </div>
                     </motion.div>
                   );
                 })}
               </div>
-            </InsightCard>
+            </GlassCard>
 
             {/* Top Patterns */}
-            <InsightCard title="🔬 أنماط الأكثر استخداماً" subtitle="مرتبة حسب عدد التفكيكات">
-              <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
+            <GlassCard title="الأنماط الأكثر استخداماً" icon="🔬">
+              <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                 {insights.topPatterns.map((p, i) => {
                   const maxUsage = insights.topPatterns[0]?.usage || 1;
+                  const widthPct = (p.usage / maxUsage) * 100;
                   return (
-                    <div key={p.id}
-                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-all cursor-pointer"
+                    <motion.div key={p.id}
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.03 }}
+                      className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-primary/5 transition-all cursor-pointer"
                       onClick={() => setSelectedPattern(selectedPattern?.id === p.id ? null : p)}>
-                      <span className="text-[10px] font-black text-muted-foreground w-5 text-center">{i + 1}</span>
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: `hsl(${getHSL(p.type)})` }} />
-                      <span className="text-xs font-semibold text-foreground flex-1 truncate">{p.name}</span>
-                      <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{
-                          width: `${(p.usage / maxUsage) * 100}%`,
-                          background: `hsl(${getHSL(p.type)})`,
-                        }} />
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black flex-shrink-0 ${
+                        i < 3 ? "bg-gradient-to-br from-accent to-accent/80 text-white shadow-md" : "bg-muted text-muted-foreground"
+                      }`}>
+                        {i + 1}
                       </div>
-                      <span className="text-[10px] font-bold text-muted-foreground w-6 text-left">{p.usage}</span>
-                    </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">{p.name}</div>
+                        <div className="h-1.5 bg-muted/50 rounded-full overflow-hidden mt-1">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${widthPct}%` }}
+                            transition={{ delay: 0.2 + i * 0.03, duration: 0.5 }}
+                            className="h-full rounded-full bg-gradient-to-l from-primary to-primary/60" />
+                        </div>
+                      </div>
+                      <span className="text-xs font-black text-primary/70 w-8 text-center">{p.usage}</span>
+                    </motion.div>
                   );
                 })}
               </div>
-            </InsightCard>
+            </GlassCard>
 
             {/* Grade Distribution */}
-            <InsightCard title="🎓 توزيع المستويات" subtitle="عدد التمارين حسب المستوى الدراسي">
-              <div className="flex items-end gap-2 h-[140px] px-2">
+            <GlassCard title="توزيع المستويات" icon="🎓">
+              <div className="flex items-end gap-2 h-[160px] px-1">
                 {Object.entries(insights.byGrade)
                   .sort((a, b) => b[1] - a[1])
-                  .slice(0, 12)
-                  .map(([grade, count]) => {
+                  .slice(0, 10)
+                  .map(([grade, count], i) => {
                     const max = Math.max(...Object.values(insights.byGrade));
                     const h = (count / max) * 100;
                     return (
-                      <div key={grade} className="flex flex-col items-center flex-1 gap-1">
-                        <span className="text-[9px] font-bold text-muted-foreground">{count}</span>
+                      <div key={grade} className="flex flex-col items-center flex-1 gap-1.5">
+                        <motion.span 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.3 + i * 0.05 }}
+                          className="text-[10px] font-black text-primary">{count}</motion.span>
                         <motion.div
                           initial={{ height: 0 }}
                           animate={{ height: `${h}%` }}
-                          transition={{ delay: 0.1, duration: 0.4 }}
-                          className="w-full rounded-t-md min-h-[4px]"
-                          style={{ background: `hsl(var(--primary) / ${0.4 + (h / 100) * 0.6})` }}
+                          transition={{ delay: 0.1 + i * 0.05, duration: 0.6, ease: "easeOut" }}
+                          className="w-full rounded-t-lg min-h-[6px] bg-gradient-to-t from-primary/40 via-primary/60 to-primary shadow-sm"
                         />
-                        <span className="text-[8px] text-muted-foreground font-bold truncate max-w-full">{grade}</span>
+                        <span className="text-[8px] text-muted-foreground font-bold truncate max-w-full text-center leading-tight">{grade}</span>
                       </div>
                     );
                   })}
               </div>
-            </InsightCard>
+            </GlassCard>
 
-            {/* Top Concepts */}
-            <InsightCard title="💡 المفاهيم الأساسية" subtitle="الأكثر تكراراً عبر الأنماط">
-              <div className="flex flex-wrap gap-1.5">
-                {insights.topConcepts.map(([concept, freq]) => {
+            {/* Concept Cloud */}
+            <GlassCard title="المفاهيم الأساسية" icon="💡">
+              <div className="flex flex-wrap gap-2">
+                {insights.topConcepts.map(([concept, freq], i) => {
                   const maxF = insights.topConcepts[0]?.[1] || 1;
                   const intensity = 0.3 + (freq / maxF) * 0.7;
+                  const size = 10 + Math.round(intensity * 3);
                   return (
-                    <span key={concept}
-                      className="text-[10px] px-2 py-1 rounded-md font-semibold"
+                    <motion.span key={concept}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.02 }}
+                      className="px-3 py-1.5 rounded-full font-bold border transition-all hover:scale-105 cursor-default"
                       style={{
-                        background: `hsl(var(--primary) / ${intensity * 0.15})`,
+                        fontSize: size,
+                        background: `hsl(var(--primary) / ${intensity * 0.12})`,
+                        borderColor: `hsl(var(--primary) / ${intensity * 0.25})`,
                         color: `hsl(var(--primary))`,
-                        opacity: 0.5 + intensity * 0.5,
-                        border: `1px solid hsl(var(--primary) / ${intensity * 0.2})`,
                       }}>
-                      {concept} <span className="text-muted-foreground">({freq})</span>
-                    </span>
+                      {concept} <span className="opacity-50">({freq})</span>
+                    </motion.span>
                   );
                 })}
               </div>
-            </InsightCard>
+            </GlassCard>
           </motion.div>
         )}
 
         {view === "domains" && (
-          <motion.div key="domains" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          <motion.div key="domains" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             className="space-y-3">
-            {insights.domainStats.map(d => (
-              <div key={d.key} className="rounded-xl border border-border bg-card overflow-hidden">
+            {insights.domainStats.map((d, i) => (
+              <motion.div key={d.key}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <div
-                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-all"
+                  className="flex items-center justify-between p-5 cursor-pointer hover:bg-muted/20 transition-all"
                   onClick={() => setExpandedDomain(expandedDomain === d.key ? null : d.key)}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg font-black"
-                      style={{ background: `hsl(${d.color} / 0.15)`, color: `hsl(${d.color})` }}>
-                      {d.exCount}
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-black text-white shadow-lg bg-gradient-to-br ${d.gradient}`}>
+                      {d.icon}
                     </div>
                     <div>
-                      <div className="text-sm font-bold text-foreground">{d.label}</div>
-                      <div className="text-[10px] text-muted-foreground">{d.patCount} نمط · {d.subTypes.length} نوع فرعي</div>
+                      <div className="text-sm font-black text-foreground">{d.label}</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">{d.patCount} نمط · {d.subTypes.length} نوع فرعي</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    {/* Mini bar */}
-                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{
-                        width: `${exercises.length > 0 ? (d.exCount / exercises.length) * 100 : 0}%`,
-                        background: `hsl(${d.color})`,
-                      }} />
+                    <div className="text-left">
+                      <div className="text-lg font-black text-foreground">{d.exCount}</div>
+                      <div className="text-[9px] text-muted-foreground">تمرين</div>
                     </div>
-                    <span className="text-xs font-bold text-muted-foreground">
-                      {exercises.length > 0 ? ((d.exCount / exercises.length) * 100).toFixed(0) : 0}%
-                    </span>
-                    <span className="text-muted-foreground">{expandedDomain === d.key ? "▲" : "▼"}</span>
+                    <div className="w-32 h-3 bg-muted rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${exercises.length > 0 ? (d.exCount / exercises.length) * 100 : 0}%` }}
+                        className={`h-full rounded-full bg-gradient-to-l ${d.gradient}`} />
+                    </div>
+                    <motion.span animate={{ rotate: expandedDomain === d.key ? 180 : 0 }}
+                      className="text-muted-foreground text-lg">▾</motion.span>
                   </div>
                 </div>
 
                 <AnimatePresence>
                   {expandedDomain === d.key && (
-                    <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
-                      <div className="px-4 pb-4 grid grid-cols-2 md:grid-cols-3 gap-2 border-t border-border pt-3">
-                        {d.subTypes.map(st => (
-                          <div key={st.type} className="rounded-lg p-3 border border-border bg-muted/20">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="w-2 h-2 rounded-full" style={{ background: `hsl(${getHSL(st.type)})` }} />
-                              <span className="text-xs font-bold text-foreground">{st.label}</span>
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                      <div className="px-5 pb-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 border-t border-border/50 pt-4">
+                        {d.subTypes.map((st, j) => (
+                          <motion.div key={st.type}
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: j * 0.03 }}
+                            className="rounded-xl p-4 border border-border/50 bg-muted/10 hover:bg-muted/30 transition-all">
+                            <div className="text-xs font-black text-foreground mb-2">{st.label}</div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-center">
+                                <div className="text-lg font-black text-primary">{st.exercises}</div>
+                                <div className="text-[8px] text-muted-foreground">تمرين</div>
+                              </div>
+                              <div className="w-px h-8 bg-border" />
+                              <div className="text-center">
+                                <div className="text-lg font-black text-accent">{st.patterns}</div>
+                                <div className="text-[8px] text-muted-foreground">نمط</div>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                              <span>{st.exercises} تمرين</span>
-                              <span>{st.patterns} نمط</span>
-                            </div>
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             ))}
           </motion.div>
         )}
 
         {view === "patterns" && (
-          <motion.div key="patterns" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Pattern list */}
+          <motion.div key="patterns" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <div className="lg:col-span-2">
-              <InsightCard title="🧬 جميع الأنماط" subtitle={`${patterns.length} نمط مرتب حسب الاستخدام`}>
-                <div className="space-y-1 max-h-[420px] overflow-y-auto pr-1">
+              <GlassCard title={`جميع الأنماط (${patterns.length})`} icon="🧬">
+                <div className="space-y-1.5 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar">
                   {patterns
                     .map(p => ({ ...p, usage: insights.deconByPattern[p.id] || 0 }))
                     .sort((a, b) => b.usage - a.usage)
-                    .map(p => (
-                      <div key={p.id}
-                        className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-all cursor-pointer"
-                        onClick={() => setSelectedPattern(selectedPattern?.id === p.id ? null : p)}
-                        style={{
-                          background: selectedPattern?.id === p.id ? `hsl(${getHSL(p.type)} / 0.08)` : undefined,
-                          border: selectedPattern?.id === p.id ? `1px solid hsl(${getHSL(p.type)} / 0.2)` : "1px solid transparent",
-                        }}>
-                        <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: `hsl(${getHSL(p.type)})` }} />
+                    .map((p, i) => (
+                      <motion.div key={p.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: i * 0.02 }}
+                        className={`flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border ${
+                          selectedPattern?.id === p.id 
+                            ? "border-primary/30 bg-primary/5 shadow-sm" 
+                            : "border-transparent hover:bg-muted/30"
+                        }`}
+                        onClick={() => setSelectedPattern(selectedPattern?.id === p.id ? null : p)}>
+                        <div className="w-3 h-3 rounded-full flex-shrink-0 bg-gradient-to-br from-primary to-accent" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs font-semibold text-foreground truncate">{p.name}</div>
+                          <div className="text-xs font-bold text-foreground truncate">{p.name}</div>
                           <div className="text-[9px] text-muted-foreground">{TYPE_LABELS_AR[p.type || ""] || p.type} · {p.steps.length} خطوات</div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {p.usage === 0 && (
-                            <span className="text-[8px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive font-bold">يتيم</span>
-                          )}
-                          <span className="text-[10px] font-bold text-muted-foreground">{p.usage} تفكيك</span>
-                        </div>
-                      </div>
+                        {p.usage === 0 && (
+                          <span className="text-[8px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-bold border border-destructive/20">يتيم</span>
+                        )}
+                        <span className="text-[10px] font-black text-muted-foreground">{p.usage}×</span>
+                      </motion.div>
                     ))}
                 </div>
-              </InsightCard>
+              </GlassCard>
             </div>
 
-            {/* Detail panel */}
-            <div>
+            <div className="space-y-4">
               {selectedPattern ? (
-                <InsightCard title={selectedPattern.name} subtitle={TYPE_LABELS_AR[selectedPattern.type || ""] || ""}>
-                  <div className="space-y-3">
+                <GlassCard title={selectedPattern.name} icon="◈">
+                  <div className="space-y-4">
                     <div>
-                      <div className="text-[10px] font-bold text-muted-foreground mb-1.5">الخطوات</div>
-                      <div className="space-y-1.5">
+                      <div className="text-[10px] font-black text-muted-foreground mb-2 uppercase tracking-wider">الخطوات</div>
+                      <div className="space-y-2">
                         {selectedPattern.steps.map((s, i) => (
-                          <div key={i} className="flex items-start gap-2 text-xs">
-                            <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">{i + 1}</span>
-                            <span className="text-foreground">{s}</span>
+                          <div key={i} className="flex items-start gap-2.5 text-xs">
+                            <span className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary/70 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5 shadow-sm">{i + 1}</span>
+                            <span className="text-foreground leading-relaxed">{s}</span>
                           </div>
                         ))}
                       </div>
                     </div>
-                    {selectedPattern.concepts && selectedPattern.concepts.length > 0 && (
+                    {selectedPattern.concepts?.length > 0 && (
                       <div>
-                        <div className="text-[10px] font-bold text-muted-foreground mb-1.5">المفاهيم</div>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="text-[10px] font-black text-muted-foreground mb-2 uppercase tracking-wider">المفاهيم</div>
+                        <div className="flex flex-wrap gap-1.5">
                           {selectedPattern.concepts.map(c => (
-                            <span key={c} className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">{c}</span>
+                            <span key={c} className="text-[9px] px-2.5 py-1 rounded-full bg-primary/8 text-primary font-bold border border-primary/15">{c}</span>
                           ))}
                         </div>
                       </div>
                     )}
                     {selectedPattern.description && (
                       <div>
-                        <div className="text-[10px] font-bold text-muted-foreground mb-1">الوصف</div>
-                        <p className="text-xs text-foreground/80">{selectedPattern.description}</p>
+                        <div className="text-[10px] font-black text-muted-foreground mb-1 uppercase tracking-wider">الوصف</div>
+                        <p className="text-xs text-foreground/80 leading-relaxed">{selectedPattern.description}</p>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground pt-2 border-t border-border">
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground pt-3 border-t border-border">
                       <span>🔗 {insights.deconByPattern[selectedPattern.id] || 0} تفكيك</span>
                       <span>📅 {new Date(selectedPattern.createdAt).toLocaleDateString("ar")}</span>
                     </div>
                   </div>
-                </InsightCard>
+                </GlassCard>
               ) : (
-                <div className="rounded-xl border border-dashed border-border bg-muted/20 flex items-center justify-center h-[200px] text-sm text-muted-foreground">
-                  اضغط على نمط لعرض تفاصيله
+                <div className="rounded-2xl border-2 border-dashed border-border/50 bg-muted/10 flex flex-col items-center justify-center h-[200px] text-center p-6">
+                  <div className="text-3xl mb-2 opacity-30">◈</div>
+                  <p className="text-sm text-muted-foreground">اضغط على نمط لعرض تفاصيله</p>
                 </div>
               )}
 
-              {/* Orphan alert */}
               {insights.orphanPatterns.length > 0 && (
-                <InsightCard title={`⚠️ أنماط بدون تفكيكات (${insights.orphanPatterns.length})`} subtitle="تحتاج ربطها بتمارين" className="mt-3">
-                  <div className="space-y-1 max-h-[150px] overflow-y-auto">
-                    {insights.orphanPatterns.slice(0, 10).map(p => (
-                      <div key={p.id} className="text-[10px] text-destructive/80 px-2 py-1 rounded bg-destructive/5">
+                <GlassCard title={`أنماط يتيمة (${insights.orphanPatterns.length})`} icon="⚠️">
+                  <div className="space-y-1.5 max-h-[160px] overflow-y-auto">
+                    {insights.orphanPatterns.slice(0, 8).map(p => (
+                      <div key={p.id} className="text-[10px] text-destructive/80 px-3 py-1.5 rounded-lg bg-destructive/5 border border-destructive/10">
                         {p.name}
                       </div>
                     ))}
-                    {insights.orphanPatterns.length > 10 && (
-                      <div className="text-[9px] text-muted-foreground text-center">+{insights.orphanPatterns.length - 10} آخرين</div>
+                    {insights.orphanPatterns.length > 8 && (
+                      <div className="text-[9px] text-muted-foreground text-center pt-1">+{insights.orphanPatterns.length - 8} آخرين</div>
                     )}
                   </div>
-                </InsightCard>
+                </GlassCard>
               )}
             </div>
           </motion.div>
         )}
 
         {view === "coverage" && (
-          <motion.div key="coverage" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Coverage heatmap by type */}
-            <InsightCard title="📡 تغطية التفكيك حسب النوع" subtitle="نسبة التمارين المفككة في كل نوع">
-              <div className="space-y-2">
+          <motion.div key="coverage" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+            {/* Coverage by type */}
+            <GlassCard title="تغطية التفكيك حسب النوع" icon="📡">
+              <div className="space-y-2.5">
                 {Object.entries(insights.exByType)
                   .sort((a, b) => b[1] - a[1])
                   .filter(([, count]) => count > 0)
-                  .map(([type, count]) => {
+                  .map(([type, count], i) => {
                     const deconCount = exercises.filter(e => e.type === type && deconstructions.some(d => d.exerciseId === e.id)).length;
                     const rate = count > 0 ? Math.round((deconCount / count) * 100) : 0;
+                    const barClass = rate > 60 ? "from-emerald-400 to-emerald-600" : rate > 30 ? "from-amber-400 to-amber-600" : "from-red-400 to-red-600";
                     return (
-                      <div key={type} className="flex items-center gap-3">
-                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: `hsl(${getHSL(type)})` }} />
-                        <span className="text-[10px] font-semibold text-foreground w-24 truncate">{TYPE_LABELS_AR[type] || type}</span>
-                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full rounded-full transition-all" style={{
-                            width: `${rate}%`,
-                            background: rate > 60 ? "hsl(158 64% 40%)" : rate > 30 ? "hsl(38 92% 50%)" : "hsl(0 70% 55%)",
-                          }} />
+                      <motion.div key={type}
+                        initial={{ opacity: 0, x: 8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                        className="flex items-center gap-3">
+                        <span className="text-[10px] font-bold text-foreground w-20 truncate text-right">{TYPE_LABELS_AR[type] || type}</span>
+                        <div className="flex-1 h-2.5 bg-muted/30 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${rate}%` }}
+                            transition={{ delay: 0.2 + i * 0.03, duration: 0.5 }}
+                            className={`h-full rounded-full bg-gradient-to-l ${barClass}`} />
                         </div>
-                        <span className="text-[10px] font-bold w-12 text-left" style={{
-                          color: rate > 60 ? "hsl(158 64% 40%)" : rate > 30 ? "hsl(38 92% 50%)" : "hsl(0 70% 55%)",
-                        }}>{rate}%</span>
-                        <span className="text-[9px] text-muted-foreground w-16 text-left">{deconCount}/{count}</span>
-                      </div>
+                        <span className={`text-[10px] font-black w-10 text-left ${rate > 60 ? "text-emerald-600" : rate > 30 ? "text-amber-600" : "text-red-500"}`}>{rate}%</span>
+                        <span className="text-[9px] text-muted-foreground w-12 text-left">{deconCount}/{count}</span>
+                      </motion.div>
                     );
                   })}
               </div>
-            </InsightCard>
+            </GlassCard>
 
-            {/* Health summary */}
-            <div className="space-y-4">
-              <InsightCard title="🩺 صحة القاعدة" subtitle="مؤشرات الجودة">
-                <div className="space-y-3">
-                  <HealthRow label="تغطية التفكيك" value={insights.coverageRate}
-                    good={60} warn={30} />
-                  <HealthRow label="أنماط مستخدمة" 
-                    value={patterns.length > 0 ? Math.round(((patterns.length - insights.orphanPatterns.length) / patterns.length) * 100) : 0}
-                    good={80} warn={50} />
-                  <HealthRow label="نسبة تفكيك/تمرين"
-                    value={exercises.length > 0 ? Math.round((deconstructions.length / exercises.length) * 100) : 0}
-                    good={50} warn={20} suffix="%" />
+            {/* Health + Recommendations */}
+            <div className="space-y-5">
+              <GlassCard title="صحة القاعدة" icon="🩺">
+                <div className="space-y-4">
+                  <HealthGauge label="تغطية التفكيك" value={insights.coverageRate} />
+                  <HealthGauge label="أنماط مستخدمة"
+                    value={patterns.length > 0 ? Math.round(((patterns.length - insights.orphanPatterns.length) / patterns.length) * 100) : 0} />
+                  <HealthGauge label="نسبة تفكيك/تمرين"
+                    value={exercises.length > 0 ? Math.min(Math.round((deconstructions.length / exercises.length) * 100), 100) : 0} />
                 </div>
-              </InsightCard>
+              </GlassCard>
 
-              <InsightCard title="🎯 توصيات" subtitle="خطوات لتحسين القاعدة">
-                <div className="space-y-2">
+              <GlassCard title="توصيات" icon="🎯">
+                <div className="space-y-2.5">
                   {insights.coverageRate < 50 && (
-                    <RecommendationRow icon="🔴" text={`التغطية منخفضة (${insights.coverageRate}%). أضف تفكيكات لـ ${exercises.length - insights.coveredExercises} تمرين.`} />
+                    <RecCard type="danger" text={`التغطية منخفضة (${insights.coverageRate}%). أضف تفكيكات لـ ${exercises.length - insights.coveredExercises} تمرين.`} />
                   )}
                   {insights.orphanPatterns.length > 3 && (
-                    <RecommendationRow icon="🟡" text={`${insights.orphanPatterns.length} نمط بدون تفكيكات. اربطها بتمارين أو احذفها.`} />
+                    <RecCard type="warn" text={`${insights.orphanPatterns.length} نمط بدون تفكيكات. اربطها بتمارين أو احذفها.`} />
                   )}
                   {insights.domainStats.some(d => d.exCount < 20) && (
-                    <RecommendationRow icon="🟡" text="بعض المجالات ضعيفة التغطية. أضف تمارين لتحقيق توازن." />
+                    <RecCard type="warn" text="بعض المجالات ضعيفة التغطية. أضف تمارين لتحقيق توازن." />
                   )}
                   {insights.coverageRate >= 50 && insights.orphanPatterns.length <= 3 && (
-                    <RecommendationRow icon="🟢" text="القاعدة في حالة جيدة. استمر في إضافة تمارين متنوعة." />
+                    <RecCard type="success" text="القاعدة في حالة جيدة. استمر في إضافة تمارين متنوعة." />
                   )}
                 </div>
-              </InsightCard>
+              </GlassCard>
             </div>
           </motion.div>
         )}
@@ -535,62 +514,90 @@ export function KBNetworkGraph({ exercises, patterns, deconstructions }: Props) 
   );
 }
 
-// ── Sub-components ──────────────────────────────────────────────
+// ── Sub-components ──────────────────────────────────────────
 
-function KPICard({ label, value, icon, color, sub, subColor }: {
-  label: string; value: string | number; icon: string; color: string; sub?: string; subColor?: string;
+function GlassKPI({ label, value, icon, accent, badge, badgeType }: {
+  label: string; value: string | number; icon: string; accent: string;
+  badge?: string; badgeType?: "danger" | "warn";
 }) {
+  const accentMap: Record<string, string> = {
+    primary: "from-primary/15 to-primary/5 border-primary/20",
+    accent: "from-accent/15 to-accent/5 border-accent/20",
+    success: "from-emerald-500/15 to-emerald-500/5 border-emerald-500/20",
+    warn: "from-amber-500/15 to-amber-500/5 border-amber-500/20",
+  };
+  const textMap: Record<string, string> = {
+    primary: "text-primary", accent: "text-accent",
+    success: "text-emerald-600", warn: "text-amber-600",
+  };
+
   return (
-    <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
-      <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg"
-        style={{ background: `hsl(${color} / 0.12)` }}>
-        {icon}
+    <motion.div
+      whileHover={{ y: -2, scale: 1.01 }}
+      className={`rounded-2xl border bg-gradient-to-br ${accentMap[accent] || accentMap.primary} p-5 relative overflow-hidden`}>
+      <div className="absolute top-3 left-3 text-2xl opacity-20">{icon}</div>
+      <div className="relative">
+        <div className={`text-3xl font-black ${textMap[accent] || textMap.primary}`}>{value}</div>
+        <div className="text-[11px] font-bold text-foreground mt-1">{label}</div>
+        {badge && (
+          <div className={`text-[9px] font-bold mt-1.5 ${
+            badgeType === "danger" ? "text-destructive" : "text-muted-foreground"
+          }`}>{badge}</div>
+        )}
       </div>
-      <div>
-        <div className="text-xl font-black text-foreground">{value}</div>
-        <div className="text-[10px] text-muted-foreground font-semibold">{label}</div>
-        {sub && <div className="text-[9px] font-bold mt-0.5" style={{ color: subColor ? `hsl(${subColor})` : "hsl(var(--muted-foreground))" }}>{sub}</div>}
-      </div>
-    </div>
+    </motion.div>
   );
 }
 
-function InsightCard({ title, subtitle, children, className = "" }: {
-  title: string; subtitle?: string; children: React.ReactNode; className?: string;
+function GlassCard({ title, icon, children }: {
+  title: string; icon: string; children: React.ReactNode;
 }) {
   return (
-    <div className={`rounded-xl border border-border bg-card p-4 ${className}`}>
-      <div className="mb-3">
-        <div className="text-sm font-bold text-foreground">{title}</div>
-        {subtitle && <div className="text-[10px] text-muted-foreground">{subtitle}</div>}
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-base">{icon}</span>
+        <h4 className="text-sm font-black text-foreground">{title}</h4>
       </div>
       {children}
     </div>
   );
 }
 
-function HealthRow({ label, value, good, warn, suffix = "%" }: {
-  label: string; value: number; good: number; warn: number; suffix?: string;
-}) {
-  const color = value >= good ? "158 64% 40%" : value >= warn ? "38 92% 50%" : "0 70% 55%";
-  const emoji = value >= good ? "✅" : value >= warn ? "⚠️" : "🔴";
+function HealthGauge({ label, value }: { label: string; value: number }) {
+  const color = value >= 70 ? "emerald" : value >= 40 ? "amber" : "red";
+  const gradientClass = value >= 70 ? "from-emerald-400 to-emerald-600" : value >= 40 ? "from-amber-400 to-amber-600" : "from-red-400 to-red-600";
+  const textClass = value >= 70 ? "text-emerald-600" : value >= 40 ? "text-amber-600" : "text-red-500";
+  const emoji = value >= 70 ? "✅" : value >= 40 ? "⚠️" : "🔴";
+
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs">{emoji}</span>
-      <span className="text-xs text-foreground font-semibold flex-1">{label}</span>
-      <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${Math.min(value, 100)}%`, background: `hsl(${color})` }} />
+      <span className="text-sm">{emoji}</span>
+      <span className="text-xs text-foreground font-bold flex-1">{label}</span>
+      <div className="w-28 h-2.5 bg-muted/30 rounded-full overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.min(value, 100)}%` }}
+          transition={{ duration: 0.8 }}
+          className={`h-full rounded-full bg-gradient-to-l ${gradientClass}`} />
       </div>
-      <span className="text-xs font-bold w-10 text-left" style={{ color: `hsl(${color})` }}>{value}{suffix}</span>
+      <span className={`text-xs font-black w-10 text-left ${textClass}`}>{value}%</span>
     </div>
   );
 }
 
-function RecommendationRow({ icon, text }: { icon: string; text: string }) {
+function RecCard({ type, text }: { type: "danger" | "warn" | "success"; text: string }) {
+  const styles = {
+    danger: { bg: "bg-red-50 dark:bg-red-950/20", border: "border-red-200 dark:border-red-900/30", icon: "🔴", text: "text-red-700 dark:text-red-300" },
+    warn: { bg: "bg-amber-50 dark:bg-amber-950/20", border: "border-amber-200 dark:border-amber-900/30", icon: "🟡", text: "text-amber-700 dark:text-amber-300" },
+    success: { bg: "bg-emerald-50 dark:bg-emerald-950/20", border: "border-emerald-200 dark:border-emerald-900/30", icon: "🟢", text: "text-emerald-700 dark:text-emerald-300" },
+  }[type];
+
   return (
-    <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/30 text-xs text-foreground">
-      <span>{icon}</span>
-      <span>{text}</span>
+    <div className={`p-3 rounded-xl border ${styles.bg} ${styles.border}`}>
+      <div className="flex items-start gap-2">
+        <span className="text-sm flex-shrink-0">{styles.icon}</span>
+        <span className={`text-xs leading-relaxed ${styles.text}`}>{text}</span>
+      </div>
     </div>
   );
 }
