@@ -1,3 +1,5 @@
+import { callGemini, GeminiError, extractJSON } from "../_shared/gemini.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -9,8 +11,6 @@ Deno.serve(async (req) => {
 
   try {
     const { level, purpose, count = 5, seed = Math.random() } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const prompt = `أنت خبير بيداغوجي في الرياضيات (المنهاج الجزائري). 
 المهمة: توليد "تقييم تشخيصي عادل" (Fair Diagnostic) للمستوى ${level}.
@@ -43,49 +43,25 @@ Deno.serve(async (req) => {
   ]
 }`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "أنت خبير في بناء التقييمات التشخيصية العادلة. أجب دائماً بـ JSON صالح فقط." },
-          { role: "user", content: prompt },
-        ],
+    const response = await callGemini(
+      [{ role: "user", parts: [{ text: prompt }] }],
+      {
+        systemInstruction: "أنت خبير في بناء التقييمات التشخيصية العادلة. أجب دائماً بـ JSON صالح فقط.",
         temperature: 0.8,
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول لاحقاً." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
       }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "يرجى إضافة رصيد للاستمرار." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errText = await aiResponse.text();
-      throw new Error(`AI gateway error: ${errText}`);
-    }
+    );
 
-    const aiData = await aiResponse.json();
-    const aiText = aiData?.choices?.[0]?.message?.content;
-    if (!aiText) throw new Error("Empty AI response");
+    const parsed = extractJSON(response.text);
 
-    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Could not parse AI response");
-
-    return new Response(jsonMatch[0], {
+    return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (err) {
+    if (err instanceof GeminiError) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: err.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

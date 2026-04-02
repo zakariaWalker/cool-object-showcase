@@ -1,3 +1,5 @@
+import { callGemini, GeminiError, extractJSON } from "../_shared/gemini.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -9,8 +11,6 @@ Deno.serve(async (req) => {
 
   try {
     const { questions, answers } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const prompt = `أنت مصحح امتحانات رياضيات جزائري خبير. لديك أسئلة امتحان وإجابات طالب.
 
@@ -34,52 +34,25 @@ ${answers.map((a: any) => `السؤال ${questions.findIndex((q: any) => q.id =
 أعد النتيجة كـ JSON فقط:
 { "corrections": [{ "questionId": "...", "score": N, "maxScore": N, "feedback": "...", "gaps": [...], "strengths": [...] }] }`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "أنت مصحح امتحانات رياضيات بيداغوجي. أجب دائماً بـ JSON صالح فقط." },
-          { role: "user", content: prompt },
-        ],
+    const response = await callGemini(
+      [{ role: "user", parts: [{ text: prompt }] }],
+      {
+        systemInstruction: "أنت مصحح امتحانات رياضيات بيداغوجي. أجب دائماً بـ JSON صالح فقط.",
         temperature: 0.1,
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
       }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "Credits exhausted" }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errText = await aiResponse.text();
-      throw new Error(`AI error ${aiResponse.status}: ${errText}`);
-    }
+    );
 
-    const aiData = await aiResponse.json();
-    const aiText = aiData?.choices?.[0]?.message?.content;
-    if (!aiText) throw new Error("Empty AI response");
-
-    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Could not parse AI JSON");
-
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = extractJSON(response.text);
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    if (err instanceof GeminiError) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: err.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     console.error("Correction error:", err);
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,

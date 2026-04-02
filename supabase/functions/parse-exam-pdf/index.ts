@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { callGemini, GeminiError, extractJSON } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,8 +33,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "No auth" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -42,36 +42,26 @@ Deno.serve(async (req) => {
     const anonClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
-    const {
-      data: { user },
-      error: userError,
-    } = await anonClient.auth.getUser();
+    const { data: { user }, error: userError } = await anonClient.auth.getUser();
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const { upload_id } = await req.json();
     if (!upload_id) {
       return new Response(JSON.stringify({ error: "Missing upload_id" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const { data: upload, error: uploadErr } = await supabase
-      .from("exam_uploads")
-      .select("*")
-      .eq("id", upload_id)
-      .eq("user_id", user.id)
-      .single();
+      .from("exam_uploads").select("*").eq("id", upload_id).eq("user_id", user.id).single();
 
     if (uploadErr || !upload) {
       return new Response(JSON.stringify({ error: "Upload not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -80,25 +70,10 @@ Deno.serve(async (req) => {
     const { data: fileData, error: dlErr } = await supabase.storage.from("exam-pdfs").download(upload.file_path);
 
     if (dlErr || !fileData) {
-      await supabase
-        .from("exam_uploads")
-        .update({ status: "failed", error_message: "Failed to download file" })
-        .eq("id", upload_id);
+      await supabase.from("exam_uploads")
+        .update({ status: "failed", error_message: "Failed to download file" }).eq("id", upload_id);
       return new Response(JSON.stringify({ error: "File download failed" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      await supabase
-        .from("exam_uploads")
-        .update({ status: "failed", error_message: "LOVABLE_API_KEY not set" })
-        .eq("id", upload_id);
-      return new Response(JSON.stringify({ error: "AI key not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -148,130 +123,61 @@ Deno.serve(async (req) => {
   "questions": []
 }`;
 
-    // Use Lovable AI Gateway with vision (Gemini supports PDF as base64 image)
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:application/pdf;base64,${base64}`,
-                },
-              },
-              {
-                type: "text",
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        temperature: 0.1,
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const errText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errText);
-      
-      if (aiResponse.status === 429) {
-        await supabase.from("exam_uploads").update({ status: "failed", error_message: "Rate limit exceeded" }).eq("id", upload_id);
-        return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول لاحقاً." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (aiResponse.status === 402) {
-        await supabase.from("exam_uploads").update({ status: "failed", error_message: "Credits exhausted" }).eq("id", upload_id);
-        return new Response(JSON.stringify({ error: "يرجى إضافة رصيد." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      await supabase
-        .from("exam_uploads")
-        .update({ status: "failed", error_message: `AI error: ${aiResponse.status} — ${errText.slice(0, 200)}` })
-        .eq("id", upload_id);
-      return new Response(JSON.stringify({ error: "AI analysis failed" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const aiData = await aiResponse.json();
-    const rawText = aiData?.choices?.[0]?.message?.content;
-
-    if (!rawText) {
-      await supabase
-        .from("exam_uploads")
-        .update({ status: "failed", error_message: "Empty or invalid AI response" })
-        .eq("id", upload_id);
-      return new Response(JSON.stringify({ error: "Parse failed" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Strip possible markdown code fences before parsing
-    const cleanText = rawText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    let parsed: any = null;
+    let response;
     try {
-      parsed = JSON.parse(cleanText);
-    } catch (parseErr) {
-      // Try extracting JSON from the text
-      const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          parsed = JSON.parse(jsonMatch[0]);
-        } catch {
-          console.error("JSON parse error:", parseErr, "Raw:", cleanText.slice(0, 500));
-          await supabase
-            .from("exam_uploads")
-            .update({ status: "failed", error_message: "Failed to parse AI JSON response" })
-            .eq("id", upload_id);
-          return new Response(JSON.stringify({ error: "JSON parse failed" }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-      } else {
-        await supabase
-          .from("exam_uploads")
-          .update({ status: "failed", error_message: "Failed to parse AI JSON response" })
-          .eq("id", upload_id);
-        return new Response(JSON.stringify({ error: "JSON parse failed" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+      response = await callGemini(
+        [{
+          role: "user",
+          parts: [
+            { inlineData: { mimeType: "application/pdf", data: base64 } },
+            { text: prompt },
+          ],
+        }],
+        { temperature: 0.1 }
+      );
+    } catch (err) {
+      const msg = err instanceof GeminiError ? err.message : (err as Error).message;
+      await supabase.from("exam_uploads")
+        .update({ status: "failed", error_message: msg }).eq("id", upload_id);
+      
+      if (err instanceof GeminiError) {
+        return new Response(JSON.stringify({ error: msg }), {
+          status: err.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      throw err;
+    }
+
+    if (!response.text) {
+      await supabase.from("exam_uploads")
+        .update({ status: "failed", error_message: "Empty AI response" }).eq("id", upload_id);
+      return new Response(JSON.stringify({ error: "Parse failed" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let parsed: any;
+    try {
+      parsed = extractJSON(response.text);
+    } catch {
+      await supabase.from("exam_uploads")
+        .update({ status: "failed", error_message: "Failed to parse AI JSON response" }).eq("id", upload_id);
+      return new Response(JSON.stringify({ error: "JSON parse failed" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const questions: ExtractedQuestion[] = parsed.questions || [];
 
-    await supabase
-      .from("exam_uploads")
-      .update({
-        format: parsed.format || upload.format,
-        year: parsed.year || upload.year,
-        session: parsed.session || upload.session,
-        grade: parsed.grade || upload.grade,
-        extracted_metadata: parsed.style_metadata || {},
-        extracted_patterns: parsed.structural_patterns || {},
-        status: "completed",
-      })
-      .eq("id", upload_id);
+    await supabase.from("exam_uploads").update({
+      format: parsed.format || upload.format,
+      year: parsed.year || upload.year,
+      session: parsed.session || upload.session,
+      grade: parsed.grade || upload.grade,
+      extracted_metadata: parsed.style_metadata || {},
+      extracted_patterns: parsed.structural_patterns || {},
+      status: "completed",
+    }).eq("id", upload_id);
 
     if (questions.length > 0) {
       const questionsToInsert = questions.map((q, i) => ({
@@ -296,18 +202,14 @@ Deno.serve(async (req) => {
 
       await supabase.from("exam_extracted_questions").insert(questionsToInsert);
 
-      const { data: kbEntry } = await supabase
-        .from("exam_kb_entries")
-        .insert({
-          user_id: user.id,
-          year: parsed.year || "",
-          session: parsed.session || "juin",
-          format: parsed.format || "unknown",
-          grade: parsed.grade || "",
-          stream: null,
-        })
-        .select("id")
-        .single();
+      const { data: kbEntry } = await supabase.from("exam_kb_entries").insert({
+        user_id: user.id,
+        year: parsed.year || "",
+        session: parsed.session || "juin",
+        format: parsed.format || "unknown",
+        grade: parsed.grade || "",
+        stream: null,
+      }).select("id").single();
 
       if (kbEntry) {
         const kbQuestions = questions.map((q, i) => ({
@@ -363,20 +265,17 @@ Deno.serve(async (req) => {
       },
     });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        upload_id,
-        questions_count: questions.length,
-        format: parsed.format,
-        year: parsed.year,
-        grade: parsed.grade,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({
+      success: true,
+      upload_id,
+      questions_count: questions.length,
+      format: parsed.format,
+      year: parsed.year,
+      grade: parsed.grade,
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err) {
     console.error("Parse exam error:", err);
     return new Response(JSON.stringify({ error: (err as Error).message }), {

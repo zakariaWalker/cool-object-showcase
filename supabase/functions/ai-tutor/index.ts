@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0";
+import { callGemini, GeminiError } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,8 +12,6 @@ serve(async (req) => {
 
   try {
     const { exerciseId, studentLevel, mode } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -69,50 +68,28 @@ ${modePrompt}
 - في النهاية اذكر الأخطاء الشائعة إن وجدت
 - اجعل الشرح مناسباً لتلميذ جزائري`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "أنت مدرّس رياضيات خبير متخصص في المنهاج الجزائري. تشرح بالعربية بوضوح وبساطة." },
-          { role: "user", content: prompt },
-        ],
+    const response = await callGemini(
+      [{ role: "user", parts: [{ text: prompt }] }],
+      {
+        systemInstruction: "أنت مدرّس رياضيات خبير متخصص في المنهاج الجزائري. تشرح بالعربية بوضوح وبساطة.",
         temperature: 0.2,
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول مرة أخرى لاحقاً." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "يرجى إضافة رصيد للاستمرار في استخدام AI." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const text = await response.text();
-      console.error("AI gateway error:", response.status, text);
-      throw new Error(`AI gateway error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const explanation = data?.choices?.[0]?.message?.content || "";
+    );
 
     return new Response(JSON.stringify({ 
       success: true, 
-      explanation,
+      explanation: response.text,
       exercise: { id: exercise.id, text: exercise.text, grade: exercise.grade, type: exercise.type },
       pattern: patternInfo ? deconstructions?.[0] : null,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    if (e instanceof GeminiError) {
+      return new Response(JSON.stringify({ error: e.message }), {
+        status: e.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     console.error("ai-tutor error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "خطأ غير متوقع" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },

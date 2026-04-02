@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0";
+import { callGemini, GeminiError } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,8 +12,6 @@ serve(async (req) => {
 
   try {
     const { patterns } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -41,86 +40,68 @@ ${batch.map((p: any) => `ID: ${p.id}
 المفاهيم: ${(p.concepts || []).join(", ") || "غير متوفرة"}
 ---`).join("\n")}`;
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: "أنت مساعد تعليمي متخصص في تنظيم أنماط حل التمارين الرياضية. أجب باستخدام الأدوات المتاحة فقط." },
-            { role: "user", content: prompt },
-          ],
-          tools: [{
-            type: "function",
-            function: {
-              name: "submit_improved_patterns",
-              description: "Submit improved pattern names and descriptions",
-              parameters: {
-                type: "object",
-                properties: {
-                  patterns: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        id: { type: "string" },
-                        name: { type: "string" },
-                        description: { type: "string" },
-                        steps: { type: "array", items: { type: "string" } },
-                        concepts: { type: "array", items: { type: "string" } },
+      try {
+        const response = await callGemini(
+          [{ role: "user", parts: [{ text: prompt }] }],
+          {
+            systemInstruction: "أنت مساعد تعليمي متخصص في تنظيم أنماط حل التمارين الرياضية. أجب باستخدام الأدوات المتاحة فقط.",
+            temperature: 0.2,
+            tools: [{
+              functionDeclarations: [{
+                name: "submit_improved_patterns",
+                description: "Submit improved pattern names and descriptions",
+                parameters: {
+                  type: "OBJECT",
+                  properties: {
+                    patterns: {
+                      type: "ARRAY",
+                      items: {
+                        type: "OBJECT",
+                        properties: {
+                          id: { type: "STRING" },
+                          name: { type: "STRING" },
+                          description: { type: "STRING" },
+                          steps: { type: "ARRAY", items: { type: "STRING" } },
+                          concepts: { type: "ARRAY", items: { type: "STRING" } },
+                        },
+                        required: ["id", "name", "description", "steps", "concepts"],
                       },
-                      required: ["id", "name", "description", "steps", "concepts"],
                     },
                   },
+                  required: ["patterns"],
                 },
-                required: ["patterns"],
-                additionalProperties: false,
-              },
-            },
-          }],
-          tool_choice: { type: "function", function: { name: "submit_improved_patterns" } },
-        }),
-      });
+              }],
+            }],
+            toolConfig: { functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["submit_improved_patterns"] } },
+          }
+        );
 
-      if (!response.ok) {
-        if (response.status === 429) {
+        if (!response.toolCalls || response.toolCalls.length === 0) continue;
+        const parsed = response.toolCalls[0].args;
+
+        for (const p of (parsed.patterns || [])) {
+          const { error } = await db.from("kb_patterns").update({
+            name: p.name,
+            description: p.description,
+            steps: p.steps,
+            concepts: p.concepts,
+          }).eq("id", p.id);
+
+          if (!error) improved++;
+        }
+      } catch (err) {
+        if (err instanceof GeminiError && err.code === "RATE_LIMIT") {
           await new Promise(r => setTimeout(r, 5000));
           i -= BATCH;
           continue;
         }
-        if (response.status === 402) {
-          return new Response(JSON.stringify({ error: "رصيد AI غير كافٍ", improved }), {
+        if (err instanceof GeminiError && err.code === "QUOTA") {
+          return new Response(JSON.stringify({ error: "رصيد API غير كافٍ", improved }), {
             status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        const errText = await response.text();
-        console.error("AI error:", response.status, errText);
+        console.error("Batch error:", err);
         continue;
-      }
-
-      const data = await response.json();
-      const toolCall = data?.choices?.[0]?.message?.tool_calls?.[0];
-      if (!toolCall) continue;
-
-      let parsed: any;
-      try {
-        parsed = JSON.parse(toolCall.function.arguments);
-      } catch {
-        continue;
-      }
-
-      for (const p of (parsed.patterns || [])) {
-        const { error } = await db.from("kb_patterns").update({
-          name: p.name,
-          description: p.description,
-          steps: p.steps,
-          concepts: p.concepts,
-        }).eq("id", p.id);
-
-        if (!error) improved++;
       }
 
       if (i + BATCH < patterns.length) {
