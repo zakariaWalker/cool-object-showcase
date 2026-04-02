@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0";
+import { callGemini, GeminiError } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,8 +12,6 @@ serve(async (req) => {
 
   try {
     const { exercises, patterns, batchSize = 5 } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -44,119 +43,100 @@ ${e.text}`).join("\n\n")}
 4. notes: ملاحظة قصيرة عن صعوبة أو خصوصية التمرين
 5. new_pattern: إذا اقترحت نمطاً جديداً، أعطني: name, type, description, steps, concepts`;
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: "أنت مساعد تعليمي متخصص في تحليل التمارين الرياضية. أجب دائماً باستخدام الأدوات المتاحة." },
-            { role: "user", content: prompt },
-          ],
-          tools: [{
-            type: "function",
-            function: {
-              name: "submit_deconstructions",
-              description: "Submit exercise deconstructions",
-              parameters: {
-                type: "object",
-                properties: {
-                  deconstructions: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        exercise_id: { type: "string" },
-                        pattern_id: { type: "string" },
-                        steps: { type: "array", items: { type: "string" } },
-                        needs: { type: "array", items: { type: "string" } },
-                        notes: { type: "string" },
-                        new_pattern: {
-                          type: "object",
-                          properties: {
-                            name: { type: "string" },
-                            type: { type: "string" },
-                            description: { type: "string" },
-                            steps: { type: "array", items: { type: "string" } },
-                            concepts: { type: "array", items: { type: "string" } },
+      try {
+        const response = await callGemini(
+          [{ role: "user", parts: [{ text: prompt }] }],
+          {
+            systemInstruction: "أنت مساعد تعليمي متخصص في تحليل التمارين الرياضية. أجب دائماً باستخدام الأدوات المتاحة.",
+            temperature: 0.2,
+            tools: [{
+              functionDeclarations: [{
+                name: "submit_deconstructions",
+                description: "Submit exercise deconstructions",
+                parameters: {
+                  type: "OBJECT",
+                  properties: {
+                    deconstructions: {
+                      type: "ARRAY",
+                      items: {
+                        type: "OBJECT",
+                        properties: {
+                          exercise_id: { type: "STRING" },
+                          pattern_id: { type: "STRING" },
+                          steps: { type: "ARRAY", items: { type: "STRING" } },
+                          needs: { type: "ARRAY", items: { type: "STRING" } },
+                          notes: { type: "STRING" },
+                          new_pattern: {
+                            type: "OBJECT",
+                            properties: {
+                              name: { type: "STRING" },
+                              type: { type: "STRING" },
+                              description: { type: "STRING" },
+                              steps: { type: "ARRAY", items: { type: "STRING" } },
+                              concepts: { type: "ARRAY", items: { type: "STRING" } },
+                            },
                           },
                         },
+                        required: ["exercise_id", "pattern_id", "steps", "needs", "notes"],
                       },
-                      required: ["exercise_id", "pattern_id", "steps", "needs", "notes"],
                     },
                   },
+                  required: ["deconstructions"],
                 },
-                required: ["deconstructions"],
-                additionalProperties: false,
-              },
-            },
-          }],
-          tool_choice: { type: "function", function: { name: "submit_deconstructions" } },
-        }),
-      });
+              }],
+            }],
+            toolConfig: { functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["submit_deconstructions"] } },
+          }
+        );
 
-      if (!response.ok) {
-        const status = response.status;
-        const text = await response.text();
-        console.error(`AI error ${status}:`, text);
-        if (status === 429) {
+        if (!response.toolCalls || response.toolCalls.length === 0) continue;
+
+        const parsed = response.toolCalls[0].args;
+        const deconstructions = parsed.deconstructions || [];
+
+        for (const d of deconstructions) {
+          if (d.new_pattern && d.new_pattern.name) {
+            const newPatId = crypto.randomUUID();
+            await db.from("kb_patterns").upsert({
+              id: newPatId,
+              name: d.new_pattern.name,
+              type: d.new_pattern.type || "",
+              description: d.new_pattern.description || "",
+              steps: d.new_pattern.steps || [],
+              concepts: d.new_pattern.concepts || [],
+            });
+            d.pattern_id = newPatId;
+          }
+
+          const { error: deconErr } = await db.from("kb_deconstructions").insert({
+            exercise_id: d.exercise_id,
+            pattern_id: d.pattern_id,
+            steps: d.steps || [],
+            needs: d.needs || [],
+            notes: d.notes || "",
+            ai_generated: true,
+          });
+
+          if (!deconErr) {
+            results.push({ exerciseId: d.exercise_id, patternId: d.pattern_id, success: true });
+          } else {
+            console.error("Insert error:", deconErr);
+            results.push({ exerciseId: d.exercise_id, success: false, error: deconErr.message });
+          }
+        }
+      } catch (err) {
+        if (err instanceof GeminiError && err.code === "RATE_LIMIT") {
           await new Promise(r => setTimeout(r, 5000));
           i -= batchSize;
           continue;
         }
-        if (status === 402) {
-          return new Response(JSON.stringify({ error: "رصيد AI غير كافٍ. يرجى شحن الرصيد.", results }), {
+        if (err instanceof GeminiError && err.code === "QUOTA") {
+          return new Response(JSON.stringify({ error: err.message, results }), {
             status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
+        console.error("Batch error:", err);
         continue;
-      }
-
-      const data = await response.json();
-      const toolCall = data?.choices?.[0]?.message?.tool_calls?.[0];
-      if (!toolCall) continue;
-
-      let parsed: any;
-      try {
-        parsed = JSON.parse(toolCall.function.arguments);
-      } catch {
-        continue;
-      }
-
-      const deconstructions = parsed.deconstructions || [];
-
-      for (const d of deconstructions) {
-        if (d.new_pattern && d.new_pattern.name) {
-          const newPatId = crypto.randomUUID();
-          await db.from("kb_patterns").upsert({
-            id: newPatId,
-            name: d.new_pattern.name,
-            type: d.new_pattern.type || "",
-            description: d.new_pattern.description || "",
-            steps: d.new_pattern.steps || [],
-            concepts: d.new_pattern.concepts || [],
-          });
-          d.pattern_id = newPatId;
-        }
-
-        const { error: deconErr } = await db.from("kb_deconstructions").insert({
-          exercise_id: d.exercise_id,
-          pattern_id: d.pattern_id,
-          steps: d.steps || [],
-          needs: d.needs || [],
-          notes: d.notes || "",
-          ai_generated: true,
-        });
-
-        if (!deconErr) {
-          results.push({ exerciseId: d.exercise_id, patternId: d.pattern_id, success: true });
-        } else {
-          console.error("Insert error:", deconErr);
-          results.push({ exerciseId: d.exercise_id, success: false, error: deconErr.message });
-        }
       }
 
       if (i + batchSize < exercises.length) {
