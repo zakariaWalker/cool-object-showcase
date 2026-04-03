@@ -266,22 +266,16 @@ function GraphNodeMesh({ node, position, isHovered, onClick, onHover }: {
 
 // ─── 3D Edge Component ──────────────────────────────────────────────────────
 function GraphEdgeLine({ start, end, type }: { start: [number, number, number]; end: [number, number, number]; type: string }) {
-  const ref = useRef<THREE.Line>(null);
-  
-  const geometry = useMemo(() => {
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute([...start, ...end], 3));
-    return g;
-  }, [start, end]);
+  const lineObj = useMemo(() => {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute([...start, ...end], 3));
+    const color = type === "exercise_pattern" ? "#a78bfa" : type === "same_type" ? "#374151" : "#4b5563";
+    const opacity = type === "exercise_pattern" ? 0.6 : 0.2;
+    const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+    return new THREE.Line(geometry, material);
+  }, [start, end, type]);
 
-  const color = type === "exercise_pattern" ? "#a78bfa" : type === "same_type" ? "#374151" : "#4b5563";
-  const opacity = type === "exercise_pattern" ? 0.6 : 0.2;
-
-  return (
-    <line ref={ref as any} geometry={geometry}>
-      <lineBasicMaterial color={color} transparent opacity={opacity} />
-    </line>
-  );
+  return <primitive object={lineObj} />;
 }
 
 // ─── Particle field ──────────────────────────────────────────────────────────
