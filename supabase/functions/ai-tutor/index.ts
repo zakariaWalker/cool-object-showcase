@@ -22,6 +22,40 @@ serve(async (req) => {
 
     const { data: deconstructions } = await db.from("kb_deconstructions").select("*").eq("exercise_id", exerciseId);
     
+    // RAG: fetch semantically similar content for richer context
+    let ragContext = "";
+    try {
+      const apiKey = Deno.env.get("GEMINI_API_KEY")!;
+      const embUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${apiKey}`;
+      const embRes = await fetch(embUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "models/gemini-embedding-001",
+          content: { parts: [{ text: exercise.text.slice(0, 2000) }] },
+          taskType: "RETRIEVAL_QUERY",
+        }),
+      });
+      if (embRes.ok) {
+        const embData = await embRes.json();
+        const queryEmb = embData.embedding?.values;
+        if (queryEmb?.length) {
+          const { data: similar } = await db.rpc("match_kb_embeddings", {
+            query_embedding: JSON.stringify(queryEmb),
+            match_threshold: 0.4,
+            match_count: 5,
+            filter_type: null,
+          });
+          if (similar?.length) {
+            ragContext = "\n\n## محتوى مشابه من قاعدة المعرفة:\n" +
+              similar.map((s: any) => `[${s.content_type}] (تشابه ${(s.similarity * 100).toFixed(0)}%): ${s.content_text?.slice(0, 200)}`).join("\n\n");
+          }
+        }
+      }
+    } catch (ragErr) {
+      console.warn("RAG enrichment failed (non-fatal):", ragErr);
+    }
+
     let patternInfo = "";
     if (deconstructions && deconstructions.length > 0) {
       const patternIds = [...new Set(deconstructions.map((d: any) => d.pattern_id))];
@@ -55,6 +89,7 @@ ${exercise.text}
 
 ## معلومات قاعدة المعرفة:
 ${patternInfo || "لا توجد معلومات KB لهذا التمرين"}
+${ragContext}
 
 ## مستوى التلميذ: ${levelDesc}
 

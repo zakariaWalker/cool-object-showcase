@@ -1,10 +1,11 @@
 // ===== KB Insight Dashboard — Actionable Analytics =====
-// Replaces generic network graph with focused insight panels
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, lazy, Suspense } from "react";
 import { Exercise, Pattern, Deconstruction } from "./useAdminKBStore";
 import { motion } from "framer-motion";
 import { KBNetworkGraph } from "./KBNetworkGraph";
+
+const KnowledgeGraph3D = lazy(() => import("./KnowledgeGraph3D"));
 
 interface Props {
   exercises: Exercise[];
@@ -31,7 +32,7 @@ const TYPE_LABELS_AR: Record<string, string> = {
 
 export function AdminViz({ exercises, patterns, deconstructions }: Props) {
   const [activePanel, setActivePanel] = useState<string | null>(null);
-  const [tab, setTab] = useState<"analytics" | "network">("analytics");
+  const [tab, setTab] = useState<"analytics" | "network" | "3d">("analytics");
 
   const insights = useMemo(() => {
     // 1. Coverage: exercises with vs without deconstruction
@@ -131,9 +132,21 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
           }}>
           🕸️ شبكة المعرفة
         </button>
+        <button onClick={() => setTab("3d")}
+          className="text-xs px-4 py-2 rounded-lg font-bold transition-all"
+          style={{
+            background: tab === "3d" ? "hsl(var(--algebra))" : "hsl(var(--muted))",
+            color: tab === "3d" ? "#fff" : "hsl(var(--muted-foreground))",
+          }}>
+          🧊 شبكة 3D
+        </button>
       </div>
 
-      {tab === "network" ? (
+      {tab === "3d" ? (
+        <Suspense fallback={<div className="flex items-center justify-center h-[600px] text-muted-foreground">جاري التحميل...</div>}>
+          <KnowledgeGraph3D exercises={exercises} patterns={patterns} deconstructions={deconstructions} />
+        </Suspense>
+      ) : tab === "network" ? (
         <KBNetworkGraph exercises={exercises} patterns={patterns} deconstructions={deconstructions} />
       ) : (
       <>
