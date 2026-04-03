@@ -89,6 +89,7 @@ ${exercise.text}
 
 ## معلومات قاعدة المعرفة:
 ${patternInfo || "لا توجد معلومات KB لهذا التمرين"}
+${ragContext}
 
 ## مستوى التلميذ: ${levelDesc}
 
