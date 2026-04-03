@@ -1,10 +1,11 @@
 // ===== KB Insight Dashboard — Actionable Analytics =====
-// Replaces generic network graph with focused insight panels
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, lazy, Suspense } from "react";
 import { Exercise, Pattern, Deconstruction } from "./useAdminKBStore";
 import { motion } from "framer-motion";
 import { KBNetworkGraph } from "./KBNetworkGraph";
+
+const KnowledgeGraph3D = lazy(() => import("./KnowledgeGraph3D"));
 
 interface Props {
   exercises: Exercise[];
