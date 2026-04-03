@@ -132,9 +132,21 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
           }}>
           🕸️ شبكة المعرفة
         </button>
+        <button onClick={() => setTab("3d")}
+          className="text-xs px-4 py-2 rounded-lg font-bold transition-all"
+          style={{
+            background: tab === "3d" ? "hsl(var(--algebra))" : "hsl(var(--muted))",
+            color: tab === "3d" ? "#fff" : "hsl(var(--muted-foreground))",
+          }}>
+          🧊 شبكة 3D
+        </button>
       </div>
 
-      {tab === "network" ? (
+      {tab === "3d" ? (
+        <Suspense fallback={<div className="flex items-center justify-center h-[600px] text-muted-foreground">جاري التحميل...</div>}>
+          <KnowledgeGraph3D exercises={exercises} patterns={patterns} deconstructions={deconstructions} />
+        </Suspense>
+      ) : tab === "network" ? (
         <KBNetworkGraph exercises={exercises} patterns={patterns} deconstructions={deconstructions} />
       ) : (
       <>
