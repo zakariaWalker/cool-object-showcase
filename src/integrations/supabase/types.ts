@@ -730,6 +730,39 @@ export type Database = {
           },
         ]
       }
+      kb_embeddings: {
+        Row: {
+          content_id: string
+          content_text: string
+          content_type: string
+          created_at: string
+          embedding: string | null
+          id: string
+          metadata: Json | null
+          updated_at: string
+        }
+        Insert: {
+          content_id: string
+          content_text: string
+          content_type: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          content_id?: string
+          content_text?: string
+          content_type?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kb_exercises: {
         Row: {
           base_score: number | null
@@ -1132,6 +1165,22 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      match_kb_embeddings: {
+        Args: {
+          filter_type?: string
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          content_id: string
+          content_text: string
+          content_type: string
+          id: string
+          metadata: Json
+          similarity: number
+        }[]
       }
     }
     Enums: {
