@@ -243,7 +243,6 @@ function GraphNodeMesh({ node, position, isHovered, onClick, onHover }: {
           color="white"
           anchorX="center"
           anchorY="bottom"
-          font="/fonts/Tajawal-Bold.ttf"
           outlineColor="black"
           outlineWidth={0.04}
           maxWidth={4}
