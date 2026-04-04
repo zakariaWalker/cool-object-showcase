@@ -301,7 +301,7 @@ function ParticleField() {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial color="#4f46e5" size={0.04} transparent opacity={0.4} sizeAttenuation />
+      <pointsMaterial color="#94a3b8" size={0.05} transparent opacity={0.3} sizeAttenuation />
     </points>
   );
 }
@@ -317,10 +317,10 @@ function GraphScene({ nodes, edges, positions, onSelectNode }: {
 
   return (
     <>
-      <ambientLight intensity={0.3} />
-      <pointLight position={[10, 15, 10]} intensity={1} color="#a78bfa" />
-      <pointLight position={[-10, -10, 10]} intensity={0.5} color="#06b6d4" />
-      <pointLight position={[0, 0, -15]} intensity={0.3} color="#f59e0b" />
+      <ambientLight intensity={0.8} />
+      <directionalLight position={[10, 15, 10]} intensity={1.2} color="#ffffff" />
+      <pointLight position={[-10, -10, 10]} intensity={0.6} color="#93c5fd" />
+      <pointLight position={[0, 0, -15]} intensity={0.4} color="#fbbf24" />
 
       <ParticleField />
 
@@ -494,9 +494,10 @@ export default function KnowledgeGraph3D({ exercises, patterns, deconstructions 
   }
 
   return (
-    <div className="relative w-full h-[650px] rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(240 20% 8%), hsl(250 25% 12%))" }}>
-      <Canvas camera={{ position: [0, 8, 20], fov: 55 }} dpr={[1, 2]}>
-        <fog attach="fog" args={["#0a0a1a", 25, 50]} />
+    <div className="relative w-full h-[650px] rounded-2xl overflow-hidden border border-border" style={{ background: "linear-gradient(135deg, hsl(220 25% 95%), hsl(230 20% 90%))" }}>
+      <Canvas camera={{ position: [0, 8, 20], fov: 55 }} dpr={[1, 2]} gl={{ alpha: true }}>
+        <color attach="background" args={["#eef2f7"]} />
+        <fog attach="fog" args={["#eef2f7", 30, 55]} />
         <GraphScene
           nodes={nodes}
           edges={edges}
@@ -522,8 +523,8 @@ export default function KnowledgeGraph3D({ exercises, patterns, deconstructions 
 
       {/* Title */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center z-10">
-        <h2 className="text-sm font-black text-white/90">🧠 شبكة المعرفة ثلاثية الأبعاد</h2>
-        <p className="text-[10px] text-white/40">اسحب للتدوير • تمرير للتكبير • انقر على عقدة لمعرفة التفاصيل</p>
+        <h2 className="text-sm font-black text-foreground">🧠 شبكة المعرفة ثلاثية الأبعاد</h2>
+        <p className="text-[10px] text-muted-foreground">اسحب للتدوير • تمرير للتكبير • انقر على عقدة لمعرفة التفاصيل</p>
       </div>
     </div>
   );
