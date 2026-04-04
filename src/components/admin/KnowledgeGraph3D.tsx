@@ -494,9 +494,10 @@ export default function KnowledgeGraph3D({ exercises, patterns, deconstructions 
   }
 
   return (
-    <div className="relative w-full h-[650px] rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(240 20% 8%), hsl(250 25% 12%))" }}>
-      <Canvas camera={{ position: [0, 8, 20], fov: 55 }} dpr={[1, 2]}>
-        <fog attach="fog" args={["#0a0a1a", 25, 50]} />
+    <div className="relative w-full h-[650px] rounded-2xl overflow-hidden border border-border" style={{ background: "linear-gradient(135deg, hsl(220 25% 95%), hsl(230 20% 90%))" }}>
+      <Canvas camera={{ position: [0, 8, 20], fov: 55 }} dpr={[1, 2]} gl={{ alpha: true }}>
+        <color attach="background" args={["#eef2f7"]} />
+        <fog attach="fog" args={["#eef2f7", 30, 55]} />
         <GraphScene
           nodes={nodes}
           edges={edges}
