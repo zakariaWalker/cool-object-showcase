@@ -523,8 +523,8 @@ export default function KnowledgeGraph3D({ exercises, patterns, deconstructions 
 
       {/* Title */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center z-10">
-        <h2 className="text-sm font-black text-white/90">🧠 شبكة المعرفة ثلاثية الأبعاد</h2>
-        <p className="text-[10px] text-white/40">اسحب للتدوير • تمرير للتكبير • انقر على عقدة لمعرفة التفاصيل</p>
+        <h2 className="text-sm font-black text-foreground">🧠 شبكة المعرفة ثلاثية الأبعاد</h2>
+        <p className="text-[10px] text-muted-foreground">اسحب للتدوير • تمرير للتكبير • انقر على عقدة لمعرفة التفاصيل</p>
       </div>
     </div>
   );
