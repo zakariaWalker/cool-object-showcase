@@ -317,10 +317,10 @@ function GraphScene({ nodes, edges, positions, onSelectNode }: {
 
   return (
     <>
-      <ambientLight intensity={0.3} />
-      <pointLight position={[10, 15, 10]} intensity={1} color="#a78bfa" />
-      <pointLight position={[-10, -10, 10]} intensity={0.5} color="#06b6d4" />
-      <pointLight position={[0, 0, -15]} intensity={0.3} color="#f59e0b" />
+      <ambientLight intensity={0.8} />
+      <directionalLight position={[10, 15, 10]} intensity={1.2} color="#ffffff" />
+      <pointLight position={[-10, -10, 10]} intensity={0.6} color="#93c5fd" />
+      <pointLight position={[0, 0, -15]} intensity={0.4} color="#fbbf24" />
 
       <ParticleField />
 
