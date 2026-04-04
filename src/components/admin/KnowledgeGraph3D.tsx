@@ -1,261 +1,295 @@
-import { useRef, useMemo, useState, useCallback, useEffect } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+// ===== 3D Knowledge Graph — Meaningful Insight Visualization =====
+import { useRef, useMemo, useState, useCallback } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Text, Billboard, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-interface GraphNode {
-  id: string;
-  label: string;
-  type: string;
-  group: string;
-  size: number;
-  exerciseCount?: number;
-  patternCount?: number;
-}
-
-interface GraphEdge {
-  source: string;
-  target: string;
-  type: "exercise_pattern" | "pattern_decon" | "same_type" | "prereq";
-}
-
 interface KnowledgeGraph3DProps {
   exercises: any[];
   patterns: any[];
   deconstructions: any[];
 }
 
-// ─── Color palette ───────────────────────────────────────────────────────────
-const GROUP_COLORS: Record<string, string> = {
-  algebra: "#7c3aed",
-  geometry: "#059669",
-  analysis: "#dc2626",
-  statistics: "#d97706",
-  arithmetic: "#0ea5e9",
-  probability: "#ec4899",
-  sequences: "#8b5cf6",
-  other: "#6b7280",
-  pattern: "#f59e0b",
-  deconstruction: "#14b8a6",
+interface DomainCluster {
+  id: string;
+  label: string;
+  labelAr: string;
+  color: string;
+  exerciseCount: number;
+  patternCount: number;
+  deconstructionCount: number;
+  coveragePct: number;
+  types: { name: string; nameAr: string; count: number; covered: number }[];
+  grades: Record<string, number>;
+  position: [number, number, number];
+}
+
+interface InsightEdge {
+  from: string;
+  to: string;
+  strength: number; // shared patterns or concepts
+  label?: string;
+}
+
+// ─── Domain classification ──────────────────────────────────────────────────
+const DOMAIN_MAP: Record<string, { domain: string; labelAr: string; color: string }> = {
+  algebra: { domain: "algebra", labelAr: "الجبر", color: "#7c3aed" },
+  factor: { domain: "algebra", labelAr: "الجبر", color: "#7c3aed" },
+  solve_equation: { domain: "algebra", labelAr: "الجبر", color: "#7c3aed" },
+  equations: { domain: "algebra", labelAr: "الجبر", color: "#7c3aed" },
+  systems: { domain: "algebra", labelAr: "الجبر", color: "#7c3aed" },
+  advanced_algebra: { domain: "algebra", labelAr: "الجبر", color: "#7c3aed" },
+  
+  geometry_construction: { domain: "geometry", labelAr: "الهندسة", color: "#059669" },
+  triangle_circle: { domain: "geometry", labelAr: "الهندسة", color: "#059669" },
+  parallelogram: { domain: "geometry", labelAr: "الهندسة", color: "#059669" },
+  angles: { domain: "geometry", labelAr: "الهندسة", color: "#059669" },
+  transformations: { domain: "geometry", labelAr: "الهندسة", color: "#059669" },
+  solids: { domain: "geometry", labelAr: "الهندسة", color: "#059669" },
+  analytic_geometry: { domain: "geometry", labelAr: "الهندسة", color: "#059669" },
+  
+  functions: { domain: "analysis", labelAr: "التحليل", color: "#dc2626" },
+  calculus: { domain: "analysis", labelAr: "التحليل", color: "#dc2626" },
+  sequences: { domain: "analysis", labelAr: "التحليل", color: "#dc2626" },
+  
+  statistics: { domain: "statistics", labelAr: "الإحصاء", color: "#d97706" },
+  probability: { domain: "probability", labelAr: "الاحتمالات", color: "#ec4899" },
+  
+  arithmetic: { domain: "arithmetic", labelAr: "الحساب", color: "#0ea5e9" },
+  fractions: { domain: "arithmetic", labelAr: "الحساب", color: "#0ea5e9" },
+  number_sets: { domain: "arithmetic", labelAr: "الحساب", color: "#0ea5e9" },
+  proportionality: { domain: "arithmetic", labelAr: "الحساب", color: "#0ea5e9" },
+  
+  trigonometry: { domain: "trigonometry", labelAr: "المثلثات", color: "#f97316" },
+  prove: { domain: "proof", labelAr: "البرهان", color: "#14b8a6" },
+  bac_prep: { domain: "exam_prep", labelAr: "تحضير BAC", color: "#a855f7" },
 };
 
-function classifyType(type: string): string {
-  const t = (type || "").toLowerCase();
-  if (["factor", "solve_equation", "simplify", "expand", "identity", "equation"].some(k => t.includes(k))) return "algebra";
-  if (["area", "perimeter", "volume", "angle", "triangle", "geometry", "pythagoras", "thales"].some(k => t.includes(k))) return "geometry";
-  if (["derivative", "integral", "limit", "function", "domain"].some(k => t.includes(k))) return "analysis";
-  if (["statistics", "mean", "median", "mode"].some(k => t.includes(k))) return "statistics";
-  if (["arithmetic", "fraction", "gcd", "lcm"].some(k => t.includes(k))) return "arithmetic";
-  if (["probability"].some(k => t.includes(k))) return "probability";
-  if (["sequence", "series"].some(k => t.includes(k))) return "sequences";
-  return "other";
-}
+const DOMAIN_COLORS: Record<string, string> = {
+  algebra: "#7c3aed", geometry: "#059669", analysis: "#dc2626",
+  statistics: "#d97706", probability: "#ec4899", arithmetic: "#0ea5e9",
+  trigonometry: "#f97316", proof: "#14b8a6", exam_prep: "#a855f7",
+  other: "#6b7280",
+};
 
-// ─── Build graph from data ───────────────────────────────────────────────────
-function buildGraph(exercises: any[], patterns: any[], deconstructions: any[]): { nodes: GraphNode[]; edges: GraphEdge[] } {
-  const nodes: GraphNode[] = [];
-  const edges: GraphEdge[] = [];
-  const nodeMap = new Map<string, GraphNode>();
+const DOMAIN_LABELS: Record<string, string> = {
+  algebra: "الجبر", geometry: "الهندسة", analysis: "التحليل",
+  statistics: "الإحصاء", probability: "الاحتمالات", arithmetic: "الحساب",
+  trigonometry: "المثلثات", proof: "البرهان", exam_prep: "تحضير BAC",
+  other: "أخرى",
+};
 
-  // Group exercises by type
-  const typeGroups: Record<string, any[]> = {};
+const TYPE_LABELS_AR: Record<string, string> = {
+  arithmetic: "حساب", algebra: "جبر", fractions: "كسور", equations: "معادلات",
+  geometry_construction: "إنشاءات", statistics: "إحصاء", probability: "احتمالات",
+  functions: "دوال", trigonometry: "مثلثات", sequences: "متتاليات", calculus: "تحليل",
+  systems: "جمل معادلات", proportionality: "تناسبية", transformations: "تحويلات",
+  solids: "مجسمات", triangle_circle: "مثلث ودائرة", parallelogram: "متوازي أضلاع",
+  angles: "زوايا", number_sets: "مجموعات أعداد", advanced_algebra: "جبر متقدم",
+  prove: "برهان", bac_prep: "تحضير BAC", factor: "تحليل عوامل",
+  solve_equation: "حل معادلات", analytic_geometry: "هندسة تحليلية",
+};
+
+const GRADE_LABELS: Record<string, string> = {
+  middle_1: "1AM", middle_2: "2AM", middle_3: "3AM", middle_4: "4AM",
+  secondary_1: "1AS", secondary_2: "2AS", secondary_3: "3AS",
+};
+
+// ─── Build meaningful clusters ──────────────────────────────────────────────
+function buildInsightGraph(exercises: any[], patterns: any[], deconstructions: any[]) {
+  const deconExIds = new Set(deconstructions.map((d: any) => d.exerciseId || d.exercise_id));
+  const deconPatternMap = new Map<string, Set<string>>();
+  
+  deconstructions.forEach((d: any) => {
+    const pid = d.patternId || d.pattern_id;
+    const eid = d.exerciseId || d.exercise_id;
+    if (pid && eid) {
+      if (!deconPatternMap.has(pid)) deconPatternMap.set(pid, new Set());
+      deconPatternMap.get(pid)!.add(eid);
+    }
+  });
+
+  // Group exercises by domain
+  const domainExercises: Record<string, any[]> = {};
   exercises.forEach(ex => {
-    const t = ex.type || "unclassified";
-    if (!typeGroups[t]) typeGroups[t] = [];
-    typeGroups[t].push(ex);
+    const type = ex.type || "unclassified";
+    const domainInfo = DOMAIN_MAP[type];
+    const domain = domainInfo?.domain || "other";
+    if (!domainExercises[domain]) domainExercises[domain] = [];
+    domainExercises[domain].push(ex);
   });
 
-  // Create type cluster nodes
-  Object.entries(typeGroups).forEach(([type, exs]) => {
-    const group = classifyType(type);
-    const node: GraphNode = {
-      id: `type_${type}`,
-      label: type.replace(/_/g, " "),
-      type: "exercise_type",
-      group,
-      size: Math.min(2, 0.5 + exs.length * 0.05),
-      exerciseCount: exs.length,
-    };
-    nodes.push(node);
-    nodeMap.set(node.id, node);
-  });
-
-  // Pattern nodes
+  // Group patterns by domain
+  const domainPatterns: Record<string, any[]> = {};
   patterns.forEach(p => {
-    const node: GraphNode = {
-      id: `pattern_${p.id}`,
-      label: p.name || "نمط",
-      type: "pattern",
-      group: "pattern",
-      size: 0.8,
-      patternCount: 1,
-    };
-    nodes.push(node);
-    nodeMap.set(node.id, node);
+    const type = p.type || "unclassified";
+    const domainInfo = DOMAIN_MAP[type];
+    const domain = domainInfo?.domain || "other";
+    if (!domainPatterns[domain]) domainPatterns[domain] = [];
+    domainPatterns[domain].push(p);
   });
 
-  // Edges: deconstructions link exercises → patterns
-  deconstructions.forEach(d => {
-    if (!d.exercise_id || !d.pattern_id) return;
-    const ex = exercises.find(e => e.id === d.exercise_id);
-    const exType = ex?.type || "unclassified";
-    const sourceId = `type_${exType}`;
-    const targetId = `pattern_${d.pattern_id}`;
-    if (nodeMap.has(sourceId) && nodeMap.has(targetId)) {
-      if (!edges.find(e => e.source === sourceId && e.target === targetId)) {
-        edges.push({ source: sourceId, target: targetId, type: "exercise_pattern" });
-      }
-    }
-  });
+  // Build clusters
+  const clusters: DomainCluster[] = [];
+  const domains = [...new Set([...Object.keys(domainExercises), ...Object.keys(domainPatterns)])];
+  const angleStep = (Math.PI * 2) / Math.max(domains.length, 1);
 
-  // Edges: same-group connections
-  const byGroup: Record<string, GraphNode[]> = {};
-  nodes.filter(n => n.type === "exercise_type").forEach(n => {
-    if (!byGroup[n.group]) byGroup[n.group] = [];
-    byGroup[n.group].push(n);
-  });
-  Object.values(byGroup).forEach(group => {
-    for (let i = 0; i < group.length - 1; i++) {
-      edges.push({ source: group[i].id, target: group[i + 1].id, type: "same_type" });
-    }
-  });
+  domains.forEach((domain, i) => {
+    const exs = domainExercises[domain] || [];
+    const pats = domainPatterns[domain] || [];
+    const covered = exs.filter(e => deconExIds.has(e.id)).length;
+    const coveragePct = exs.length > 0 ? Math.round((covered / exs.length) * 100) : 0;
 
-  return { nodes, edges };
-}
-
-// ─── Force simulation ────────────────────────────────────────────────────────
-function useForceLayout(nodes: GraphNode[], edges: GraphEdge[]) {
-  return useMemo(() => {
-    const positions: Record<string, [number, number, number]> = {};
-    
-    // Initial positions: group-based spherical layout
-    const groupAngles: Record<string, number> = {};
-    let angleIdx = 0;
-    const groups = [...new Set(nodes.map(n => n.group))];
-    groups.forEach(g => { groupAngles[g] = (angleIdx++ / groups.length) * Math.PI * 2; });
-
-    nodes.forEach((n, i) => {
-      const angle = groupAngles[n.group] || 0;
-      const radius = 8 + Math.random() * 4;
-      const ySpread = (Math.random() - 0.5) * 10;
-      const jitter = Math.random() * 2;
-      positions[n.id] = [
-        Math.cos(angle) * radius + jitter,
-        ySpread,
-        Math.sin(angle) * radius + jitter,
-      ];
+    // Type breakdown within domain
+    const typeMap: Record<string, { count: number; covered: number }> = {};
+    exs.forEach(e => {
+      const t = e.type || "unclassified";
+      if (!typeMap[t]) typeMap[t] = { count: 0, covered: 0 };
+      typeMap[t].count++;
+      if (deconExIds.has(e.id)) typeMap[t].covered++;
     });
 
-    // Simple force iterations
-    const edgeSet = edges.map(e => ({ s: e.source, t: e.target }));
-    for (let iter = 0; iter < 60; iter++) {
-      // Repulsion between all nodes
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const a = positions[nodes[i].id];
-          const b = positions[nodes[j].id];
-          const dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2];
-          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.1;
-          const force = 15 / (dist * dist);
-          const fx = (dx / dist) * force, fy = (dy / dist) * force, fz = (dz / dist) * force;
-          a[0] += fx; a[1] += fy; a[2] += fz;
-          b[0] -= fx; b[1] -= fy; b[2] -= fz;
-        }
-      }
-      // Attraction along edges
-      edgeSet.forEach(({ s, t }) => {
-        const a = positions[s], b = positions[t];
-        if (!a || !b) return;
-        const dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
-        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.1;
-        const force = (dist - 4) * 0.02;
-        const fx = (dx / dist) * force, fy = (dy / dist) * force, fz = (dz / dist) * force;
-        a[0] += fx; a[1] += fy; a[2] += fz;
-        b[0] -= fx; b[1] -= fy; b[2] -= fz;
-      });
-    }
+    // Grade breakdown
+    const grades: Record<string, number> = {};
+    exs.forEach(e => { grades[e.grade] = (grades[e.grade] || 0) + 1; });
 
-    return positions;
-  }, [nodes, edges]);
+    // Position: radius proportional to exercise count, angle evenly distributed
+    const radius = 6 + Math.sqrt(exs.length) * 0.8;
+    const angle = angleStep * i;
+    const y = (coveragePct - 50) * 0.08; // Higher coverage = higher position
+
+    clusters.push({
+      id: domain,
+      label: domain,
+      labelAr: DOMAIN_LABELS[domain] || domain,
+      color: DOMAIN_COLORS[domain] || "#6b7280",
+      exerciseCount: exs.length,
+      patternCount: pats.length,
+      deconstructionCount: covered,
+      coveragePct,
+      types: Object.entries(typeMap)
+        .map(([name, v]) => ({ name, nameAr: TYPE_LABELS_AR[name] || name, count: v.count, covered: v.covered }))
+        .sort((a, b) => b.count - a.count),
+      grades,
+      position: [Math.cos(angle) * radius, y, Math.sin(angle) * radius],
+    });
+  });
+
+  // Build edges: domains connected by shared patterns
+  const edges: InsightEdge[] = [];
+  // Find cross-domain pattern connections via deconstructions
+  const domainForExercise = new Map<string, string>();
+  exercises.forEach(ex => {
+    const type = ex.type || "unclassified";
+    domainForExercise.set(ex.id, DOMAIN_MAP[type]?.domain || "other");
+  });
+
+  // Patterns that bridge domains
+  patterns.forEach(p => {
+    const patType = p.type || "unclassified";
+    const patDomain = DOMAIN_MAP[patType]?.domain || "other";
+    const usedExIds = deconPatternMap.get(p.id);
+    if (!usedExIds) return;
+    const connectedDomains = new Set<string>();
+    usedExIds.forEach(eid => {
+      const d = domainForExercise.get(eid);
+      if (d && d !== patDomain) connectedDomains.add(d);
+    });
+    connectedDomains.forEach(targetDomain => {
+      const existing = edges.find(e =>
+        (e.from === patDomain && e.to === targetDomain) ||
+        (e.from === targetDomain && e.to === patDomain)
+      );
+      if (existing) existing.strength++;
+      else edges.push({ from: patDomain, to: targetDomain, strength: 1 });
+    });
+  });
+
+  return { clusters, edges };
 }
 
-// ─── 3D Node Component ──────────────────────────────────────────────────────
-function GraphNodeMesh({ node, position, isHovered, onClick, onHover }: {
-  node: GraphNode;
-  position: [number, number, number];
-  isHovered: boolean;
+// ─── 3D Domain Sphere ───────────────────────────────────────────────────────
+function DomainSphere({ cluster, isSelected, onClick, onHover }: {
+  cluster: DomainCluster;
+  isSelected: boolean;
   onClick: () => void;
   onHover: (h: boolean) => void;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const glowRef = useRef<THREE.Mesh>(null);
-  const color = GROUP_COLORS[node.group] || "#6b7280";
-  const scale = isHovered ? node.size * 1.4 : node.size;
+  const ringRef = useRef<THREE.Mesh>(null);
+  const color = new THREE.Color(cluster.color);
+  
+  // Size based on exercise count (meaningful)
+  const baseSize = Math.max(0.6, Math.min(2.5, 0.4 + Math.sqrt(cluster.exerciseCount) * 0.15));
+  const targetScale = isSelected ? baseSize * 1.3 : baseSize;
 
   useFrame((_, delta) => {
     if (meshRef.current) {
-      meshRef.current.rotation.y += delta * 0.3;
-      const targetScale = scale;
-      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
+      meshRef.current.rotation.y += delta * 0.2;
+      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.08);
     }
-    if (glowRef.current) {
-      const pulse = 1 + Math.sin(Date.now() * 0.003) * 0.1;
-      glowRef.current.scale.set(scale * 1.5 * pulse, scale * 1.5 * pulse, scale * 1.5 * pulse);
+    if (ringRef.current) {
+      ringRef.current.rotation.z += delta * 0.4;
+      const ringScale = targetScale * 1.6;
+      ringRef.current.scale.lerp(new THREE.Vector3(ringScale, ringScale, ringScale), 0.08);
     }
   });
 
+  // Coverage determines visual: full = solid, low = wireframe-ish
+  const coverageOpacity = 0.3 + (cluster.coveragePct / 100) * 0.7;
+
   return (
-    <group position={position}>
-      {/* Glow sphere */}
-      <mesh ref={glowRef}>
-        <sphereGeometry args={[1, 16, 16]} />
-        <meshBasicMaterial color={color} transparent opacity={isHovered ? 0.2 : 0.08} />
+    <group position={cluster.position}>
+      {/* Coverage ring — shows completeness */}
+      <mesh ref={ringRef} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[1, 0.04, 8, 64, (cluster.coveragePct / 100) * Math.PI * 2]} />
+        <meshStandardMaterial
+          color={cluster.coveragePct >= 70 ? "#22c55e" : cluster.coveragePct >= 40 ? "#eab308" : "#ef4444"}
+          emissive={cluster.coveragePct >= 70 ? "#22c55e" : cluster.coveragePct >= 40 ? "#eab308" : "#ef4444"}
+          emissiveIntensity={0.5}
+        />
       </mesh>
 
-      {/* Main node */}
+      {/* Main sphere */}
       <mesh
         ref={meshRef}
         onClick={(e) => { e.stopPropagation(); onClick(); }}
         onPointerEnter={(e) => { e.stopPropagation(); onHover(true); document.body.style.cursor = "pointer"; }}
         onPointerLeave={() => { onHover(false); document.body.style.cursor = "auto"; }}
       >
-        {node.type === "pattern" ? (
-          <octahedronGeometry args={[1, 0]} />
-        ) : (
-          <sphereGeometry args={[1, 32, 32]} />
-        )}
+        <icosahedronGeometry args={[1, 2]} />
         <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={isHovered ? 0.6 : 0.2}
-          metalness={0.3}
-          roughness={0.4}
+          color={cluster.color}
+          emissive={cluster.color}
+          emissiveIntensity={isSelected ? 0.5 : 0.15}
+          metalness={0.2}
+          roughness={0.5}
+          transparent
+          opacity={coverageOpacity}
         />
       </mesh>
 
-      {/* Label */}
-      <Billboard>
-        <Text
-          position={[0, scale + 0.6, 0]}
-          fontSize={0.35}
-          color="white"
-          anchorX="center"
-          anchorY="bottom"
-          outlineColor="black"
-          outlineWidth={0.04}
-          maxWidth={4}
-        >
-          {node.label.length > 15 ? node.label.slice(0, 15) + "…" : node.label}
+      {/* Domain label */}
+      <Billboard position={[0, targetScale + 0.8, 0]}>
+        <Text fontSize={0.4} color="#1e293b" anchorX="center" anchorY="bottom" outlineColor="white" outlineWidth={0.06}>
+          {cluster.labelAr}
         </Text>
       </Billboard>
 
-      {/* Count badge */}
-      {node.exerciseCount && node.exerciseCount > 1 && (
-        <Billboard position={[scale + 0.4, 0.4, 0]}>
-          <Text fontSize={0.25} color="#fbbf24" anchorX="center">
-            {node.exerciseCount}
+      {/* Exercise count badge */}
+      <Billboard position={[0, targetScale + 0.35, 0]}>
+        <Text fontSize={0.22} color="#64748b" anchorX="center">
+          {cluster.exerciseCount} تمرين · {cluster.coveragePct}%
+        </Text>
+      </Billboard>
+
+      {/* Pattern count — small orbiting indicator */}
+      {cluster.patternCount > 0 && (
+        <Billboard position={[targetScale + 0.5, -0.3, 0]}>
+          <Text fontSize={0.2} color={cluster.color} anchorX="center">
+            🧩 {cluster.patternCount}
           </Text>
         </Billboard>
       )}
@@ -263,227 +297,276 @@ function GraphNodeMesh({ node, position, isHovered, onClick, onHover }: {
   );
 }
 
-// ─── 3D Edge Component ──────────────────────────────────────────────────────
-function GraphEdgeLine({ start, end, type }: { start: [number, number, number]; end: [number, number, number]; type: string }) {
+// ─── Connection line with strength ──────────────────────────────────────────
+function ConnectionLine({ start, end, strength }: {
+  start: [number, number, number];
+  end: [number, number, number];
+  strength: number;
+}) {
   const lineObj = useMemo(() => {
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.Float32BufferAttribute([...start, ...end], 3));
-    const color = type === "exercise_pattern" ? "#a78bfa" : type === "same_type" ? "#374151" : "#4b5563";
-    const opacity = type === "exercise_pattern" ? 0.6 : 0.2;
-    const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+    // Create curved line
+    const mid: [number, number, number] = [
+      (start[0] + end[0]) / 2,
+      (start[1] + end[1]) / 2 + strength * 0.3,
+      (start[2] + end[2]) / 2,
+    ];
+    const curve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(...start),
+      new THREE.Vector3(...mid),
+      new THREE.Vector3(...end),
+    );
+    const points = curve.getPoints(20);
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const opacity = Math.min(0.8, 0.2 + strength * 0.1);
+    const material = new THREE.LineBasicMaterial({ color: "#94a3b8", transparent: true, opacity });
     return new THREE.Line(geometry, material);
-  }, [start, end, type]);
+  }, [start, end, strength]);
 
   return <primitive object={lineObj} />;
 }
 
-// ─── Particle field ──────────────────────────────────────────────────────────
-function ParticleField() {
-  const ref = useRef<THREE.Points>(null);
-  const count = 300;
-
-  const positions = useMemo(() => {
-    const arr = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      arr[i * 3] = (Math.random() - 0.5) * 40;
-      arr[i * 3 + 1] = (Math.random() - 0.5) * 40;
-      arr[i * 3 + 2] = (Math.random() - 0.5) * 40;
-    }
-    return arr;
-  }, []);
-
-  useFrame((_, delta) => {
-    if (ref.current) ref.current.rotation.y += delta * 0.02;
-  });
-
+// ─── Ground grid for spatial reference ──────────────────────────────────────
+function GroundGrid() {
   return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-      </bufferGeometry>
-      <pointsMaterial color="#94a3b8" size={0.05} transparent opacity={0.3} sizeAttenuation />
-    </points>
+    <group position={[0, -4, 0]}>
+      <gridHelper args={[30, 30, "#cbd5e1", "#e2e8f0"]} />
+    </group>
   );
 }
 
-// ─── Scene ───────────────────────────────────────────────────────────────────
-function GraphScene({ nodes, edges, positions, onSelectNode }: {
-  nodes: GraphNode[];
-  edges: GraphEdge[];
-  positions: Record<string, [number, number, number]>;
-  onSelectNode: (n: GraphNode | null) => void;
+// ─── Scene ──────────────────────────────────────────────────────────────────
+function GraphScene({ clusters, edges, onSelectCluster }: {
+  clusters: DomainCluster[];
+  edges: InsightEdge[];
+  onSelectCluster: (c: DomainCluster | null) => void;
 }) {
-  const [hovered, setHovered] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+
+  const handleClick = useCallback((cluster: DomainCluster) => {
+    const isAlreadySelected = selected === cluster.id;
+    setSelected(isAlreadySelected ? null : cluster.id);
+    onSelectCluster(isAlreadySelected ? null : cluster);
+  }, [selected, onSelectCluster]);
+
+  const clusterMap = useMemo(() => {
+    const m = new Map<string, DomainCluster>();
+    clusters.forEach(c => m.set(c.id, c));
+    return m;
+  }, [clusters]);
 
   return (
     <>
-      <ambientLight intensity={0.8} />
-      <directionalLight position={[10, 15, 10]} intensity={1.2} color="#ffffff" />
-      <pointLight position={[-10, -10, 10]} intensity={0.6} color="#93c5fd" />
-      <pointLight position={[0, 0, -15]} intensity={0.4} color="#fbbf24" />
+      <ambientLight intensity={1} />
+      <directionalLight position={[10, 20, 10]} intensity={1.5} color="#ffffff" castShadow />
+      <pointLight position={[-8, 5, -8]} intensity={0.4} color="#93c5fd" />
 
-      <ParticleField />
+      <GroundGrid />
 
       {/* Edges */}
       {edges.map((e, i) => {
-        const start = positions[e.source];
-        const end = positions[e.target];
-        if (!start || !end) return null;
-        return <GraphEdgeLine key={i} start={start} end={end} type={e.type} />;
+        const from = clusterMap.get(e.from);
+        const to = clusterMap.get(e.to);
+        if (!from || !to) return null;
+        return <ConnectionLine key={i} start={from.position} end={to.position} strength={e.strength} />;
       })}
 
-      {/* Nodes */}
-      {nodes.map(n => {
-        const pos = positions[n.id];
-        if (!pos) return null;
-        return (
-          <GraphNodeMesh
-            key={n.id}
-            node={n}
-            position={pos}
-            isHovered={hovered === n.id}
-            onClick={() => onSelectNode(n)}
-            onHover={(h) => setHovered(h ? n.id : null)}
-          />
-        );
-      })}
+      {/* Domain clusters */}
+      {clusters.map(c => (
+        <DomainSphere
+          key={c.id}
+          cluster={c}
+          isSelected={selected === c.id}
+          onClick={() => handleClick(c)}
+          onHover={() => {}}
+        />
+      ))}
 
       <OrbitControls
         enableDamping
         dampingFactor={0.05}
-        minDistance={5}
-        maxDistance={35}
+        minDistance={8}
+        maxDistance={40}
         autoRotate
-        autoRotateSpeed={0.3}
+        autoRotateSpeed={0.2}
+        maxPolarAngle={Math.PI * 0.75}
+        minPolarAngle={Math.PI * 0.15}
       />
     </>
   );
 }
 
-// ─── Info Panel ──────────────────────────────────────────────────────────────
-function NodeInfoPanel({ node, exercises, patterns, deconstructions, onClose }: {
-  node: GraphNode;
-  exercises: any[];
-  patterns: any[];
-  deconstructions: any[];
-  onClose: () => void;
-}) {
-  const color = GROUP_COLORS[node.group] || "#6b7280";
-
-  const relatedExercises = node.type === "exercise_type"
-    ? exercises.filter(e => `type_${e.type}` === node.id).slice(0, 5)
-    : [];
-
-  const relatedPattern = node.type === "pattern"
-    ? patterns.find(p => `pattern_${p.id}` === node.id)
-    : null;
+// ─── Insight Panel (shows real metrics when a domain is clicked) ─────────
+function InsightPanel({ cluster, onClose }: { cluster: DomainCluster; onClose: () => void }) {
+  const coverageColor = cluster.coveragePct >= 70 ? "#22c55e" : cluster.coveragePct >= 40 ? "#eab308" : "#ef4444";
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      className="absolute top-4 left-4 w-80 rounded-2xl border border-border/50 p-5 z-10"
-      style={{
-        background: "hsl(var(--card) / 0.95)",
-        backdropFilter: "blur(20px)",
-        boxShadow: `0 0 30px ${color}33`,
-      }}
+      initial={{ opacity: 0, x: -20, scale: 0.95 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: -20, scale: 0.95 }}
+      className="absolute top-4 left-4 w-80 rounded-2xl border border-border p-5 z-20"
+      style={{ background: "hsl(var(--card) / 0.97)", backdropFilter: "blur(20px)" }}
+      dir="rtl"
     >
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full" style={{ background: color }} />
-          <h3 className="text-sm font-bold text-foreground">{node.label}</h3>
+          <div className="w-4 h-4 rounded-full" style={{ background: cluster.color }} />
+          <h3 className="text-base font-black text-foreground">{cluster.labelAr}</h3>
         </div>
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg">✕</button>
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg leading-none">✕</button>
       </div>
 
-      <div className="text-xs text-muted-foreground space-y-1 mb-3">
-        <div>النوع: <span className="text-foreground">{node.type === "pattern" ? "نمط" : "تصنيف تمارين"}</span></div>
-        <div>المجموعة: <span className="text-foreground">{node.group}</span></div>
-        {node.exerciseCount && <div>عدد التمارين: <span className="font-bold text-foreground">{node.exerciseCount}</span></div>}
+      {/* Key metrics */}
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="rounded-xl p-2.5 text-center" style={{ background: `${cluster.color}15` }}>
+          <div className="text-lg font-black" style={{ color: cluster.color }}>{cluster.exerciseCount}</div>
+          <div className="text-[9px] text-muted-foreground">تمرين</div>
+        </div>
+        <div className="rounded-xl p-2.5 text-center" style={{ background: `${cluster.color}15` }}>
+          <div className="text-lg font-black" style={{ color: cluster.color }}>{cluster.patternCount}</div>
+          <div className="text-[9px] text-muted-foreground">نمط</div>
+        </div>
+        <div className="rounded-xl p-2.5 text-center" style={{ background: `${coverageColor}15` }}>
+          <div className="text-lg font-black" style={{ color: coverageColor }}>{cluster.coveragePct}%</div>
+          <div className="text-[9px] text-muted-foreground">تغطية</div>
+        </div>
       </div>
 
-      {relatedExercises.length > 0 && (
-        <div className="space-y-1">
-          <div className="text-xs font-bold text-muted-foreground mb-1">نماذج تمارين:</div>
-          {relatedExercises.map((ex, i) => (
-            <div key={i} className="text-[11px] text-foreground/80 p-1.5 rounded bg-muted/50 line-clamp-2" dir="rtl">
-              {ex.text?.slice(0, 80)}…
-            </div>
-          ))}
+      {/* Coverage bar */}
+      <div className="mb-4">
+        <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+          <span>التغطية</span>
+          <span>{cluster.deconstructionCount}/{cluster.exerciseCount}</span>
+        </div>
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <div className="h-full rounded-full transition-all" style={{ width: `${cluster.coveragePct}%`, background: coverageColor }} />
+        </div>
+      </div>
+
+      {/* Type breakdown */}
+      {cluster.types.length > 0 && (
+        <div className="mb-4">
+          <div className="text-[10px] font-bold text-muted-foreground mb-2">توزيع الأنواع:</div>
+          <div className="space-y-1.5 max-h-[140px] overflow-y-auto">
+            {cluster.types.map(t => {
+              const typePct = t.count > 0 ? Math.round((t.covered / t.count) * 100) : 0;
+              return (
+                <div key={t.name} className="flex items-center gap-2">
+                  <span className="text-[10px] text-foreground w-20 truncate">{t.nameAr}</span>
+                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${typePct}%`, background: cluster.color }} />
+                  </div>
+                  <span className="text-[9px] text-muted-foreground w-8 text-left">{t.count}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {relatedPattern && (
-        <div className="space-y-1">
-          <div className="text-xs font-bold text-muted-foreground mb-1">تفاصيل النمط:</div>
-          <div className="text-[11px] text-foreground/80">{relatedPattern.description || "بدون وصف"}</div>
-          {relatedPattern.steps && (
-            <div className="text-[11px] text-muted-foreground">
-              الخطوات: {(relatedPattern.steps as any[]).length}
-            </div>
-          )}
+      {/* Grade distribution */}
+      {Object.keys(cluster.grades).length > 0 && (
+        <div>
+          <div className="text-[10px] font-bold text-muted-foreground mb-2">المستويات:</div>
+          <div className="flex flex-wrap gap-1.5">
+            {Object.entries(cluster.grades)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([grade, count]) => (
+                <span key={grade} className="text-[9px] px-2 py-1 rounded-full font-bold"
+                  style={{ background: `${cluster.color}15`, color: cluster.color }}>
+                  {GRADE_LABELS[grade] || grade}: {count}
+                </span>
+              ))}
+          </div>
         </div>
       )}
     </motion.div>
   );
 }
 
-// ─── Stats bar ───────────────────────────────────────────────────────────────
-function StatsBar({ nodes, edges, exercises, patterns }: { nodes: GraphNode[]; edges: GraphEdge[]; exercises: any[]; patterns: any[] }) {
-  const stats = [
-    { label: "عقد", value: nodes.length, icon: "⚪" },
-    { label: "روابط", value: edges.length, icon: "🔗" },
-    { label: "تمارين", value: exercises.length, icon: "📝" },
-    { label: "أنماط", value: patterns.length, icon: "🔷" },
-  ];
-
+// ─── Legend with meaning ────────────────────────────────────────────────────
+function InsightLegend({ clusters }: { clusters: DomainCluster[] }) {
+  const sorted = [...clusters].sort((a, b) => b.exerciseCount - a.exerciseCount);
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 z-10">
-      {stats.map((s, i) => (
-        <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs"
-          style={{ background: "hsl(var(--card) / 0.8)", backdropFilter: "blur(10px)", border: "1px solid hsl(var(--border) / 0.3)" }}>
-          <span>{s.icon}</span>
-          <span className="font-bold text-foreground">{s.value}</span>
-          <span className="text-muted-foreground">{s.label}</span>
+    <div className="absolute top-4 right-4 z-20 p-3 rounded-xl max-w-[180px]"
+      style={{ background: "hsl(var(--card) / 0.9)", backdropFilter: "blur(10px)", border: "1px solid hsl(var(--border))" }}>
+      <div className="text-[10px] font-black text-foreground mb-2">📊 المجالات</div>
+      <div className="space-y-1.5">
+        {sorted.map(c => (
+          <div key={c.id} className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: c.color }} />
+            <span className="text-[10px] text-foreground flex-1">{c.labelAr}</span>
+            <span className="text-[9px] font-mono text-muted-foreground">{c.exerciseCount}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 pt-2 border-t border-border space-y-1">
+        <div className="text-[9px] text-muted-foreground flex items-center gap-1.5">
+          <div className="w-3 h-1 rounded-full bg-green-500" /> تغطية ≥70%
         </div>
-      ))}
+        <div className="text-[9px] text-muted-foreground flex items-center gap-1.5">
+          <div className="w-3 h-1 rounded-full bg-yellow-500" /> تغطية 40-69%
+        </div>
+        <div className="text-[9px] text-muted-foreground flex items-center gap-1.5">
+          <div className="w-3 h-1 rounded-full bg-red-500" /> تغطية &lt;40%
+        </div>
+      </div>
     </div>
   );
 }
 
-// ─── Legend ───────────────────────────────────────────────────────────────────
-function Legend() {
-  const items = Object.entries(GROUP_COLORS).filter(([k]) => k !== "deconstruction");
+// ─── Quick Stats Bar ────────────────────────────────────────────────────────
+function QuickStats({ clusters, exercises, patterns, deconstructions }: {
+  clusters: DomainCluster[];
+  exercises: any[];
+  patterns: any[];
+  deconstructions: any[];
+}) {
+  const totalCoverage = exercises.length > 0
+    ? Math.round((deconstructions.length / exercises.length) * 100)
+    : 0;
+  const weakest = [...clusters].sort((a, b) => a.coveragePct - b.coveragePct)[0];
+  const strongest = [...clusters].sort((a, b) => b.coveragePct - a.coveragePct)[0];
+
   return (
-    <div className="absolute top-4 right-4 space-y-1 z-10 p-3 rounded-xl"
-      style={{ background: "hsl(var(--card) / 0.8)", backdropFilter: "blur(10px)", border: "1px solid hsl(var(--border) / 0.3)" }}>
-      <div className="text-[10px] font-bold text-muted-foreground mb-1.5">تصنيفات</div>
-      {items.map(([key, color]) => (
-        <div key={key} className="flex items-center gap-2 text-[11px]">
-          <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-          <span className="text-foreground/80">{key}</span>
-        </div>
-      ))}
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20 flex-wrap justify-center" dir="rtl">
+      <StatChip icon="📊" label="تغطية كلية" value={`${totalCoverage}%`}
+        color={totalCoverage >= 60 ? "#22c55e" : "#eab308"} />
+      <StatChip icon="📚" label="تمارين" value={`${exercises.length}`} color="#3b82f6" />
+      <StatChip icon="🧩" label="أنماط" value={`${patterns.length}`} color="#8b5cf6" />
+      {weakest && weakest.coveragePct < 50 && (
+        <StatChip icon="⚠️" label="أضعف مجال" value={weakest.labelAr} color="#ef4444" />
+      )}
+      {strongest && (
+        <StatChip icon="✅" label="أقوى مجال" value={strongest.labelAr} color="#22c55e" />
+      )}
+    </div>
+  );
+}
+
+function StatChip({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
+  return (
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs"
+      style={{ background: "hsl(var(--card) / 0.9)", backdropFilter: "blur(10px)", border: "1px solid hsl(var(--border))" }}>
+      <span>{icon}</span>
+      <span className="text-muted-foreground text-[10px]">{label}</span>
+      <span className="font-bold text-[11px]" style={{ color }}>{value}</span>
     </div>
   );
 }
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function KnowledgeGraph3D({ exercises, patterns, deconstructions }: KnowledgeGraph3DProps) {
-  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [selectedCluster, setSelectedCluster] = useState<DomainCluster | null>(null);
 
-  const { nodes, edges } = useMemo(
-    () => buildGraph(exercises, patterns, deconstructions),
+  const { clusters, edges } = useMemo(
+    () => buildInsightGraph(exercises, patterns, deconstructions),
     [exercises, patterns, deconstructions]
   );
 
-  const positions = useForceLayout(nodes, edges);
-
-  if (nodes.length === 0) {
+  if (clusters.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[600px] rounded-2xl" style={{ background: "hsl(var(--card))" }}>
+      <div className="flex items-center justify-center h-[600px] rounded-2xl border border-border bg-card">
         <div className="text-center">
           <div className="text-4xl mb-3">🕸️</div>
           <div className="text-sm text-muted-foreground">لا توجد بيانات كافية لبناء الشبكة</div>
@@ -494,37 +577,27 @@ export default function KnowledgeGraph3D({ exercises, patterns, deconstructions 
   }
 
   return (
-    <div className="relative w-full h-[650px] rounded-2xl overflow-hidden border border-border" style={{ background: "linear-gradient(135deg, hsl(220 25% 95%), hsl(230 20% 90%))" }}>
-      <Canvas camera={{ position: [0, 8, 20], fov: 55 }} dpr={[1, 2]} gl={{ alpha: true }}>
-        <color attach="background" args={["#eef2f7"]} />
-        <fog attach="fog" args={["#eef2f7", 30, 55]} />
-        <GraphScene
-          nodes={nodes}
-          edges={edges}
-          positions={positions}
-          onSelectNode={setSelectedNode}
-        />
+    <div className="relative w-full h-[650px] rounded-2xl overflow-hidden border border-border"
+      style={{ background: "linear-gradient(180deg, #f0f4f8 0%, #e2e8f0 100%)" }}>
+      <Canvas camera={{ position: [0, 12, 22], fov: 50 }} dpr={[1, 2]} gl={{ alpha: true }}>
+        <color attach="background" args={["#f0f4f8"]} />
+        <fog attach="fog" args={["#f0f4f8", 35, 60]} />
+        <GraphScene clusters={clusters} edges={edges} onSelectCluster={setSelectedCluster} />
       </Canvas>
 
-      <Legend />
-      <StatsBar nodes={nodes} edges={edges} exercises={exercises} patterns={patterns} />
+      <InsightLegend clusters={clusters} />
+      <QuickStats clusters={clusters} exercises={exercises} patterns={patterns} deconstructions={deconstructions} />
 
       <AnimatePresence>
-        {selectedNode && (
-          <NodeInfoPanel
-            node={selectedNode}
-            exercises={exercises}
-            patterns={patterns}
-            deconstructions={deconstructions}
-            onClose={() => setSelectedNode(null)}
-          />
+        {selectedCluster && (
+          <InsightPanel cluster={selectedCluster} onClose={() => setSelectedCluster(null)} />
         )}
       </AnimatePresence>
 
       {/* Title */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center z-10">
-        <h2 className="text-sm font-black text-foreground">🧠 شبكة المعرفة ثلاثية الأبعاد</h2>
-        <p className="text-[10px] text-muted-foreground">اسحب للتدوير • تمرير للتكبير • انقر على عقدة لمعرفة التفاصيل</p>
+        <h2 className="text-sm font-black text-foreground">🧠 خريطة المعرفة — المجالات والتغطية</h2>
+        <p className="text-[10px] text-muted-foreground">حجم الكرة = عدد التمارين · الحلقة = نسبة التغطية · اللون = المجال</p>
       </div>
     </div>
   );
