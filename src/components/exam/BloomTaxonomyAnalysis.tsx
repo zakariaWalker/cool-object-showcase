@@ -1,5 +1,5 @@
 // ===== Bloom Taxonomy Deep Analysis — Exam KB =====
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
