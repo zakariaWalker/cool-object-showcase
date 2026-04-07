@@ -38,7 +38,7 @@ export default function ExamKBPage() {
           <div className="flex items-center gap-1 mr-4">
             {tabs.map(t => (
               <button key={t.id} onClick={() => {
-                if (t.id === "pdf-upload" || t.id === "confidence" || t.id === "bloom") setActiveView(t.id);
+                if (t.id === "pdf-upload" || t.id === "confidence" || t.id === "bloom" || t.id === "json-upload") setActiveView(t.id);
                 else { store.setView(t.id as ExamKBView); setActiveView(t.id); }
               }}
                 className="px-4 py-2 rounded-lg text-xs font-bold transition-all"
