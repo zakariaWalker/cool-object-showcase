@@ -59,6 +59,7 @@ const App = () => (
             <Route path="/archive-solve/:examId" element={<ExamArchiveSolver />} />
             <Route path="/diagnostic" element={<DiagnosticExam />} />
             <Route path="/profile" element={<StudentProfile />} />
+            <Route path="/skills-kb" element={<SkillsKBPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppShell>
