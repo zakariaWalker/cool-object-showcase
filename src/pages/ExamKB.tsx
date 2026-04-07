@@ -9,9 +9,10 @@ import { ExamKBLinks } from "@/components/exam/ExamKBLinks";
 import { ExamPDFUploader } from "@/components/exam/ExamPDFUploader";
 import { ExamConfidenceAnalysis } from "@/components/exam/ExamConfidenceAnalysis";
 import { BloomTaxonomyAnalysis } from "@/components/exam/BloomTaxonomyAnalysis";
+import { ExamJSONUploader } from "@/components/exam/ExamJSONUploader";
 import type { ExamKBView } from "@/components/exam/useExamKBStore";
 
-type ExtendedView = ExamKBView | "pdf-upload" | "confidence" | "bloom";
+type ExtendedView = ExamKBView | "pdf-upload" | "confidence" | "bloom" | "json-upload";
 
 export default function ExamKBPage() {
   const primaryKB = useAdminKBStore();
