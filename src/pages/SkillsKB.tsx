@@ -325,9 +325,6 @@ function SkillsList({ skills, errors, deps, selected, onSelect }: {
     });
   }, [skills, search, domainFilter]);
 
-  const errorsForSkill = (id: string) => errors.filter(e => e.skill_id === id);
-  const depsForSkill = (id: string) => deps.filter(d => d.from_skill_id === id);
-
   return (
     <div className="flex gap-4">
       <div className="flex-1 space-y-3">
