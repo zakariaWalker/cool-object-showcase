@@ -7,20 +7,19 @@ import { QEDLogo } from "./QEDLogo";
 import { useAuth } from "@/hooks/useAuth";
 
 const WORKFLOW_STEPS = [
-  { path: "/profile", label: "الملف الشخصي",  emoji: "👤", step: 0 },
-  { path: "/home",   label: "الرئيسية",      emoji: "🏠", step: 1 },
+  { path: "/profile", label: "الملف الشخصي", emoji: "👤", step: 0 },
+  { path: "/home", label: "الرئيسية", emoji: "🏠", step: 1 },
   { path: "/diagnostic", label: "التقييم التشخيصي", emoji: "🔍", step: 2 },
-  { path: "/gaps",   label: "كشف الثغرات", emoji: "🎯", step: 3 },
-  { path: "/learn",  label: "مسار التعلم",    emoji: "🗺️", step: 4 },
-  { path: "/exercises", label: "التمارين",    emoji: "📝", step: 5 },
-  { path: "/tutor",  label: "المدرّس الذكي",  emoji: "🤖", step: 6 },
-  { path: "/explore", label: "الاستكشاف",    emoji: "🔭", step: 7 },
-  { path: "/whatif", label: "ماذا لو؟",       emoji: "🔬", step: 8 },
-  { path: "/exams", label: "الامتحانات",     emoji: "🏗️", step: 9 },
-  { path: "/exam-kb", label: "KB امتحانات",  emoji: "📚", step: 10 },
-  { path: "/skill-kb", label: "KB المهارات",  emoji: "📚", step: 11 },
+  { path: "/gaps", label: "كشف الثغرات", emoji: "🎯", step: 3 },
+  { path: "/learn", label: "مسار التعلم", emoji: "🗺️", step: 4 },
+  { path: "/exercises", label: "التمارين", emoji: "📝", step: 5 },
+  { path: "/tutor", label: "المدرّس الذكي", emoji: "🤖", step: 6 },
+  { path: "/explore", label: "الاستكشاف", emoji: "🔭", step: 7 },
+  { path: "/whatif", label: "ماذا لو؟", emoji: "🔬", step: 8 },
+  { path: "/exams", label: "الامتحانات", emoji: "🏗️", step: 9 },
+  { path: "/exam-kb", label: "KB امتحانات", emoji: "📚", step: 10 },
+  { path: "/skill-kb", label: "KB المهارات", emoji: ":-)", step: 11 },
 ];
-
 
 const ADMIN_LINK = { path: "/admin", label: "لوحة الإدارة", emoji: "⚙️" };
 
@@ -35,7 +34,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Guests can ONLY access landing ("/") and Diagnostic Assessment ("/gaps")
   useEffect(() => {
     const publicPaths = ["/", "/auth", "/gaps", "/diagnostic", "/annales"];
-    const isPublic = publicPaths.includes(currentPath) || currentPath.startsWith("/tma") || currentPath.startsWith("/archive-solve");
+    const isPublic =
+      publicPaths.includes(currentPath) || currentPath.startsWith("/tma") || currentPath.startsWith("/archive-solve");
     if (isGuest && !isPublic) {
       navigate("/auth");
     }
@@ -45,14 +45,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (currentPath === "/" || currentPath === "/auth" || currentPath.startsWith("/tma")) return <>{children}</>;
 
   // Filter steps for navigation: Guests only see Diagnostic, Students only see learning/practice
-  const visibleSteps = WORKFLOW_STEPS.filter(step => {
-    if (isGuest) return step.path === "/gaps" || step.path === "/diagnostic"; 
+  const visibleSteps = WORKFLOW_STEPS.filter((step) => {
+    if (isGuest) return step.path === "/gaps" || step.path === "/diagnostic";
     // Admin only steps
-    if (!isAdmin && (step.path === "/exams" || step.path === "/exam-kb"|| step.path === "/skill-kb"))) return false;
+    if (!isAdmin && (step.path === "/exams" || step.path === "/exam-kb" || step.path === "/skill-kb")) return false;
     return true;
   });
 
-  const currentStep = WORKFLOW_STEPS.find(s => s.path === currentPath)?.step ?? -1;
+  const currentStep = WORKFLOW_STEPS.find((s) => s.path === currentPath)?.step ?? -1;
 
   const handleSignOut = async () => {
     await signOut();
@@ -81,10 +81,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {/* Workflow steps */}
           <div className="flex items-center gap-1 overflow-x-auto flex-1 no-scrollbar py-2">
             {visibleSteps.map((item, i) => {
-              const isActive = currentPath === item.path || 
-                (item.path === "/exercises" && ["/algebra", "/geometry", "/statistics", "/probability", "/functions"].includes(currentPath));
+              const isActive =
+                currentPath === item.path ||
+                (item.path === "/exercises" &&
+                  ["/algebra", "/geometry", "/statistics", "/probability", "/functions"].includes(currentPath));
               const isPast = item.step > 0 && item.step < currentStep;
-              
+
               return (
                 <div key={item.path} className="flex items-center flex-shrink-0 px-1">
                   {i > 0 && (
@@ -94,16 +96,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     to={item.path}
                     className={`
                       relative group flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-[13px] font-black transition-all whitespace-nowrap
-                      ${isActive 
-                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105" 
-                        : isPast 
-                          ? "text-primary/70 hover:bg-primary/5" 
-                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                      ${
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105"
+                          : isPast
+                            ? "text-primary/70 hover:bg-primary/5"
+                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                       }
                     `}
                   >
                     {isActive && (
-                      <motion.div 
+                      <motion.div
                         layoutId="nav-bg"
                         className="absolute inset-0 bg-primary rounded-2xl -z-10 shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]"
                         transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
@@ -111,7 +114,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     )}
                     <span className="text-lg group-hover:scale-125 transition-transform">{item.emoji}</span>
                     <span className="hidden xl:inline">{item.label}</span>
-                    
+
                     {isPast && !isActive && (
                       <div className="w-1.5 h-1.5 rounded-full bg-primary/60 border border-primary/20" />
                     )}
@@ -129,9 +132,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   to="/admin"
                   className={`
                     flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12px] font-black transition-all border-2
-                    ${currentPath === "/admin"
-                      ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20"
-                      : "border-border/40 text-muted-foreground hover:border-primary/40 hover:text-primary"
+                    ${
+                      currentPath === "/admin"
+                        ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20"
+                        : "border-border/40 text-muted-foreground hover:border-primary/40 hover:text-primary"
                     }
                   `}
                 >
@@ -141,9 +145,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   to="/admin/reports"
                   className={`
                     flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12px] font-black transition-all border-2
-                    ${currentPath === "/admin/reports"
-                      ? "bg-destructive/10 border-destructive/20 text-destructive shadow-lg shadow-destructive/5"
-                      : "border-border/40 text-muted-foreground hover:border-destructive/40 hover:text-destructive"
+                    ${
+                      currentPath === "/admin/reports"
+                        ? "bg-destructive/10 border-destructive/20 text-destructive shadow-lg shadow-destructive/5"
+                        : "border-border/40 text-muted-foreground hover:border-destructive/40 hover:text-destructive"
                     }
                   `}
                 >
@@ -151,7 +156,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </div>
             )}
-
 
             {user ? (
               <Link to="/profile" className="flex items-center gap-3 group">
@@ -166,7 +170,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <div className="relative">
                   <div className="absolute -inset-1 bg-gradient-to-tr from-primary to-accent rounded-xl blur-[2px] opacity-20 group-hover:opacity-100 transition-opacity" />
                   <div className="relative w-10 h-10 rounded-xl bg-muted border border-border/40 overflow-hidden flex items-center justify-center">
-                     <span className="text-lg font-black text-primary">{(profile?.full_name?.[0] || user.email?.[0] || "Q").toUpperCase()}</span>
+                    <span className="text-lg font-black text-primary">
+                      {(profile?.full_name?.[0] || user.email?.[0] || "Q").toUpperCase()}
+                    </span>
                   </div>
                 </div>
               </Link>
@@ -198,9 +204,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {currentPath !== "/" && <GamificationDashboard compact />}
 
       {/* Page content */}
-      <main className="flex-1 overflow-y-auto custom-scrollbar">
-        {children}
-      </main>
+      <main className="flex-1 overflow-y-auto custom-scrollbar">{children}</main>
     </div>
   );
 }
