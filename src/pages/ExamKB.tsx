@@ -9,17 +9,18 @@ import { ExamKBLinks } from "@/components/exam/ExamKBLinks";
 import { ExamPDFUploader } from "@/components/exam/ExamPDFUploader";
 import { ExamConfidenceAnalysis } from "@/components/exam/ExamConfidenceAnalysis";
 import { BloomTaxonomyAnalysis } from "@/components/exam/BloomTaxonomyAnalysis";
+import { ExamJSONUploader } from "@/components/exam/ExamJSONUploader";
 import type { ExamKBView } from "@/components/exam/useExamKBStore";
 
-type ExtendedView = ExamKBView | "pdf-upload" | "confidence" | "bloom";
+type ExtendedView = ExamKBView | "pdf-upload" | "confidence" | "bloom" | "json-upload";
 
 export default function ExamKBPage() {
   const primaryKB = useAdminKBStore();
   const store = useExamKBStore(primaryKB.patterns);
-  const [activeView, setActiveView] = useState<ExtendedView>("pdf-upload");
+  const [activeView, setActiveView] = useState<ExtendedView>("json-upload");
 
   const tabs: { id: ExtendedView; label: string; icon: string }[] = [
-    { id: "pdf-upload", label: "رفع PDF", icon: "📄" },
+    { id: "json-upload", label: "استيراد JSON", icon: "📦" },
     { id: "exams", label: "استيراد يدوي", icon: "📥" },
     { id: "questions", label: "الأسئلة", icon: "📋" },
     { id: "bloom", label: "تحليل بلوم", icon: "🧠" },
@@ -37,7 +38,7 @@ export default function ExamKBPage() {
           <div className="flex items-center gap-1 mr-4">
             {tabs.map(t => (
               <button key={t.id} onClick={() => {
-                if (t.id === "pdf-upload" || t.id === "confidence" || t.id === "bloom") setActiveView(t.id);
+                if (t.id === "pdf-upload" || t.id === "confidence" || t.id === "bloom" || t.id === "json-upload") setActiveView(t.id);
                 else { store.setView(t.id as ExamKBView); setActiveView(t.id); }
               }}
                 className="px-4 py-2 rounded-lg text-xs font-bold transition-all"
@@ -58,6 +59,7 @@ export default function ExamKBPage() {
       </div>
 
       <div className="max-w-7xl mx-auto p-4">
+        {activeView === "json-upload" && <ExamJSONUploader store={store} />}
         {activeView === "pdf-upload" && <ExamPDFUploader onQuestionsExtracted={() => store.reload()} />}
         {activeView === "exams" && <ExamKBImporter store={store} />}
         {activeView === "questions" && <ExamKBQuestions store={store} />}
