@@ -23,6 +23,7 @@ import StudentProfile from "@/pages/StudentProfile";
 import NotFound from "./pages/NotFound";
 import ExamArchive from "./pages/ExamArchive";
 import ExamArchiveSolver from "./pages/ExamArchiveSolver";
+import SkillsKBPage from "./pages/SkillsKB";
 
 const queryClient = new QueryClient();
 
