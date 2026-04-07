@@ -18,7 +18,9 @@ const WORKFLOW_STEPS = [
   { path: "/whatif", label: "ماذا لو؟",       emoji: "🔬", step: 8 },
   { path: "/exams", label: "الامتحانات",     emoji: "🏗️", step: 9 },
   { path: "/exam-kb", label: "KB امتحانات",  emoji: "📚", step: 10 },
+  { path: "/skill-kb", label: "KB المهارات",  emoji: "📚", step: 11 },
 ];
+
 
 const ADMIN_LINK = { path: "/admin", label: "لوحة الإدارة", emoji: "⚙️" };
 
@@ -46,7 +48,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const visibleSteps = WORKFLOW_STEPS.filter(step => {
     if (isGuest) return step.path === "/gaps" || step.path === "/diagnostic"; 
     // Admin only steps
-    if (!isAdmin && (step.path === "/exams" || step.path === "/exam-kb")) return false;
+    if (!isAdmin && (step.path === "/exams" || step.path === "/exam-kb"|| step.path === "/skill-kb"))) return false;
     return true;
   });
 
