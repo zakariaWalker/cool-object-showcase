@@ -17,7 +17,7 @@ type ExtendedView = ExamKBView | "pdf-upload" | "confidence" | "bloom" | "json-u
 export default function ExamKBPage() {
   const primaryKB = useAdminKBStore();
   const store = useExamKBStore(primaryKB.patterns);
-  const [activeView, setActiveView] = useState<ExtendedView>("pdf-upload");
+  const [activeView, setActiveView] = useState<ExtendedView>("json-upload");
 
   const tabs: { id: ExtendedView; label: string; icon: string }[] = [
     { id: "json-upload", label: "استيراد JSON", icon: "📦" },
