@@ -682,6 +682,87 @@ export type Database = {
         }
         Relationships: []
       }
+      kb_course_skill_links: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          order_index: number | null
+          skill_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          skill_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kb_course_skill_links_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "kb_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kb_course_skill_links_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "kb_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kb_courses: {
+        Row: {
+          created_at: string
+          description: string | null
+          extracted_skills: Json | null
+          file_path: string | null
+          grade: string | null
+          id: string
+          source_type: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          extracted_skills?: Json | null
+          file_path?: string | null
+          grade?: string | null
+          id?: string
+          source_type?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          extracted_skills?: Json | null
+          file_path?: string | null
+          grade?: string | null
+          id?: string
+          source_type?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       kb_deconstructions: {
         Row: {
           ai_generated: boolean | null
@@ -850,6 +931,206 @@ export type Database = {
           name?: string
           steps?: Json | null
           type?: string | null
+        }
+        Relationships: []
+      }
+      kb_skill_dependencies: {
+        Row: {
+          created_at: string
+          dependency_type: string
+          from_skill_id: string
+          id: string
+          strength: number | null
+          to_skill_id: string
+        }
+        Insert: {
+          created_at?: string
+          dependency_type?: string
+          from_skill_id: string
+          id?: string
+          strength?: number | null
+          to_skill_id: string
+        }
+        Update: {
+          created_at?: string
+          dependency_type?: string
+          from_skill_id?: string
+          id?: string
+          strength?: number | null
+          to_skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kb_skill_dependencies_from_skill_id_fkey"
+            columns: ["from_skill_id"]
+            isOneToOne: false
+            referencedRelation: "kb_skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kb_skill_dependencies_to_skill_id_fkey"
+            columns: ["to_skill_id"]
+            isOneToOne: false
+            referencedRelation: "kb_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kb_skill_errors: {
+        Row: {
+          created_at: string
+          error_description: string
+          error_type: string | null
+          fix_hint: string | null
+          frequency: number | null
+          id: string
+          severity: string | null
+          skill_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_description: string
+          error_type?: string | null
+          fix_hint?: string | null
+          frequency?: number | null
+          id?: string
+          severity?: string | null
+          skill_id: string
+        }
+        Update: {
+          created_at?: string
+          error_description?: string
+          error_type?: string | null
+          fix_hint?: string | null
+          frequency?: number | null
+          id?: string
+          severity?: string | null
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kb_skill_errors_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "kb_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kb_skill_exercise_links: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          id: string
+          skill_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          id?: string
+          skill_id: string
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kb_skill_exercise_links_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "kb_exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kb_skill_exercise_links_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "kb_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kb_skill_pattern_links: {
+        Row: {
+          created_at: string
+          id: string
+          pattern_id: string
+          skill_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pattern_id: string
+          skill_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pattern_id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kb_skill_pattern_links_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "kb_patterns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kb_skill_pattern_links_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "kb_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kb_skills: {
+        Row: {
+          bloom_level: number | null
+          created_at: string
+          description: string | null
+          difficulty: number | null
+          domain: string | null
+          frequency: number | null
+          grade: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          name_ar: string | null
+          subdomain: string | null
+        }
+        Insert: {
+          bloom_level?: number | null
+          created_at?: string
+          description?: string | null
+          difficulty?: number | null
+          domain?: string | null
+          frequency?: number | null
+          grade?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          name_ar?: string | null
+          subdomain?: string | null
+        }
+        Update: {
+          bloom_level?: number | null
+          created_at?: string
+          description?: string | null
+          difficulty?: number | null
+          domain?: string | null
+          frequency?: number | null
+          grade?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          name_ar?: string | null
+          subdomain?: string | null
         }
         Relationships: []
       }
