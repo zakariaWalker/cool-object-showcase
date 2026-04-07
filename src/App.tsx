@@ -23,6 +23,7 @@ import StudentProfile from "@/pages/StudentProfile";
 import NotFound from "./pages/NotFound";
 import ExamArchive from "./pages/ExamArchive";
 import ExamArchiveSolver from "./pages/ExamArchiveSolver";
+import SkillsKBPage from "./pages/SkillsKB";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="/archive-solve/:examId" element={<ExamArchiveSolver />} />
             <Route path="/diagnostic" element={<DiagnosticExam />} />
             <Route path="/profile" element={<StudentProfile />} />
+            <Route path="/skills-kb" element={<SkillsKBPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppShell>
