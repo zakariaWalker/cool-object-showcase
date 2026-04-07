@@ -4,7 +4,8 @@ import { callGemini, extractJSON, GeminiError } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -15,7 +16,8 @@ serve(async (req) => {
 
     if (!content_text || content_text.trim().length < 50) {
       return new Response(JSON.stringify({ error: "محتوى غير كافٍ للتحليل" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -28,7 +30,10 @@ serve(async (req) => {
     const { data: exercises } = await db.from("kb_exercises").select("id, text, type, grade").limit(200);
 
     const patternList = (patterns || []).map((p: any) => `${p.id}: ${p.name} (${p.type})`).join("\n");
-    const exerciseSample = (exercises || []).slice(0, 30).map((e: any) => `${e.id}: ${(e.text || "").slice(0, 80)}`).join("\n");
+    const exerciseSample = (exercises || [])
+      .slice(0, 30)
+      .map((e: any) => `${e.id}: ${(e.text || "").slice(0, 80)}`)
+      .join("\n");
 
     const prompt = `أنت خبير بيداغوجي في المنهج الجزائري (الجيل الثاني). حلل المحتوى التالي واستخرج المهارات (Skills) بدقة.
 
@@ -69,17 +74,18 @@ ${exerciseSample.slice(0, 2000)}
 
 أجب بـ JSON فقط بالشكل: { "skills": [...] }`;
 
-    const response = await callGemini(
-      [{ role: "user", parts: [{ text: prompt }] }],
-      { temperature: 0.15, model: "gemini-2.5-flash" }
-    );
+    const response = await callGemini([{ role: "user", parts: [{ text: prompt }] }], {
+      temperature: 0.15,
+      model: "gemini-2.5-flash",
+    });
 
     const parsed = extractJSON(response.text);
     const skills = parsed.skills || parsed;
 
     if (!Array.isArray(skills) || skills.length === 0) {
       return new Response(JSON.stringify({ error: "لم يتم استخراج مهارات", raw: response.text.slice(0, 500) }), {
-        status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 422,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -88,45 +94,60 @@ ${exerciseSample.slice(0, 2000)}
     const insertedSkills: any[] = [];
 
     for (const skill of skills) {
-      const { data: inserted, error } = await db.from("kb_skills").insert({
-        name: skill.name || "",
-        name_ar: skill.name_ar || "",
-        description: skill.description || "",
-        domain: skill.domain || "algebra",
-        subdomain: skill.subdomain || "",
-        grade: grade || "",
-        difficulty: skill.difficulty || 1,
-        bloom_level: skill.bloom_level || 3,
-      }).select("id").single();
+      const { data: inserted, error } = await db
+        .from("kb_skills")
+        .insert({
+          name: skill.name || "",
+          name_ar: skill.name_ar || "",
+          description: skill.description || "",
+          domain: skill.domain || "algebra",
+          subdomain: skill.subdomain || "",
+          grade: grade || "",
+          difficulty: skill.difficulty || 1,
+          bloom_level: skill.bloom_level || 3,
+        })
+        .select("id")
+        .single();
 
-      if (error) { console.error("Skill insert error:", error); continue; }
+      if (error) {
+        console.error("Skill insert error:", error);
+        continue;
+      }
       skillMap[skill.name] = inserted.id;
       insertedSkills.push({ ...skill, id: inserted.id });
 
       // Insert errors
       if (skill.common_errors && Array.isArray(skill.common_errors)) {
         for (const err of skill.common_errors) {
-          await db.from("kb_skill_errors").insert({
-            skill_id: inserted.id,
-            error_description: err.description || err,
-            error_type: err.type || "conceptual",
-            severity: err.severity || "medium",
-            fix_hint: err.fix_hint || "",
-          });
+          try {
+            await db.from("kb_skill_errors").insert({
+              skill_id: inserted.id,
+              error_description: err.description || err,
+              error_type: err.type || "conceptual",
+              severity: err.severity || "medium",
+              fix_hint: err.fix_hint || "",
+            });
+          } catch (e) {
+            console.error("Error insert failed:", e);
+          }
         }
       }
 
       // Link patterns
       if (skill.linked_pattern_ids && Array.isArray(skill.linked_pattern_ids)) {
         for (const pid of skill.linked_pattern_ids) {
-          await db.from("kb_skill_pattern_links").insert({ skill_id: inserted.id, pattern_id: pid }).catch(() => {});
+          try {
+            await db.from("kb_skill_pattern_links").insert({ skill_id: inserted.id, pattern_id: pid });
+          } catch {}
         }
       }
 
       // Link exercises
       if (skill.linked_exercise_ids && Array.isArray(skill.linked_exercise_ids)) {
         for (const eid of skill.linked_exercise_ids) {
-          await db.from("kb_skill_exercise_links").insert({ skill_id: inserted.id, exercise_id: eid }).catch(() => {});
+          try {
+            await db.from("kb_skill_exercise_links").insert({ skill_id: inserted.id, exercise_id: eid });
+          } catch {}
         }
       }
     }
@@ -139,11 +160,13 @@ ${exerciseSample.slice(0, 2000)}
       for (const depName of skill.dependencies) {
         const toId = skillMap[depName];
         if (!toId) continue;
-        await db.from("kb_skill_dependencies").insert({
-          from_skill_id: fromId,
-          to_skill_id: toId,
-          dependency_type: "prerequisite",
-        }).catch(() => {});
+        try {
+          await db.from("kb_skill_dependencies").insert({
+            from_skill_id: fromId,
+            to_skill_id: toId,
+            dependency_type: "prerequisite",
+          });
+        } catch {}
       }
     }
 
@@ -151,28 +174,36 @@ ${exerciseSample.slice(0, 2000)}
     if (course_id) {
       let order = 0;
       for (const skill of insertedSkills) {
-        await db.from("kb_course_skill_links").insert({
-          course_id, skill_id: skill.id, order_index: order++,
-        }).catch(() => {});
+        try {
+          await db.from("kb_course_skill_links").insert({
+            course_id,
+            skill_id: skill.id,
+            order_index: order++,
+          });
+        } catch {}
       }
       await db.from("kb_courses").update({ status: "completed", extracted_skills: insertedSkills }).eq("id", course_id);
     }
 
-    return new Response(JSON.stringify({
-      success: true,
-      skills_count: insertedSkills.length,
-      skills: insertedSkills,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
+    return new Response(
+      JSON.stringify({
+        success: true,
+        skills_count: insertedSkills.length,
+        skills: insertedSkills,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (e) {
     if (e instanceof GeminiError) {
       return new Response(JSON.stringify({ error: e.message }), {
-        status: e.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: e.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     console.error("extract-skills error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
