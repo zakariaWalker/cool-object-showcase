@@ -1,5 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { callGemini, extractJSON, GeminiError } from "../_shared/gemini.ts";
 
 const corsHeaders = {
@@ -8,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -89,76 +88,75 @@ ${exerciseSample.slice(0, 2000)}
       });
     }
 
-    // ── Insert skills ──────────────────────────────────────────────────────────
+    // ── Bulk Insert Skills to avoid edge function timeout ───────────────────
+    const skillsToInsert = skills.map((s: any) => ({
+      name: s.name || `skill_${Math.random().toString(36).substring(7)}`,
+      name_ar: s.name_ar || "",
+      description: s.description || "",
+      domain: s.domain || "algebra",
+      subdomain: s.subdomain || "",
+      grade: grade || "",
+      difficulty: s.difficulty || 1,
+      bloom_level: s.bloom_level || 3,
+    }));
+
+    const { data: insertedSkillsDB, error: skillsErr } = await db
+      .from("kb_skills")
+      .insert(skillsToInsert)
+      .select();
+
+    if (skillsErr || !insertedSkillsDB) {
+      throw new Error(`Failed to insert skills: ${skillsErr?.message}`);
+    }
+
     const skillMap: Record<string, string> = {};
-    const insertedSkills: any[] = [];
+    for (const row of insertedSkillsDB) {
+      skillMap[row.name] = row.id;
+    }
+
+    // ── Prepare related bulk inserts ─────────────────────────────────────────
+    const errorsToInsert: any[] = [];
+    const patternLinksToInsert: any[] = [];
+    const exerciseLinksToInsert: any[] = [];
 
     for (const skill of skills) {
-      const { data: inserted, error: skillErr } = await db
-        .from("kb_skills")
-        .insert({
-          name: skill.name || "",
-          name_ar: skill.name_ar || "",
-          description: skill.description || "",
-          domain: skill.domain || "algebra",
-          subdomain: skill.subdomain || "",
-          grade: grade || "",
-          difficulty: skill.difficulty || 1,
-          bloom_level: skill.bloom_level || 3,
-        })
-        .select("id")
-        .single();
+      const skillId = skillMap[skill.name];
+      if (!skillId) continue;
 
-      if (skillErr || !inserted) {
-        console.error("Skill insert error:", skillErr?.message);
-        continue;
-      }
-
-      skillMap[skill.name] = inserted.id;
-      insertedSkills.push({ ...skill, id: inserted.id });
-
-      // ── Insert common errors ─────────────────────────────────────────────────
       if (Array.isArray(skill.common_errors)) {
         for (const err of skill.common_errors) {
-          const { error: errInsertErr } = await db.from("kb_skill_errors").insert({
-            skill_id: inserted.id,
+          errorsToInsert.push({
+            skill_id: skillId,
             error_description: err.description || String(err),
             error_type: err.type || "conceptual",
             severity: err.severity || "medium",
             fix_hint: err.fix_hint || "",
           });
-          if (errInsertErr) {
-            console.error("Error insert failed:", errInsertErr.message);
-          }
         }
       }
 
-      // ── Link patterns ────────────────────────────────────────────────────────
       if (Array.isArray(skill.linked_pattern_ids)) {
         for (const pid of skill.linked_pattern_ids) {
-          const { error: linkErr } = await db
-            .from("kb_skill_pattern_links")
-            .insert({ skill_id: inserted.id, pattern_id: pid });
-          if (linkErr) {
-            console.error("Pattern link failed:", linkErr.message);
-          }
+          patternLinksToInsert.push({ skill_id: skillId, pattern_id: pid });
         }
       }
 
-      // ── Link exercises ───────────────────────────────────────────────────────
       if (Array.isArray(skill.linked_exercise_ids)) {
         for (const eid of skill.linked_exercise_ids) {
-          const { error: exLinkErr } = await db
-            .from("kb_skill_exercise_links")
-            .insert({ skill_id: inserted.id, exercise_id: eid });
-          if (exLinkErr) {
-            console.error("Exercise link failed:", exLinkErr.message);
-          }
+          exerciseLinksToInsert.push({ skill_id: skillId, exercise_id: eid });
         }
       }
     }
 
+    // Execute bulk inserts in parallel
+    await Promise.all([
+      errorsToInsert.length > 0 ? db.from("kb_skill_errors").insert(errorsToInsert) : Promise.resolve(),
+      patternLinksToInsert.length > 0 ? db.from("kb_skill_pattern_links").insert(patternLinksToInsert) : Promise.resolve(),
+      exerciseLinksToInsert.length > 0 ? db.from("kb_skill_exercise_links").insert(exerciseLinksToInsert) : Promise.resolve(),
+    ]);
+
     // ── Insert dependencies ────────────────────────────────────────────────────
+    const depsToInsert: any[] = [];
     for (const skill of skills) {
       if (!Array.isArray(skill.dependencies)) continue;
       const fromId = skillMap[skill.name];
@@ -168,45 +166,40 @@ ${exerciseSample.slice(0, 2000)}
         const toId = skillMap[depName];
         if (!toId) continue;
 
-        const { error: depErr } = await db.from("kb_skill_dependencies").insert({
+        depsToInsert.push({
           from_skill_id: fromId,
           to_skill_id: toId,
           dependency_type: "prerequisite",
         });
-        if (depErr) {
-          console.error("Dependency insert failed:", depErr.message);
-        }
       }
+    }
+    if (depsToInsert.length > 0) {
+      await db.from("kb_skill_dependencies").insert(depsToInsert);
     }
 
     // ── Link skills to course & mark complete ──────────────────────────────────
     if (course_id) {
-      let order = 0;
-      for (const skill of insertedSkills) {
-        const { error: courseLinkErr } = await db.from("kb_course_skill_links").insert({
-          course_id,
-          skill_id: skill.id,
-          order_index: order++,
-        });
-        if (courseLinkErr) {
-          console.error("Course-skill link failed:", courseLinkErr.message);
-        }
+      const courseLinks = insertedSkillsDB.map((skill, idx) => ({
+        course_id,
+        skill_id: skill.id,
+        order_index: idx,
+      }));
+
+      if (courseLinks.length > 0) {
+        await db.from("kb_course_skill_links").insert(courseLinks);
       }
 
-      const { error: updateErr } = await db
+      await db
         .from("kb_courses")
-        .update({ status: "completed", extracted_skills: insertedSkills })
+        .update({ status: "completed", extracted_skills: insertedSkillsDB })
         .eq("id", course_id);
-      if (updateErr) {
-        console.error("Course update failed:", updateErr.message);
-      }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        skills_count: insertedSkills.length,
-        skills: insertedSkills,
+        skills_count: insertedSkillsDB.length,
+        skills: insertedSkillsDB,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
