@@ -440,6 +440,45 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_kb_question_skill_links: {
+        Row: {
+          created_at: string
+          exam_question_id: string
+          id: string
+          relevance_score: number | null
+          skill_id: string
+        }
+        Insert: {
+          created_at?: string
+          exam_question_id: string
+          id?: string
+          relevance_score?: number | null
+          skill_id: string
+        }
+        Update: {
+          created_at?: string
+          exam_question_id?: string
+          id?: string
+          relevance_score?: number | null
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_kb_question_skill_links_exam_question_id_fkey"
+            columns: ["exam_question_id"]
+            isOneToOne: false
+            referencedRelation: "exam_kb_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_kb_question_skill_links_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "kb_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_kb_questions: {
         Row: {
           bloom_level: number | null
