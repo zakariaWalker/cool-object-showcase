@@ -674,23 +674,7 @@ function SkillsList({
   );
 }
 
-// ─── Skill Graph (Interactive Force-Directed) ───
-interface GraphNode {
-  id: string;
-  skill: Skill;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  errCount: number;
-}
-
-interface GraphEdge {
-  from: string;
-  to: string;
-  type: string;
-}
+// ─── Skill Graph (Structured Domain View) ───
 
 function SkillGraph({
   skills,
