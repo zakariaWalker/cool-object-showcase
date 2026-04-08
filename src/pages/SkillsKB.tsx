@@ -674,23 +674,7 @@ function SkillsList({
   );
 }
 
-// ─── Skill Graph (Interactive Force-Directed) ───
-interface GraphNode {
-  id: string;
-  skill: Skill;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  errCount: number;
-}
-
-interface GraphEdge {
-  from: string;
-  to: string;
-  type: string;
-}
+// ─── Skill Graph (Structured Domain View) ───
 
 function SkillGraph({
   skills,
@@ -703,22 +687,9 @@ function SkillGraph({
   errors: SkillError[];
   onSelect: (s: Skill) => void;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const nodesRef = useRef<GraphNode[]>([]);
-  const edgesRef = useRef<GraphEdge[]>([]);
-  const animRef = useRef<number>(0);
-  const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
-  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
-  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [domainFilter, setDomainFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"radial" | "cluster" | "hierarchy">("radial");
-
-  // Camera state
-  const camRef = useRef({ x: 0, y: 0, zoom: 1 });
-  const dragRef = useRef<{ active: boolean; startX: number; startY: number; camStartX: number; camStartY: number }>({
-    active: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0,
-  });
+  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
+  const [viewMode, setViewMode] = useState<"domain" | "bloom">("domain");
 
   const errorCountMap = useMemo(() => {
     const m: Record<string, number> = {};
@@ -726,566 +697,102 @@ function SkillGraph({
     return m;
   }, [errors]);
 
+  const activeDomains = useMemo(() => {
+    const ds = new Set<string>();
+    skills.forEach((s) => ds.add(s.domain || "other"));
+    return Array.from(ds).sort();
+  }, [skills]);
+
   const filteredSkills = useMemo(() => {
     if (domainFilter === "all") return skills;
     return skills.filter((s) => s.domain === domainFilter);
   }, [skills, domainFilter]);
 
-  const activeDomains = useMemo(() => {
-    const ds = new Set<string>();
-    skills.forEach((s) => ds.add(s.domain || "other"));
-    return Array.from(ds);
-  }, [skills]);
-
-  // Initialize node positions with radial / cluster / hierarchy layout
-  useEffect(() => {
-    if (filteredSkills.length === 0) return;
-
-    const byDomain: Record<string, Skill[]> = {};
+  // Group skills by domain → subdomain
+  const grouped = useMemo(() => {
+    const map: Record<string, Record<string, Skill[]>> = {};
     filteredSkills.forEach((s) => {
       const d = s.domain || "other";
-      if (!byDomain[d]) byDomain[d] = [];
-      byDomain[d].push(s);
+      const sd = s.subdomain || "عام";
+      if (!map[d]) map[d] = {};
+      if (!map[d][sd]) map[d][sd] = [];
+      map[d][sd].push(s);
     });
+    return map;
+  }, [filteredSkills]);
 
-    const domains = Object.keys(byDomain);
-    const cX = 600, cY = 400;
-    const nodes: GraphNode[] = [];
+  // Group by bloom level
+  const bloomGrouped = useMemo(() => {
+    const map: Record<number, Skill[]> = {};
+    filteredSkills.forEach((s) => {
+      const bl = s.bloom_level || 1;
+      if (!map[bl]) map[bl] = [];
+      map[bl].push(s);
+    });
+    return map;
+  }, [filteredSkills]);
 
-    if (viewMode === "radial") {
-      domains.forEach((domain, di) => {
-        const angle = (di / domains.length) * Math.PI * 2 - Math.PI / 2;
-        const clusterRadius = 180 + domains.length * 15;
-        const cx = cX + Math.cos(angle) * clusterRadius;
-        const cy = cY + Math.sin(angle) * clusterRadius;
-        const items = byDomain[domain];
-        items.forEach((skill, si) => {
-          const subAngle = (si / items.length) * Math.PI * 2;
-          const subR = 30 + items.length * 10;
-          const baseR = 14 + (skill.difficulty || 1) * 3;
-          nodes.push({
-            id: skill.id, skill,
-            x: cx + Math.cos(subAngle) * subR + (Math.random() - 0.5) * 20,
-            y: cy + Math.sin(subAngle) * subR + (Math.random() - 0.5) * 20,
-            vx: 0, vy: 0,
-            radius: baseR,
-            errCount: errorCountMap[skill.id] || 0,
-          });
-        });
-      });
-    } else if (viewMode === "cluster") {
-      const cols = Math.ceil(Math.sqrt(domains.length));
-      domains.forEach((domain, di) => {
-        const col = di % cols;
-        const row = Math.floor(di / cols);
-        const cx = 200 + col * 380;
-        const cy = 200 + row * 380;
-        const items = byDomain[domain];
-        items.forEach((skill, si) => {
-          const gridCols = Math.ceil(Math.sqrt(items.length));
-          const gCol = si % gridCols;
-          const gRow = Math.floor(si / gridCols);
-          const baseR = 14 + (skill.difficulty || 1) * 3;
-          nodes.push({
-            id: skill.id, skill,
-            x: cx + (gCol - gridCols / 2) * 65 + (Math.random() - 0.5) * 10,
-            y: cy + (gRow - gridCols / 2) * 65 + (Math.random() - 0.5) * 10,
-            vx: 0, vy: 0,
-            radius: baseR,
-            errCount: errorCountMap[skill.id] || 0,
-          });
-        });
-      });
-    } else {
-      // hierarchy: sort by bloom level top->bottom
-      const sorted = [...filteredSkills].sort((a, b) => (a.bloom_level || 1) - (b.bloom_level || 1));
-      const bloomGroups: Record<number, Skill[]> = {};
-      sorted.forEach((s) => {
-        const bl = s.bloom_level || 1;
-        if (!bloomGroups[bl]) bloomGroups[bl] = [];
-        bloomGroups[bl].push(s);
-      });
-      const levels = Object.keys(bloomGroups).map(Number).sort();
-      levels.forEach((lvl, li) => {
-        const items = bloomGroups[lvl];
-        items.forEach((skill, si) => {
-          const baseR = 14 + (skill.difficulty || 1) * 3;
-          nodes.push({
-            id: skill.id, skill,
-            x: 200 + (si - items.length / 2) * 70 + (Math.random() - 0.5) * 10,
-            y: 100 + li * 120,
-            vx: 0, vy: 0,
-            radius: baseR,
-            errCount: errorCountMap[skill.id] || 0,
-          });
-        });
-      });
-    }
-
-    const edges: GraphEdge[] = deps
-      .filter((d) => nodes.some((n) => n.id === d.from_skill_id) && nodes.some((n) => n.id === d.to_skill_id))
-      .map((d) => ({ from: d.from_skill_id, to: d.to_skill_id, type: d.dependency_type }));
-
-    nodesRef.current = nodes;
-    edgesRef.current = edges;
-
-    // Light force simulation (30 iterations)
-    for (let iter = 0; iter < 30; iter++) {
-      const nodeMap: Record<string, GraphNode> = {};
-      nodesRef.current.forEach((n) => { nodeMap[n.id] = n; });
-
-      // Repulsion
-      for (let i = 0; i < nodesRef.current.length; i++) {
-        for (let j = i + 1; j < nodesRef.current.length; j++) {
-          const a = nodesRef.current[i], b = nodesRef.current[j];
-          let dx = b.x - a.x, dy = b.y - a.y;
-          let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          const minDist = a.radius + b.radius + 30;
-          if (dist < minDist) {
-            const force = (minDist - dist) * 0.3;
-            const fx = (dx / dist) * force, fy = (dy / dist) * force;
-            a.x -= fx; a.y -= fy;
-            b.x += fx; b.y += fy;
-          }
-        }
-      }
-      // Edge attraction
-      edges.forEach((e) => {
-        const a = nodeMap[e.from], b = nodeMap[e.to];
-        if (!a || !b) return;
-        let dx = b.x - a.x, dy = b.y - a.y;
-        let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const targetDist = 100;
-        if (dist > targetDist) {
-          const force = (dist - targetDist) * 0.01;
-          const fx = (dx / dist) * force, fy = (dy / dist) * force;
-          a.x += fx; a.y += fy;
-          b.x -= fx; b.y -= fy;
-        }
-      });
-    }
-
-    // Center camera on the graph
-    if (nodesRef.current.length > 0) {
-      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      nodesRef.current.forEach((n) => {
-        minX = Math.min(minX, n.x - n.radius);
-        maxX = Math.max(maxX, n.x + n.radius);
-        minY = Math.min(minY, n.y - n.radius);
-        maxY = Math.max(maxY, n.y + n.radius);
-      });
-      const gw = maxX - minX + 200, gh = maxY - minY + 200;
-      const container = containerRef.current;
-      if (container) {
-        const cw = container.clientWidth, ch = container.clientHeight;
-        const zoom = Math.min(cw / gw, ch / gh, 1.5);
-        camRef.current = {
-          x: -(minX - 100) * zoom + (cw - gw * zoom) / 2,
-          y: -(minY - 100) * zoom + (ch - gh * zoom) / 2,
-          zoom,
-        };
-      }
-    }
-  }, [filteredSkills, deps, errorCountMap, viewMode]);
-
-  // Canvas rendering loop
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const resize = () => {
-      const container = containerRef.current;
-      if (!container) return;
-      canvas.width = container.clientWidth * dpr;
-      canvas.height = container.clientHeight * dpr;
-      canvas.style.width = container.clientWidth + "px";
-      canvas.style.height = container.clientHeight + "px";
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Dependency info for selected skill
+  const selectedDeps = useMemo(() => {
+    if (!selectedSkill) return { prerequisites: [] as Skill[], dependents: [] as Skill[] };
+    const prereqIds = deps.filter(d => d.to_skill_id === selectedSkill.id).map(d => d.from_skill_id);
+    const depIds = deps.filter(d => d.from_skill_id === selectedSkill.id).map(d => d.to_skill_id);
+    return {
+      prerequisites: skills.filter(s => prereqIds.includes(s.id)),
+      dependents: skills.filter(s => depIds.includes(s.id)),
     };
-    resize();
-    window.addEventListener("resize", resize);
+  }, [selectedSkill, deps, skills]);
 
-    const domainColorValues: Record<string, string> = {
-      algebra: "#6366f1",
-      geometry: "#f59e0b",
-      statistics: "#10b981",
-      probability: "#ef4444",
-      functions: "#8b5cf6",
-      other: "#64748b",
-    };
+  const DOMAIN_SVG: Record<string, (size: number, color: string) => React.ReactNode> = {
+    algebra: (sz, c) => (
+      <svg width={sz} height={sz} viewBox="0 0 32 32" fill="none">
+        <rect x="2" y="2" width="28" height="28" rx="6" fill={c} fillOpacity="0.15" stroke={c} strokeWidth="1.5"/>
+        <text x="16" y="21" textAnchor="middle" fill={c} fontSize="16" fontWeight="bold" fontFamily="serif">x²</text>
+      </svg>
+    ),
+    geometry: (sz, c) => (
+      <svg width={sz} height={sz} viewBox="0 0 32 32" fill="none">
+        <rect x="2" y="2" width="28" height="28" rx="6" fill={c} fillOpacity="0.15" stroke={c} strokeWidth="1.5"/>
+        <polygon points="16,6 6,26 26,26" fill="none" stroke={c} strokeWidth="1.8" strokeLinejoin="round"/>
+        <circle cx="16" cy="20" r="2" fill={c}/>
+      </svg>
+    ),
+    statistics: (sz, c) => (
+      <svg width={sz} height={sz} viewBox="0 0 32 32" fill="none">
+        <rect x="2" y="2" width="28" height="28" rx="6" fill={c} fillOpacity="0.15" stroke={c} strokeWidth="1.5"/>
+        <rect x="7" y="18" width="4" height="8" rx="1" fill={c} fillOpacity="0.6"/>
+        <rect x="14" y="12" width="4" height="14" rx="1" fill={c} fillOpacity="0.8"/>
+        <rect x="21" y="8" width="4" height="18" rx="1" fill={c}/>
+      </svg>
+    ),
+    probability: (sz, c) => (
+      <svg width={sz} height={sz} viewBox="0 0 32 32" fill="none">
+        <rect x="2" y="2" width="28" height="28" rx="6" fill={c} fillOpacity="0.15" stroke={c} strokeWidth="1.5"/>
+        <circle cx="16" cy="16" r="8" fill="none" stroke={c} strokeWidth="1.5"/>
+        <circle cx="12" cy="14" r="1.5" fill={c}/><circle cx="20" cy="14" r="1.5" fill={c}/>
+        <circle cx="16" cy="19" r="1.5" fill={c}/>
+      </svg>
+    ),
+    functions: (sz, c) => (
+      <svg width={sz} height={sz} viewBox="0 0 32 32" fill="none">
+        <rect x="2" y="2" width="28" height="28" rx="6" fill={c} fillOpacity="0.15" stroke={c} strokeWidth="1.5"/>
+        <text x="16" y="22" textAnchor="middle" fill={c} fontSize="18" fontWeight="bold" fontStyle="italic" fontFamily="serif">ƒ</text>
+      </svg>
+    ),
+  };
 
-    const bloomLabels = ["", "تذكر", "فهم", "تطبيق", "تحليل", "تقييم", "إبداع"];
+  const defaultSvg = (sz: number, c: string) => (
+    <svg width={sz} height={sz} viewBox="0 0 32 32" fill="none">
+      <rect x="2" y="2" width="28" height="28" rx="6" fill={c} fillOpacity="0.15" stroke={c} strokeWidth="1.5"/>
+      <circle cx="16" cy="16" r="6" fill="none" stroke={c} strokeWidth="1.5"/>
+      <circle cx="16" cy="16" r="2" fill={c}/>
+    </svg>
+  );
 
-    function hexToRgb(hex: string) {
-      const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
-      return { r, g, b };
-    }
-
-    let frameTime = 0;
-    function draw() {
-      if (!ctx || !canvas) return;
-      const w = canvas.width / dpr, h = canvas.height / dpr;
-      const cam = camRef.current;
-      frameTime += 0.016;
-
-      ctx.clearRect(0, 0, w, h);
-
-      // Background subtle grid
-      ctx.save();
-      ctx.translate(cam.x, cam.y);
-      ctx.scale(cam.zoom, cam.zoom);
-
-      const gridSize = 50;
-      ctx.strokeStyle = "rgba(120, 120, 140, 0.06)";
-      ctx.lineWidth = 0.5 / cam.zoom;
-      const startX = Math.floor(-cam.x / cam.zoom / gridSize) * gridSize - gridSize;
-      const startY = Math.floor(-cam.y / cam.zoom / gridSize) * gridSize - gridSize;
-      const endX = startX + w / cam.zoom + gridSize * 2;
-      const endY = startY + h / cam.zoom + gridSize * 2;
-      for (let gx = startX; gx < endX; gx += gridSize) {
-        ctx.beginPath(); ctx.moveTo(gx, startY); ctx.lineTo(gx, endY); ctx.stroke();
-      }
-      for (let gy = startY; gy < endY; gy += gridSize) {
-        ctx.beginPath(); ctx.moveTo(startX, gy); ctx.lineTo(endX, gy); ctx.stroke();
-      }
-
-      const nodes = nodesRef.current;
-      const edges = edgesRef.current;
-      const nodeMap: Record<string, GraphNode> = {};
-      nodes.forEach((n) => { nodeMap[n.id] = n; });
-
-      // Draw domain zone backgrounds (faint circles)
-      if (viewMode === "radial") {
-        const byDomain: Record<string, GraphNode[]> = {};
-        nodes.forEach((n) => {
-          const d = n.skill.domain || "other";
-          if (!byDomain[d]) byDomain[d] = [];
-          byDomain[d].push(n);
-        });
-        Object.entries(byDomain).forEach(([domain, dns]) => {
-          if (dns.length < 2) return;
-          let cx = 0, cy = 0;
-          dns.forEach((n) => { cx += n.x; cy += n.y; });
-          cx /= dns.length; cy /= dns.length;
-          let maxR = 0;
-          dns.forEach((n) => {
-            const d = Math.sqrt((n.x - cx) ** 2 + (n.y - cy) ** 2) + n.radius;
-            if (d > maxR) maxR = d;
-          });
-          const color = domainColorValues[domain] || domainColorValues.other;
-          const rgb = hexToRgb(color);
-          const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR + 40);
-          grad.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.06)`);
-          grad.addColorStop(0.7, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.03)`);
-          grad.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
-          ctx.fillStyle = grad;
-          ctx.beginPath();
-          ctx.arc(cx, cy, maxR + 40, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Domain label
-          ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)`;
-          ctx.font = `bold ${14 / cam.zoom > 14 ? 14 : Math.max(10, 14)}px Inter, system-ui, sans-serif`;
-          ctx.textAlign = "center";
-          ctx.fillText(
-            `${DOMAIN_ICONS[domain] || "•"} ${domain}`,
-            cx, cy - maxR - 18,
-          );
-        });
-      }
-
-      // Draw edges (bezier curves)
-      edges.forEach((edge) => {
-        const from = nodeMap[edge.from], to = nodeMap[edge.to];
-        if (!from || !to) return;
-
-        const isHighlighted = hoveredNode && (hoveredNode.id === edge.from || hoveredNode.id === edge.to);
-        const isSelected = selectedNode && (selectedNode.id === edge.from || selectedNode.id === edge.to);
-        const opacity = hoveredNode
-          ? (isHighlighted ? 0.8 : 0.08)
-          : selectedNode
-            ? (isSelected ? 0.9 : 0.08)
-            : 0.2;
-
-        const dx = to.x - from.x, dy = to.y - from.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const perpX = -dy / dist * 25, perpY = dx / dist * 25;
-        const midX = (from.x + to.x) / 2 + perpX;
-        const midY = (from.y + to.y) / 2 + perpY;
-
-        // Edge color from source domain
-        const edgeColor = domainColorValues[from.skill.domain] || domainColorValues.other;
-        const rgb = hexToRgb(edgeColor);
-
-        ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
-        ctx.lineWidth = isHighlighted || isSelected ? 2.5 : 1.2;
-        if (edge.type === "enhances") {
-          ctx.setLineDash([6, 4]);
-        } else {
-          ctx.setLineDash([]);
-        }
-
-        ctx.beginPath();
-        ctx.moveTo(from.x, from.y);
-        ctx.quadraticCurveTo(midX, midY, to.x, to.y);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Arrowhead
-        const t = 0.85;
-        const arrowX = (1 - t) * (1 - t) * from.x + 2 * (1 - t) * t * midX + t * t * to.x;
-        const arrowY = (1 - t) * (1 - t) * from.y + 2 * (1 - t) * t * midY + t * t * to.y;
-        const tangentX = 2 * (1 - t) * (midX - from.x) + 2 * t * (to.x - midX);
-        const tangentY = 2 * (1 - t) * (midY - from.y) + 2 * t * (to.y - midY);
-        const angle = Math.atan2(tangentY, tangentX);
-        const arrowSize = isHighlighted || isSelected ? 8 : 5;
-
-        ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
-        ctx.beginPath();
-        ctx.moveTo(arrowX + Math.cos(angle) * arrowSize, arrowY + Math.sin(angle) * arrowSize);
-        ctx.lineTo(arrowX + Math.cos(angle + 2.5) * arrowSize, arrowY + Math.sin(angle + 2.5) * arrowSize);
-        ctx.lineTo(arrowX + Math.cos(angle - 2.5) * arrowSize, arrowY + Math.sin(angle - 2.5) * arrowSize);
-        ctx.closePath();
-        ctx.fill();
-      });
-
-      // Draw nodes
-      nodes.forEach((node) => {
-        const color = domainColorValues[node.skill.domain] || domainColorValues.other;
-        const rgb = hexToRgb(color);
-        const isHovered = hoveredNode?.id === node.id;
-        const isSel = selectedNode?.id === node.id;
-        const isConnected = hoveredNode && edges.some(
-          (e) => (e.from === hoveredNode.id && e.to === node.id) || (e.to === hoveredNode.id && e.from === node.id),
-        );
-        const dimmed = (hoveredNode && !isHovered && !isConnected) || (selectedNode && !isSel && !edges.some(
-          (e) => (e.from === selectedNode.id && e.to === node.id) || (e.to === selectedNode.id && e.from === node.id),
-        ));
-
-        const r = node.radius;
-        const alphaBase = dimmed ? 0.15 : 1;
-
-        // Outer glow
-        if ((isHovered || isSel) && !dimmed) {
-          const glow = ctx.createRadialGradient(node.x, node.y, r, node.x, node.y, r * 2.5);
-          glow.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`);
-          glow.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
-          ctx.fillStyle = glow;
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, r * 2.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // Animated pulse ring for hovered
-        if (isHovered) {
-          const pulseR = r + 4 + Math.sin(frameTime * 4) * 3;
-          ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${0.4 + Math.sin(frameTime * 4) * 0.15})`;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, pulseR, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-
-        // Main circle with gradient
-        const grad = ctx.createRadialGradient(node.x - r * 0.3, node.y - r * 0.3, 0, node.x, node.y, r);
-        if (isSel || isHovered) {
-          grad.addColorStop(0, `rgba(${Math.min(255, rgb.r + 60)}, ${Math.min(255, rgb.g + 60)}, ${Math.min(255, rgb.b + 60)}, ${alphaBase})`);
-          grad.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alphaBase})`);
-        } else {
-          grad.addColorStop(0, `rgba(${Math.min(255, rgb.r + 40)}, ${Math.min(255, rgb.g + 40)}, ${Math.min(255, rgb.b + 40)}, ${alphaBase * 0.85})`);
-          grad.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alphaBase * 0.7})`);
-        }
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Border
-        ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${dimmed ? 0.1 : (isHovered || isSel ? 1 : 0.5)})`;
-        ctx.lineWidth = isHovered || isSel ? 2.5 : 1;
-        ctx.stroke();
-
-        // Bloom level ring (outer arc)
-        const bloomFrac = (node.skill.bloom_level || 1) / 6;
-        ctx.strokeStyle = `rgba(255, 255, 255, ${dimmed ? 0.05 : 0.5})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, r + 3, -Math.PI / 2, -Math.PI / 2 + bloomFrac * Math.PI * 2);
-        ctx.stroke();
-
-        // Label inside node
-        if (!dimmed) {
-          ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-          ctx.font = `bold ${Math.max(7, r * 0.55)}px Inter, system-ui, sans-serif`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          const label = (node.skill.name_ar || node.skill.name).slice(0, 8);
-          ctx.fillText(label, node.x, node.y);
-        }
-
-        // Error indicator badge
-        if (node.errCount > 0 && !dimmed) {
-          const badgeR = 7;
-          const bx = node.x + r * 0.7, by = node.y - r * 0.7;
-          ctx.fillStyle = "#ef4444";
-          ctx.beginPath();
-          ctx.arc(bx, by, badgeR, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = "#fff";
-          ctx.font = "bold 8px Inter, system-ui, sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(String(node.errCount), bx, by);
-        }
-
-        // Difficulty dots below node
-        if (!dimmed) {
-          const diff = node.skill.difficulty || 1;
-          const dotStartX = node.x - (diff - 1) * 4;
-          for (let d = 0; d < diff; d++) {
-            ctx.fillStyle = `rgba(255, 255, 255, ${d < diff ? 0.7 : 0.2})`;
-            ctx.beginPath();
-            ctx.arc(dotStartX + d * 8, node.y + r + 7, 2, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-      });
-
-      ctx.restore();
-
-      // ── Mini-map ──
-      const mmW = 140, mmH = 100;
-      const mmX = w - mmW - 12, mmY = h - mmH - 12;
-      ctx.fillStyle = "rgba(15, 15, 25, 0.7)";
-      ctx.strokeStyle = "rgba(100, 100, 120, 0.3)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.roundRect(mmX, mmY, mmW, mmH, 8);
-      ctx.fill();
-      ctx.stroke();
-
-      if (nodes.length > 0) {
-        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-        nodes.forEach((n) => {
-          minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
-          minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
-        });
-        const gw = maxX - minX + 100, gh = maxY - minY + 100;
-        const mmScale = Math.min((mmW - 16) / gw, (mmH - 16) / gh);
-        const mmOx = mmX + 8 + ((mmW - 16) - gw * mmScale) / 2;
-        const mmOy = mmY + 8 + ((mmH - 16) - gh * mmScale) / 2;
-
-        nodes.forEach((n) => {
-          const color = domainColorValues[n.skill.domain] || domainColorValues.other;
-          ctx.fillStyle = color;
-          ctx.beginPath();
-          ctx.arc(
-            mmOx + (n.x - minX + 50) * mmScale,
-            mmOy + (n.y - minY + 50) * mmScale,
-            2, 0, Math.PI * 2,
-          );
-          ctx.fill();
-        });
-
-        // Viewport rect
-        const vpX = (-cam.x / cam.zoom - minX + 50) * mmScale + mmOx;
-        const vpY = (-cam.y / cam.zoom - minY + 50) * mmScale + mmOy;
-        const vpW = (w / cam.zoom) * mmScale;
-        const vpH = (h / cam.zoom) * mmScale;
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(vpX, vpY, vpW, vpH);
-      }
-
-      animRef.current = requestAnimationFrame(draw);
-    }
-
-    animRef.current = requestAnimationFrame(draw);
-    return () => {
-      cancelAnimationFrame(animRef.current);
-      window.removeEventListener("resize", resize);
-    };
-  }, [hoveredNode, selectedNode, viewMode]);
-
-  // Mouse interaction handlers
-  const screenToWorld = useCallback((sx: number, sy: number) => {
-    const cam = camRef.current;
-    return { x: (sx - cam.x) / cam.zoom, y: (sy - cam.y) / cam.zoom };
-  }, []);
-
-  const getNodeAt = useCallback((wx: number, wy: number): GraphNode | null => {
-    const nodes = nodesRef.current;
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      const n = nodes[i];
-      const dx = wx - n.x, dy = wy - n.y;
-      if (dx * dx + dy * dy <= (n.radius + 4) * (n.radius + 4)) return n;
-    }
-    return null;
-  }, []);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-    const wp = screenToWorld(sx, sy);
-    const node = getNodeAt(wp.x, wp.y);
-
-    if (node) {
-      setSelectedNode((prev) => prev?.id === node.id ? null : node);
-      onSelect(node.skill);
-    } else {
-      setSelectedNode(null);
-      dragRef.current = { active: true, startX: e.clientX, startY: e.clientY, camStartX: camRef.current.x, camStartY: camRef.current.y };
-    }
-  }, [screenToWorld, getNodeAt, onSelect]);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-
-    if (dragRef.current.active) {
-      camRef.current.x = dragRef.current.camStartX + (e.clientX - dragRef.current.startX);
-      camRef.current.y = dragRef.current.camStartY + (e.clientY - dragRef.current.startY);
-      return;
-    }
-
-    const wp = screenToWorld(sx, sy);
-    const node = getNodeAt(wp.x, wp.y);
-    setHoveredNode(node);
-    setTooltipPos({ x: sx, y: sy });
-  }, [screenToWorld, getNodeAt]);
-
-  const handleMouseUp = useCallback(() => {
-    dragRef.current.active = false;
-  }, []);
-
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-    const cam = camRef.current;
-    const oldZoom = cam.zoom;
-    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-    const newZoom = Math.min(3, Math.max(0.2, oldZoom * zoomFactor));
-    cam.x = sx - (sx - cam.x) * (newZoom / oldZoom);
-    cam.y = sy - (sy - cam.y) * (newZoom / oldZoom);
-    cam.zoom = newZoom;
-  }, []);
-
-  const depDetailsForNode = useCallback((nodeId: string) => {
-    const edges = edgesRef.current;
-    const nodes = nodesRef.current;
-    const deps = edges.filter((e) => e.from === nodeId).map((e) => nodes.find((n) => n.id === e.to)?.skill).filter(Boolean);
-    const dependents = edges.filter((e) => e.to === nodeId).map((e) => nodes.find((n) => n.id === e.from)?.skill).filter(Boolean);
-    return { deps, dependents };
-  }, []);
+  const handleClick = (s: Skill) => {
+    setSelectedSkill(prev => prev?.id === s.id ? null : s);
+    onSelect(s);
+  };
 
   if (skills.length === 0) {
     return (
@@ -1297,219 +804,263 @@ function SkillGraph({
   }
 
   return (
-    <div className="space-y-3">
-      {/* Controls bar */}
-      <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-2">
+    <div className="space-y-4">
+      {/* Controls */}
+      <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-2 flex-wrap">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-bold text-muted-foreground">العرض:</span>
-          {(["radial", "cluster", "hierarchy"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => setViewMode(m)}
+          <span className="text-xs font-bold text-muted-foreground">التنظيم:</span>
+          {(["domain", "bloom"] as const).map(m => (
+            <button key={m} onClick={() => setViewMode(m)}
               className="px-2.5 py-1 rounded-md text-[11px] font-bold transition-all"
               style={{
                 background: viewMode === m ? "hsl(var(--primary))" : "transparent",
                 color: viewMode === m ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
-              }}
-            >
-              {m === "radial" ? "🌐 شعاعي" : m === "cluster" ? "🧩 عنقودي" : "📊 هرمي"}
+              }}>
+              {m === "domain" ? "📂 حسب المجال" : "🧠 حسب بلوم"}
             </button>
           ))}
         </div>
         <div className="w-px h-5 bg-border" />
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-bold text-muted-foreground">المجال:</span>
-          <button
-            onClick={() => setDomainFilter("all")}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button onClick={() => setDomainFilter("all")}
             className="px-2 py-1 rounded-md text-[11px] font-bold transition-all"
             style={{
               background: domainFilter === "all" ? "hsl(var(--primary))" : "transparent",
               color: domainFilter === "all" ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
-            }}
-          >
-            الكل
-          </button>
-          {activeDomains.map((d) => (
-            <button
-              key={d}
-              onClick={() => setDomainFilter(d)}
-              className="px-2 py-1 rounded-md text-[11px] font-bold transition-all"
-              style={{
-                background: domainFilter === d ? DOMAIN_COLORS[d] || DOMAIN_COLORS.other : "transparent",
-                color: domainFilter === d ? "#fff" : DOMAIN_COLORS[d] || DOMAIN_COLORS.other,
-              }}
-            >
-              {DOMAIN_ICONS[d] || "•"} {d}
-            </button>
-          ))}
+            }}>الكل ({skills.length})</button>
+          {activeDomains.map(d => {
+            const count = skills.filter(s => s.domain === d).length;
+            return (
+              <button key={d} onClick={() => setDomainFilter(d)}
+                className="px-2 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1"
+                style={{
+                  background: domainFilter === d ? (DOMAIN_COLORS[d] || DOMAIN_COLORS.other) : "transparent",
+                  color: domainFilter === d ? "#fff" : (DOMAIN_COLORS[d] || DOMAIN_COLORS.other),
+                }}>
+                {DOMAIN_ICONS[d] || "•"} {d} ({count})
+              </button>
+            );
+          })}
         </div>
-        <div className="mr-auto flex items-center gap-2 text-[10px] text-muted-foreground">
-          <span>🖱️ اسحب للتحريك</span>
-          <span>🔍 مرر للتكبير</span>
-          <span>👆 انقر على مهارة</span>
-        </div>
+        <span className="text-[10px] text-muted-foreground mr-auto">{filteredSkills.length} مهارة · {deps.length} رابط · {errors.length} خطأ</span>
       </div>
 
-      {/* Canvas + Legend */}
-      <div className="flex gap-3">
-        <div
-          ref={containerRef}
-          className="flex-1 bg-[#0c0c18] border border-border rounded-xl overflow-hidden relative"
-          style={{ height: 560 }}
-        >
-          <canvas
-            ref={canvasRef}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={() => { handleMouseUp(); setHoveredNode(null); }}
-            onWheel={handleWheel}
-            className="cursor-grab active:cursor-grabbing"
-          />
-
-          {/* Tooltip */}
-          <AnimatePresence>
-            {hoveredNode && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="absolute z-30 pointer-events-none"
-                style={{
-                  left: Math.min(tooltipPos.x + 16, (containerRef.current?.clientWidth || 600) - 280),
-                  top: Math.min(tooltipPos.y - 10, (containerRef.current?.clientHeight || 400) - 180),
-                }}
-              >
-                <div className="bg-card/95 backdrop-blur-xl border border-border rounded-xl p-3 shadow-2xl w-64" dir="rtl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: DOMAIN_COLORS[hoveredNode.skill.domain] || DOMAIN_COLORS.other }}
-                    />
-                    <span className="font-bold text-sm text-foreground">{hoveredNode.skill.name_ar || hoveredNode.skill.name}</span>
-                  </div>
-                  {hoveredNode.skill.name_ar && (
-                    <div className="text-[10px] text-muted-foreground mb-1 font-mono">{hoveredNode.skill.name}</div>
-                  )}
-                  <p className="text-[11px] text-muted-foreground mb-2 line-clamp-2">{hoveredNode.skill.description}</p>
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[9px] font-bold rounded">
-                      {DOMAIN_ICONS[hoveredNode.skill.domain]} {hoveredNode.skill.domain}
-                    </span>
-                    <span className="px-1.5 py-0.5 bg-secondary text-secondary-foreground text-[9px] font-bold rounded">
-                      B{hoveredNode.skill.bloom_level} · {BLOOM_LABELS[hoveredNode.skill.bloom_level] || ""}
-                    </span>
-                    <span className="px-1.5 py-0.5 bg-secondary text-secondary-foreground text-[9px] font-bold rounded">
-                      D{hoveredNode.skill.difficulty}
-                    </span>
-                    {hoveredNode.errCount > 0 && (
-                      <span className="px-1.5 py-0.5 bg-destructive/20 text-destructive text-[9px] font-bold rounded">
-                        ⚠ {hoveredNode.errCount} أخطاء
-                      </span>
+      <div className="flex gap-4">
+        {/* Main content */}
+        <div className="flex-1 space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+          {viewMode === "domain" ? (
+            Object.entries(grouped).sort((a, b) => Object.values(b[1]).flat().length - Object.values(a[1]).flat().length).map(([domain, subdomains]) => {
+              const domainColor = DOMAIN_COLORS[domain] || DOMAIN_COLORS.other;
+              const domainSkills = Object.values(subdomains).flat();
+              const domainErrors = domainSkills.reduce((sum, s) => sum + (errorCountMap[s.id] || 0), 0);
+              const avgBloom = domainSkills.length > 0 ? (domainSkills.reduce((sum, s) => sum + (s.bloom_level || 1), 0) / domainSkills.length).toFixed(1) : "0";
+              return (
+                <div key={domain} className="rounded-xl border border-border bg-card overflow-hidden">
+                  {/* Domain header */}
+                  <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: `2px solid ${domainColor}30` }}>
+                    {(DOMAIN_SVG[domain] || defaultSvg)(28, domainColor)}
+                    <div>
+                      <h3 className="text-sm font-black text-foreground capitalize">{domain}</h3>
+                      <p className="text-[10px] text-muted-foreground">{domainSkills.length} مهارة · {Object.keys(subdomains).length} فرع · بلوم {avgBloom}</p>
+                    </div>
+                    {domainErrors > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-bold mr-auto">⚠ {domainErrors} خطأ</span>
                     )}
                   </div>
-                  {(() => {
-                    const { deps: skillDeps, dependents } = depDetailsForNode(hoveredNode.id);
-                    return (
-                      <>
-                        {skillDeps.length > 0 && (
-                          <div className="text-[10px] text-muted-foreground">
-                            <span className="font-bold text-foreground">يعتمد على: </span>
-                            {skillDeps.map((s: any) => s.name_ar || s.name).join("، ")}
-                          </div>
-                        )}
-                        {dependents.length > 0 && (
-                          <div className="text-[10px] text-muted-foreground mt-0.5">
-                            <span className="font-bold text-foreground">تعتمد عليه: </span>
-                            {dependents.map((s: any) => s.name_ar || s.name).join("، ")}
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Legend sidebar */}
-        <div className="w-56 bg-card border border-border rounded-xl p-4 space-y-4 shrink-0">
-          <h3 className="text-xs font-black text-foreground">📖 دليل الخريطة</h3>
-
-          {/* Domain legend */}
-          <div className="space-y-1.5">
-            <h4 className="text-[10px] font-bold text-muted-foreground">المجالات</h4>
-            {activeDomains.map((d) => {
-              const count = skills.filter((s) => s.domain === d).length;
-              return (
-                <div key={d} className="flex items-center gap-2 text-xs">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: DOMAIN_COLORS[d] || DOMAIN_COLORS.other }} />
-                  <span className="text-foreground font-medium">{DOMAIN_ICONS[d] || "•"} {d}</span>
-                  <span className="mr-auto text-muted-foreground text-[10px]">{count}</span>
+                  {/* Subdomains */}
+                  <div className="p-3 space-y-3">
+                    {Object.entries(subdomains).sort((a, b) => b[1].length - a[1].length).map(([subdomain, sSkills]) => (
+                      <div key={subdomain}>
+                        <p className="text-[10px] font-bold text-muted-foreground mb-1.5 px-1">{subdomain} ({sSkills.length})</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {sSkills.sort((a, b) => (a.bloom_level || 1) - (b.bloom_level || 1)).map(s => {
+                            const isSelected = selectedSkill?.id === s.id;
+                            const errCount = errorCountMap[s.id] || 0;
+                            const bloomColor = ["", "#94a3b8", "#60a5fa", "#34d399", "#fbbf24", "#f97316", "#ef4444"][s.bloom_level || 1];
+                            return (
+                              <button key={s.id} onClick={() => handleClick(s)}
+                                className="group relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all border"
+                                style={{
+                                  background: isSelected ? `${domainColor}20` : "hsl(var(--muted)/0.5)",
+                                  borderColor: isSelected ? domainColor : "hsl(var(--border))",
+                                  color: isSelected ? domainColor : "hsl(var(--foreground))",
+                                }}>
+                                {/* Bloom dot */}
+                                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: bloomColor }} title={`B${s.bloom_level}`} />
+                                {s.name_ar || s.name}
+                                {/* Difficulty bars */}
+                                <span className="flex gap-px ml-1">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <span key={i} className="w-1 rounded-sm" style={{
+                                      height: 6 + i,
+                                      backgroundColor: i < (s.difficulty || 1) ? domainColor : "hsl(var(--border))",
+                                      opacity: i < (s.difficulty || 1) ? 0.7 : 0.3,
+                                    }} />
+                                  ))}
+                                </span>
+                                {errCount > 0 && (
+                                  <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-destructive text-[8px] text-white flex items-center justify-center font-bold">{errCount}</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               );
-            })}
-          </div>
-
-          {/* Size legend */}
-          <div className="space-y-1.5">
-            <h4 className="text-[10px] font-bold text-muted-foreground">حجم العقدة = الصعوبة</h4>
-            <div className="flex items-end gap-2 justify-center py-1">
-              {[1, 2, 3, 4, 5].map((d) => (
-                <div key={d} className="flex flex-col items-center gap-1">
-                  <div
-                    className="rounded-full bg-primary/40"
-                    style={{ width: 10 + d * 4, height: 10 + d * 4 }}
-                  />
-                  <span className="text-[9px] text-muted-foreground">{d}</span>
+            })
+          ) : (
+            /* Bloom hierarchy view */
+            [1, 2, 3, 4, 5, 6].map(level => {
+              const levelSkills = bloomGrouped[level] || [];
+              if (levelSkills.length === 0) return null;
+              const bloomColors = ["", "#94a3b8", "#60a5fa", "#34d399", "#fbbf24", "#f97316", "#ef4444"];
+              const bloomNames = ["", "B1 · تذكر", "B2 · فهم", "B3 · تطبيق", "B4 · تحليل", "B5 · تقييم", "B6 · إبداع"];
+              return (
+                <div key={level} className="rounded-xl border border-border bg-card overflow-hidden">
+                  <div className="px-4 py-2.5 flex items-center gap-3" style={{ borderBottom: `2px solid ${bloomColors[level]}30` }}>
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: bloomColors[level] }} />
+                    <span className="text-sm font-black text-foreground">{bloomNames[level]}</span>
+                    <span className="text-[10px] text-muted-foreground">{levelSkills.length} مهارة</span>
+                  </div>
+                  <div className="p-3 flex flex-wrap gap-1.5">
+                    {levelSkills.map(s => {
+                      const domainColor = DOMAIN_COLORS[s.domain] || DOMAIN_COLORS.other;
+                      const isSelected = selectedSkill?.id === s.id;
+                      const errCount = errorCountMap[s.id] || 0;
+                      return (
+                        <button key={s.id} onClick={() => handleClick(s)}
+                          className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all border"
+                          style={{
+                            background: isSelected ? `${domainColor}20` : "hsl(var(--muted)/0.5)",
+                            borderColor: isSelected ? domainColor : "hsl(var(--border))",
+                            color: isSelected ? domainColor : "hsl(var(--foreground))",
+                          }}>
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: domainColor }} />
+                          {s.name_ar || s.name}
+                          {errCount > 0 && (
+                            <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-destructive text-[8px] text-white flex items-center justify-center font-bold">{errCount}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
+              );
+            })
+          )}
+        </div>
 
-          {/* Bloom ring */}
-          <div className="space-y-1.5">
-            <h4 className="text-[10px] font-bold text-muted-foreground">حلقة بلوم الخارجية</h4>
-            <div className="flex flex-wrap gap-1">
-              {BLOOM_LABELS.slice(1).map((label, i) => (
-                <span key={i} className="px-1.5 py-0.5 bg-secondary text-secondary-foreground text-[9px] rounded">
-                  B{i + 1} {label}
+        {/* Detail panel */}
+        <div className="w-72 shrink-0 space-y-3">
+          {selectedSkill ? (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+              className="rounded-xl border border-border bg-card p-4 space-y-3 sticky top-20">
+              <div className="flex items-center gap-2">
+                {(DOMAIN_SVG[selectedSkill.domain] || defaultSvg)(24, DOMAIN_COLORS[selectedSkill.domain] || DOMAIN_COLORS.other)}
+                <div>
+                  <h3 className="text-sm font-black text-foreground">{selectedSkill.name_ar || selectedSkill.name}</h3>
+                  {selectedSkill.name_ar && <p className="text-[10px] text-muted-foreground font-mono">{selectedSkill.name}</p>}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">{selectedSkill.description}</p>
+              <div className="flex flex-wrap gap-1.5">
+                <span className="px-2 py-0.5 rounded text-[9px] font-bold" style={{ background: `${DOMAIN_COLORS[selectedSkill.domain]}20`, color: DOMAIN_COLORS[selectedSkill.domain] }}>
+                  {selectedSkill.domain} · {selectedSkill.subdomain}
                 </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Arrows */}
-          <div className="space-y-1.5">
-            <h4 className="text-[10px] font-bold text-muted-foreground">الأسهم</h4>
-            <div className="text-[10px] text-muted-foreground space-y-1">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 bg-primary" />
-                <span>متطلب مسبق</span>
+                <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[9px] font-bold">
+                  B{selectedSkill.bloom_level} · {BLOOM_LABELS[selectedSkill.bloom_level] || ""}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-[9px] font-bold">
+                  صعوبة {selectedSkill.difficulty}/5
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 bg-primary/50 border-t border-dashed border-primary" />
-                <span>تعزيز / ارتباط</span>
+              {/* Dependencies */}
+              {selectedDeps.prerequisites.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground mb-1">⬆ يعتمد على:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedDeps.prerequisites.map(s => (
+                      <span key={s.id} className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] cursor-pointer" onClick={() => handleClick(s)}>
+                        {s.name_ar || s.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {selectedDeps.dependents.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground mb-1">⬇ تعتمد عليه:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedDeps.dependents.map(s => (
+                      <span key={s.id} className="px-2 py-0.5 rounded bg-green-500/10 text-green-400 text-[10px] cursor-pointer" onClick={() => handleClick(s)}>
+                        {s.name_ar || s.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Errors for this skill */}
+              {(errorCountMap[selectedSkill.id] || 0) > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-destructive mb-1">⚠ الأخطاء الشائعة:</p>
+                  {errors.filter(e => e.skill_id === selectedSkill.id).map(e => (
+                    <div key={e.id} className="text-[10px] text-muted-foreground bg-destructive/5 rounded p-1.5 mb-1">
+                      {e.error_description}
+                      {e.fix_hint && <p className="text-primary mt-0.5">💡 {e.fix_hint}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <h3 className="text-xs font-black text-foreground">📖 دليل القراءة</h3>
+              <div className="space-y-2 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#94a3b8]" /> B1 تذكر
+                  <span className="w-2 h-2 rounded-full bg-[#60a5fa]" /> B2 فهم
+                  <span className="w-2 h-2 rounded-full bg-[#34d399]" /> B3 تطبيق
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#fbbf24]" /> B4 تحليل
+                  <span className="w-2 h-2 rounded-full bg-[#f97316]" /> B5 تقييم
+                  <span className="w-2 h-2 rounded-full bg-[#ef4444]" /> B6 إبداع
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="flex gap-px">
+                    {[1,2,3].map(i => <span key={i} className="w-1 rounded-sm bg-primary/50" style={{ height: 4+i }} />)}
+                  </span>
+                  <span>أشرطة الصعوبة</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full bg-destructive text-[8px] text-white flex items-center justify-center font-bold">3</span>
+                  <span>عدد الأخطاء</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-primary">👆 انقر على مهارة لرؤية التفاصيل</p>
+
+              {/* Summary stats */}
+              <div className="border-t border-border pt-3 space-y-1.5">
+                {activeDomains.map(d => {
+                  const count = skills.filter(s => s.domain === d).length;
+                  const pct = skills.length > 0 ? Math.round((count / skills.length) * 100) : 0;
+                  const color = DOMAIN_COLORS[d] || DOMAIN_COLORS.other;
+                  return (
+                    <div key={d} className="flex items-center gap-2">
+                      <span className="text-[10px] font-medium text-foreground w-16 truncate">{d}</span>
+                      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+                      </div>
+                      <span className="text-[9px] text-muted-foreground w-6 text-left">{count}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </div>
-
-          {/* Stats */}
-          <div className="border-t border-border pt-3 space-y-1">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-muted-foreground">المهارات</span>
-              <span className="font-bold text-foreground">{filteredSkills.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-muted-foreground">الروابط</span>
-              <span className="font-bold text-foreground">{edgesRef.current.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-muted-foreground">الأخطاء</span>
-              <span className="font-bold text-destructive">{errors.length}</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
