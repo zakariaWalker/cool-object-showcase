@@ -93,11 +93,10 @@ Deno.serve(async (req) => {
     const CHUNK = 8192;
     for (let i = 0; i < bytes.length; i += CHUNK) {
       const chunk = bytes.subarray(i, i + CHUNK);
-      let part = "";
       for (let j = 0; j < chunk.length; j++) {
-        part += String.fromCharCode(chunk[j]);
+        // ✅ No spread, no stack overflow
+        binary += String.fromCharCode(chunk[j]);
       }
-      binary += part;
     }
     const base64 = btoa(binary);
 
