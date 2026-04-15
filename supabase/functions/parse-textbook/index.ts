@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { encodeBase64 } from "https://deno.land/std@0.208.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -76,32 +77,27 @@ Deno.serve(async (req) => {
   try {
     if (!textbook_id) throw new Error("textbook_id required");
 
+    // Get textbook info
     const { data: textbook, error: tbErr } = await db.from("textbooks").select("*").eq("id", textbook_id).single();
     if (tbErr || !textbook) throw new Error("Textbook not found");
 
+    // Update status to processing
     await db.from("textbooks").update({ status: "processing", processing_progress: 5 }).eq("id", textbook_id);
 
+    // Download the PDF from storage
     const { data: fileData, error: dlErr } = await db.storage
       .from("educational-materials")
       .download(textbook.file_path);
     if (dlErr || !fileData) throw new Error(`Download failed: ${dlErr?.message}`);
 
-    // ✅ FIX 1: Avoid spread operator to prevent "Maximum call stack size exceeded"
+    // ✅ FIX: Use Deno std encodeBase64 directly on Uint8Array — no btoa, no stack overflow
     const arrayBuffer = await fileData.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer.slice(0, 500000));
-    let binary = "";
-    const CHUNK = 8192;
-    for (let i = 0; i < bytes.length; i += CHUNK) {
-      const chunk = bytes.subarray(i, i + CHUNK);
-      for (let j = 0; j < chunk.length; j++) {
-        // ✅ No spread, no stack overflow
-        binary += String.fromCharCode(chunk[j]);
-      }
-    }
-    const base64 = btoa(binary);
+    const base64 = encodeBase64(bytes);
 
     await db.from("textbooks").update({ processing_progress: 15 }).eq("id", textbook_id);
 
+    // Step 1: Extract table of contents / structure
     const systemPrompt = `أنت خبير تربوي متخصص في المنهاج الجزائري للرياضيات (الجيل الثاني).
 مهمتك تحليل محتوى كتاب مدرسي واستخراج بنيته الكاملة.
 أجب دائماً بـ JSON فقط.`;
@@ -166,6 +162,7 @@ Deno.serve(async (req) => {
       throw new Error("AI did not return valid chapters structure");
     }
 
+    // Step 2: Insert chapters, lessons, activities
     let totalActivities = 0;
     const insertedLessonIds: string[] = [];
 
@@ -202,7 +199,7 @@ Deno.serve(async (req) => {
 
         if (lErr || !lessonRow) continue;
 
-        // Track inserted lesson IDs for the skill-linking step
+        // ✅ Track inserted lesson IDs for skill-linking step
         insertedLessonIds.push(lessonRow.id);
 
         const activitiesToInsert = (lesson.activities || []).map((act: any) => ({
@@ -232,9 +229,10 @@ Deno.serve(async (req) => {
 
     await db.from("textbooks").update({ processing_progress: 80 }).eq("id", textbook_id);
 
-    // ✅ FIX 2: Use .in() instead of .eq() for array matching
+    // Step 3: Auto-link with skills
     const { data: skills } = await db.from("kb_skills").select("id, name, name_ar, domain").limit(500);
 
+    // ✅ FIX: Use .in() instead of .eq() for array matching
     const { data: activities } =
       insertedLessonIds.length > 0
         ? await db
@@ -266,6 +264,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Done
     await db
       .from("textbooks")
       .update({
