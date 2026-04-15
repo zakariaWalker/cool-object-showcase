@@ -25,6 +25,8 @@ import ExamArchive from "./pages/ExamArchive";
 import ExamArchiveSolver from "./pages/ExamArchiveSolver";
 import SkillsKBPage from "./pages/SkillsKB";
 import UnifiedKBPage from "./pages/UnifiedKB";
+import TextbookUpload from "./pages/TextbookUpload";
+import TextbookViewer from "./pages/TextbookViewer";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +64,8 @@ const App = () => (
             <Route path="/profile" element={<StudentProfile />} />
             <Route path="/skills-kb" element={<SkillsKBPage />} />
             <Route path="/unified-kb" element={<UnifiedKBPage />} />
+            <Route path="/textbook-upload" element={<TextbookUpload />} />
+            <Route path="/textbook/:id" element={<TextbookViewer />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppShell>

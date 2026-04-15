@@ -237,7 +237,7 @@ export default function TextbookViewer() {
 
                     {/* Content */}
                     <div className="text-sm text-foreground leading-relaxed">
-                      <LatexRenderer content={act.content_text || act.content_latex} />
+                      <LatexRenderer latex={act.content_text || act.content_latex} />
                     </div>
 
                     {/* Interactive exercise */}
@@ -288,7 +288,7 @@ export default function TextbookViewer() {
                         </button>
                         {showSolution[act.id] && (
                           <div className="mt-2 p-3 bg-green-500/5 border border-green-500/20 rounded-lg text-sm">
-                            <LatexRenderer content={act.solution_text} />
+                            <LatexRenderer latex={act.solution_text} />
                           </div>
                         )}
                       </div>
