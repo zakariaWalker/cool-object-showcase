@@ -34,7 +34,10 @@ async function callAI(prompt: string, systemPrompt: string): Promise<string> {
 }
 
 function extractJSON(text: string): any {
-  let cleaned = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  let cleaned = text
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
   const start = cleaned.search(/[\{\[]/);
   if (start === -1) throw new Error("No JSON found");
   const opener = cleaned[start];
@@ -54,7 +57,10 @@ function extractJSON(text: string): any {
   try {
     return JSON.parse(cleaned);
   } catch {
-    cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]").replace(/[\x00-\x1F\x7F]/g, " ");
+    cleaned = cleaned
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]")
+      .replace(/[\x00-\x1F\x7F]/g, " ");
     return JSON.parse(cleaned);
   }
 }
@@ -66,16 +72,13 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const db = createClient(supabaseUrl, serviceKey);
 
+  const { textbook_id } = await req.json().catch(() => ({ textbook_id: null }));
+
   try {
-    const { textbook_id } = await req.json();
     if (!textbook_id) throw new Error("textbook_id required");
 
     // Get textbook info
-    const { data: textbook, error: tbErr } = await db
-      .from("textbooks")
-      .select("*")
-      .eq("id", textbook_id)
-      .single();
+    const { data: textbook, error: tbErr } = await db.from("textbooks").select("*").eq("id", textbook_id).single();
     if (tbErr || !textbook) throw new Error("Textbook not found");
 
     // Update status to processing
@@ -87,9 +90,15 @@ Deno.serve(async (req) => {
       .download(textbook.file_path);
     if (dlErr || !fileData) throw new Error(`Download failed: ${dlErr?.message}`);
 
-    // Convert to base64 for AI
+    // Convert to base64 for AI (chunked to avoid call stack overflow)
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer.slice(0, 500000))));
+    const bytes = new Uint8Array(arrayBuffer.slice(0, 500000));
+    let binary = "";
+    const CHUNK = 8192;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+    }
+    const base64 = btoa(binary);
 
     await db.from("textbooks").update({ processing_progress: 15 }).eq("id", textbook_id);
 
@@ -103,6 +112,7 @@ Deno.serve(async (req) => {
 المعلومات:
 - العنوان: ${textbook.title}
 - المستوى: ${textbook.grade}
+- محتوى الكتاب (base64 PDF، أول 500KB): ${base64.slice(0, 2000)}...
 
 المطلوب: استخرج البنية الهرمية الكاملة:
 
@@ -248,35 +258,41 @@ Deno.serve(async (req) => {
     }
 
     // Done
-    await db.from("textbooks").update({
-      status: "completed",
-      processing_progress: 100,
-      metadata: {
-        ...((textbook.metadata as any) || {}),
-        chapters_count: parsed.chapters.length,
-        activities_count: totalActivities,
-        processed_at: new Date().toISOString(),
-      },
-    }).eq("id", textbook_id);
+    await db
+      .from("textbooks")
+      .update({
+        status: "completed",
+        processing_progress: 100,
+        metadata: {
+          ...((textbook.metadata as any) || {}),
+          chapters_count: parsed.chapters.length,
+          activities_count: totalActivities,
+          processed_at: new Date().toISOString(),
+        },
+      })
+      .eq("id", textbook_id);
 
-    return new Response(JSON.stringify({
-      success: true,
-      chapters: parsed.chapters.length,
-      activities: totalActivities,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
+    return new Response(
+      JSON.stringify({
+        success: true,
+        chapters: parsed.chapters.length,
+        activities: totalActivities,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (e: any) {
     console.error("parse-textbook error:", e);
-    // Update textbook status to failed
-    try {
-      const { textbook_id } = await req.clone().json();
-      if (textbook_id) {
-        await db.from("textbooks").update({
-          status: "failed",
-          processing_log: [{ error: e.message, at: new Date().toISOString() }],
-        }).eq("id", textbook_id);
-      }
-    } catch {}
+    if (textbook_id) {
+      try {
+        await db
+          .from("textbooks")
+          .update({
+            status: "failed",
+            processing_log: [{ error: e.message, at: new Date().toISOString() }],
+          })
+          .eq("id", textbook_id);
+      } catch {}
+    }
 
     return new Response(JSON.stringify({ error: e.message || "Unknown error" }), {
       status: 500,
