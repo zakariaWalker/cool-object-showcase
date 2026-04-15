@@ -1453,6 +1453,270 @@ export type Database = {
           },
         ]
       }
+      textbook_activities: {
+        Row: {
+          activity_type: string
+          answer_type: string | null
+          bloom_level: number | null
+          content_latex: string | null
+          content_text: string
+          created_at: string
+          difficulty: number | null
+          expected_answer: string | null
+          hints: string[] | null
+          id: string
+          is_interactive: boolean | null
+          lesson_id: string
+          metadata: Json | null
+          order_index: number
+          solution_latex: string | null
+          solution_text: string | null
+          title: string | null
+          title_ar: string | null
+        }
+        Insert: {
+          activity_type?: string
+          answer_type?: string | null
+          bloom_level?: number | null
+          content_latex?: string | null
+          content_text?: string
+          created_at?: string
+          difficulty?: number | null
+          expected_answer?: string | null
+          hints?: string[] | null
+          id?: string
+          is_interactive?: boolean | null
+          lesson_id: string
+          metadata?: Json | null
+          order_index?: number
+          solution_latex?: string | null
+          solution_text?: string | null
+          title?: string | null
+          title_ar?: string | null
+        }
+        Update: {
+          activity_type?: string
+          answer_type?: string | null
+          bloom_level?: number | null
+          content_latex?: string | null
+          content_text?: string
+          created_at?: string
+          difficulty?: number | null
+          expected_answer?: string | null
+          hints?: string[] | null
+          id?: string
+          is_interactive?: boolean | null
+          lesson_id?: string
+          metadata?: Json | null
+          order_index?: number
+          solution_latex?: string | null
+          solution_text?: string | null
+          title?: string | null
+          title_ar?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "textbook_activities_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      textbook_chapters: {
+        Row: {
+          created_at: string
+          domain: string | null
+          id: string
+          metadata: Json | null
+          order_index: number
+          page_end: number | null
+          page_start: number | null
+          textbook_id: string
+          title: string
+          title_ar: string | null
+        }
+        Insert: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          metadata?: Json | null
+          order_index?: number
+          page_end?: number | null
+          page_start?: number | null
+          textbook_id: string
+          title: string
+          title_ar?: string | null
+        }
+        Update: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          metadata?: Json | null
+          order_index?: number
+          page_end?: number | null
+          page_start?: number | null
+          textbook_id?: string
+          title?: string
+          title_ar?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "textbook_chapters_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: false
+            referencedRelation: "textbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      textbook_lessons: {
+        Row: {
+          chapter_id: string
+          content_html: string | null
+          content_latex: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          objectives: string[] | null
+          order_index: number
+          page_end: number | null
+          page_start: number | null
+          title: string
+          title_ar: string | null
+        }
+        Insert: {
+          chapter_id: string
+          content_html?: string | null
+          content_latex?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          objectives?: string[] | null
+          order_index?: number
+          page_end?: number | null
+          page_start?: number | null
+          title: string
+          title_ar?: string | null
+        }
+        Update: {
+          chapter_id?: string
+          content_html?: string | null
+          content_latex?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          objectives?: string[] | null
+          order_index?: number
+          page_end?: number | null
+          page_start?: number | null
+          title?: string
+          title_ar?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "textbook_lessons_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      textbook_skill_links: {
+        Row: {
+          activity_id: string
+          created_at: string
+          id: string
+          relevance_score: number | null
+          skill_id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          id?: string
+          relevance_score?: number | null
+          skill_id: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          id?: string
+          relevance_score?: number | null
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "textbook_skill_links_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "textbook_skill_links_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "kb_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      textbooks: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          file_path: string | null
+          grade: string
+          id: string
+          metadata: Json | null
+          processing_log: Json | null
+          processing_progress: number | null
+          status: string
+          subject: string
+          title: string
+          total_pages: number | null
+          updated_at: string
+          user_id: string
+          year: string | null
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          file_path?: string | null
+          grade?: string
+          id?: string
+          metadata?: Json | null
+          processing_log?: Json | null
+          processing_progress?: number | null
+          status?: string
+          subject?: string
+          title: string
+          total_pages?: number | null
+          updated_at?: string
+          user_id: string
+          year?: string | null
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          file_path?: string | null
+          grade?: string
+          id?: string
+          metadata?: Json | null
+          processing_log?: Json | null
+          processing_progress?: number | null
+          status?: string
+          subject?: string
+          title?: string
+          total_pages?: number | null
+          updated_at?: string
+          user_id?: string
+          year?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
