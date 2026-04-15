@@ -115,16 +115,50 @@ export class GeminiError extends Error {
 
 /** Extract JSON from text that may contain markdown fences */
 export function extractJSON(text: string): any {
-  const clean = text
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/\s*```$/i, "")
+  // Strip markdown fences
+  let cleaned = text
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
     .trim();
+
+  // Find JSON boundaries
+  const jsonStart = cleaned.search(/[\{\[]/);
+  if (jsonStart === -1) throw new Error("No JSON found in AI response");
+  const opener = cleaned[jsonStart];
+  const closer = opener === '[' ? ']' : '}';
+  const jsonEnd = cleaned.lastIndexOf(closer);
+  if (jsonEnd === -1) throw new Error("Truncated JSON response from AI");
+
+  cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+
+  // Check for truncation
+  const openBraces = (cleaned.match(/{/g) || []).length;
+  const closeBraces = (cleaned.match(/}/g) || []).length;
+  const openBrackets = (cleaned.match(/\[/g) || []).length;
+  const closeBrackets = (cleaned.match(/\]/g) || []).length;
+
+  if (openBraces !== closeBraces || openBrackets !== closeBrackets) {
+    // Auto-close truncated JSON
+    let fix = cleaned;
+    for (let i = 0; i < openBrackets - closeBrackets; i++) fix += ']';
+    for (let i = 0; i < openBraces - closeBraces; i++) fix += '}';
+    cleaned = fix;
+  }
+
+  // Attempt parse
   try {
-    return JSON.parse(clean);
+    return JSON.parse(cleaned);
   } catch {
-    const match = clean.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
-    throw new Error("Could not parse JSON from AI response");
+    // Fix common LLM issues
+    cleaned = cleaned
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]")
+      .replace(/[\x00-\x1F\x7F]/g, " ")
+      .replace(/\\'/g, "'");
+    try {
+      return JSON.parse(cleaned);
+    } catch (e) {
+      throw new Error(`Could not parse JSON from AI response: ${(e as Error).message?.slice(0, 100)}`);
+    }
   }
 }
