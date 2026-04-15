@@ -46,7 +46,6 @@ function extractJSON(text: string): any {
   if (end === -1) throw new Error("Truncated JSON");
   cleaned = cleaned.substring(start, end + 1);
 
-  // Auto-close
   const ob = (cleaned.match(/{/g) || []).length;
   const cb = (cleaned.match(/}/g) || []).length;
   const os = (cleaned.match(/\[/g) || []).length;
@@ -77,32 +76,33 @@ Deno.serve(async (req) => {
   try {
     if (!textbook_id) throw new Error("textbook_id required");
 
-    // Get textbook info
     const { data: textbook, error: tbErr } = await db.from("textbooks").select("*").eq("id", textbook_id).single();
     if (tbErr || !textbook) throw new Error("Textbook not found");
 
-    // Update status to processing
     await db.from("textbooks").update({ status: "processing", processing_progress: 5 }).eq("id", textbook_id);
 
-    // Download the PDF from storage
     const { data: fileData, error: dlErr } = await db.storage
       .from("educational-materials")
       .download(textbook.file_path);
     if (dlErr || !fileData) throw new Error(`Download failed: ${dlErr?.message}`);
 
-    // Convert to base64 for AI (chunked to avoid call stack overflow)
+    // ✅ FIX 1: Avoid spread operator to prevent "Maximum call stack size exceeded"
     const arrayBuffer = await fileData.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer.slice(0, 500000));
     let binary = "";
     const CHUNK = 8192;
     for (let i = 0; i < bytes.length; i += CHUNK) {
-      binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+      const chunk = bytes.subarray(i, i + CHUNK);
+      let part = "";
+      for (let j = 0; j < chunk.length; j++) {
+        part += String.fromCharCode(chunk[j]);
+      }
+      binary += part;
     }
     const base64 = btoa(binary);
 
     await db.from("textbooks").update({ processing_progress: 15 }).eq("id", textbook_id);
 
-    // Step 1: Extract table of contents / structure
     const systemPrompt = `أنت خبير تربوي متخصص في المنهاج الجزائري للرياضيات (الجيل الثاني).
 مهمتك تحليل محتوى كتاب مدرسي واستخراج بنيته الكاملة.
 أجب دائماً بـ JSON فقط.`;
@@ -138,9 +138,9 @@ Deno.serve(async (req) => {
               "title_ar": "عنوان بالعربية",
               "content": "المحتوى الكامل بـ LaTeX",
               "solution": "الحل إن وجد",
-              "difficulty": 1-5,
-              "bloom_level": 1-6,
-              "is_interactive": true/false,
+              "difficulty": 1,
+              "bloom_level": 1,
+              "is_interactive": true,
               "expected_answer": "الإجابة المتوقعة إن كان تمرين",
               "answer_type": "numeric|expression|text|multiple_choice",
               "hints": ["تلميح 1"]
@@ -167,8 +167,8 @@ Deno.serve(async (req) => {
       throw new Error("AI did not return valid chapters structure");
     }
 
-    // Step 2: Insert chapters, lessons, activities
     let totalActivities = 0;
+    const insertedLessonIds: string[] = [];
 
     for (const ch of parsed.chapters) {
       const { data: chapterRow, error: chErr } = await db
@@ -203,6 +203,9 @@ Deno.serve(async (req) => {
 
         if (lErr || !lessonRow) continue;
 
+        // Track inserted lesson IDs for the skill-linking step
+        insertedLessonIds.push(lessonRow.id);
+
         const activitiesToInsert = (lesson.activities || []).map((act: any) => ({
           lesson_id: lessonRow.id,
           order_index: act.order || 0,
@@ -230,16 +233,19 @@ Deno.serve(async (req) => {
 
     await db.from("textbooks").update({ processing_progress: 80 }).eq("id", textbook_id);
 
-    // Step 3: Auto-link with skills
+    // ✅ FIX 2: Use .in() instead of .eq() for array matching
     const { data: skills } = await db.from("kb_skills").select("id, name, name_ar, domain").limit(500);
-    const { data: activities } = await db
-      .from("textbook_activities")
-      .select("id, content_text, title, lesson_id")
-      .eq("lesson_id", (await db.from("textbook_lessons").select("id").limit(1000)).data?.map((l: any) => l.id) as any)
-      .limit(500);
 
-    // Simple keyword matching for auto-linking
-    if (skills && activities) {
+    const { data: activities } =
+      insertedLessonIds.length > 0
+        ? await db
+            .from("textbook_activities")
+            .select("id, content_text, title, lesson_id")
+            .in("lesson_id", insertedLessonIds)
+            .limit(500)
+        : { data: [] };
+
+    if (skills && activities && activities.length > 0) {
       const links: any[] = [];
       for (const act of activities) {
         const actText = `${act.title} ${act.content_text}`.toLowerCase();
@@ -248,7 +254,11 @@ Deno.serve(async (req) => {
           const words = skillText.split(/\s+/).filter((w: string) => w.length > 3);
           const matches = words.filter((w: string) => actText.includes(w));
           if (matches.length >= 2) {
-            links.push({ activity_id: act.id, skill_id: skill.id, relevance_score: matches.length / words.length });
+            links.push({
+              activity_id: act.id,
+              skill_id: skill.id,
+              relevance_score: matches.length / words.length,
+            });
           }
         }
       }
@@ -257,7 +267,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Done
     await db
       .from("textbooks")
       .update({
