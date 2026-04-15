@@ -20,6 +20,7 @@ const WORKFLOW_STEPS = [
   { path: "/exam-kb", label: "KB امتحانات", emoji: "📚", step: 10 },
   { path: "/skills-kb", label: "KB المهارات", emoji: ":-)", step: 11 },
   { path: "/unified-kb", label: "KB عامة", emoji: ":-(", step: 12 },
+  { path: "/textbook-upload", label: "الكتاب المدرسي", emoji: "📚", step: 13 },
 ];
 
 const ADMIN_LINK = { path: "/admin", label: "لوحة الإدارة", emoji: "⚙️" };
