@@ -88,6 +88,7 @@ async function processTextbook(textbook_id: string, raw_text?: string) {
 - العنوان: ${textbook.title}
 - المستوى: ${textbook.grade}
 - المادة: ${textbook.subject || "رياضيات"}
+${hasRawText ? `\n--- المحتوى النصي للكتاب ---\n${raw_text!.substring(0, 15000)}\n--- نهاية المحتوى ---\n\nاستخدم المحتوى أعلاه لاستخراج البنية الحقيقية للكتاب (الفصول، الدروس، الأنشطة) بدقة.` : ""}
 
 المطلوب: أنشئ البنية الهرمية الكاملة للكتاب مع فصول ودروس وأنشطة تفاعلية:
 
