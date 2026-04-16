@@ -6,31 +6,32 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-
 async function callAI(prompt: string, systemPrompt: string): Promise<string> {
-  const key = Deno.env.get("LOVABLE_API_KEY");
-  if (!key) throw new Error("LOVABLE_API_KEY not set");
+  const key = Deno.env.get("GEMINI_API_KEY");
+  if (!key) throw new Error("GEMINI_API_KEY not set");
 
-  const res = await fetch(GATEWAY, {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+
+  const res = await fetch(url, {
     method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: prompt },
+      contents: [
+        { role: "user", parts: [{ text: `${systemPrompt}\n\n${prompt}` }] },
       ],
+      generationConfig: {
+        maxOutputTokens: 8192,
+      },
     }),
   });
 
   if (!res.ok) {
     const t = await res.text();
-    throw new Error(`AI error ${res.status}: ${t.slice(0, 300)}`);
+    throw new Error(`Gemini error ${res.status}: ${t.slice(0, 300)}`);
   }
 
   const data = await res.json();
-  return data.choices?.[0]?.message?.content || "";
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
 function extractJSON(text: string): any {
