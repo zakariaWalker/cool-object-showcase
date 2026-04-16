@@ -64,7 +64,7 @@ function extractJSON(text: string): any {
   }
 }
 
-async function processTextbook(textbook_id: string) {
+async function processTextbook(textbook_id: string, raw_text?: string) {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const db = createClient(supabaseUrl, serviceKey);
@@ -75,8 +75,8 @@ async function processTextbook(textbook_id: string) {
 
     await db.from("textbooks").update({ status: "processing", processing_progress: 5 }).eq("id", textbook_id);
 
-    // We don't send the raw PDF to AI — Gemini text API can't parse binary PDFs.
-    // Instead, we use the textbook metadata (title, grade) to generate a curriculum-aligned structure.
+    // Use raw_text if provided, otherwise generate from metadata
+    const hasRawText = raw_text && raw_text.trim().length > 100;
     await db.from("textbooks").update({ processing_progress: 15 }).eq("id", textbook_id);
 
     const systemPrompt = `أنت خبير تربوي متخصص في المنهاج الجزائري للرياضيات (الجيل الثاني).
