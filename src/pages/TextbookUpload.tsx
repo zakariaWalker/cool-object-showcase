@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, BookOpen, Loader2, CheckCircle, XCircle, FileText } from "lucide-react";
+import { Upload, BookOpen, Loader2, CheckCircle, XCircle, FileText, Ban, ClipboardPaste } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 
 const GRADES = [
@@ -31,10 +33,13 @@ interface TextbookRow {
 
 export default function TextbookUpload() {
   const [file, setFile] = useState<File | null>(null);
+  const [pastedText, setPastedText] = useState("");
+  const [inputMode, setInputMode] = useState<"pdf" | "text">("pdf");
   const [title, setTitle] = useState("");
   const [grade, setGrade] = useState("");
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [textbooks, setTextbooks] = useState<TextbookRow[]>([]);
   const navigate = useNavigate();
@@ -54,6 +59,7 @@ export default function TextbookUpload() {
           setProgress((active as any).processing_progress || 0);
         } else {
           setProcessing(false);
+          setProcessingId(null);
           const done = data.find((t: any) => t.status === "completed");
           if (done) toast.success("✅ تم تحويل الكتاب بنجاح!");
           const failed = data.find((t: any) => t.status === "failed");
@@ -69,8 +75,31 @@ export default function TextbookUpload() {
     if (data) setTextbooks(data as any);
   }
 
+  async function handleCancel(id: string) {
+    const { error } = await supabase
+      .from("textbooks")
+      .update({ status: "failed", processing_log: [{ error: "Cancelled by user", at: new Date().toISOString() }] } as any)
+      .eq("id", id);
+    if (error) {
+      toast.error("فشل الإلغاء");
+    } else {
+      toast.info("تم إلغاء التحويل");
+      setProcessing(false);
+      setProcessingId(null);
+      await loadTextbooks();
+    }
+  }
+
   async function handleUpload() {
-    if (!file || !title || !grade) {
+    if (inputMode === "pdf" && !file) {
+      toast.error("يرجى اختيار ملف PDF");
+      return;
+    }
+    if (inputMode === "text" && !pastedText.trim()) {
+      toast.error("يرجى لصق محتوى الكتاب");
+      return;
+    }
+    if (!title || !grade) {
       toast.error("يرجى ملء جميع الحقول");
       return;
     }
@@ -80,11 +109,15 @@ export default function TextbookUpload() {
 
     setUploading(true);
     try {
-      const filePath = `textbooks/${user.id}/${Date.now()}_${file.name}`;
-      const { error: uploadErr } = await supabase.storage
-        .from("educational-materials")
-        .upload(filePath, file);
-      if (uploadErr) throw uploadErr;
+      let filePath: string | null = null;
+
+      if (inputMode === "pdf" && file) {
+        filePath = `textbooks/${user.id}/${Date.now()}_${file.name}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("educational-materials")
+          .upload(filePath, file);
+        if (uploadErr) throw uploadErr;
+      }
 
       const { data: textbook, error: insertErr } = await supabase
         .from("textbooks")
@@ -99,20 +132,27 @@ export default function TextbookUpload() {
         .single();
       if (insertErr) throw insertErr;
 
+      const tbId = (textbook as any).id;
       setProcessing(true);
+      setProcessingId(tbId);
       setProgress(0);
 
-      const { error: fnErr } = await supabase.functions.invoke("parse-textbook", {
-        body: { textbook_id: (textbook as any).id },
-      });
+      const body: any = { textbook_id: tbId };
+      if (inputMode === "text" && pastedText.trim()) {
+        body.raw_text = pastedText.trim();
+      }
+
+      const { error: fnErr } = await supabase.functions.invoke("parse-textbook", { body });
       if (fnErr) throw fnErr;
 
       await loadTextbooks();
       setFile(null);
+      setPastedText("");
       setTitle("");
     } catch (e: any) {
       toast.error(e.message || "خطأ في الرفع");
       setProcessing(false);
+      setProcessingId(null);
     } finally {
       setUploading(false);
     }
@@ -125,6 +165,8 @@ export default function TextbookUpload() {
     return <FileText className="w-4 h-4 text-muted-foreground" />;
   };
 
+  const isReady = inputMode === "pdf" ? !!file && !!title && !!grade : !!pastedText.trim() && !!title && !!grade;
+
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       <div className="max-w-5xl mx-auto p-6 space-y-6">
@@ -132,7 +174,7 @@ export default function TextbookUpload() {
           <BookOpen className="w-7 h-7 text-primary" />
           <div>
             <h1 className="text-2xl font-black text-foreground">📚 تحويل الكتاب المدرسي</h1>
-            <p className="text-sm text-muted-foreground">ارفع كتاب المنهاج كـ PDF وسيتم تحويله إلى نسخة ويب تفاعلية</p>
+            <p className="text-sm text-muted-foreground">ارفع كتاب المنهاج كـ PDF أو الصق محتواه النصي وسيتم تحويله إلى نسخة ويب تفاعلية</p>
           </div>
         </div>
 
@@ -163,22 +205,53 @@ export default function TextbookUpload() {
               </div>
             </div>
 
-            <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors">
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                className="hidden"
-                id="pdf-upload"
-              />
-              <label htmlFor="pdf-upload" className="cursor-pointer">
-                <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-                <p className="text-sm font-medium text-foreground">
-                  {file ? `📄 ${file.name}` : "انقر لاختيار ملف PDF"}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">الحد الأقصى: 20MB</p>
-              </label>
-            </div>
+            <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "pdf" | "text")} dir="rtl">
+              <TabsList className="w-full">
+                <TabsTrigger value="pdf" className="flex-1 gap-2">
+                  <Upload className="w-4 h-4" /> رفع PDF
+                </TabsTrigger>
+                <TabsTrigger value="text" className="flex-1 gap-2">
+                  <ClipboardPaste className="w-4 h-4" /> لصق النص
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="pdf">
+                <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors">
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                    id="pdf-upload"
+                  />
+                  <label htmlFor="pdf-upload" className="cursor-pointer">
+                    <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm font-medium text-foreground">
+                      {file ? `📄 ${file.name}` : "انقر لاختيار ملف PDF"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">الحد الأقصى: 20MB</p>
+                  </label>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="text">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground block">محتوى الكتاب (نص)</label>
+                  <Textarea
+                    placeholder="الصق هنا محتوى الكتاب المدرسي كنص... يمكنك نسخ المحتوى من PDF أو أي مصدر آخر"
+                    value={pastedText}
+                    onChange={(e) => setPastedText(e.target.value)}
+                    className="min-h-[200px] text-sm leading-relaxed"
+                    dir="rtl"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {pastedText.length > 0
+                      ? `${pastedText.length.toLocaleString("ar")} حرف · ~${Math.ceil(pastedText.split(/\s+/).length / 250)} صفحة`
+                      : "الصق محتوى الكتاب هنا — يُفضل أن يشمل عناوين الفصول والدروس والتمارين"}
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
 
             {processing && (
               <div className="space-y-2">
@@ -194,12 +267,23 @@ export default function TextbookUpload() {
                   <span className={progress >= 60 ? "text-primary font-bold" : ""}>📦 حفظ البنية</span>
                   <span className={progress >= 90 ? "text-primary font-bold" : ""}>🔗 ربط المهارات</span>
                 </div>
+                {processingId && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={() => handleCancel(processingId)}
+                  >
+                    <Ban className="w-4 h-4 ml-2" />
+                    إلغاء التحويل
+                  </Button>
+                )}
               </div>
             )}
 
             <Button
               onClick={handleUpload}
-              disabled={uploading || processing || !file || !title || !grade}
+              disabled={uploading || processing || !isReady}
               className="w-full"
             >
               {uploading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Upload className="w-4 h-4 ml-2" />}
@@ -231,7 +315,17 @@ export default function TextbookUpload() {
                       </p>
                     </div>
                     {tb.status === "processing" && (
-                      <Progress value={tb.processing_progress} className="w-24 h-1.5" />
+                      <div className="flex items-center gap-2">
+                        <Progress value={tb.processing_progress} className="w-24 h-1.5" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive h-7 w-7 p-0"
+                          onClick={(e) => { e.stopPropagation(); handleCancel(tb.id); }}
+                        >
+                          <Ban className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     )}
                     {tb.status === "completed" && (
                       <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/textbook/${tb.id}`); }}>
