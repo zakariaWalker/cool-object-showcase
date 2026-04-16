@@ -20,7 +20,9 @@ async function callAI(prompt: string, systemPrompt: string): Promise<string> {
         { role: "user", parts: [{ text: `${systemPrompt}\n\n${prompt}` }] },
       ],
       generationConfig: {
+        temperature: 0.2,
         maxOutputTokens: 8192,
+        responseMimeType: "application/json",
       },
     }),
   });
@@ -31,38 +33,152 @@ async function callAI(prompt: string, systemPrompt: string): Promise<string> {
   }
 
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  const text = (data.candidates?.[0]?.content?.parts ?? [])
+    .map((part: { text?: string }) => part.text ?? "")
+    .join("")
+    .trim();
+
+  if (!text) {
+    const finishReason = data.candidates?.[0]?.finishReason;
+    throw new Error(`Gemini returned empty response${finishReason ? ` (${finishReason})` : ""}`);
+  }
+
+  return text;
+}
+
+function stripCodeFences(text: string): string {
+  return text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+}
+
+function findBalancedJson(text: string): string | null {
+  let start = -1;
+  let stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+
+    if (start === -1) {
+      if (char === "{" || char === "[") {
+        start = i;
+        stack = [char];
+      }
+      continue;
+    }
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === "{" || char === "[") {
+      stack.push(char);
+      continue;
+    }
+
+    if (char === "}" || char === "]") {
+      const last = stack[stack.length - 1];
+      if ((char === "}" && last === "{") || (char === "]" && last === "[")) {
+        stack.pop();
+        if (stack.length === 0) {
+          return text.slice(start, i + 1);
+        }
+      }
+    }
+  }
+
+  if (start === -1) return null;
+  return text.slice(start);
+}
+
+function closeOpenJson(text: string): string {
+  let result = "";
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+
+  for (const char of text) {
+    result += char;
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === "{" || char === "[") stack.push(char);
+    if (char === "}" || char === "]") {
+      const last = stack[stack.length - 1];
+      if ((char === "}" && last === "{") || (char === "]" && last === "[")) {
+        stack.pop();
+      }
+    }
+  }
+
+  if (inString) result += '"';
+  for (let i = stack.length - 1; i >= 0; i--) {
+    result += stack[i] === "{" ? "}" : "]";
+  }
+
+  return result;
+}
+
+function safeParseJson(text: string) {
+  try {
+    return { ok: true as const, value: JSON.parse(text) };
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error : new Error("Unknown JSON parse error"),
+    };
+  }
 }
 
 function extractJSON(text: string): any {
-  let cleaned = text
-    .replace(/```json\s*/gi, "")
-    .replace(/```\s*/g, "")
-    .trim();
-  const start = cleaned.search(/[\{\[]/);
-  if (start === -1) throw new Error("No JSON found");
-  const opener = cleaned[start];
-  const closer = opener === "[" ? "]" : "}";
-  const end = cleaned.lastIndexOf(closer);
-  if (end === -1) throw new Error("Truncated JSON");
-  cleaned = cleaned.substring(start, end + 1);
+  const cleaned = stripCodeFences(text);
+  const baseCandidate = findBalancedJson(cleaned) ?? cleaned;
+  const candidates = [
+    baseCandidate,
+    closeOpenJson(baseCandidate),
+    closeOpenJson(
+      baseCandidate
+        .replace(/,\s*([}\]])/g, "$1")
+        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, " "),
+    ),
+  ];
 
-  const ob = (cleaned.match(/{/g) || []).length;
-  const cb = (cleaned.match(/}/g) || []).length;
-  const os = (cleaned.match(/\[/g) || []).length;
-  const cs = (cleaned.match(/\]/g) || []).length;
-  for (let i = 0; i < os - cs; i++) cleaned += "]";
-  for (let i = 0; i < ob - cb; i++) cleaned += "}";
+  let lastError: Error | null = null;
 
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    cleaned = cleaned
-      .replace(/,\s*}/g, "}")
-      .replace(/,\s*]/g, "]")
-      .replace(/[\x00-\x1F\x7F]/g, " ");
-    return JSON.parse(cleaned);
+  for (const candidate of candidates) {
+    const parsed = safeParseJson(candidate.trim());
+    if (parsed.ok) return parsed.value;
+    lastError = parsed.error;
   }
+
+  console.error("Failed AI JSON snippet:", cleaned.slice(0, 1200));
+  throw new Error(`Unable to parse AI JSON response: ${lastError?.message ?? "unknown error"}`);
 }
 
 async function processTextbook(textbook_id: string, raw_text?: string) {
@@ -76,22 +192,21 @@ async function processTextbook(textbook_id: string, raw_text?: string) {
 
     await db.from("textbooks").update({ status: "processing", processing_progress: 5 }).eq("id", textbook_id);
 
-    // Use raw_text if provided, otherwise generate from metadata
     const hasRawText = raw_text && raw_text.trim().length > 100;
     await db.from("textbooks").update({ processing_progress: 15 }).eq("id", textbook_id);
 
     const systemPrompt = `أنت خبير تربوي متخصص في المنهاج الجزائري للرياضيات (الجيل الثاني).
-مهمتك إنشاء بنية كاملة لكتاب مدرسي بناءً على المعلومات المقدمة.
-أجب دائماً بـ JSON فقط.`;
+مهمتك إنشاء بنية كتاب مدرسي دقيقة ومضغوطة صالحة للحفظ في قاعدة البيانات.
+أجب دائماً بـ JSON صالح 100% فقط، بدون أي شرح أو markdown أو نص خارج JSON.`;
 
-    const structurePrompt = `أنشئ بنية كاملة لكتاب الرياضيات التالي من المنهاج الجزائري (الجيل الثاني):
+    const structurePrompt = `أنشئ بنية كتاب الرياضيات التالي من المنهاج الجزائري (الجيل الثاني):
 
 - العنوان: ${textbook.title}
 - المستوى: ${textbook.grade}
 - المادة: ${textbook.subject || "رياضيات"}
-${hasRawText ? `\n--- المحتوى النصي للكتاب ---\n${raw_text!.substring(0, 15000)}\n--- نهاية المحتوى ---\n\nاستخدم المحتوى أعلاه لاستخراج البنية الحقيقية للكتاب (الفصول، الدروس، الأنشطة) بدقة.` : ""}
+${hasRawText ? `\n--- المحتوى النصي للكتاب ---\n${raw_text!.substring(0, 12000)}\n--- نهاية المحتوى ---\n\nاستخرج فقط الفصول والدروس والأنشطة التي يدعمها النص أعلاه بوضوح. إذا كان النص مقتطفاً جزئياً فلا تخترع فصولاً إضافية.` : ""}
 
-المطلوب: أنشئ البنية الهرمية الكاملة للكتاب مع فصول ودروس وأنشطة تفاعلية:
+المطلوب: أنشئ البنية الهرمية للكتاب مع فصول ودروس وأنشطة تفاعلية:
 
 {
   "chapters": [
@@ -106,15 +221,15 @@ ${hasRawText ? `\n--- المحتوى النصي للكتاب ---\n${raw_text!.su
           "title": "عنوان الدرس بالفرنسية",
           "title_ar": "عنوان الدرس بالعربية",
           "objectives": ["هدف 1", "هدف 2"],
-          "content_summary": "ملخص المحتوى",
+          "content_summary": "ملخص قصير",
           "activities": [
             {
               "order": 1,
               "type": "explanation|exercise|activity|example|definition|property|theorem",
               "title": "عنوان",
               "title_ar": "عنوان بالعربية",
-              "content": "المحتوى الكامل بـ LaTeX",
-              "solution": "الحل إن وجد",
+              "content": "محتوى مختصر بـ LaTeX",
+              "solution": "حل مختصر إن وجد",
               "difficulty": 1,
               "bloom_level": 1,
               "is_interactive": true,
@@ -130,11 +245,13 @@ ${hasRawText ? `\n--- المحتوى النصي للكتاب ---\n${raw_text!.su
 }
 
 ⚠️ مهم:
+- أرجع JSON صالحاً 100% فقط
 - أنشئ محتوى يتوافق مع المنهاج الجزائري للمستوى المحدد
+- إذا كان النص جزئياً، استخرج فقط ما يظهر بوضوح
+- اجعل content و solution و content_summary مختصرة جداً لتقليل حجم المخرجات
 - التمارين يجب أن تكون تفاعلية (is_interactive: true) مع expected_answer
 - اكتب المحتوى الرياضي بـ LaTeX
-- أنشئ على الأقل 4 فصول، كل فصل فيه 2-3 دروس، كل درس فيه 3-5 أنشطة
-- كن شاملاً ودقيقاً`;
+- إذا لم تتأكد من قيمة، استخدم سلسلة فارغة أو مصفوفة فارغة أو null حسب الحاجة`;
 
     const rawResult = await callAI(structurePrompt, systemPrompt);
     const parsed = extractJSON(rawResult);
