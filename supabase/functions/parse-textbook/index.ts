@@ -273,7 +273,7 @@ async function processTextbook(textbook_id: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const { textbook_id } = await req.json().catch(() => ({ textbook_id: null }));
+const { textbook_id, raw_text } = await req.json().catch(() => ({ textbook_id: null, raw_text: null }));
 
   if (!textbook_id) {
     return new Response(JSON.stringify({ error: "textbook_id required" }), {
@@ -283,7 +283,7 @@ Deno.serve(async (req) => {
   }
 
   // Process in background to avoid timeout
-  EdgeRuntime.waitUntil(processTextbook(textbook_id));
+  EdgeRuntime.waitUntil(processTextbook(textbook_id, raw_text || undefined));
 
   return new Response(
     JSON.stringify({ success: true, message: "Processing started" }),
