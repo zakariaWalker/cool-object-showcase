@@ -64,7 +64,7 @@ function extractJSON(text: string): any {
   }
 }
 
-async function processTextbook(textbook_id: string) {
+async function processTextbook(textbook_id: string, raw_text?: string) {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const db = createClient(supabaseUrl, serviceKey);
@@ -75,8 +75,8 @@ async function processTextbook(textbook_id: string) {
 
     await db.from("textbooks").update({ status: "processing", processing_progress: 5 }).eq("id", textbook_id);
 
-    // We don't send the raw PDF to AI — Gemini text API can't parse binary PDFs.
-    // Instead, we use the textbook metadata (title, grade) to generate a curriculum-aligned structure.
+    // Use raw_text if provided, otherwise generate from metadata
+    const hasRawText = raw_text && raw_text.trim().length > 100;
     await db.from("textbooks").update({ processing_progress: 15 }).eq("id", textbook_id);
 
     const systemPrompt = `أنت خبير تربوي متخصص في المنهاج الجزائري للرياضيات (الجيل الثاني).
@@ -88,6 +88,7 @@ async function processTextbook(textbook_id: string) {
 - العنوان: ${textbook.title}
 - المستوى: ${textbook.grade}
 - المادة: ${textbook.subject || "رياضيات"}
+${hasRawText ? `\n--- المحتوى النصي للكتاب ---\n${raw_text!.substring(0, 15000)}\n--- نهاية المحتوى ---\n\nاستخدم المحتوى أعلاه لاستخراج البنية الحقيقية للكتاب (الفصول، الدروس، الأنشطة) بدقة.` : ""}
 
 المطلوب: أنشئ البنية الهرمية الكاملة للكتاب مع فصول ودروس وأنشطة تفاعلية:
 
@@ -273,7 +274,7 @@ async function processTextbook(textbook_id: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const { textbook_id } = await req.json().catch(() => ({ textbook_id: null }));
+const { textbook_id, raw_text } = await req.json().catch(() => ({ textbook_id: null, raw_text: null }));
 
   if (!textbook_id) {
     return new Response(JSON.stringify({ error: "textbook_id required" }), {
@@ -283,7 +284,7 @@ Deno.serve(async (req) => {
   }
 
   // Process in background to avoid timeout
-  EdgeRuntime.waitUntil(processTextbook(textbook_id));
+  EdgeRuntime.waitUntil(processTextbook(textbook_id, raw_text || undefined));
 
   return new Response(
     JSON.stringify({ success: true, message: "Processing started" }),
