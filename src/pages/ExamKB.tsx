@@ -21,6 +21,7 @@ export default function ExamKBPage() {
 
   const tabs: { id: ExtendedView; label: string; icon: string }[] = [
     { id: "json-upload", label: "استيراد JSON", icon: "📦" },
+    { id: "pdf-upload", label: "رفع PDF", icon: "📄" },
     { id: "exams", label: "استيراد يدوي", icon: "📥" },
     { id: "questions", label: "الأسئلة", icon: "📋" },
     { id: "bloom", label: "تحليل بلوم", icon: "🧠" },
