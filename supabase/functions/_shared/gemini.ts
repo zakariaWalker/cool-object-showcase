@@ -20,6 +20,8 @@ export interface GeminiConfig {
   systemInstruction?: string;
   tools?: any[];
   toolConfig?: any;
+  responseMimeType?: string;
+  maxOutputTokens?: number;
 }
 
 export interface GeminiResponse {
@@ -46,6 +48,8 @@ export async function callGemini(
     contents: messages,
     generationConfig: {
       temperature: config.temperature ?? 0.2,
+      ...(config.responseMimeType ? { responseMimeType: config.responseMimeType } : {}),
+      ...(config.maxOutputTokens ? { maxOutputTokens: config.maxOutputTokens } : {}),
     },
   };
 

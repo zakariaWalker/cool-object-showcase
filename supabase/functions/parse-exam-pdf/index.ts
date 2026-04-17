@@ -133,7 +133,11 @@ Deno.serve(async (req) => {
             { text: prompt },
           ],
         }],
-        { temperature: 0.1 }
+        {
+          temperature: 0.1,
+          responseMimeType: "application/json",
+          maxOutputTokens: 32768,
+        }
       );
     } catch (err) {
       const msg = err instanceof GeminiError ? err.message : (err as Error).message;
@@ -159,10 +163,14 @@ Deno.serve(async (req) => {
     let parsed: any;
     try {
       parsed = extractJSON(response.text);
-    } catch {
+    } catch (parseErr) {
+      const rawSnippet = response.text.slice(0, 500);
+      const errMsg = `JSON parse failed: ${(parseErr as Error).message}. Raw start: ${rawSnippet}`;
+      console.error("Parse error details:", errMsg);
+      console.error("Full raw response length:", response.text.length);
       await supabase.from("exam_uploads")
-        .update({ status: "failed", error_message: "Failed to parse AI JSON response" }).eq("id", upload_id);
-      return new Response(JSON.stringify({ error: "JSON parse failed" }), {
+        .update({ status: "failed", error_message: errMsg.slice(0, 1000) }).eq("id", upload_id);
+      return new Response(JSON.stringify({ error: "JSON parse failed", details: errMsg.slice(0, 300) }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
