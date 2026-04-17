@@ -20,6 +20,8 @@ export interface GeminiConfig {
   systemInstruction?: string;
   tools?: any[];
   toolConfig?: any;
+  responseMimeType?: string;
+  maxOutputTokens?: number;
 }
 
 export interface GeminiResponse {
