@@ -9,6 +9,12 @@ import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import ExercisePage from "./pages/Exercise";
 import AdminKBPage from "./pages/AdminKB";
+import CurriculumManager from "./admin/pages/CurriculumManager";
+import UserManagement from "./admin/pages/UserManagement";
+import ContentReview from "./admin/pages/ContentReview";
+import BillingPage from "./admin/pages/Billing";
+import PlatformAnalytics from "./admin/pages/PlatformAnalytics";
+import PlatformConfig from "./admin/pages/PlatformConfig";
 import GapDetector from "./pages/GapDetector";
 import AITutor from "./pages/AITutor";
 import StudentSolver from "./pages/StudentSolver";
@@ -50,6 +56,12 @@ const App = () => (
             <Route path="/functions" element={<ExercisePage />} />
             <Route path="/admin" element={<AdminKBPage />} />
             <Route path="/admin/reports" element={<AdminReports />} />
+            <Route path="/admin/curricula" element={<CurriculumManager />} />
+            <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/content" element={<ContentReview />} />
+            <Route path="/admin/billing" element={<BillingPage />} />
+            <Route path="/admin/analytics" element={<PlatformAnalytics />} />
+            <Route path="/admin/config" element={<PlatformConfig />} />
             <Route path="/gaps" element={<GapDetector />} />
             <Route path="/tutor" element={<AITutor />} />
             <Route path="/solve/:id" element={<StudentSolver />} />
