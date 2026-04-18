@@ -5,7 +5,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Globe, Plus, Link2, Trash2, Search, BookOpen, GraduationCap } from "lucide-react";
+import { Globe, Plus, Link2, Trash2, Search, BookOpen, GraduationCap, Wand2, Sparkles } from "lucide-react";
 
 type Country = {
   code: string;
@@ -129,6 +129,39 @@ export default function CurriculumManager() {
     const { error } = await supabase.from("curriculum_mappings").delete().eq("id", mappingId);
     if (error) { toast.error(error.message); return; }
     toast.success("تمت الإزالة");
+    loadAll();
+  }
+
+  // Auto-map all skills having a `grade` field that matches a grade in this country.
+  // Uses each skill's existing grade code, frequency for ordering, and skips duplicates.
+  async function autoMapFromKB() {
+    const validGrades = new Set(countryGrades.map(g => g.grade_code));
+    const existing = new Set(
+      mappings
+        .filter(m => m.country_code === selectedCountry)
+        .map(m => `${m.skill_id}__${m.grade_code}`)
+    );
+    const candidates = skills
+      .filter(s => s.is_universal !== false)
+      .map(s => ({ s, grade: (s as any).grade as string | undefined }))
+      .filter(({ s, grade }) => grade && validGrades.has(grade) && !existing.has(`${s.id}__${grade}`));
+
+    if (candidates.length === 0) {
+      toast.info("لا توجد مهارات جديدة للربط — كل المهارات المؤهلة مربوطة بالفعل.");
+      return;
+    }
+
+    const rows = candidates.map(({ s, grade }, i) => ({
+      skill_id: s.id,
+      country_code: selectedCountry,
+      grade_code: grade!,
+      order_in_curriculum: i + 1,
+      notes: "ربط تلقائي من حقل grade في قاعدة المعرفة",
+    }));
+
+    const { error } = await supabase.from("curriculum_mappings").insert(rows);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`تم ربط ${rows.length} مهارة تلقائياً`);
     loadAll();
   }
 
