@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Lock, Save, RotateCcw, LogOut, AlertCircle } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AdminClassify } from "@/components/admin/AdminClassify";
@@ -65,7 +66,7 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
         transition={{ duration: 0.4 }}
         className="glass-card rounded-3xl p-12 text-center min-w-[320px]"
         style={{ background: "hsl(var(--primary) / 0.15)", border: "1px solid hsl(var(--primary-foreground) / 0.12)" }}>
-        <div className="text-5xl mb-4">🔐</div>
+        <div className="mb-4 flex justify-center"><Lock className="w-12 h-12" style={{ color: "hsl(var(--accent))" }} /></div>
         <h2 className="text-xl font-black text-primary-foreground mb-1">لوحة الإدارة</h2>
         <p className="text-xs mb-8" style={{ color: "hsl(var(--primary-foreground) / 0.55)" }}>أدخل الـ PIN للوصول إلى قاعدة المعرفة</p>
         <div className="flex gap-3 justify-center mb-6" style={{ direction: "ltr" }}>
@@ -82,8 +83,8 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
           ))}
         </div>
         {error && (
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs mb-4" style={{ color: "hsl(var(--destructive))" }}>
-            ❌ PIN غير صحيح
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs mb-4 flex items-center justify-center gap-1.5" style={{ color: "hsl(var(--destructive))" }}>
+            <AlertCircle className="w-3.5 h-3.5" /> PIN غير صحيح
           </motion.p>
         )}
         <p className="text-[11px]" style={{ color: "hsl(var(--primary-foreground) / 0.35)" }}>الجلسة تنتهي بعد 4 ساعات</p>
@@ -139,8 +140,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
   const handleSaveToDB = async () => {
     const ok = await store.saveAllToDB();
-    if (ok) alert(`✅ تم حفظ ${store.exercises.length} تمرين + ${store.patterns.length} نمط + ${store.deconstructions.length} تفكيك في قاعدة البيانات`);
-    else alert("❌ حدث خطأ أثناء الحفظ");
+    if (ok) alert(`تم حفظ ${store.exercises.length} تمرين + ${store.patterns.length} نمط + ${store.deconstructions.length} تفكيك في قاعدة البيانات`);
+    else alert("حدث خطأ أثناء الحفظ");
   };
 
   return (
@@ -160,8 +161,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
           <span className="text-muted-foreground">—</span>
           <span className="text-sm text-muted-foreground flex-1">{subtitle}</span>
           <button onClick={() => store.resetAll()}
-            className="text-xs px-3 py-1.5 rounded border border-border text-muted-foreground bg-card hover:bg-muted transition-all">
-            مسح
+            className="text-xs px-3 py-1.5 rounded border border-border text-muted-foreground bg-card hover:bg-muted transition-all inline-flex items-center gap-1.5">
+            <RotateCcw className="w-3.5 h-3.5" /> مسح
           </button>
           <button onClick={handleLoadExercises}
             className="text-xs px-3 py-1.5 rounded font-bold text-primary-foreground btn-press"
@@ -169,14 +170,14 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             تحميل التمارين
           </button>
           <button onClick={handleSaveToDB} disabled={store.loading}
-            className="text-xs px-3 py-1.5 rounded font-bold text-primary-foreground btn-press"
+            className="text-xs px-3 py-1.5 rounded font-bold text-primary-foreground btn-press inline-flex items-center gap-1.5"
             style={{ background: "hsl(var(--accent))" }}>
-            {store.loading ? "جاري الحفظ..." : "💾 حفظ في DB"}
+            <Save className="w-3.5 h-3.5" /> {store.loading ? "جاري الحفظ..." : "حفظ في DB"}
           </button>
           <button onClick={() => { try { sessionStorage.removeItem(PIN_STORAGE_KEY); } catch {} onLogout(); }}
-            className="text-xs px-3 py-1.5 rounded border font-bold"
+            className="text-xs px-3 py-1.5 rounded border font-bold inline-flex items-center gap-1.5"
             style={{ background: "hsl(var(--destructive) / 0.12)", color: "hsl(var(--destructive))", borderColor: "hsl(var(--destructive) / 0.3)" }}>
-            تسجيل الخروج ↩
+            <LogOut className="w-3.5 h-3.5" /> تسجيل الخروج
           </button>
         </div>
 
