@@ -5,7 +5,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Globe, Plus, Link2, Trash2, Search, BookOpen, GraduationCap } from "lucide-react";
+import { Globe, Plus, Link2, Trash2, Search, BookOpen, GraduationCap, Wand2, Sparkles } from "lucide-react";
 
 type Country = {
   code: string;
@@ -33,6 +33,7 @@ type Skill = {
   domain: string | null;
   subdomain: string | null;
   is_universal: boolean;
+  grade: string | null;
 };
 
 type Mapping = {
@@ -64,7 +65,7 @@ export default function CurriculumManager() {
     const [c, g, s, m] = await Promise.all([
       supabase.from("countries").select("*").order("name_ar"),
       supabase.from("country_grades").select("*").order("order_index"),
-      supabase.from("kb_skills").select("id, name, name_ar, domain, subdomain, is_universal").limit(2000),
+      supabase.from("kb_skills").select("id, name, name_ar, domain, subdomain, is_universal, grade").limit(2000),
       supabase.from("curriculum_mappings").select("*"),
     ]);
     if (c.data) setCountries(c.data);
@@ -132,6 +133,39 @@ export default function CurriculumManager() {
     loadAll();
   }
 
+  // Auto-map all skills having a `grade` field that matches a grade in this country.
+  // Uses each skill's existing grade code, frequency for ordering, and skips duplicates.
+  async function autoMapFromKB() {
+    const validGrades = new Set(countryGrades.map(g => g.grade_code));
+    const existing = new Set(
+      mappings
+        .filter(m => m.country_code === selectedCountry)
+        .map(m => `${m.skill_id}__${m.grade_code}`)
+    );
+    const candidates = skills
+      .filter(s => s.is_universal !== false)
+      .map(s => ({ s, grade: (s as any).grade as string | undefined }))
+      .filter(({ s, grade }) => grade && validGrades.has(grade) && !existing.has(`${s.id}__${grade}`));
+
+    if (candidates.length === 0) {
+      toast.info("لا توجد مهارات جديدة للربط — كل المهارات المؤهلة مربوطة بالفعل.");
+      return;
+    }
+
+    const rows = candidates.map(({ s, grade }, i) => ({
+      skill_id: s.id,
+      country_code: selectedCountry,
+      grade_code: grade!,
+      order_in_curriculum: i + 1,
+      notes: "ربط تلقائي من حقل grade في قاعدة المعرفة",
+    }));
+
+    const { error } = await supabase.from("curriculum_mappings").insert(rows);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`تم ربط ${rows.length} مهارة تلقائياً`);
+    loadAll();
+  }
+
   if (loading) {
     return <div className="p-8 text-muted-foreground">جارٍ التحميل...</div>;
   }
@@ -139,22 +173,31 @@ export default function CurriculumManager() {
   return (
     <div className="p-6 space-y-6" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl font-black text-foreground flex items-center gap-2">
             <Globe className="w-6 h-6 text-primary" />
             إدارة المناهج متعددة الدول
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            اربط المهارات الكونية بالصفوف الدراسية لكل دولة
+            اربط المهارات الكونية بالصفوف الدراسية لكل دولة — أو استخدم الربط التلقائي من قاعدة المعرفة
           </p>
         </div>
+        <div className="flex gap-2">
+        <button
+          onClick={autoMapFromKB}
+          className="px-4 py-2 bg-accent text-accent-foreground rounded-lg text-sm font-bold flex items-center gap-2 hover:opacity-90"
+          title="يربط تلقائياً المهارات الكونية بالصفوف المطابقة لحقل grade في قاعدة المعرفة"
+        >
+          <Wand2 className="w-4 h-4" /> ربط تلقائي من KB
+        </button>
         <button
           onClick={() => setShowAddCountry(true)}
           className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-bold flex items-center gap-2"
         >
           <Plus className="w-4 h-4" /> إضافة دولة
         </button>
+        </div>
       </div>
 
       {/* Country selector */}

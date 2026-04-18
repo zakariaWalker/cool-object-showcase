@@ -2,28 +2,34 @@
 import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import {
+  User, Home as HomeIcon, Stethoscope, Target, Map as MapIcon, PencilLine,
+  Bot, Telescope, FlaskConical, FileEdit, Library, Sparkles, Network, BookOpen,
+  Settings, Flag, Archive, type LucideIcon,
+} from "lucide-react";
 import { GamificationDashboard } from "./GamificationDashboard";
 import { QEDLogo } from "./QEDLogo";
 import { useAuth } from "@/hooks/useAuth";
 
-const WORKFLOW_STEPS = [
-  { path: "/profile", label: "الملف الشخصي", emoji: "👤", step: 0 },
-  { path: "/home", label: "الرئيسية", emoji: "🏠", step: 1 },
-  { path: "/diagnostic", label: "التقييم التشخيصي", emoji: "🔍", step: 2 },
-  { path: "/gaps", label: "كشف الثغرات", emoji: "🎯", step: 3 },
-  { path: "/learn", label: "مسار التعلم", emoji: "🗺️", step: 4 },
-  { path: "/exercises", label: "التمارين", emoji: "📝", step: 5 },
-  { path: "/tutor", label: "المدرّس الذكي", emoji: "🤖", step: 6 },
-  { path: "/explore", label: "الاستكشاف", emoji: "🔭", step: 7 },
-  { path: "/whatif", label: "ماذا لو؟", emoji: "🔬", step: 8 },
-  { path: "/exams", label: "الامتحانات", emoji: "🏗️", step: 9 },
-  { path: "/exam-kb", label: "KB امتحانات", emoji: "📚", step: 10 },
-  { path: "/skills-kb", label: "KB المهارات", emoji: ":-)", step: 11 },
-  { path: "/unified-kb", label: "KB عامة", emoji: ":-(", step: 12 },
-  { path: "/textbook-upload", label: "الكتاب المدرسي", emoji: "📚", step: 13 },
-];
+type Step = { path: string; label: string; icon: LucideIcon; step: number; adminOnly?: boolean };
 
-const ADMIN_LINK = { path: "/admin", label: "لوحة الإدارة", emoji: "⚙️" };
+const WORKFLOW_STEPS: Step[] = [
+  { path: "/profile", label: "الملف الشخصي", icon: User, step: 0 },
+  { path: "/home", label: "الرئيسية", icon: HomeIcon, step: 1 },
+  { path: "/diagnostic", label: "التقييم التشخيصي", icon: Stethoscope, step: 2 },
+  { path: "/gaps", label: "كشف الثغرات", icon: Target, step: 3 },
+  { path: "/learn", label: "مسار التعلم", icon: MapIcon, step: 4 },
+  { path: "/exercises", label: "التمارين", icon: PencilLine, step: 5 },
+  { path: "/tutor", label: "المدرّس الذكي", icon: Bot, step: 6 },
+  { path: "/explore", label: "الاستكشاف", icon: Telescope, step: 7 },
+  { path: "/whatif", label: "ماذا لو؟", icon: FlaskConical, step: 8 },
+  { path: "/annales", label: "الأرشيف", icon: Archive, step: 9 },
+  { path: "/exams", label: "الامتحانات", icon: FileEdit, step: 10, adminOnly: true },
+  { path: "/exam-kb", label: "KB امتحانات", icon: Library, step: 11, adminOnly: true },
+  { path: "/skills-kb", label: "KB المهارات", icon: Sparkles, step: 12, adminOnly: true },
+  { path: "/unified-kb", label: "KB موحدة", icon: Network, step: 13, adminOnly: true },
+  { path: "/textbook-upload", label: "الكتب المدرسية", icon: BookOpen, step: 14, adminOnly: true },
+];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -46,15 +52,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Don't show shell on landing, auth, or TMA pages
   if (currentPath === "/" || currentPath === "/auth" || currentPath.startsWith("/tma")) return <>{children}</>;
 
-  // Filter steps for navigation: Guests only see Diagnostic, Students only see learning/practice
+  // Filter steps for navigation: Guests only see Diagnostic, Students hide admin-only steps
   const visibleSteps = WORKFLOW_STEPS.filter((step) => {
     if (isGuest) return step.path === "/gaps" || step.path === "/diagnostic";
-    // Admin only steps
-    if (
-      !isAdmin &&
-      (step.path === "/exams" || step.path === "/exam-kb" || step.path === "/skill-kb" || step.path === "/unified-kb")
-    )
-      return false;
+    if (step.adminOnly && !isAdmin) return false;
     return true;
   });
 
@@ -118,7 +119,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
                       />
                     )}
-                    <span className="text-lg group-hover:scale-125 transition-transform">{item.emoji}</span>
+                    <item.icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
                     <span className="hidden xl:inline">{item.label}</span>
 
                     {isPast && !isActive && (
@@ -145,7 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     }
                   `}
                 >
-                  ⚙️ <span className="hidden lg:inline">قاعدة المعرفة</span>
+                  <Settings className="w-4 h-4" /> <span className="hidden lg:inline">قاعدة المعرفة</span>
                 </Link>
                 <Link
                   to="/admin/reports"
@@ -158,7 +159,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     }
                   `}
                 >
-                  🚩 <span className="hidden lg:inline">البلاغات</span>
+                  <Flag className="w-4 h-4" /> <span className="hidden lg:inline">البلاغات</span>
                 </Link>
               </div>
             )}
