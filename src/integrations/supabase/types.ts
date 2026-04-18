@@ -164,6 +164,80 @@ export type Database = {
           },
         ]
       }
+      countries: {
+        Row: {
+          code: string
+          created_at: string
+          curriculum_framework: string | null
+          flag_emoji: string | null
+          is_active: boolean
+          name_ar: string
+          name_en: string
+          primary_language: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          curriculum_framework?: string | null
+          flag_emoji?: string | null
+          is_active?: boolean
+          name_ar: string
+          name_en: string
+          primary_language?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          curriculum_framework?: string | null
+          flag_emoji?: string | null
+          is_active?: boolean
+          name_ar?: string
+          name_en?: string
+          primary_language?: string
+        }
+        Relationships: []
+      }
+      country_grades: {
+        Row: {
+          country_code: string
+          created_at: string
+          cycle: string | null
+          grade_code: string
+          grade_label_ar: string
+          grade_label_en: string | null
+          id: string
+          order_index: number
+        }
+        Insert: {
+          country_code: string
+          created_at?: string
+          cycle?: string | null
+          grade_code: string
+          grade_label_ar: string
+          grade_label_en?: string | null
+          id?: string
+          order_index?: number
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          cycle?: string | null
+          grade_code?: string
+          grade_label_ar?: string
+          grade_label_en?: string | null
+          id?: string
+          order_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "country_grades_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       curricula: {
         Row: {
           created_at: string
@@ -196,6 +270,57 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      curriculum_mappings: {
+        Row: {
+          chapter_label: string | null
+          country_code: string
+          created_at: string
+          grade_code: string
+          id: string
+          notes: string | null
+          order_in_curriculum: number | null
+          semester: number | null
+          skill_id: string
+        }
+        Insert: {
+          chapter_label?: string | null
+          country_code: string
+          created_at?: string
+          grade_code: string
+          id?: string
+          notes?: string | null
+          order_in_curriculum?: number | null
+          semester?: number | null
+          skill_id: string
+        }
+        Update: {
+          chapter_label?: string | null
+          country_code?: string
+          created_at?: string
+          grade_code?: string
+          id?: string
+          notes?: string | null
+          order_in_curriculum?: number | null
+          semester?: number | null
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_mappings_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "curriculum_mappings_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "kb_skills"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exam_analytics: {
         Row: {
@@ -890,6 +1015,7 @@ export type Database = {
           chapter: string | null
           cognitive_level: string | null
           concept_count: number | null
+          country_code: string
           created_at: string
           difficulty: number | null
           estimated_time_min: number | null
@@ -909,6 +1035,7 @@ export type Database = {
           chapter?: string | null
           cognitive_level?: string | null
           concept_count?: number | null
+          country_code?: string
           created_at?: string
           difficulty?: number | null
           estimated_time_min?: number | null
@@ -928,6 +1055,7 @@ export type Database = {
           chapter?: string | null
           cognitive_level?: string | null
           concept_count?: number | null
+          country_code?: string
           created_at?: string
           difficulty?: number | null
           estimated_time_min?: number | null
@@ -1138,6 +1266,7 @@ export type Database = {
           frequency: number | null
           grade: string | null
           id: string
+          is_universal: boolean
           metadata: Json | null
           name: string
           name_ar: string | null
@@ -1152,6 +1281,7 @@ export type Database = {
           frequency?: number | null
           grade?: string | null
           id?: string
+          is_universal?: boolean
           metadata?: Json | null
           name: string
           name_ar?: string | null
@@ -1166,6 +1296,7 @@ export type Database = {
           frequency?: number | null
           grade?: string | null
           id?: string
+          is_universal?: boolean
           metadata?: Json | null
           name?: string
           name_ar?: string | null
