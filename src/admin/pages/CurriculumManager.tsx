@@ -197,6 +197,7 @@ export default function CurriculumManager() {
         >
           <Plus className="w-4 h-4" /> إضافة دولة
         </button>
+        </div>
       </div>
 
       {/* Country selector */}
