@@ -7,6 +7,7 @@ import {
   CreditCard,
   BarChart3,
   Settings,
+  Globe,
 } from "lucide-react";
 
 import AdminHome from "./pages/Dashboard";
@@ -15,11 +16,13 @@ import ContentReview from "./pages/ContentReview";
 import BillingPage from "./pages/Billing";
 import PlatformAnalytics from "./pages/PlatformAnalytics";
 import PlatformConfig from "./pages/PlatformConfig";
+import CurriculumManager from "./pages/CurriculumManager";
 
 const navItems = [
   { path: "/admin", label: "لوحة التحكم", icon: LayoutDashboard },
   { path: "/admin/users", label: "إدارة المستخدمين", icon: Users },
   { path: "/admin/content", label: "مراجعة المحتوى", icon: FileCheck },
+  { path: "/admin/curricula", label: "المناهج والدول", icon: Globe },
   { path: "/admin/billing", label: "الفوترة والخطط", icon: CreditCard },
   { path: "/admin/analytics", label: "التحليلات", icon: BarChart3 },
   { path: "/admin/config", label: "إعدادات المنصة", icon: Settings },
@@ -37,6 +40,7 @@ const AdminApp = () => {
         <Route index element={<AdminHome />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="content" element={<ContentReview />} />
+        <Route path="curricula" element={<CurriculumManager />} />
         <Route path="billing" element={<BillingPage />} />
         <Route path="analytics" element={<PlatformAnalytics />} />
         <Route path="config" element={<PlatformConfig />} />
