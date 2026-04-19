@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { SkillTreeMap } from "@/components/SkillTreeMap";
 
 // ── Types ──
 interface Skill { id: string; name: string; name_ar: string | null; domain: string | null; subdomain: string | null; grade: string | null; bloom_level: number | null; difficulty: number | null; }
@@ -292,13 +293,13 @@ export default function UnifiedKBPage() {
             </div>
           </TabsContent>
 
-          {/* ════ TAB 2: Graph ════ */}
+          {/* ════ TAB 2: Skill Tree ════ */}
           <TabsContent value="graph">
-            <div className="rounded-xl border border-border bg-card p-4">
-              <h3 className="text-sm font-bold text-foreground mb-2">🗺️ خريطة الترابط بين المهارات</h3>
-              <p className="text-[10px] text-muted-foreground mb-3">أول 30 مهارة مع الترابطات بينها</p>
-              <MiniGraph skills={skills} links={deps.map(d => ({ from: d.from_skill_id, to: d.to_skill_id }))} />
+            <div className="rounded-xl border border-border bg-card p-4 mb-4">
+              <h3 className="text-sm font-bold text-foreground mb-1">🗺️ شجرة المهارات</h3>
+              <p className="text-[10px] text-muted-foreground">المجال ← الوحدة ← المهارة. انقر على أي مهارة لرؤية متطلباتها وما تؤدي إليه.</p>
             </div>
+            <SkillTreeMap skills={skills as any} deps={deps as any} />
 
             {/* Legend */}
             <div className="grid grid-cols-3 gap-3 mt-4">

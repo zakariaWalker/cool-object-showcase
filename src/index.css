@@ -284,3 +284,45 @@
   background: hsl(var(--primary) / 0.2);
   color: hsl(var(--foreground));
 }
+/* ── PRINT (multi-page exam papers) ─────────────── */
+@media print {
+  @page {
+    size: A4;
+    margin: 1.5cm 1.2cm;
+  }
+
+  html, body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+  }
+
+  body * { visibility: hidden; }
+  #exam-paper, #exam-paper * { visibility: visible; }
+  #exam-paper {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+
+  .print\:hidden { display: none !important; }
+  .print\:p-0 { padding: 0 !important; }
+
+  .exercise-block {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  h1, h2, h3, h4 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  table, figure, svg, img {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
