@@ -294,7 +294,7 @@ export default function AdminKBUpload() {
               <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-black">2</div>
               <h2 className="text-base font-bold text-foreground">ارفع ملفاً أو الصق المحتوى</h2>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-wrap">
               <button onClick={() => setMode("json")}
                 className={`text-xs px-3 py-1.5 rounded-lg border inline-flex items-center gap-1.5 ${mode === "json" ? "bg-primary text-primary-foreground border-primary" : "border-border bg-card text-muted-foreground"}`}>
                 <FileJson className="w-3.5 h-3.5" /> JSON
@@ -303,26 +303,77 @@ export default function AdminKBUpload() {
                 className={`text-xs px-3 py-1.5 rounded-lg border inline-flex items-center gap-1.5 ${mode === "text" ? "bg-primary text-primary-foreground border-primary" : "border-border bg-card text-muted-foreground"}`}>
                 <FileText className="w-3.5 h-3.5" /> نص عادي
               </button>
+              <button onClick={() => setMode("pdf")}
+                className={`text-xs px-3 py-1.5 rounded-lg border inline-flex items-center gap-1.5 ${mode === "pdf" ? "bg-primary text-primary-foreground border-primary" : "border-border bg-card text-muted-foreground"}`}>
+                <BookOpen className="w-3.5 h-3.5" /> كتاب PDF (Gemini)
+              </button>
             </div>
           </div>
 
-          <div className="mb-3">
-            <label className="cursor-pointer inline-flex items-center gap-2 text-xs px-3 py-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 text-primary hover:bg-primary/10">
-              <Upload className="w-3.5 h-3.5" /> اختر ملف .json أو .txt
-              <input type="file" accept=".json,.txt" onChange={handleFile} className="hidden" />
-            </label>
-          </div>
+          {mode !== "pdf" ? (
+            <>
+              <div className="mb-3">
+                <label className="cursor-pointer inline-flex items-center gap-2 text-xs px-3 py-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 text-primary hover:bg-primary/10">
+                  <Upload className="w-3.5 h-3.5" /> اختر ملف .json أو .txt
+                  <input type="file" accept=".json,.txt" onChange={handleFile} className="hidden" />
+                </label>
+              </div>
 
-          <textarea value={rawInput} onChange={e => setRawInput(e.target.value)}
-            placeholder={mode === "json"
-              ? '[{"text": "...", "grade": "...", "chapter": "..."}, ...] أو {"exercises": [...]}'
-              : "تمرين 1...\n\nتمرين 2...\n\n(افصل بين التمارين بسطر فارغ)"}
-            className="w-full h-48 px-3 py-2 rounded-lg border border-border bg-card text-foreground text-sm font-mono leading-relaxed" />
+              <textarea value={rawInput} onChange={e => setRawInput(e.target.value)}
+                placeholder={mode === "json"
+                  ? '[{"text": "...", "grade": "...", "chapter": "..."}, ...] أو {"exercises": [...]}'
+                  : "تمرين 1...\n\nتمرين 2...\n\n(افصل بين التمارين بسطر فارغ)"}
+                className="w-full h-48 px-3 py-2 rounded-lg border border-border bg-card text-foreground text-sm font-mono leading-relaxed" />
 
-          <button onClick={parseInput}
-            className="mt-3 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold inline-flex items-center gap-1.5">
-            <Check className="w-4 h-4" /> تحليل المحتوى
-          </button>
+              <button onClick={parseInput}
+                className="mt-3 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold inline-flex items-center gap-1.5">
+                <Check className="w-4 h-4" /> تحليل المحتوى
+              </button>
+            </>
+          ) : (
+            <div className="space-y-3">
+              <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-3 leading-relaxed">
+                💡 سيُقسَّم الكتاب إلى أجزاء (chunks) من <strong>{pagesPerChunk}</strong> صفحات، ويُرسَل كل جزء إلى Gemini لاستخراج التمارين بنفس قالب المنهج الجزائري:
+                <br />
+                <code className="text-[10px]">"...مقدمة... — سؤال 1 ... / سؤال 2 ... / سؤال 3 ..."</code> مع صيغ LaTeX داخل $...$
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label className="cursor-pointer inline-flex items-center gap-2 text-xs px-3 py-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 text-primary hover:bg-primary/10">
+                  <BookOpen className="w-4 h-4" />
+                  {pdfFile ? pdfFile.name : "اختر كتاب PDF (≤ 50MB)"}
+                  <input type="file" accept=".pdf,application/pdf" onChange={handlePdfFile} className="hidden" />
+                </label>
+                <div>
+                  <label className="text-[10px] text-muted-foreground block mb-1">عدد الصفحات لكل جزء (chunk)</label>
+                  <select value={pagesPerChunk} onChange={e => setPagesPerChunk(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-card text-foreground text-sm">
+                    <option value={2}>2 صفحات (دقيق + بطيء)</option>
+                    <option value={4}>4 صفحات (موصى به)</option>
+                    <option value={6}>6 صفحات (سريع)</option>
+                    <option value={10}>10 صفحات (سريع جداً، أقل دقة)</option>
+                  </select>
+                </div>
+              </div>
+
+              {pdfFile && (
+                <div className="text-[11px] text-muted-foreground">
+                  الحجم: {(pdfFile.size / (1024 * 1024)).toFixed(2)} MB •
+                  المستوى المختار: <strong>{defaultGrade || "— لم يُختر —"}</strong> •
+                  البلد: <strong>{countryCode}</strong>
+                </div>
+              )}
+
+              <button onClick={extractFromPdf} disabled={pdfExtracting || !pdfFile}
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-50">
+                {pdfExtracting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> {pdfProgress || "جاري المعالجة..."}</>
+                ) : (
+                  <><BookOpen className="w-4 h-4" /> استخراج التمارين بـ Gemini</>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Step 3: Preview & commit */}
