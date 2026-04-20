@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Save, RotateCcw, LogOut, AlertCircle } from "lucide-react";
+import { Lock, Save, RotateCcw, LogOut, AlertCircle, Upload, Globe } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AdminClassify } from "@/components/admin/AdminClassify";
@@ -9,6 +10,7 @@ import { AdminDeconstruct } from "@/components/admin/AdminDeconstruct";
 import { AdminKBViewer } from "@/components/admin/AdminKBViewer";
 import { AdminViz } from "@/components/admin/AdminViz";
 import { useAdminKBStore } from "@/components/admin/useAdminKBStore";
+import { supabase } from "@/integrations/supabase/client";
 
 const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN || "2026";
 const PIN_STORAGE_KEY = "elmentor_admin_auth";
