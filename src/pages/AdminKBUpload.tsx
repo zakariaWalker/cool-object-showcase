@@ -111,6 +111,78 @@ export default function AdminKBUpload() {
     setMode(f.name.endsWith(".json") ? "json" : "text");
   }
 
+  function handlePdfFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!f.name.toLowerCase().endsWith(".pdf")) {
+      toast({ title: "يرجى اختيار ملف PDF", variant: "destructive" });
+      return;
+    }
+    if (f.size > 50 * 1024 * 1024) {
+      toast({ title: "الملف كبير جداً (أكثر من 50MB)", variant: "destructive" });
+      return;
+    }
+    setPdfFile(f);
+  }
+
+  async function extractFromPdf() {
+    if (!pdfFile) {
+      toast({ title: "اختر ملف PDF أولاً", variant: "destructive" });
+      return;
+    }
+    if (!defaultGrade) {
+      toast({ title: "اختر المستوى الافتراضي قبل الاستخراج", variant: "destructive" });
+      return;
+    }
+    setPdfExtracting(true);
+    setPdfProgress("جاري رفع الملف...");
+    try {
+      // Upload PDF to educational-materials bucket
+      const safeName = pdfFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `textbooks/${countryCode}/${defaultGrade}/${Date.now()}_${safeName}`;
+      const { error: upErr } = await supabase.storage
+        .from("educational-materials")
+        .upload(path, pdfFile, { contentType: "application/pdf", upsert: false });
+      if (upErr) throw upErr;
+
+      setPdfProgress(`تشغيل Gemini على الكتاب (${pagesPerChunk} صفحات/جزء)...`);
+      const { data, error } = await supabase.functions.invoke("extract-textbook-pdf", {
+        body: {
+          filePath: path,
+          bucket: "educational-materials",
+          grade: defaultGrade,
+          countryCode,
+          defaultSource: defaultSource || pdfFile.name.replace(/\.pdf$/i, ""),
+          pagesPerChunk,
+          maxChunks: 50,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      const exs: ParsedExercise[] = (data?.exercises || []).map((x: any) => ({
+        text: x.text,
+        type: x.type || "unclassified",
+        chapter: x.chapter || defaultChapter,
+        grade: x.grade || defaultGrade,
+        stream: x.stream || "",
+        source: x.source || defaultSource,
+      }));
+      setParsed(exs);
+      setPdfProgress("");
+      toast({
+        title: `تم استخراج ${exs.length} تمرين فريد`,
+        description: `من ${data?.totalChunks || 0} جزء — راجع المعاينة قبل الحفظ`,
+      });
+    } catch (e: any) {
+      console.error("[PDF extract]", e);
+      setPdfProgress("");
+      toast({ title: "فشل الاستخراج", description: e?.message?.slice(0, 200), variant: "destructive" });
+    } finally {
+      setPdfExtracting(false);
+    }
+  }
+
   function removeRow(i: number) {
     setParsed(prev => prev.filter((_, idx) => idx !== i));
   }
