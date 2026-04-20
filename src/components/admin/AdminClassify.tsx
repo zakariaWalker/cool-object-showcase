@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Exercise } from "./useAdminKBStore";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
+import { Sparkles, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface Props {
   exercises: Exercise[];
