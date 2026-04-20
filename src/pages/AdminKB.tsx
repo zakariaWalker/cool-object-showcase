@@ -107,8 +107,18 @@ const VIEW_META: Record<string, [string, string]> = {
 };
 
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
+  const navigate = useNavigate();
   const store = useAdminKBStore();
   const [title, subtitle] = VIEW_META[store.view] || ["", ""];
+  const [countries, setCountries] = useState<{ code: string; name_ar: string; flag_emoji: string | null }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("countries").select("code, name_ar, flag_emoji").eq("is_active", true).order("name_ar");
+      if (data) setCountries(data);
+    })();
+  }, []);
 
   const handleImport = () => {
     const input = document.createElement("input");
@@ -162,6 +172,24 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
           <span className="text-base font-bold text-foreground">{title}</span>
           <span className="text-muted-foreground">—</span>
           <span className="text-sm text-muted-foreground flex-1">{subtitle}</span>
+
+          {/* Country selector */}
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded border border-border bg-card">
+            <Globe className="w-3.5 h-3.5 text-muted-foreground" />
+            <select value={store.countryFilter} onChange={e => store.setCountryFilter(e.target.value)}
+              className="bg-transparent text-xs font-bold text-foreground outline-none cursor-pointer">
+              {countries.length === 0 && <option value="DZ">🇩🇿 الجزائر</option>}
+              {countries.map(c => (
+                <option key={c.code} value={c.code}>{c.flag_emoji || ""} {c.name_ar}</option>
+              ))}
+            </select>
+          </div>
+
+          <button onClick={() => navigate("/admin/kb/upload")}
+            className="text-xs px-3 py-1.5 rounded font-bold text-primary-foreground btn-press inline-flex items-center gap-1.5"
+            style={{ background: "hsl(var(--accent))" }}>
+            <Upload className="w-3.5 h-3.5" /> رفع تمارين
+          </button>
           <button onClick={() => store.resetAll()}
             className="text-xs px-3 py-1.5 rounded border border-border text-muted-foreground bg-card hover:bg-muted transition-all inline-flex items-center gap-1.5">
             <RotateCcw className="w-3.5 h-3.5" /> مسح
@@ -169,17 +197,17 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
           <button onClick={handleLoadExercises}
             className="text-xs px-3 py-1.5 rounded font-bold text-primary-foreground btn-press"
             style={{ background: "hsl(var(--primary))" }}>
-            تحميل التمارين
+            تحميل
           </button>
           <button onClick={handleSaveToDB} disabled={store.loading}
             className="text-xs px-3 py-1.5 rounded font-bold text-primary-foreground btn-press inline-flex items-center gap-1.5"
-            style={{ background: "hsl(var(--accent))" }}>
-            <Save className="w-3.5 h-3.5" /> {store.loading ? "جاري الحفظ..." : "حفظ في DB"}
+            style={{ background: "hsl(var(--primary))" }}>
+            <Save className="w-3.5 h-3.5" /> {store.loading ? "..." : "حفظ"}
           </button>
           <button onClick={() => { try { sessionStorage.removeItem(PIN_STORAGE_KEY); } catch {} onLogout(); }}
             className="text-xs px-3 py-1.5 rounded border font-bold inline-flex items-center gap-1.5"
             style={{ background: "hsl(var(--destructive) / 0.12)", color: "hsl(var(--destructive))", borderColor: "hsl(var(--destructive) / 0.3)" }}>
-            <LogOut className="w-3.5 h-3.5" /> تسجيل الخروج
+            <LogOut className="w-3.5 h-3.5" /> خروج
           </button>
         </div>
 
