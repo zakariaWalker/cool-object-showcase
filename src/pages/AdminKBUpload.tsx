@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Upload, FileJson, FileText, ArrowRight, Check, X, Globe, Loader2 } from "lucide-react";
+import { Upload, FileJson, FileText, ArrowRight, Check, X, Globe, Loader2, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -37,9 +37,13 @@ export default function AdminKBUpload() {
   const [defaultSource, setDefaultSource] = useState<string>("");
   const [parsed, setParsed] = useState<ParsedExercise[]>([]);
   const [rawInput, setRawInput] = useState<string>("");
-  const [mode, setMode] = useState<"json" | "text">("json");
+  const [mode, setMode] = useState<"json" | "text" | "pdf">("json");
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState<number>(0);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfExtracting, setPdfExtracting] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState<string>("");
+  const [pagesPerChunk, setPagesPerChunk] = useState<number>(4);
 
   useEffect(() => {
     (async () => {
@@ -105,6 +109,78 @@ export default function AdminKBUpload() {
     const text = await f.text();
     setRawInput(text);
     setMode(f.name.endsWith(".json") ? "json" : "text");
+  }
+
+  function handlePdfFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!f.name.toLowerCase().endsWith(".pdf")) {
+      toast({ title: "يرجى اختيار ملف PDF", variant: "destructive" });
+      return;
+    }
+    if (f.size > 50 * 1024 * 1024) {
+      toast({ title: "الملف كبير جداً (أكثر من 50MB)", variant: "destructive" });
+      return;
+    }
+    setPdfFile(f);
+  }
+
+  async function extractFromPdf() {
+    if (!pdfFile) {
+      toast({ title: "اختر ملف PDF أولاً", variant: "destructive" });
+      return;
+    }
+    if (!defaultGrade) {
+      toast({ title: "اختر المستوى الافتراضي قبل الاستخراج", variant: "destructive" });
+      return;
+    }
+    setPdfExtracting(true);
+    setPdfProgress("جاري رفع الملف...");
+    try {
+      // Upload PDF to educational-materials bucket
+      const safeName = pdfFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `textbooks/${countryCode}/${defaultGrade}/${Date.now()}_${safeName}`;
+      const { error: upErr } = await supabase.storage
+        .from("educational-materials")
+        .upload(path, pdfFile, { contentType: "application/pdf", upsert: false });
+      if (upErr) throw upErr;
+
+      setPdfProgress(`تشغيل Gemini على الكتاب (${pagesPerChunk} صفحات/جزء)...`);
+      const { data, error } = await supabase.functions.invoke("extract-textbook-pdf", {
+        body: {
+          filePath: path,
+          bucket: "educational-materials",
+          grade: defaultGrade,
+          countryCode,
+          defaultSource: defaultSource || pdfFile.name.replace(/\.pdf$/i, ""),
+          pagesPerChunk,
+          maxChunks: 50,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      const exs: ParsedExercise[] = (data?.exercises || []).map((x: any) => ({
+        text: x.text,
+        type: x.type || "unclassified",
+        chapter: x.chapter || defaultChapter,
+        grade: x.grade || defaultGrade,
+        stream: x.stream || "",
+        source: x.source || defaultSource,
+      }));
+      setParsed(exs);
+      setPdfProgress("");
+      toast({
+        title: `تم استخراج ${exs.length} تمرين فريد`,
+        description: `من ${data?.totalChunks || 0} جزء — راجع المعاينة قبل الحفظ`,
+      });
+    } catch (e: any) {
+      console.error("[PDF extract]", e);
+      setPdfProgress("");
+      toast({ title: "فشل الاستخراج", description: e?.message?.slice(0, 200), variant: "destructive" });
+    } finally {
+      setPdfExtracting(false);
+    }
   }
 
   function removeRow(i: number) {
@@ -218,7 +294,7 @@ export default function AdminKBUpload() {
               <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-black">2</div>
               <h2 className="text-base font-bold text-foreground">ارفع ملفاً أو الصق المحتوى</h2>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-wrap">
               <button onClick={() => setMode("json")}
                 className={`text-xs px-3 py-1.5 rounded-lg border inline-flex items-center gap-1.5 ${mode === "json" ? "bg-primary text-primary-foreground border-primary" : "border-border bg-card text-muted-foreground"}`}>
                 <FileJson className="w-3.5 h-3.5" /> JSON
@@ -227,26 +303,77 @@ export default function AdminKBUpload() {
                 className={`text-xs px-3 py-1.5 rounded-lg border inline-flex items-center gap-1.5 ${mode === "text" ? "bg-primary text-primary-foreground border-primary" : "border-border bg-card text-muted-foreground"}`}>
                 <FileText className="w-3.5 h-3.5" /> نص عادي
               </button>
+              <button onClick={() => setMode("pdf")}
+                className={`text-xs px-3 py-1.5 rounded-lg border inline-flex items-center gap-1.5 ${mode === "pdf" ? "bg-primary text-primary-foreground border-primary" : "border-border bg-card text-muted-foreground"}`}>
+                <BookOpen className="w-3.5 h-3.5" /> كتاب PDF (Gemini)
+              </button>
             </div>
           </div>
 
-          <div className="mb-3">
-            <label className="cursor-pointer inline-flex items-center gap-2 text-xs px-3 py-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 text-primary hover:bg-primary/10">
-              <Upload className="w-3.5 h-3.5" /> اختر ملف .json أو .txt
-              <input type="file" accept=".json,.txt" onChange={handleFile} className="hidden" />
-            </label>
-          </div>
+          {mode !== "pdf" ? (
+            <>
+              <div className="mb-3">
+                <label className="cursor-pointer inline-flex items-center gap-2 text-xs px-3 py-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 text-primary hover:bg-primary/10">
+                  <Upload className="w-3.5 h-3.5" /> اختر ملف .json أو .txt
+                  <input type="file" accept=".json,.txt" onChange={handleFile} className="hidden" />
+                </label>
+              </div>
 
-          <textarea value={rawInput} onChange={e => setRawInput(e.target.value)}
-            placeholder={mode === "json"
-              ? '[{"text": "...", "grade": "...", "chapter": "..."}, ...] أو {"exercises": [...]}'
-              : "تمرين 1...\n\nتمرين 2...\n\n(افصل بين التمارين بسطر فارغ)"}
-            className="w-full h-48 px-3 py-2 rounded-lg border border-border bg-card text-foreground text-sm font-mono leading-relaxed" />
+              <textarea value={rawInput} onChange={e => setRawInput(e.target.value)}
+                placeholder={mode === "json"
+                  ? '[{"text": "...", "grade": "...", "chapter": "..."}, ...] أو {"exercises": [...]}'
+                  : "تمرين 1...\n\nتمرين 2...\n\n(افصل بين التمارين بسطر فارغ)"}
+                className="w-full h-48 px-3 py-2 rounded-lg border border-border bg-card text-foreground text-sm font-mono leading-relaxed" />
 
-          <button onClick={parseInput}
-            className="mt-3 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold inline-flex items-center gap-1.5">
-            <Check className="w-4 h-4" /> تحليل المحتوى
-          </button>
+              <button onClick={parseInput}
+                className="mt-3 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold inline-flex items-center gap-1.5">
+                <Check className="w-4 h-4" /> تحليل المحتوى
+              </button>
+            </>
+          ) : (
+            <div className="space-y-3">
+              <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-3 leading-relaxed">
+                💡 سيُقسَّم الكتاب إلى أجزاء (chunks) من <strong>{pagesPerChunk}</strong> صفحات، ويُرسَل كل جزء إلى Gemini لاستخراج التمارين بنفس قالب المنهج الجزائري:
+                <br />
+                <code className="text-[10px]">"...مقدمة... — سؤال 1 ... / سؤال 2 ... / سؤال 3 ..."</code> مع صيغ LaTeX داخل $...$
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label className="cursor-pointer inline-flex items-center gap-2 text-xs px-3 py-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 text-primary hover:bg-primary/10">
+                  <BookOpen className="w-4 h-4" />
+                  {pdfFile ? pdfFile.name : "اختر كتاب PDF (≤ 50MB)"}
+                  <input type="file" accept=".pdf,application/pdf" onChange={handlePdfFile} className="hidden" />
+                </label>
+                <div>
+                  <label className="text-[10px] text-muted-foreground block mb-1">عدد الصفحات لكل جزء (chunk)</label>
+                  <select value={pagesPerChunk} onChange={e => setPagesPerChunk(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-card text-foreground text-sm">
+                    <option value={2}>2 صفحات (دقيق + بطيء)</option>
+                    <option value={4}>4 صفحات (موصى به)</option>
+                    <option value={6}>6 صفحات (سريع)</option>
+                    <option value={10}>10 صفحات (سريع جداً، أقل دقة)</option>
+                  </select>
+                </div>
+              </div>
+
+              {pdfFile && (
+                <div className="text-[11px] text-muted-foreground">
+                  الحجم: {(pdfFile.size / (1024 * 1024)).toFixed(2)} MB •
+                  المستوى المختار: <strong>{defaultGrade || "— لم يُختر —"}</strong> •
+                  البلد: <strong>{countryCode}</strong>
+                </div>
+              )}
+
+              <button onClick={extractFromPdf} disabled={pdfExtracting || !pdfFile}
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-50">
+                {pdfExtracting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> {pdfProgress || "جاري المعالجة..."}</>
+                ) : (
+                  <><BookOpen className="w-4 h-4" /> استخراج التمارين بـ Gemini</>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Step 3: Preview & commit */}
