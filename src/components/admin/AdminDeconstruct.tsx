@@ -87,12 +87,14 @@ export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, 
 
   const handleSave = () => {
     if (!selectedExId) return;
+    const ex = exercises.find(e => e.id === selectedExId);
     onAdd({
       id: crypto.randomUUID(),
       exerciseId: selectedExId,
       patternId: selectedPatId || "",
       needs: [],
       notes,
+      countryCode: (ex as any)?.countryCode || "DZ",
       createdAt: new Date().toISOString(),
     });
     setSelectedPatId(null);
