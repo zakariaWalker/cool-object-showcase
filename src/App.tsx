@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import ExercisePage from "./pages/Exercise";
 import AdminKBPage from "./pages/AdminKB";
+import AdminKBUpload from "./pages/AdminKBUpload";
 import CurriculumManager from "./admin/pages/CurriculumManager";
 import UserManagement from "./admin/pages/UserManagement";
 import ContentReview from "./admin/pages/ContentReview";
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/functions" element={<ExercisePage />} />
             <Route path="/admin" element={<AdminKBPage />} />
             <Route path="/admin/reports" element={<AdminReports />} />
+            <Route path="/admin/kb/upload" element={<AdminKBUpload />} />
             <Route path="/admin/curricula" element={<CurriculumManager />} />
             <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/content" element={<ContentReview />} />

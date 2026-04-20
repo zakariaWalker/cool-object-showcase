@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Exercise } from "./useAdminKBStore";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
+import { Sparkles, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface Props {
   exercises: Exercise[];
@@ -40,6 +43,8 @@ export function AdminClassify({ exercises, searchQuery, setSearchQuery, gradeFil
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [typeFilter, setTypeFilter] = useState("");
+  const [autoRunning, setAutoRunning] = useState(false);
+  const [autoProgress, setAutoProgress] = useState({ done: 0, total: 0 });
 
   const filtered = exercises.filter(e => {
     if (gradeFilter && e.grade !== gradeFilter) return false;
@@ -62,6 +67,48 @@ export function AdminClassify({ exercises, searchQuery, setSearchQuery, gradeFil
   const bulkClassify = (type: string) => {
     selectedIds.forEach(id => onClassify(id, type));
     setSelectedIds(new Set());
+  };
+
+  // Heuristic auto-classifier (keyword based) for unclassified exercises
+  const autoClassifyAll = async () => {
+    const targets = filtered.filter(e => !e.type || e.type === "unclassified" || e.type === "other");
+    if (targets.length === 0) {
+      toast({ title: "لا توجد تمارين غير مصنفة في الفلتر الحالي" });
+      return;
+    }
+    if (!confirm(`سيتم تصنيف ${targets.length} تمرين تلقائياً بناء على الكلمات المفتاحية. متابعة؟`)) return;
+
+    setAutoRunning(true);
+    setAutoProgress({ done: 0, total: targets.length });
+
+    const guess = (text: string): string => {
+      const t = text.toLowerCase();
+      if (/(انشر|طوّر|développ|expand|نشر)/i.test(t)) return "expand";
+      if (/(حلّل|عامل|factoris|factor|تفكيك)/i.test(t)) return "factor";
+      if (/(تراجح|inéquation|inequal)/i.test(t)) return "solve_inequality";
+      if (/(عادل|équation|=.*[a-z]|حلّ.*معادل)/i.test(t)) return "solve_equation";
+      if (/(برهن|أثبت|démontr|prove)/i.test(t)) return "prove";
+      if (/(مثلث|دائر|مستقيم|زاوي|triangle|cercle|géométr)/i.test(t)) return "geometry";
+      if (/(تكرار|متوسط|وسيط|moyenne|médiane|إحصاء)/i.test(t)) return "statistics";
+      if (/(احتمال|probabilit)/i.test(t)) return "probability";
+      if (/(دالة|fonction|f\(x\))/i.test(t)) return "functions";
+      if (/(بسّط|simplif|اختزل)/i.test(t)) return "simplify";
+      if (/(احسب|calcul|compute)/i.test(t)) return "compute";
+      return "other";
+    };
+
+    let done = 0;
+    for (const ex of targets) {
+      const type = guess(ex.text);
+      try {
+        await onClassify(ex.id, type);
+      } catch (e) { console.error(e); }
+      done++;
+      if (done % 5 === 0) setAutoProgress({ done, total: targets.length });
+    }
+    setAutoProgress({ done, total: targets.length });
+    setAutoRunning(false);
+    toast({ title: `تم تصنيف ${done} تمرين تلقائياً` });
   };
 
   return (

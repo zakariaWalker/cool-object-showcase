@@ -930,6 +930,7 @@ export type Database = {
       kb_deconstructions: {
         Row: {
           ai_generated: boolean | null
+          country_code: string
           created_at: string
           exercise_id: string | null
           id: string
@@ -940,6 +941,7 @@ export type Database = {
         }
         Insert: {
           ai_generated?: boolean | null
+          country_code?: string
           created_at?: string
           exercise_id?: string | null
           id?: string
@@ -950,6 +952,7 @@ export type Database = {
         }
         Update: {
           ai_generated?: boolean | null
+          country_code?: string
           created_at?: string
           exercise_id?: string | null
           id?: string
