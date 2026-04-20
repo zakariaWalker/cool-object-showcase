@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Upload, FileJson, FileText, ArrowRight, Check, X, Globe, Loader2 } from "lucide-react";
+import { Upload, FileJson, FileText, ArrowRight, Check, X, Globe, Loader2, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -37,9 +37,13 @@ export default function AdminKBUpload() {
   const [defaultSource, setDefaultSource] = useState<string>("");
   const [parsed, setParsed] = useState<ParsedExercise[]>([]);
   const [rawInput, setRawInput] = useState<string>("");
-  const [mode, setMode] = useState<"json" | "text">("json");
+  const [mode, setMode] = useState<"json" | "text" | "pdf">("json");
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState<number>(0);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfExtracting, setPdfExtracting] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState<string>("");
+  const [pagesPerChunk, setPagesPerChunk] = useState<number>(4);
 
   useEffect(() => {
     (async () => {
