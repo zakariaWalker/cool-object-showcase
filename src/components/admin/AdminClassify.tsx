@@ -131,6 +131,18 @@ export function AdminClassify({ exercises, searchQuery, setSearchQuery, gradeFil
           <option value="">كل الأنواع</option>
           {TYPES.map(t => <option key={t.value} value={t.value}>{t.emoji} {t.label}</option>)}
         </select>
+        <button
+          onClick={autoClassifyAll}
+          disabled={autoRunning}
+          className="px-3 py-2 rounded-lg bg-accent text-accent-foreground text-xs font-bold inline-flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50"
+          title="تصنيف تلقائي لكل التمارين غير المصنفة في الفلتر الحالي بناءً على الكلمات المفتاحية"
+        >
+          {autoRunning ? (
+            <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {autoProgress.done}/{autoProgress.total}</>
+          ) : (
+            <><Sparkles className="w-3.5 h-3.5" /> تصنيف تلقائي للكل</>
+          )}
+        </button>
       </div>
 
       {/* Bulk bar */}
