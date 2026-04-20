@@ -1,4 +1,4 @@
-// Admin KB state store — powered by Supabase
+// Admin KB state store — powered by Supabase, multi-country
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -11,6 +11,7 @@ export interface Exercise {
   stream: string;
   label: string;
   source: string;
+  countryCode: string;
 }
 
 export interface Pattern {
@@ -31,6 +32,7 @@ export interface Deconstruction {
   steps?: string[];
   needs: string[];
   notes: string;
+  countryCode: string;
   createdAt: string;
 }
 
@@ -45,8 +47,15 @@ export function useAdminKBStore() {
   const [loading, setLoading] = useState(false);
   const [gradeFilter, setGradeFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [countryFilter, setCountryFilter] = useState<string>(() => {
+    try { return localStorage.getItem("admin_kb_country") || "DZ"; } catch { return "DZ"; }
+  });
 
   const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+  useEffect(() => {
+    try { localStorage.setItem("admin_kb_country", countryFilter); } catch {}
+  }, [countryFilter]);
 
   // Load all data from Supabase on mount
   useEffect(() => {
@@ -56,7 +65,6 @@ export function useAdminKBStore() {
   async function loadFromSupabase() {
     setLoading(true);
     try {
-      // Paginate kb_exercises to bypass 1000-row limit
       const allExercises: any[] = [];
       const PAGE = 1000;
       let from = 0;
@@ -74,7 +82,6 @@ export function useAdminKBStore() {
         from += PAGE;
       }
 
-      // Also paginate exercise_breakdowns
       const allBreakdowns: any[] = [];
       let bFrom = 0;
       while (true) {
@@ -83,20 +90,15 @@ export function useAdminKBStore() {
           .select("*")
           .order("grade")
           .range(bFrom, bFrom + PAGE - 1);
-        if (error) {
-          console.warn("Failed to load exercise_breakdowns:", error);
-          break;
-        }
+        if (error) { console.warn("Failed to load exercise_breakdowns:", error); break; }
         if (!data || data.length === 0) break;
         allBreakdowns.push(...data);
         if (data.length < PAGE) break;
         bFrom += PAGE;
       }
 
-      // Collect existing kb_exercises ids to avoid duplicates
       const kbIds = new Set(allExercises.map((e: any) => e.id));
 
-      // Map exercise_breakdowns to Exercise format
       const breakdownExercises = allBreakdowns
         .filter((b: any) => !kbIds.has(b.id))
         .map((b: any) => ({
@@ -108,6 +110,7 @@ export function useAdminKBStore() {
           stream: "",
           label: `difficulty:${b.difficulty || 1}`,
           source: b.source_origin || "breakdown",
+          countryCode: "DZ",
         }));
 
       const merged = [
@@ -120,6 +123,7 @@ export function useAdminKBStore() {
           stream: e.stream || "",
           label: e.label || "",
           source: e.source || "",
+          countryCode: e.country_code || "DZ",
         })),
         ...breakdownExercises,
       ];
@@ -129,7 +133,6 @@ export function useAdminKBStore() {
         setLoaded(true);
       }
 
-      // Paginate deconstructions
       const allDeconstructions: any[] = [];
       let deconFrom = 0;
       while (true) {
@@ -168,6 +171,7 @@ export function useAdminKBStore() {
           steps: Array.isArray(d.steps) ? d.steps : [],
           needs: Array.isArray(d.needs) ? d.needs : [],
           notes: d.notes || "",
+          countryCode: d.country_code || "DZ",
           createdAt: d.created_at,
         })));
       }
@@ -178,17 +182,21 @@ export function useAdminKBStore() {
     }
   }
 
+  // Filter by current country (patterns are shared across countries)
+  const countryExercises = exercises.filter(e => e.countryCode === countryFilter);
+  const countryDeconstructions = deconstructions.filter(d => d.countryCode === countryFilter);
+
   const stats = {
-    total: exercises.length,
-    classified: exercises.filter(e => e.type !== "other" && e.type !== "unclassified").length,
-    deconstructed: deconstructions.length,
+    total: countryExercises.length,
+    classified: countryExercises.filter(e => e.type !== "other" && e.type !== "unclassified").length,
+    deconstructed: countryDeconstructions.length,
     patternCount: patterns.length,
-    middleCount: exercises.filter(e => ["middle_1", "middle_2", "middle_3", "middle_4"].includes(e.grade)).length,
-    secondaryCount: exercises.filter(e => e.grade?.startsWith("secondary")).length,
-    progress: exercises.length ? Math.round((deconstructions.length / exercises.length) * 100) : 0,
+    middleCount: countryExercises.filter(e => ["middle_1", "middle_2", "middle_3", "middle_4"].includes(e.grade)).length,
+    secondaryCount: countryExercises.filter(e => e.grade?.startsWith("secondary")).length,
+    progress: countryExercises.length ? Math.round((countryDeconstructions.length / countryExercises.length) * 100) : 0,
   };
 
-  const filteredExercises = exercises.filter(e => {
+  const filteredExercises = countryExercises.filter(e => {
     if (gradeFilter && e.grade !== gradeFilter) return false;
     if (searchQuery && !e.text.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
@@ -203,7 +211,7 @@ export function useAdminKBStore() {
 
   const addPattern = useCallback(async (pattern: Pattern) => {
     setPatterns(prev => [...prev, pattern]);
-    const { data, error } = await (supabase as any).from("kb_patterns").insert({
+    const { data } = await (supabase as any).from("kb_patterns").insert({
       name: pattern.name,
       type: pattern.type,
       description: pattern.description || "",
@@ -235,17 +243,18 @@ export function useAdminKBStore() {
   const addDeconstruction = useCallback(async (decon: Deconstruction) => {
     setDeconstructions(prev => [...prev, decon]);
     if (!isUUID(decon.exerciseId) || (decon.patternId && !isUUID(decon.patternId))) return;
-    const { data, error } = await (supabase as any).from("kb_deconstructions").insert({
+    const { data } = await (supabase as any).from("kb_deconstructions").insert({
       exercise_id: decon.exerciseId,
       pattern_id: decon.patternId,
       steps: decon.steps || [],
       needs: decon.needs,
       notes: decon.notes,
+      country_code: decon.countryCode || countryFilter,
     }).select("id").single();
     if (data?.id) {
       setDeconstructions(prev => prev.map(d => d.id === decon.id ? { ...d, id: data.id } : d));
     }
-  }, []);
+  }, [countryFilter]);
 
   const updateDeconstruction = useCallback(async (id: string, updates: Partial<Deconstruction>) => {
     setDeconstructions(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
@@ -272,8 +281,8 @@ export function useAdminKBStore() {
     };
 
     if (data.exercises) {
-      const mapped = data.exercises.map(e => ({ ...e, id: resolveId(e.id) }));
-      setExercises(mapped);
+      const mapped = data.exercises.map(e => ({ ...e, id: resolveId(e.id), countryCode: e.countryCode || countryFilter }));
+      setExercises(prev => [...prev.filter(p => !mapped.some(m => m.id === p.id)), ...mapped]);
       setLoaded(true);
     }
     if (data.patterns) {
@@ -285,18 +294,18 @@ export function useAdminKBStore() {
         ...d,
         id: resolveId(d.id),
         exerciseId: resolveId(d.exerciseId),
-        patternId: resolveId(d.patternId)
+        patternId: resolveId(d.patternId),
+        countryCode: d.countryCode || countryFilter,
       }));
       setDeconstructions(prev => [...prev.filter(d => !mapped.some(m => m.id === d.id)), ...mapped]);
     }
-  }, []);
+  }, [countryFilter]);
 
   const saveAllToDB = useCallback(async () => {
     setLoading(true);
     try {
       const BATCH = 500;
 
-      // Upsert exercises in batches
       if (exercises.length > 0) {
         for (let i = 0; i < exercises.length; i += BATCH) {
           const batch = exercises.slice(i, i + BATCH).map(e => {
@@ -308,13 +317,14 @@ export function useAdminKBStore() {
               stream: e.stream,
               label: e.label,
               source: e.source,
+              country_code: e.countryCode || "DZ",
             };
             if (isUUID(e.id)) row.id = e.id;
             return row;
           });
           const toUpdate = batch.filter(r => r.id);
           const toInsert = batch.filter(r => !r.id);
-          
+
           if (toUpdate.length > 0) {
             const { error } = await (supabase as any).from("kb_exercises").upsert(toUpdate, { onConflict: "id" });
             if (error) { console.error("kb_exercises upsert error:", error); throw error; }
@@ -326,7 +336,6 @@ export function useAdminKBStore() {
         }
       }
 
-      // Upsert patterns in batches
       if (patterns.length > 0) {
         for (let i = 0; i < patterns.length; i += BATCH) {
           const batch = patterns.slice(i, i + BATCH).map(p => {
@@ -342,7 +351,7 @@ export function useAdminKBStore() {
           });
           const toUpdate = batch.filter(r => r.id);
           const toInsert = batch.filter(r => !r.id);
-          
+
           if (toUpdate.length > 0) {
             const { error } = await (supabase as any).from("kb_patterns").upsert(toUpdate, { onConflict: "id" });
             if (error) { console.error("kb_patterns upsert error:", error); throw error; }
@@ -354,11 +363,10 @@ export function useAdminKBStore() {
         }
       }
 
-      // Upsert deconstructions in batches
       if (deconstructions.length > 0) {
         for (let i = 0; i < deconstructions.length; i += BATCH) {
           const batch = deconstructions.slice(i, i + BATCH)
-            .filter(d => isUUID(d.exerciseId) && (!d.patternId || isUUID(d.patternId))) // Prevent foreign key constraint errors
+            .filter(d => isUUID(d.exerciseId) && (!d.patternId || isUUID(d.patternId)))
             .map(d => {
               const row: any = {
                 exercise_id: d.exerciseId,
@@ -366,14 +374,15 @@ export function useAdminKBStore() {
                 steps: d.steps || [],
                 needs: d.needs,
                 notes: d.notes,
+                country_code: d.countryCode || "DZ",
               };
               if (isUUID(d.id)) row.id = d.id;
               return row;
             });
-            
+
           const toUpdate = batch.filter(r => r.id);
           const toInsert = batch.filter(r => !r.id);
-          
+
           if (toUpdate.length > 0) {
             const { error } = await (supabase as any).from("kb_deconstructions").upsert(toUpdate, { onConflict: "id" });
             if (error) { console.error("kb_deconstructions upsert error:", error); throw error; }
@@ -396,8 +405,12 @@ export function useAdminKBStore() {
   }, [exercises, patterns, deconstructions]);
 
   const exportData = useCallback(() => {
-    return { exercises, patterns, deconstructions };
-  }, [exercises, patterns, deconstructions]);
+    return {
+      exercises: countryExercises,
+      patterns,
+      deconstructions: countryDeconstructions,
+    };
+  }, [countryExercises, patterns, countryDeconstructions]);
 
   const resetAll = useCallback(() => {
     setExercises([]);
@@ -408,11 +421,16 @@ export function useAdminKBStore() {
 
   return {
     view, setView,
-    exercises, setExercises, loaded, setLoaded, loading,
-    patterns, deconstructions,
+    exercises: countryExercises, // expose country-filtered exercises
+    allExercises: exercises,     // raw for cross-country tooling
+    setExercises, loaded, setLoaded, loading,
+    patterns,
+    deconstructions: countryDeconstructions,
+    allDeconstructions: deconstructions,
     stats, filteredExercises,
     gradeFilter, setGradeFilter,
     searchQuery, setSearchQuery,
+    countryFilter, setCountryFilter,
     classifyExercise, addPattern, updatePattern, deletePattern,
     addDeconstruction, updateDeconstruction, deleteDeconstruction,
     importData, exportData, resetAll, saveAllToDB,
