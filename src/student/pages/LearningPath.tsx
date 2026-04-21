@@ -128,7 +128,7 @@ const LearningPath = () => {
     setCompletedSkillIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
-      try { localStorage.setItem(`completed-skills-${user?.id || "anon"}-${country}-${grade}`, JSON.stringify([...next])); } catch {}
+      try { localStorage.setItem(`completed-skills-${user?.id || "anon"}-${countryCode}-${grade}`, JSON.stringify([...next])); } catch {}
       return next;
     });
   };
