@@ -360,13 +360,13 @@ async function getLastActiveDateFromDB(): Promise<string | null> {
 // ── Daily challenge — filtered by student grade ────
 // FIX: was fetching from all grades; now scoped to the student's registered grade
 export async function getDailyChallenge(
-  gradeKey?: string, // old-format key e.g. "middle_4", optional
+  gradeCode?: string, // standard code e.g. "4AM", optional
 ): Promise<{ exerciseId: string; text: string; grade: string; type: string } | null> {
   const today = new Date().toISOString().slice(0, 10);
   const seed = today.split("-").reduce((a, b) => a + parseInt(b), 0);
 
   let query = (supabase as any).from("kb_exercises").select("id", { count: "exact", head: true });
-  if (gradeKey) query = query.eq("grade", gradeKey);
+  if (gradeCode) query = query.eq("grade", gradeCode);
 
   const { count } = await query;
   if (!count || count === 0) return null;
@@ -375,7 +375,7 @@ export async function getDailyChallenge(
   const offset = (seed + secondarySeed) % count;
 
   let dataQuery = (supabase as any).from("kb_exercises").select("id, text, grade, type");
-  if (gradeKey) dataQuery = dataQuery.eq("grade", gradeKey);
+  if (gradeCode) dataQuery = dataQuery.eq("grade", gradeCode);
   const { data } = await dataQuery.range(offset, offset).limit(1);
 
   if (!data || data.length === 0) return null;
