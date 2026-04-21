@@ -36,10 +36,11 @@ import { useCountryGrades } from "@/hooks/useCountryGrades";
 
 export default function StudentProfile() {
   const navigate = useNavigate();
-  const { profile: cognitiveProfile } = useProfile();
-  const { gradeLabel: resolveGradeLabel } = useCountryGrades();
   const [user, setUser] = useState<any>(null);
   const [dbProfile, setDbProfile] = useState<any>(null);
+  const countryCode = dbProfile?.country_code || user?.user_metadata?.country_code || "DZ";
+  const { profile: cognitiveProfile } = useProfile();
+  const { labelOf: resolveGradeLabel } = useCountryGrades(countryCode);
   const [progress, setProgress] = useState<any>(null);
   const [gaps, setGaps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
