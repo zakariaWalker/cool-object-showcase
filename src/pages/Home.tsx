@@ -13,7 +13,7 @@ import {
   Lock,
   ArrowLeft,
   FileText,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GuidingTooltip } from "@/components/ui/GuidingTooltip";
@@ -89,25 +89,60 @@ export default function Home() {
 
   useEffect(() => {
     async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
-      const [diag, prog, logs] = await Promise.all([
-        supabase.from("student_activity_log").select("id").eq("student_id", user.id).eq("action", "diagnostic_completed").limit(1),
-        supabase.from("student_progress").select("*").eq("student_id", user.id).maybeSingle(),
-        supabase.from("student_activity_log").select("id").eq("student_id", user.id).eq("action", "tutor_session").limit(1),
+      const [diag, prog, tutorLogs, learnLogs] = await Promise.all([
+        // diagnostic: was completed?
+        supabase
+          .from("student_activity_log")
+          .select("id")
+          .eq("student_id", user.id)
+          .eq("action", "diagnostic_completed")
+          .limit(1),
+
+        // exercises: total_exercises on the student's real progress row
+        supabase.from("student_progress").select("total_exercises").eq("student_id", user.id).maybeSingle(),
+
+        // tutor: had a session?
+        supabase
+          .from("student_activity_log")
+          .select("id")
+          .eq("student_id", user.id)
+          .eq("action", "tutor_session")
+          .limit(1),
+
+        // FIX: 'learn' was !!prog.data?.mastery which always false because mastery was written
+        // under a localStorage UUID (gamification.ts), not user.id.
+        // Now we check if the student has visited /learn (logged as "learning_path_opened")
+        // OR simply if they have knowledge gaps — either means they've engaged with the path.
+        supabase
+          .from("student_activity_log")
+          .select("id")
+          .eq("student_id", user.id)
+          .eq("action", "learning_path_opened")
+          .limit(1),
       ]);
 
+      const hasDiagnostic = (diag.data?.length ?? 0) > 0;
+
       const p = {
-        diagnostic: (diag.data?.length ?? 0) > 0,
-        learn: !!prog.data?.mastery,
+        diagnostic: hasDiagnostic,
+        // FIX: learn = visited learning path OR has any exercises done after diagnostic
+        learn: (learnLogs.data?.length ?? 0) > 0,
+        // FIX: exercises = checked against real user.id row in student_progress
         exercises: (prog.data?.total_exercises ?? 0) > 0,
-        tutor: (logs.data?.length ?? 0) > 0,
+        tutor: (tutorLogs.data?.length ?? 0) > 0,
         annales: false,
       };
-      
+
       setProgress(p);
-      setIsNewUser(!p.diagnostic);
+      setIsNewUser(!hasDiagnostic);
       setLoading(false);
     }
     loadData();
@@ -118,7 +153,10 @@ export default function Home() {
   // ── NEW USER: Single focus on diagnostic ──
   if (isNewUser && !loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center px-6" dir="rtl">
+      <div
+        className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center px-6"
+        dir="rtl"
+      >
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -157,9 +195,7 @@ export default function Home() {
             </Link>
           </motion.div>
 
-          <p className="text-xs text-muted-foreground/50">
-            لا توجد إجابات خاطئة · نريد فقط نفهم كيف تفكر
-          </p>
+          <p className="text-xs text-muted-foreground/50">لا توجد إجابات خاطئة · نريد فقط نفهم كيف تفكر</p>
         </motion.div>
       </div>
     );
@@ -187,152 +223,133 @@ export default function Home() {
 
       {/* Main Journey Workflow Section */}
       <section className="max-w-6xl mx-auto px-6 pb-24 grid grid-cols-1 lg:grid-cols-12 gap-10 relative">
-        
         {/* Sidebar: Gamification */}
         <div className="lg:col-span-4 space-y-6 order-2 lg:order-1">
-           <motion.div
-             initial={{ opacity: 0, x: 20 }}
-             whileInView={{ opacity: 1, x: 0 }}
-             viewport={{ once: true }}
-           >
-             <GamificationDashboard />
-           </motion.div>
+          <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+            <GamificationDashboard />
+          </motion.div>
 
-           <CardGradient className="p-8 space-y-4">
-              <h3 className="text-xl font-black flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500" /> هدفك القادم
-              </h3>
-              <p className="text-sm text-muted-foreground">أكمل التقييم التشخيصي الأول لتحصل على 100 XP وتفتح مسار تعلمك المخصص.</p>
-              <GuidingTooltip 
-                type="tip" 
-                title="نصيحة ذكية" 
-                description="ابدأ التقييم بتركيز. لا توجد إجابات خاطئة، فقط طرق تفكير مختلفة نود اكتشافها معك!"
-              >
-                <Button asChild className="w-full rounded-2xl h-12 font-black shadow-lg shadow-primary/20">
-                  <Link to="/diagnostic">ابدأ التحدي الآن</Link>
-                </Button>
-              </GuidingTooltip>
-           </CardGradient>
+          <CardGradient className="p-8 space-y-4">
+            <h3 className="text-xl font-black flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-amber-500" /> هدفك القادم
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              أكمل التقييم التشخيصي الأول لتحصل على 100 XP وتفتح مسار تعلمك المخصص.
+            </p>
+            <GuidingTooltip
+              type="tip"
+              title="نصيحة ذكية"
+              description="ابدأ التقييم بتركيز. لا توجد إجابات خاطئة، فقط طرق تفكير مختلفة نود اكتشافها معك!"
+            >
+              <Button asChild className="w-full rounded-2xl h-12 font-black shadow-lg shadow-primary/20">
+                <Link to="/diagnostic">ابدأ التحدي الآن</Link>
+              </Button>
+            </GuidingTooltip>
+          </CardGradient>
         </div>
 
         {/* Journey Workflow */}
         <div className="lg:col-span-8 order-1 lg:order-2 space-y-12">
-           <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-3xl font-black">رحلة التفوق</h2>
-                <p className="text-sm text-muted-foreground mt-1 text-right">خطوات مدروسة لبناء عقلك الرياضي</p>
-              </div>
-              <div className="flex -space-x-2 space-x-reverse">
-                 {[1,2,3,4,5].map(n => (
-                   <div key={n} className={`w-8 h-8 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-black shadow-sm ${n <= (Object.values(progress).filter(Boolean).length + 1) ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-                     {n}
-                   </div>
-                 ))}
-              </div>
-           </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-black">رحلة التفوق</h2>
+              <p className="text-sm text-muted-foreground mt-1 text-right">خطوات مدروسة لبناء عقلك الرياضي</p>
+            </div>
+            <div className="flex -space-x-2 space-x-reverse">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <div
+                  key={n}
+                  className={`w-8 h-8 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-black shadow-sm ${n <= Object.values(progress).filter(Boolean).length + 1 ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
+                >
+                  {n}
+                </div>
+              ))}
+            </div>
+          </div>
 
-           <div className="space-y-6 relative">
-              <div className="absolute right-[31px] top-10 bottom-10 w-1 bg-muted rounded-full overflow-hidden hidden md:block">
-                 <motion.div 
-                    initial={{ height: 0 }}
-                    animate={{ height: `${(Object.values(progress).filter(Boolean).length / 5) * 100}%` }}
-                    className="w-full bg-primary"
-                    transition={{ duration: 1.5, ease: "easeInOut" }}
-                 />
-              </div>
+          <div className="space-y-6 relative">
+            <div className="absolute right-[31px] top-10 bottom-10 w-1 bg-muted rounded-full overflow-hidden hidden md:block">
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: `${(Object.values(progress).filter(Boolean).length / 5) * 100}%` }}
+                className="w-full bg-primary"
+                transition={{ duration: 1.5, ease: "easeInOut" }}
+              />
+            </div>
 
-              {WORKFLOW.map((item, i) => {
-                const isCompleted = progress[item.id];
-                const isActive = !isCompleted && (i === 0 || progress[WORKFLOW[i-1].id]);
-                const isLocked = !isCompleted && !isActive;
+            {WORKFLOW.map((item, i) => {
+              const isCompleted = progress[item.id];
+              const isActive = !isCompleted && (i === 0 || progress[WORKFLOW[i - 1].id]);
+              const isLocked = !isCompleted && !isActive;
 
-                return (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
+              return (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <Link
+                    to={isLocked ? "#" : item.path}
+                    className={`
+                      relative block rounded-[2.5rem] p-8 border-2 transition-all duration-500 overflow-hidden group
+                      ${isActive ? "border-primary bg-primary/5 shadow-2xl shadow-primary/10 scale-[1.02]" : isCompleted ? "border-border/60 bg-card/50 opacity-80" : "border-border/40 bg-card grayscale opacity-50 pointer-events-none"}
+                      hover:border-primary/40 hover:shadow-xl
+                    `}
                   >
-                    <Link
-                      to={isLocked ? "#" : item.path}
-                      className={`
-                         relative block rounded-[2.5rem] p-8 border-2 transition-all duration-500 overflow-hidden group
-                         ${isActive ? 'border-primary bg-primary/5 shadow-2xl shadow-primary/10 scale-[1.02]' : isCompleted ? 'border-border/60 bg-card/50 opacity-80' : 'border-border/40 bg-card grayscale opacity-50 pointer-events-none'}
-                         hover:border-primary/40 hover:shadow-xl
-                      `}
-                    >
-                      {isCompleted && (
-                        <div className="absolute top-6 left-6 text-emerald-500 animate-in zoom-in">
-                          <CheckCircle2 className="w-8 h-8" />
-                        </div>
-                      )}
-
-                      {isLocked && (
-                         <div className="absolute top-6 left-6 text-muted-foreground/40">
-                           <Lock className="w-6 h-6" />
-                         </div>
-                      )}
-
-                      <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
-                        <div 
-                          className={`
-                            w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-white shrink-0 shadow-xl transition-all duration-500
-                            bg-gradient-to-br ${item.color} ${item.shadow}
-                            group-hover:rotate-6 group-hover:scale-110
-                          `}
-                        >
-                          {item.icon}
-                        </div>
-
-                        <div className="flex-1 text-center md:text-right space-y-2">
-                          <div className="space-y-1">
-                            <h3 className="text-2xl font-black text-foreground">{item.title}</h3>
-                            <p className="text-primary font-bold text-sm">{item.subtitle}</p>
-                          </div>
-                          <p className="text-sm text-muted-foreground leading-relaxed max-w-lg">
-                            {item.description}
-                          </p>
-                        </div>
-
-                        <div className="shrink-0 flex items-center gap-2 text-primary font-black group-hover:-translate-x-2 transition-transform">
-                           {isActive ? 'ابدأ كـ مهمة' : isCompleted ? 'إعادة الزيارة' : 'مغلق'} <ChevronLeft className="w-5 h-5" />
-                        </div>
+                    {isCompleted && (
+                      <div className="absolute top-6 left-6 text-emerald-500 animate-in zoom-in">
+                        <CheckCircle2 className="w-8 h-8" />
                       </div>
-                    </Link>
-                  </motion.div>
-                );
-              })}
-           </div>
+                    )}
+
+                    {isLocked && (
+                      <div className="absolute top-6 left-6 text-muted-foreground/40">
+                        <Lock className="w-6 h-6" />
+                      </div>
+                    )}
+
+                    <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+                      <div
+                        className={`
+                          w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-white shrink-0 shadow-xl transition-all duration-500
+                          bg-gradient-to-br ${item.color} ${item.shadow}
+                          group-hover:rotate-6 group-hover:scale-110
+                        `}
+                      >
+                        {item.icon}
+                      </div>
+
+                      <div className="flex-1 text-center md:text-right space-y-2">
+                        <div className="space-y-1">
+                          <h3 className="text-2xl font-black text-foreground">{item.title}</h3>
+                          <p className="text-primary font-bold text-sm">{item.subtitle}</p>
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed max-w-lg">{item.description}</p>
+                      </div>
+
+                      <div className="shrink-0 flex items-center gap-2 text-primary font-black group-hover:-translate-x-2 transition-transform">
+                        {isActive ? "ابدأ كـ مهمة" : isCompleted ? "إعادة الزيارة" : "مغلق"}{" "}
+                        <ChevronLeft className="w-5 h-5" />
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
       </section>
     </div>
   );
 }
 
-function StatCounter({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="flex flex-col items-center md:items-start">
-      <div className="text-3xl font-black text-foreground tabular-nums">
-        <motion.span
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1 }}
-        >
-          {value.toLocaleString("ar-DZ")}
-        </motion.span>
-        <span className="text-primary ml-1">+</span>
-      </div>
-      <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{label}</div>
-    </div>
-  );
-}
-
-function CardGradient({ children, className }: { children: React.ReactNode, className?: string }) {
+function CardGradient({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`relative bg-card border border-border/60 rounded-[2.5rem] overflow-hidden shadow-xl ${className}`}>
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16" />
-        <div className="relative">{children}</div>
+      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16" />
+      <div className="relative">{children}</div>
     </div>
   );
 }
