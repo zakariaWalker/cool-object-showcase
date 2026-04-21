@@ -9,7 +9,7 @@ import { getGradeLabel } from "@/lib/grade-utils";
 
 export function ProfileHeader({ user, dbProfile, progress, cognitiveProfile }: any) {
   const navigate = useNavigate();
-  
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
@@ -18,11 +18,12 @@ export function ProfileHeader({ user, dbProfile, progress, cognitiveProfile }: a
   const fullName = dbProfile?.full_name || user?.user_metadata?.full_name || "تلميذ QED";
   const xp = progress?.xp || 0;
   const level = progress?.level || 1;
-  const grade = dbProfile?.grade || user?.user_metadata?.grade;
+  // ✅ FIX: was dbProfile?.grade — field is grade_code in the profiles table
+  const grade = dbProfile?.grade_code || user?.user_metadata?.grade_code || user?.user_metadata?.grade;
   const gradeLabel = getGradeLabel(grade);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="relative bg-card border border-border rounded-[2.5rem] p-8 md:p-12 shadow-xl shadow-primary/5 overflow-hidden"
@@ -36,8 +37,8 @@ export function ProfileHeader({ user, dbProfile, progress, cognitiveProfile }: a
         <div className="relative group">
           <div className="absolute -inset-1 bg-gradient-to-tr from-primary to-cyan-400 rounded-full blur opacity-25 group-hover:opacity-40 transition-opacity" />
           <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-background overflow-hidden shadow-2xl">
-            <img 
-              src={dbProfile?.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user?.id}`} 
+            <img
+              src={dbProfile?.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user?.id}`}
               alt="Profile"
               className="w-full h-full object-cover"
             />
@@ -53,35 +54,53 @@ export function ProfileHeader({ user, dbProfile, progress, cognitiveProfile }: a
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
               <h1 className="text-3xl md:text-5xl font-black text-foreground">{fullName}</h1>
               {cognitiveProfile && (
-                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 px-3 py-1 rounded-full flex items-center gap-1.5 h-8">
-                  <ShieldCheck className="w-3.5 h-3.5" /> نمط {cognitiveProfile === 'strategic' ? 'استراتيجي' : cognitiveProfile}
+                <Badge
+                  variant="outline"
+                  className="bg-primary/10 text-primary border-primary/20 px-3 py-1 rounded-full flex items-center gap-1.5 h-8"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" /> نمط{" "}
+                  {cognitiveProfile === "strategic" ? "استراتيجي" : cognitiveProfile}
                 </Badge>
               )}
             </div>
-            <p className="text-lg text-muted-foreground font-medium">{gradeLabel} • شعبة {user?.user_metadata?.stream || "عامة"}</p>
+            <p className="text-lg text-muted-foreground font-medium">
+              {gradeLabel} • شعبة {user?.user_metadata?.stream || "عامة"}
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-6">
             <div className="flex flex-col items-center md:items-start">
-              <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">مجموع الثقافة (XP)</span>
+              <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">
+                مجموع الثقافة (XP)
+              </span>
               <span className="text-2xl font-black text-primary">{xp.toLocaleString()}</span>
             </div>
             <div className="w-px h-10 bg-border hidden md:block" />
             <div className="flex flex-col items-center md:items-start">
-              <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">الرتبة المعرفية</span>
-              <span className="text-2xl font-black text-foreground">{level > 10 ? 'حكيم' : level > 5 ? 'خبير' : 'مستكشف'}</span>
+              <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">
+                الرتبة المعرفية
+              </span>
+              <span className="text-2xl font-black text-foreground">
+                {level > 10 ? "حكيم" : level > 5 ? "خبير" : "مستكشف"}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Quick Actions */}
         <div className="flex md:flex-col gap-3">
-          <Button variant="outline" size="icon" className="w-12 h-12 rounded-2xl border-2 hover:bg-primary/5 hover:border-primary transition-all">
+          <Button
+            variant="outline"
+            size="icon"
+            className="w-12 h-12 rounded-2xl border-2 hover:bg-primary/5 hover:border-primary transition-all"
+          >
             <Settings className="w-5 h-5" />
           </Button>
-          <Button 
+          <Button
             onClick={handleLogout}
-            variant="outline" size="icon" className="w-12 h-12 rounded-2xl border-2 hover:bg-destructive/5 hover:border-destructive hover:text-destructive transition-all"
+            variant="outline"
+            size="icon"
+            className="w-12 h-12 rounded-2xl border-2 hover:bg-destructive/5 hover:border-destructive hover:text-destructive transition-all"
           >
             <LogOut className="w-5 h-5 text-muted-foreground group-hover:text-destructive" />
           </Button>
