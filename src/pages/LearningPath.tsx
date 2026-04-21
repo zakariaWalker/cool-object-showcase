@@ -21,6 +21,17 @@ const GRADE_LABELS: Record<string, string> = {
 
 const GRADE_ORDER = ["middle_1", "middle_2", "middle_3", "middle_4", "secondary_1", "secondary_2", "secondary_3"];
 
+// ✅ FIX: map stored grade_code (e.g. "1AM") → internal exercise key (e.g. "middle_1")
+const GRADE_CODE_TO_KEY: Record<string, string> = {
+  "1AM": "middle_1",  "2AM": "middle_2",
+  "3AM": "middle_3",  "4AM": "middle_4",
+  "1AS": "secondary_1", "2AS": "secondary_2", "3AS": "secondary_3",
+  // passthrough if already in internal format
+  "middle_1": "middle_1", "middle_2": "middle_2",
+  "middle_3": "middle_3", "middle_4": "middle_4",
+  "secondary_1": "secondary_1", "secondary_2": "secondary_2", "secondary_3": "secondary_3",
+};
+
 const TYPE_LABELS: Record<string, string> = {
   arithmetic: "حساب", algebra: "جبر", fractions: "كسور", equations: "معادلات",
   geometry_construction: "هندسة", statistics: "إحصاء", probability: "احتمالات",
@@ -28,14 +39,14 @@ const TYPE_LABELS: Record<string, string> = {
   systems: "جمل معادلات", proportionality: "تناسبية", transformations: "تحويلات",
 };
 
-import { Lightbulb, MessageSquare, ChevronLeft, Brain } from "lucide-react";
+import { Lightbulb, MessageSquare, Brain } from "lucide-react";
 
 function ExerciseItem({ ex, isCompleted, onToggle }: { ex: Exercise; isCompleted: boolean; onToggle: () => void }) {
   const [showHint, setShowHint] = useState(false);
-  
+
   return (
     <div className="relative group">
-      <div 
+      <div
         onClick={onToggle}
         className="flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all border bg-card hover:shadow-md"
         style={{
@@ -43,26 +54,31 @@ function ExerciseItem({ ex, isCompleted, onToggle }: { ex: Exercise; isCompleted
           borderColor: isCompleted ? "hsl(var(--primary) / 0.2)" : "hsl(var(--border))",
         }}
       >
-        <div className="w-6 h-6 rounded-lg border-2 flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5 transition-all"
+        <div
+          className="w-6 h-6 rounded-lg border-2 flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5 transition-all"
           style={{
             borderColor: isCompleted ? "hsl(var(--primary))" : "hsl(var(--border))",
             background: isCompleted ? "hsl(var(--primary))" : "transparent",
             color: isCompleted ? "hsl(var(--primary-foreground))" : "transparent",
-          }}>
+          }}
+        >
           {isCompleted && "✓"}
         </div>
-        
+
         <div className="flex-1 min-w-0">
-          <div className="text-xs text-foreground font-medium leading-relaxed" style={{
-            textDecoration: isCompleted ? "line-through" : "none",
-            opacity: isCompleted ? 0.6 : 1,
-          }}>
+          <div
+            className="text-xs text-foreground font-medium leading-relaxed"
+            style={{
+              textDecoration: isCompleted ? "line-through" : "none",
+              opacity: isCompleted ? 0.6 : 1,
+            }}
+          >
             <MathExerciseRenderer text={ex.text} />
           </div>
-          
+
           <AnimatePresence>
             {showHint && (
-              <motion.div 
+              <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
@@ -78,15 +94,18 @@ function ExerciseItem({ ex, isCompleted, onToggle }: { ex: Exercise; isCompleted
         </div>
 
         <div className="flex items-center gap-1">
-          <button 
+          <button
             onClick={(e) => { e.stopPropagation(); setShowHint(!showHint); }}
             className={`p-1.5 rounded-lg transition-all ${showHint ? "bg-primary text-primary-foreground shadow-inner" : "hover:bg-primary/10 text-muted-foreground hover:text-primary"}`}
             title="تلميح للتفكير"
           >
             <Lightbulb size={14} />
           </button>
-          <a href={`/tutor`} onClick={e => e.stopPropagation()}
-            className="flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary font-black hover:bg-primary/20 transition-all">
+          <a
+            href="/tutor"
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary font-black hover:bg-primary/20 transition-all"
+          >
             <MessageSquare size={12} />
             شرح
           </a>
@@ -102,9 +121,22 @@ export default function LearningPath() {
   const [deconstructions, setDeconstructions] = useState<Deconstruction[]>([]);
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
-  const [selectedGrade, setSelectedGrade] = useState(profile?.grade || "middle_4");
+
+  // ✅ FIX 1: use grade_code (not grade), default to middle_1 (1AM) not middle_4
+  const [selectedGrade, setSelectedGrade] = useState(
+    GRADE_CODE_TO_KEY[profile?.grade_code ?? ""] ?? "middle_1"
+  );
+
   const [selectedType, setSelectedType] = useState("");
   const [completedExIds, setCompletedExIds] = useState<Set<string>>(new Set());
+
+  // ✅ FIX 2: sync selectedGrade once profile loads asynchronously
+  useEffect(() => {
+    if (profile?.grade_code) {
+      const mapped = GRADE_CODE_TO_KEY[profile.grade_code] ?? "middle_1";
+      setSelectedGrade(mapped);
+    }
+  }, [profile?.grade_code]);
 
   useEffect(() => { loadData(); }, []);
 
@@ -141,7 +173,6 @@ export default function LearningPath() {
     return [...typeSet].sort();
   }, [exercises, selectedGrade]);
 
-  // Build learning path: group exercises by pattern, ordered by dependency (needs)
   const learningPath = useMemo(() => {
     const deconMap = new Map<string, Deconstruction[]>();
     deconstructions.forEach(d => {
@@ -150,14 +181,12 @@ export default function LearningPath() {
       deconMap.set(d.exercise_id, list);
     });
 
-    // Filter exercises by grade and type
     const filtered = exercises.filter(e => {
       if (e.grade !== selectedGrade) return false;
       if (selectedType && e.type !== selectedType) return false;
-      return deconMap.has(e.id); // Only deconstructed exercises
+      return deconMap.has(e.id);
     });
 
-    // Group by pattern
     const patternGroups = new Map<string, { pattern: Pattern; exercises: Exercise[]; avgNeeds: number }>();
     filtered.forEach(ex => {
       const decons = deconMap.get(ex.id) || [];
@@ -171,7 +200,6 @@ export default function LearningPath() {
       });
     });
 
-    // Sort by complexity (fewer needs = earlier in path)
     return [...patternGroups.values()].sort((a, b) => a.avgNeeds - b.avgNeeds);
   }, [exercises, patterns, deconstructions, selectedGrade, selectedType]);
 
@@ -201,13 +229,18 @@ export default function LearningPath() {
   return (
     <div className="bg-background" dir="rtl">
       {/* Header */}
-      <div className="border-b border-border px-6 py-8" style={{ background: "linear-gradient(to left, hsl(var(--geometry) / 0.12), hsl(var(--geometry) / 0.04), hsl(var(--background)))" }}>
+      <div
+        className="border-b border-border px-6 py-8"
+        style={{ background: "linear-gradient(to left, hsl(var(--geometry) / 0.12), hsl(var(--geometry) / 0.04), hsl(var(--background)))" }}
+      >
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-3xl">📚</span>
             <h1 className="text-2xl font-black text-foreground">مسار التعلم</h1>
           </div>
-          <p className="text-muted-foreground text-sm">تسلسل تمارين مرتب حسب التعقيد — من الأسهل إلى الأصعب — بناءً على المفاهيم المطلوبة</p>
+          <p className="text-muted-foreground text-sm">
+            تسلسل تمارين مرتب حسب التعقيد — من الأسهل إلى الأصعب — بناءً على المفاهيم المطلوبة
+          </p>
         </div>
       </div>
 
@@ -216,19 +249,25 @@ export default function LearningPath() {
         <div className="flex items-center gap-4 mb-6">
           <div className="flex gap-2 flex-wrap">
             {GRADE_ORDER.map(g => (
-              <button key={g} onClick={() => { setSelectedGrade(g); setSelectedType(""); }}
+              <button
+                key={g}
+                onClick={() => { setSelectedGrade(g); setSelectedType(""); }}
                 className="px-4 py-2 rounded-full text-xs font-bold transition-all border"
                 style={{
                   background: selectedGrade === g ? "hsl(var(--primary))" : "hsl(var(--card))",
                   color: selectedGrade === g ? "hsl(var(--primary-foreground))" : "hsl(var(--foreground))",
                   borderColor: selectedGrade === g ? "hsl(var(--primary))" : "hsl(var(--border))",
-                }}>
+                }}
+              >
                 {GRADE_LABELS[g]}
               </button>
             ))}
           </div>
-          <select value={selectedType} onChange={e => setSelectedType(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-border bg-card text-foreground text-xs">
+          <select
+            value={selectedType}
+            onChange={e => setSelectedType(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-border bg-card text-foreground text-xs"
+          >
             <option value="">كل الأنواع</option>
             {types.map(t => <option key={t} value={t}>{TYPE_LABELS[t] || t}</option>)}
           </select>
@@ -241,7 +280,10 @@ export default function LearningPath() {
             <span className="text-sm font-bold text-primary">{progress}%</span>
           </div>
           <div className="h-3 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
           </div>
           <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
             <span>{completedCount} / {totalExercises} تمرين</span>
@@ -257,7 +299,6 @@ export default function LearningPath() {
 
             return (
               <div key={gi} className="relative">
-                {/* Connection line */}
                 {gi < learningPath.length - 1 && (
                   <div className="absolute right-[19px] top-[48px] bottom-[-24px] w-0.5 bg-border" />
                 )}
@@ -265,18 +306,21 @@ export default function LearningPath() {
                 <div className="flex gap-4">
                   {/* Step marker */}
                   <div className="flex-shrink-0 mt-1">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2"
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2"
                       style={{
                         background: groupDone ? "hsl(var(--primary))" : "hsl(var(--card))",
                         color: groupDone ? "hsl(var(--primary-foreground))" : "hsl(var(--foreground))",
                         borderColor: groupDone ? "hsl(var(--primary))" : "hsl(var(--border))",
-                      }}>
+                      }}
+                    >
                       {groupDone ? "✓" : gi + 1}
                     </div>
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 p-4 rounded-xl border border-border bg-card shadow-sm"
+                  <div
+                    className="flex-1 p-4 rounded-xl border border-border bg-card shadow-sm"
                     style={{
                       background: [
                         "linear-gradient(135deg, hsl(var(--statistics) / 0.06), hsl(var(--card)))",
@@ -286,7 +330,8 @@ export default function LearningPath() {
                         "linear-gradient(135deg, hsl(var(--accent) / 0.06), hsl(var(--card)))",
                         "linear-gradient(135deg, hsl(var(--functions) / 0.06), hsl(var(--card)))",
                       ][gi % 6],
-                    }}>
+                    }}
+                  >
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <h3 className="text-sm font-black text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
@@ -296,14 +341,21 @@ export default function LearningPath() {
                           )}
                         </h3>
                         <div className="flex gap-2 mt-1">
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold border border-primary/20">{TYPE_LABELS[group.pattern.type] || group.pattern.type}</span>
-                          <span className="text-[10px] text-muted-foreground font-medium">{groupCompleted}/{group.exercises.length} تمرين</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold border border-primary/20">
+                            {TYPE_LABELS[group.pattern.type] || group.pattern.type}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-medium">
+                            {groupCompleted}/{group.exercises.length} تمرين
+                          </span>
                         </div>
                       </div>
                       {group.pattern.concepts && group.pattern.concepts.length > 0 && (
                         <div className="flex gap-1.5 flex-wrap justify-end">
                           {group.pattern.concepts.slice(0, 4).map((c, ci) => (
-                            <span key={ci} className="text-[9px] px-2 py-1 rounded-lg bg-card border border-border/50 text-muted-foreground font-bold shadow-sm group-hover:border-primary/20 transition-all flex items-center gap-1">
+                            <span
+                              key={ci}
+                              className="text-[9px] px-2 py-1 rounded-lg bg-card border border-border/50 text-muted-foreground font-bold shadow-sm group-hover:border-primary/20 transition-all flex items-center gap-1"
+                            >
                               <Brain size={10} className="text-primary/40" />
                               {c}
                             </span>
@@ -312,13 +364,15 @@ export default function LearningPath() {
                       )}
                     </div>
 
-                    {/* Thinking Pattern Steps - Improved Structure */}
+                    {/* Thinking Pattern Steps */}
                     {group.pattern.steps.length > 0 && (
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-4">
                         {group.pattern.steps.map((s, si) => (
                           <div key={si} className="relative group/step">
                             <div className="flex items-center gap-2 p-2 rounded-lg bg-card border border-border/50 group-hover/step:border-primary/30 transition-all shadow-subtle min-h-[40px]">
-                              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black">{si + 1}</span>
+                              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black">
+                                {si + 1}
+                              </span>
                               <span className="text-[10px] text-foreground leading-tight font-medium">{s}</span>
                             </div>
                             {si < group.pattern.steps.length - 1 && (si + 1) % 4 !== 0 && (
@@ -331,12 +385,12 @@ export default function LearningPath() {
                       </div>
                     )}
 
-                    {/* Exercises with Hint Support */}
+                    {/* Exercises */}
                     <div className="space-y-2">
-                      {group.exercises.slice(0, 5).map((ex, ei) => (
-                        <ExerciseItem 
-                          key={ex.id} 
-                          ex={ex} 
+                      {group.exercises.slice(0, 5).map((ex) => (
+                        <ExerciseItem
+                          key={ex.id}
+                          ex={ex}
                           isCompleted={completedExIds.has(ex.id)}
                           onToggle={() => toggleComplete(ex.id)}
                         />
@@ -361,7 +415,6 @@ export default function LearningPath() {
           </div>
         )}
       </div>
-
     </div>
   );
 }
