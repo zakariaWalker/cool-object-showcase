@@ -128,7 +128,7 @@ export default function LearningPath() {
   const [loading, setLoading] = useState(true);
 
   const { gradeCode, countryCode } = useUserCurriculum();
-  const { grades, labelOf, loading: loadingGrades } = useCountryGrades(countryCode);
+  const { grades, labelOf, shortLabel, loading: loadingGrades } = useCountryGrades(countryCode);
 
   const defaultGradeKey = gradeCode || (grades.length > 0 ? grades[0].grade_code : "4AM");
   const [selectedGrade, setSelectedGrade] = useState(defaultGradeKey);
@@ -315,12 +315,12 @@ export default function LearningPath() {
                 }}
                 className="px-4 py-2 rounded-full text-xs font-bold transition-all border"
                 style={{
-                  background: selectedGrade === g ? "hsl(var(--primary))" : "hsl(var(--card))",
-                  color: selectedGrade === g ? "hsl(var(--primary-foreground))" : "hsl(var(--foreground))",
-                  borderColor: selectedGrade === g ? "hsl(var(--primary))" : "hsl(var(--border))",
+                  background: selectedGrade === g.grade_code ? "hsl(var(--primary))" : "hsl(var(--card))",
+                  color: selectedGrade === g.grade_code ? "hsl(var(--primary-foreground))" : "hsl(var(--foreground))",
+                  borderColor: selectedGrade === g.grade_code ? "hsl(var(--primary))" : "hsl(var(--border))",
                 }}
               >
-                {GRADE_LABELS[g] || g}
+                {g.grade_label_ar}
               </button>
             ))}
           </div>
