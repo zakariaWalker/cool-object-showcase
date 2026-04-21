@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useUserCurriculum } from "@/hooks/useUserCurriculum"; // FIX: was useAuth
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
@@ -8,21 +9,42 @@ import { XPPopup, BadgeUnlockOverlay } from "@/components/GamificationDashboard"
 import { AnimatePresence } from "framer-motion";
 
 interface Exercise {
-  id: string; text: string; type: string; grade: string; chapter: string;
+  id: string;
+  text: string;
+  type: string;
+  grade: string;
+  chapter: string;
 }
 interface Pattern {
-  id: string; name: string; type: string; steps: string[]; concepts: string[];
+  id: string;
+  name: string;
+  type: string;
+  steps: string[];
+  concepts: string[];
 }
 interface Deconstruction {
-  exercise_id: string; pattern_id: string; needs: string[]; steps: string[];
+  exercise_id: string;
+  pattern_id: string;
+  needs: string[];
+  steps: string[];
 }
 
 const GRADE_LABELS: Record<string, string> = {
-  middle_1: "1AM", middle_2: "2AM", middle_3: "3AM", middle_4: "4AM",
-  secondary_1: "1AS", secondary_2: "2AS", secondary_3: "3AS",
+  middle_1: "1AM",
+  middle_2: "2AM",
+  middle_3: "3AM",
+  middle_4: "4AM",
+  secondary_1: "1AS",
+  secondary_2: "2AS",
+  secondary_3: "3AS",
 };
 
-const QUIZ_SIZE = 8; // questions per round
+// FIX: reverse map from grade_code ("4AM") to kb_exercises.grade key ("middle_4")
+const GRADE_CODE_TO_KEY: Record<string, string> = Object.fromEntries(
+  Object.entries(GRADE_LABELS).map(([k, v]) => [v, k]),
+);
+
+const QUIZ_SIZE = 8;
 
 type QuizState = "setup" | "quiz" | "results";
 
@@ -43,16 +65,22 @@ export default function GapDetector() {
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [deconstructions, setDeconstructions] = useState<Deconstruction[]>([]);
   const [loading, setLoading] = useState(true);
-  const { profile, isAdmin, isTeacher } = useAuth();
-  const [gradeFilter, setGradeFilter] = useState(profile?.grade || "");
 
-  // Sync gradeFilter with profile when it loads
+  // FIX: useUserCurriculum for grade_code, useAuth only for admin/teacher role checks
+  const { gradeCode } = useUserCurriculum();
+  const { isAdmin, isTeacher } = useAuth();
+
+  // Map grade_code → kb key, default to empty (shows all grades for guests)
+  const defaultGradeKey = GRADE_CODE_TO_KEY[gradeCode] || "";
+  const [gradeFilter, setGradeFilter] = useState(defaultGradeKey);
+
+  // FIX: sync gradeFilter when gradeCode loads async from Supabase
   useEffect(() => {
-    if (profile?.grade && !gradeFilter) {
-      setGradeFilter(profile.grade);
+    if (gradeCode && GRADE_CODE_TO_KEY[gradeCode] && !gradeFilter) {
+      setGradeFilter(GRADE_CODE_TO_KEY[gradeCode]);
     }
-  }, [profile, gradeFilter]);
-  
+  }, [gradeCode, gradeFilter]);
+
   // Quiz state
   const [quizState, setQuizState] = useState<QuizState>("setup");
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
@@ -60,15 +88,16 @@ export default function GapDetector() {
   const [answers, setAnswers] = useState<QuizAnswer[]>([]);
   const [showSolution, setShowSolution] = useState(false);
   const [roundHistory, setRoundHistory] = useState<QuizAnswer[][]>([]);
-  
-  // Track already-used exercise IDs across rounds
+
   const [usedExerciseIds, setUsedExerciseIds] = useState<Set<string>>(new Set());
-  
+
   // Gamification state
   const [xpEvents, setXpEvents] = useState<XPEvent[]>([]);
   const [unlockedBadge, setUnlockedBadge] = useState<Badge | null>(null);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
   async function loadData() {
     setLoading(true);
@@ -76,7 +105,11 @@ export default function GapDetector() {
     const allEx: any[] = [];
     let from = 0;
     while (true) {
-      const { data } = await (supabase as any).from("kb_exercises").select("*").order("grade").range(from, from + PAGE - 1);
+      const { data } = await (supabase as any)
+        .from("kb_exercises")
+        .select("*")
+        .order("grade")
+        .range(from, from + PAGE - 1);
       if (!data || data.length === 0) break;
       allEx.push(...data);
       if (data.length < PAGE) break;
@@ -86,7 +119,10 @@ export default function GapDetector() {
     const allDecon: any[] = [];
     from = 0;
     while (true) {
-      const { data } = await (supabase as any).from("kb_deconstructions").select("*").range(from, from + PAGE - 1);
+      const { data } = await (supabase as any)
+        .from("kb_deconstructions")
+        .select("*")
+        .range(from, from + PAGE - 1);
       if (!data || data.length === 0) break;
       allDecon.push(...data);
       if (data.length < PAGE) break;
@@ -95,325 +131,327 @@ export default function GapDetector() {
 
     const { data: pats } = await (supabase as any).from("kb_patterns").select("*");
 
-    setExercises(allEx.map((e: any) => ({ id: e.id, text: e.text, type: e.type || "", grade: e.grade || "", chapter: e.chapter || "" })));
-    setPatterns((pats || []).map((p: any) => ({ id: p.id, name: p.name, type: p.type || "", steps: p.steps || [], concepts: p.concepts || [] })));
-    setDeconstructions(allDecon.map((d: any) => ({ exercise_id: d.exercise_id, pattern_id: d.pattern_id, needs: d.needs || [], steps: d.steps || [] })));
+    setExercises(
+      allEx.map((e: any) => ({
+        id: e.id,
+        text: e.text,
+        type: e.type || "",
+        grade: e.grade || "",
+        chapter: e.chapter || "",
+      })),
+    );
+    setPatterns(
+      (pats || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        type: p.type || "",
+        steps: p.steps || [],
+        concepts: p.concepts || [],
+      })),
+    );
+    setDeconstructions(
+      allDecon.map((d: any) => ({
+        exercise_id: d.exercise_id,
+        pattern_id: d.pattern_id,
+        needs: d.needs || [],
+        steps: d.steps || [],
+      })),
+    );
     setLoading(false);
   }
 
-  // Get exercises that have deconstructions
   const availableExercises = useMemo(() => {
-    const deconIds = new Set(deconstructions.map(d => d.exercise_id));
-    return exercises.filter(e => deconIds.has(e.id) && (!gradeFilter || e.grade === gradeFilter));
+    const deconIds = new Set(deconstructions.map((d) => d.exercise_id));
+    return exercises.filter((e) => deconIds.has(e.id) && (!gradeFilter || e.grade === gradeFilter));
   }, [exercises, deconstructions, gradeFilter]);
 
-  // Generate a dynamic quiz round
-  const generateQuiz = useCallback((weakConcepts?: Set<string>) => {
-    let pool = availableExercises.filter(e => !usedExerciseIds.has(e.id));
-    
-    // If we have weak concepts from previous round, prioritize exercises that target them
-    let prioritized: Exercise[] = [];
-    let rest: Exercise[] = [];
-    
-    if (weakConcepts && weakConcepts.size > 0) {
-      pool.forEach(e => {
-        const decons = deconstructions.filter(d => d.exercise_id === e.id);
-        const targets = decons.some(d => (d.needs || []).some(n => weakConcepts.has(n)));
-        if (targets) prioritized.push(e); else rest.push(e);
-      });
-    } else {
-      // First round: distribute across different patterns/types
-      rest = pool;
-    }
+  const generateQuiz = useCallback(
+    (weakConcepts?: Set<string>) => {
+      let pool = availableExercises.filter((e) => !usedExerciseIds.has(e.id));
 
-    // Shuffle
-    const shuffle = <T,>(arr: T[]): T[] => {
-      const a = [...arr];
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
+      let prioritized: Exercise[] = [];
+      let rest: Exercise[] = [];
+
+      if (weakConcepts && weakConcepts.size > 0) {
+        pool.forEach((e) => {
+          const decons = deconstructions.filter((d) => d.exercise_id === e.id);
+          const isWeak = decons.some((d) => d.needs.some((n) => weakConcepts.has(n)));
+          if (isWeak) prioritized.push(e);
+          else rest.push(e);
+        });
+      } else {
+        rest = pool;
       }
-      return a;
-    };
 
-    // Pick: prioritize weak-concept exercises, fill rest randomly
-    const selected = [
-      ...shuffle(prioritized).slice(0, Math.ceil(QUIZ_SIZE * 0.6)),
-      ...shuffle(rest),
-    ].slice(0, QUIZ_SIZE);
+      const shuffled = [...prioritized.sort(() => Math.random() - 0.5), ...rest.sort(() => Math.random() - 0.5)].slice(
+        0,
+        QUIZ_SIZE,
+      );
 
-    // If not enough, just take what we have
-    const finalSelection = selected.length > 0 ? selected : shuffle(pool).slice(0, QUIZ_SIZE);
+      const questions: QuizQuestion[] = shuffled.map((exercise) => {
+        const decon = deconstructions.find((d) => d.exercise_id === exercise.id)!;
+        const pattern = patterns.find((p) => p.id === decon.pattern_id);
+        return { exercise, decon, pattern };
+      });
 
-    const questions: QuizQuestion[] = finalSelection.map(exercise => {
-      const decon = deconstructions.find(d => d.exercise_id === exercise.id)!;
-      const pattern = patterns.find(p => p.id === decon.pattern_id);
-      return { exercise, decon, pattern };
-    });
-
-    // Mark as used
-    setUsedExerciseIds(prev => {
-      const next = new Set(prev);
-      questions.forEach(q => next.add(q.exercise.id));
-      return next;
-    });
-
-    setQuizQuestions(questions);
-    setCurrentQ(0);
-    setAnswers([]);
-    setShowSolution(false);
-    setQuizState("quiz");
-  }, [availableExercises, deconstructions, patterns, usedExerciseIds]);
-
-  const startQuiz = () => {
-    setUsedExerciseIds(new Set());
-    setRoundHistory([]);
-    generateQuiz();
-  };
+      setQuizQuestions(questions);
+      setCurrentQ(0);
+      setAnswers([]);
+      setShowSolution(false);
+      setUsedExerciseIds((prev) => new Set([...prev, ...shuffled.map((e) => e.id)]));
+      setQuizState("quiz");
+    },
+    [availableExercises, deconstructions, patterns, usedExerciseIds],
+  );
 
   const answerQuestion = async (correct: boolean) => {
     const q = quizQuestions[currentQ];
-    const newAnswer: QuizAnswer = {
-      questionIndex: currentQ,
-      exerciseId: q.exercise.id,
-      correct,
-    };
-    const newAnswers = [...answers, newAnswer];
-    setAnswers(newAnswers);
+    const newAnswer: QuizAnswer = { questionIndex: currentQ, exerciseId: q.exercise.id, correct };
+    setAnswers((prev) => [...prev, newAnswer]);
     setShowSolution(true);
-    
-    // Record XP
-    try {
-      const { events, newBadges } = await recordExerciseCompletion(correct, q.decon?.pattern_id);
-      if (events.length > 0) setXpEvents(events);
-      if (newBadges.length > 0) setUnlockedBadge(newBadges[0]);
-    } catch (e) { console.warn("[gamification]", e); }
+
+    const { events, newBadges } = await recordExerciseCompletion(correct, q.pattern?.id);
+    if (events.length > 0) setXpEvents(events);
+    if (newBadges.length > 0) setUnlockedBadge(newBadges[0]);
   };
 
   const nextQuestion = () => {
     setShowSolution(false);
     if (currentQ + 1 < quizQuestions.length) {
-      setCurrentQ(currentQ + 1);
+      setCurrentQ((prev) => prev + 1);
     } else {
-      // Round complete
-      setRoundHistory(prev => [...prev, answers]);
+      const allAnswers = [...answers];
+      setRoundHistory((prev) => [...prev, allAnswers]);
       setQuizState("results");
     }
   };
 
-  // Compute analysis from all rounds
   const analysis = useMemo(() => {
-    const allAnswers = [...roundHistory.flat(), ...(quizState === "results" ? answers : [])];
-    if (allAnswers.length === 0) return null;
+    if (quizState !== "results" || answers.length === 0) return null;
+    const total = answers.length;
+    const correctCount = answers.filter((a) => a.correct).length;
+    const failedCount = total - correctCount;
+    const score = Math.round((correctCount / total) * 100);
 
-    const failed = allAnswers.filter(a => !a.correct);
-    const conceptCount = new Map<string, { count: number; exercises: string[] }>();
-    const patternCount = new Map<string, number>();
+    const level = score >= 80 ? "ممتاز" : score >= 60 ? "جيد" : score >= 40 ? "متوسط" : "يحتاج تحسين";
 
-    failed.forEach(a => {
-      const decons = deconstructions.filter(d => d.exercise_id === a.exerciseId);
-      decons.forEach(d => {
-        patternCount.set(d.pattern_id, (patternCount.get(d.pattern_id) || 0) + 1);
-        (d.needs || []).forEach((need: string) => {
-          const entry = conceptCount.get(need) || { count: 0, exercises: [] };
-          entry.count++;
-          entry.exercises.push(a.exerciseId);
-          conceptCount.set(need, entry);
+    const gapMap = new Map<string, { concept: string; count: number }>();
+    answers
+      .filter((a) => !a.correct)
+      .forEach((a) => {
+        const q = quizQuestions.find((q) => q.exercise.id === a.exerciseId);
+        if (!q) return;
+        const decon = deconstructions.find((d) => d.exercise_id === q.exercise.id);
+        if (!decon) return;
+        decon.needs.forEach((n) => {
+          const existing = gapMap.get(n) || { concept: n, count: 0 };
+          existing.count++;
+          gapMap.set(n, existing);
         });
       });
-    });
+    const gaps = [...gapMap.values()].sort((a, b) => b.count - a.count);
 
-    const gaps = [...conceptCount.entries()]
-      .map(([concept, data]) => ({ concept, ...data }))
-      .sort((a, b) => b.count - a.count);
+    const weakPatternMap = new Map<string, { pattern: Pattern; failCount: number }>();
+    answers
+      .filter((a) => !a.correct)
+      .forEach((a) => {
+        const q = quizQuestions.find((q) => q.exercise.id === a.exerciseId);
+        if (!q?.pattern) return;
+        const existing = weakPatternMap.get(q.pattern.id) || { pattern: q.pattern, failCount: 0 };
+        existing.failCount++;
+        weakPatternMap.set(q.pattern.id, existing);
+      });
+    const weakPatterns = [...weakPatternMap.values()].sort((a, b) => b.failCount - a.failCount);
 
-    const weakPatterns = [...patternCount.entries()]
-      .map(([pid, failCount]) => ({ pattern: patterns.find(p => p.id === pid)!, failCount }))
-      .filter(w => w.pattern)
-      .sort((a, b) => b.failCount - a.failCount);
+    return { total, correctCount, failedCount, score, level, gaps, weakPatterns };
+  }, [quizState, answers, quizQuestions, deconstructions]);
 
-    const total = allAnswers.length;
-    const correctCount = allAnswers.filter(a => a.correct).length;
-    const score = Math.round((correctCount / total) * 100);
-    const level = score >= 80 ? "ممتاز" : score >= 60 ? "جيد" : score >= 40 ? "متوسط" : "ضعيف";
-
-    return { gaps, weakPatterns, total, correctCount, failedCount: failed.length, score, level };
-  }, [roundHistory, answers, quizState, deconstructions, patterns]);
-
-  // Get weak concepts for adaptive next round
-  const weakConcepts = useMemo(() => {
-    if (!analysis) return new Set<string>();
-    return new Set(analysis.gaps.slice(0, 5).map(g => g.concept));
+  const weakConceptsFromHistory = useMemo(() => {
+    const set = new Set<string>();
+    if (analysis?.gaps) {
+      analysis.gaps.forEach((g) => set.add(g.concept));
+    }
+    return set;
   }, [analysis]);
 
-  const continueAdaptive = () => {
-    generateQuiz(weakConcepts);
-  };
-
-  const canContinue = useMemo(() => {
-    return availableExercises.filter(e => !usedExerciseIds.has(e.id)).length >= 3;
-  }, [availableExercises, usedExerciseIds]);
+  const canContinue = availableExercises.filter((e) => !usedExerciseIds.has(e.id)).length >= QUIZ_SIZE;
+  const continueAdaptive = () => generateQuiz(weakConceptsFromHistory);
 
   if (loading) {
     return (
-      <div className="h-full overflow-y-auto bg-background flex items-center justify-center">
+      <div className="h-full flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full mx-auto" />
-          <p className="text-muted-foreground">جاري تحميل قاعدة المعرفة...</p>
+          <p className="text-muted-foreground text-sm">جاري تحميل قاعدة التمارين...</p>
         </div>
       </div>
     );
   }
 
-  // ─── Setup Screen ──────────────────────────────────
   if (quizState === "setup") {
     return (
       <div className="h-full overflow-y-auto bg-background" dir="rtl">
-        <div className="border-b border-border px-6 py-8" style={{ background: "linear-gradient(to left, hsl(var(--primary) / 0.08), hsl(var(--primary) / 0.03), hsl(var(--background)))" }}>
+        <div
+          className="border-b border-border px-6 py-6"
+          style={{
+            background:
+              "linear-gradient(to left, hsl(var(--primary) / 0.08), hsl(var(--primary) / 0.03), hsl(var(--background)))",
+          }}
+        >
           <div className="max-w-3xl mx-auto">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-3xl">🔍</span>
-              <h1 className="text-2xl font-black text-foreground">التقييم التشخيصي</h1>
-            </div>
-            <p className="text-muted-foreground text-sm">تقييم تكيّفي يحدد ثغراتك بدقة — كل جولة تتكيف مع نقاط ضعفك</p>
+            <h1 className="text-xl font-black text-foreground flex items-center gap-2">🔍 كاشف الثغرات</h1>
+            <p className="text-xs text-muted-foreground mt-1">
+              اختبار تكيّفي يكشف المفاهيم الغائبة ويركّز عليها جولة بعد جولة
+            </p>
           </div>
         </div>
 
-        <div className="max-w-3xl mx-auto p-6">
-          <div className="flex flex-col items-center justify-center py-16 space-y-8">
-            <div className="text-7xl">🧪</div>
-            <div className="text-center space-y-3 max-w-md">
-              <h2 className="text-xl font-bold text-foreground">ابدأ التقييم التشخيصي</h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                سنعرض عليك {QUIZ_SIZE} تمارين عشوائية. أجب على كل تمرين (صحيح/خطأ)، 
-                ثم نحلل ثغراتك ونقترح جولة تكيّفية تركّز على نقاط ضعفك.
-              </p>
+        <div className="max-w-3xl mx-auto p-6 space-y-6">
+          {/* Grade selector — always visible for admin/teacher; for students shows their level pre-selected */}
+          {(isAdmin || isTeacher || !gradeCode) && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setGradeFilter("")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${!gradeFilter ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+              >
+                كل المستويات
+              </button>
+              {Object.entries(GRADE_LABELS).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setGradeFilter(key)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${gradeFilter === key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
+          )}
 
-            <div className="w-full max-w-sm space-y-4">
-              {/* Only show grade selector for Admin/Teacher, or if guest (no profile) */}
-              {(!profile || isAdmin || isTeacher) && (
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground mb-1 block">اختر المستوى</label>
-                  <select value={gradeFilter} onChange={e => setGradeFilter(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground text-sm">
-                    <option value="">كل المستويات</option>
-                    {Object.entries(GRADE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                  </select>
-                </div>
-              )}
-
-              <div className="text-center text-xs text-muted-foreground">
-                {availableExercises.length} تمرين متاح للتقييم
-              </div>
-
-              <button onClick={startQuiz} disabled={availableExercises.length < 3}
-                className="w-full py-4 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all disabled:opacity-50 shadow-lg">
-                🚀 ابدأ التقييم
+          {gradeFilter && !isAdmin && !isTeacher && (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <span className="text-xs text-primary font-bold">المستوى المحدد: {GRADE_LABELS[gradeFilter]}</span>
+              <button
+                onClick={() => setGradeFilter("")}
+                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                (تغيير)
               </button>
             </div>
+          )}
+
+          <div className="p-6 rounded-2xl border border-border bg-card text-center space-y-4">
+            <div className="text-5xl">🎯</div>
+            <h2 className="text-xl font-black">
+              {availableExercises.length} تمرين متاح
+              {gradeFilter ? ` في ${GRADE_LABELS[gradeFilter]}` : ""}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              سيتم اختيار {Math.min(QUIZ_SIZE, availableExercises.length)} تمرين تلقائياً للتقييم. بعد كل جولة، يركّز
+              النظام على الثغرات المكتشفة.
+            </p>
+            <button
+              onClick={() => generateQuiz()}
+              disabled={availableExercises.length < 1}
+              className="w-full py-4 rounded-xl font-black text-primary-foreground bg-primary hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ابدأ التقييم التشخيصي →
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  // ─── Quiz Screen ───────────────────────────────────
-  if (quizState === "quiz" && quizQuestions.length > 0) {
+  if (quizState === "quiz") {
     const q = quizQuestions[currentQ];
-    const progress = ((currentQ + (showSolution ? 1 : 0)) / quizQuestions.length) * 100;
-    const roundNum = roundHistory.length + 1;
+    if (!q) return null;
 
     return (
       <div className="h-full overflow-y-auto bg-background" dir="rtl">
-        {/* Top bar */}
-        <div className="bg-card border-b border-border px-6 py-3">
-          <div className="max-w-3xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-bold">
-                الجولة {roundNum}
-              </span>
-              <span className="text-sm font-bold text-foreground">
-                السؤال {currentQ + 1} / {quizQuestions.length}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>✅ {answers.filter(a => a.correct).length}</span>
-              <span>❌ {answers.filter(a => !a.correct).length}</span>
-            </div>
+        <AnimatePresence>
+          {xpEvents.length > 0 && <XPPopup events={xpEvents} onDone={() => setXpEvents([])} />}
+        </AnimatePresence>
+        <AnimatePresence>
+          {unlockedBadge && <BadgeUnlockOverlay badge={unlockedBadge} onDone={() => setUnlockedBadge(null)} />}
+        </AnimatePresence>
+
+        <div className="border-b border-border px-6 py-3 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-10">
+          <span className="text-xs font-bold text-muted-foreground">
+            سؤال {currentQ + 1} / {quizQuestions.length}
+          </span>
+          <div className="flex-1 mx-6 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all"
+              style={{ width: `${(currentQ / quizQuestions.length) * 100}%` }}
+            />
           </div>
-          {/* Progress bar */}
-          <div className="max-w-3xl mx-auto mt-2">
-            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
-            </div>
-          </div>
+          <span className="text-[10px] font-bold text-primary">
+            {GRADE_LABELS[q.exercise.grade] || q.exercise.grade}
+          </span>
         </div>
 
         <div className="max-w-3xl mx-auto p-6">
-          {/* Exercise card */}
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-[10px] px-2 py-1 rounded-full bg-accent text-accent-foreground font-bold">
-                {GRADE_LABELS[q.exercise.grade] || q.exercise.grade}
-              </span>
-              {q.pattern && (
+          <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
+            {q.pattern && (
+              <div className="flex gap-2 flex-wrap">
                 <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary font-bold">
                   {q.pattern.name}
                 </span>
-              )}
-              <span className="text-[10px] text-muted-foreground">{q.exercise.type}</span>
-            </div>
+                <span className="text-[10px] px-2 py-1 rounded-full bg-muted text-muted-foreground">
+                  {q.exercise.type}
+                </span>
+              </div>
+            )}
 
             <div className="text-base leading-relaxed text-foreground mb-6">
               <MathExerciseRenderer text={q.exercise.text} />
             </div>
 
-            {/* Answer with editor or self-assessment */}
             {!showSolution && (
               <div className="space-y-4">
-                {/* Student editor */}
                 <StudentAnswerEditor
                   exerciseType={q.exercise.type}
                   exerciseText={q.exercise.text}
-                  onSubmitAlgebra={(steps) => {
-                    // Student submitted algebra steps — mark as attempted
-                    answerQuestion(true);
-                  }}
-                  onSubmitGeometry={(data) => {
-                    // Student submitted geometry — mark as attempted
-                    answerQuestion(true);
-                  }}
+                  onSubmitAlgebra={() => answerQuestion(true)}
+                  onSubmitGeometry={() => answerQuestion(true)}
                 />
-                {/* Self-assessment fallback */}
                 <div className="flex gap-3">
-                  <button onClick={() => answerQuestion(true)}
-                    className="flex-1 py-3 rounded-xl text-xs font-bold border-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 transition-all">
+                  <button
+                    onClick={() => answerQuestion(true)}
+                    className="flex-1 py-3 rounded-xl text-xs font-bold border-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 transition-all"
+                  >
                     ✅ حللته بنجاح
                   </button>
-                  <button onClick={() => answerQuestion(false)}
-                    className="flex-1 py-3 rounded-xl text-xs font-bold border-2 border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/15 transition-all">
+                  <button
+                    onClick={() => answerQuestion(false)}
+                    className="flex-1 py-3 rounded-xl text-xs font-bold border-2 border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/15 transition-all"
+                  >
                     ❌ لم أتمكن
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Solution reveal */}
             {showSolution && (
               <div className="space-y-4">
-                <div className={`p-4 rounded-xl border ${answers[answers.length - 1]?.correct ? "border-primary/30 bg-primary/5" : "border-destructive/30 bg-destructive/5"}`}>
+                <div
+                  className={`p-4 rounded-xl border ${answers[answers.length - 1]?.correct ? "border-primary/30 bg-primary/5" : "border-destructive/30 bg-destructive/5"}`}
+                >
                   <div className="text-sm font-bold mb-2">
                     {answers[answers.length - 1]?.correct ? "✅ أحسنت!" : "❌ لا بأس، إليك خطوات الحل:"}
                   </div>
-                  
+
                   {q.decon.steps && q.decon.steps.length > 0 && (
                     <div className="space-y-2 mt-3">
                       {q.decon.steps.map((step: any, i: number) => {
-                        const stepText = typeof step === "string" ? step : (step.action || step.description || JSON.stringify(step));
+                        const stepText =
+                          typeof step === "string" ? step : step.action || step.description || JSON.stringify(step);
                         return (
                           <div key={i} className="flex items-start gap-2 text-xs text-foreground">
-                            <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">{i + 1}</span>
+                            <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">
+                              {i + 1}
+                            </span>
                             <span>{stepText}</span>
                           </div>
                         );
@@ -425,14 +463,18 @@ export default function GapDetector() {
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       <span className="text-[10px] text-muted-foreground">المتطلبات:</span>
                       {q.decon.needs.map((n: string, i: number) => (
-                        <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-accent text-accent-foreground">{n}</span>
+                        <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-accent text-accent-foreground">
+                          {n}
+                        </span>
                       ))}
                     </div>
                   )}
                 </div>
 
-                <button onClick={nextQuestion}
-                  className="w-full py-3 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all">
+                <button
+                  onClick={nextQuestion}
+                  className="w-full py-3 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all"
+                >
                   {currentQ + 1 < quizQuestions.length ? "⬅ السؤال التالي" : "📊 عرض النتائج"}
                 </button>
               </div>
@@ -443,24 +485,42 @@ export default function GapDetector() {
     );
   }
 
-  // ─── Results Screen ────────────────────────────────
   if (quizState === "results" && analysis) {
     return (
       <div className="h-full overflow-y-auto bg-background" dir="rtl">
-        <div className="border-b border-border px-6 py-6" style={{ background: "linear-gradient(to left, hsl(var(--primary) / 0.08), hsl(var(--primary) / 0.03), hsl(var(--background)))" }}>
+        <div
+          className="border-b border-border px-6 py-6"
+          style={{
+            background:
+              "linear-gradient(to left, hsl(var(--primary) / 0.08), hsl(var(--primary) / 0.03), hsl(var(--background)))",
+          }}
+        >
           <div className="max-w-3xl mx-auto">
             <h1 className="text-xl font-black text-foreground flex items-center gap-2">📊 نتائج التقييم التشخيصي</h1>
-            <p className="text-xs text-muted-foreground mt-1">الجولة {roundHistory.length} • {analysis.total} سؤال</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              الجولة {roundHistory.length} • {analysis.total} سؤال
+            </p>
           </div>
         </div>
 
         <div className="max-w-3xl mx-auto p-6 space-y-6">
-          {/* Score cards */}
           <div className="grid grid-cols-4 gap-3">
             <div className="p-4 rounded-xl border border-border bg-card text-center">
-              <div className="text-3xl font-black" style={{
-                color: analysis.score >= 80 ? "hsl(var(--primary))" : analysis.score >= 60 ? "#22C55E" : analysis.score >= 40 ? "#F59E0B" : "hsl(var(--destructive))"
-              }}>{analysis.score}%</div>
+              <div
+                className="text-3xl font-black"
+                style={{
+                  color:
+                    analysis.score >= 80
+                      ? "hsl(var(--primary))"
+                      : analysis.score >= 60
+                        ? "#22C55E"
+                        : analysis.score >= 40
+                          ? "#F59E0B"
+                          : "hsl(var(--destructive))",
+                }}
+              >
+                {analysis.score}%
+              </div>
               <div className="text-[10px] text-muted-foreground mt-1">النتيجة</div>
             </div>
             <div className="p-4 rounded-xl border border-border bg-card text-center">
@@ -477,20 +537,24 @@ export default function GapDetector() {
             </div>
           </div>
 
-          {/* Gaps */}
           {analysis.gaps.length > 0 && (
             <div className="p-5 rounded-xl border border-destructive/20 bg-destructive/5">
               <h3 className="text-sm font-bold text-destructive mb-3">🎯 المفاهيم الغائبة</h3>
               <div className="space-y-2">
                 {analysis.gaps.slice(0, 8).map((gap, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-destructive/20 text-destructive flex items-center justify-center text-xs font-bold flex-shrink-0">{i + 1}</div>
+                    <div className="w-7 h-7 rounded-full bg-destructive/20 text-destructive flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      {i + 1}
+                    </div>
                     <div className="flex-1">
                       <div className="text-sm font-bold text-foreground">{gap.concept}</div>
                       <div className="text-[10px] text-muted-foreground">ظهر في {gap.count} تمرين</div>
                     </div>
                     <div className="h-2 w-20 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-destructive rounded-full" style={{ width: `${Math.min(100, (gap.count / Math.max(1, analysis.failedCount)) * 100)}%` }} />
+                      <div
+                        className="h-full bg-destructive rounded-full"
+                        style={{ width: `${Math.min(100, (gap.count / Math.max(1, analysis.failedCount)) * 100)}%` }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -498,7 +562,6 @@ export default function GapDetector() {
             </div>
           )}
 
-          {/* Weak patterns */}
           {analysis.weakPatterns.length > 0 && (
             <div className="p-5 rounded-xl border border-border bg-card">
               <h3 className="text-sm font-bold text-foreground mb-3">🧩 الأنماط الضعيفة</h3>
@@ -506,23 +569,32 @@ export default function GapDetector() {
                 {analysis.weakPatterns.slice(0, 6).map((wp, i) => (
                   <div key={i} className="p-3 rounded-lg border border-border bg-muted/30">
                     <div className="text-xs font-bold text-foreground mb-1">{wp.pattern.name}</div>
-                    <div className="text-[10px] text-muted-foreground">{wp.pattern.type} • فشل {wp.failCount} مرة</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {wp.pattern.type} • فشل {wp.failCount} مرة
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Action buttons */}
           <div className="flex gap-3">
             {canContinue && analysis.failedCount > 0 && (
-              <button onClick={continueAdaptive}
-                className="flex-1 py-4 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all shadow-lg">
+              <button
+                onClick={continueAdaptive}
+                className="flex-1 py-4 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all shadow-lg"
+              >
                 🔄 جولة تكيّفية (تركّز على ثغراتك)
               </button>
             )}
-            <button onClick={() => { setQuizState("setup"); setUsedExerciseIds(new Set()); setRoundHistory([]); }}
-              className="flex-1 py-4 rounded-xl text-sm font-bold border border-border bg-card text-foreground hover:bg-accent transition-all">
+            <button
+              onClick={() => {
+                setQuizState("setup");
+                setUsedExerciseIds(new Set());
+                setRoundHistory([]);
+              }}
+              className="flex-1 py-4 rounded-xl text-sm font-bold border border-border bg-card text-foreground hover:bg-accent transition-all"
+            >
               🔁 تقييم جديد
             </button>
           </div>
@@ -547,21 +619,12 @@ export default function GapDetector() {
 
   return (
     <>
-      {null}
-      {/* XP Popup */}
       <AnimatePresence>
-        {xpEvents.length > 0 && (
-          <XPPopup events={xpEvents} onDone={() => setXpEvents([])} />
-        )}
+        {xpEvents.length > 0 && <XPPopup events={xpEvents} onDone={() => setXpEvents([])} />}
       </AnimatePresence>
-      {/* Badge unlock */}
       <AnimatePresence>
-        {unlockedBadge && (
-          <BadgeUnlockOverlay badge={unlockedBadge} onDone={() => setUnlockedBadge(null)} />
-        )}
+        {unlockedBadge && <BadgeUnlockOverlay badge={unlockedBadge} onDone={() => setUnlockedBadge(null)} />}
       </AnimatePresence>
     </>
   );
 }
-
-// NavBar removed — AppShell provides global navigation
