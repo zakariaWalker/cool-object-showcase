@@ -10,7 +10,6 @@ interface Exercise {
   grade: string;
 }
 
-// kb_exercises.grade uses old-format keys
 const GRADE_LABELS: Record<string, string> = {
   middle_1: "1AM",
   middle_2: "2AM",
@@ -21,7 +20,6 @@ const GRADE_LABELS: Record<string, string> = {
   secondary_3: "3AS",
 };
 
-// FIX: reverse map so we can convert grade_code ("4AM") → kb key ("middle_4")
 const GRADE_CODE_TO_KEY: Record<string, string> = Object.fromEntries(
   Object.entries(GRADE_LABELS).map(([k, v]) => [v, k]),
 );
@@ -62,25 +60,13 @@ export default function AITutor() {
 
   useEffect(() => {
     async function init() {
-      // FIX: priority order was wrong — old user_metadata.grade was checked first,
-      // meaning new users with only grade_code would get "4AM" which doesn't match
-      // kb_exercises.grade (which uses "middle_4" format) → empty exercise list.
-      //
-      // Correct order:
-      //   1. curriculumGrade (grade_code from profiles, new format "4AM")
-      //      → mapped to old KB key via GRADE_CODE_TO_KEY
-      //   2. user_metadata.grade (old format "middle_4") as fallback for legacy users
-      //      → already in old KB key format, use directly
-
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       if (curriculumGrade && GRADE_CODE_TO_KEY[curriculumGrade]) {
-        // New format: map "4AM" → "middle_4"
         setGradeFilter(GRADE_CODE_TO_KEY[curriculumGrade]);
       } else if (user?.user_metadata?.grade) {
-        // Legacy format: already "middle_4" style
         setGradeFilter(user.user_metadata.grade);
       }
       loadExercises();
@@ -140,7 +126,6 @@ export default function AITutor() {
       if (data?.error) throw new Error(data.error);
       setExplanation(data.explanation || "لم يتم الحصول على شرح");
 
-      // Log tutor session so Home.tsx can detect it
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -153,7 +138,6 @@ export default function AITutor() {
             xp_earned: 0,
             metadata: { exerciseId: selectedEx.id, mode },
           })
-          .then(() => {})
           .catch(() => {});
       }
     } catch (err: any) {
