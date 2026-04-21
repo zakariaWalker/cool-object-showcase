@@ -2,19 +2,19 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/engine/profile-store";
-import { 
-  User, 
-  Settings, 
-  LogOut, 
-  LayoutDashboard, 
-  Target, 
-  Award, 
-  TrendingUp, 
+import {
+  User,
+  Settings,
+  LogOut,
+  LayoutDashboard,
+  Target,
+  Award,
+  TrendingUp,
   History,
   AlertCircle,
   Brain,
   Zap,
-  BookOpen
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,19 +46,17 @@ export default function StudentProfile() {
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         navigate("/auth");
         return;
       }
       setUser(user);
 
-      // Fetch Profile
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // ✅ FIX: was .eq("user_id", user.id) — profiles.id is the auth user's UUID
+      const { data: profileData } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
       setDbProfile(profileData);
 
       // Fetch Progress
@@ -86,7 +84,7 @@ export default function StudentProfile() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <motion.div 
+        <motion.div
           animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
           transition={{ repeat: Infinity, duration: 1.5 }}
           className="text-primary font-black text-2xl"
@@ -97,21 +95,16 @@ export default function StudentProfile() {
     );
   }
 
-  const userGrade = dbProfile?.grade || user?.user_metadata?.grade || "N/A";
+  // ✅ FIX: was dbProfile?.grade — field is grade_code in the profiles table
+  const userGrade = dbProfile?.grade_code || user?.user_metadata?.grade_code || user?.user_metadata?.grade || "N/A";
   const gradeLabel = getGradeLabel(userGrade);
   const isSecondary = userGrade.startsWith("secondary") || userGrade === "3AS";
 
   return (
     <div className="min-h-screen bg-background/50 pb-20 pt-6 px-4 md:px-8 mt-16" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-8">
-        
         {/* Header Section */}
-        <ProfileHeader 
-          user={user} 
-          dbProfile={dbProfile} 
-          progress={progress} 
-          cognitiveProfile={cognitiveProfile} 
-        />
+        <ProfileHeader user={user} dbProfile={dbProfile} progress={progress} cognitiveProfile={cognitiveProfile} />
 
         {/* Stats Quick Grid */}
         <StatsGrid progress={progress} gapsCount={gaps.length} />
@@ -119,16 +112,28 @@ export default function StudentProfile() {
         {/* Main Dashboard Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="bg-card border border-border p-1 rounded-2xl h-14 w-full md:w-auto overflow-x-auto justify-start md:justify-center">
-            <TabsTrigger value="overview" className="gap-2 px-6 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger
+              value="overview"
+              className="gap-2 px-6 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
               <LayoutDashboard className="w-4 h-4" /> لوحة التحكم
             </TabsTrigger>
-            <TabsTrigger value="progress" className="gap-2 px-6 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger
+              value="progress"
+              className="gap-2 px-6 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
               <TrendingUp className="w-4 h-4" /> التطور الدراسي
             </TabsTrigger>
-            <TabsTrigger value="gaps" className="gap-2 px-6 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger
+              value="gaps"
+              className="gap-2 px-6 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
               <Zap className="w-4 h-4" /> الفجوات المعرفية
             </TabsTrigger>
-            <TabsTrigger value="achievements" className="gap-2 px-6 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger
+              value="achievements"
+              className="gap-2 px-6 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
               <Award className="w-4 h-4" /> الإنجازات
             </TabsTrigger>
           </TabsList>
@@ -165,7 +170,10 @@ export default function StudentProfile() {
                     </div>
                     <Progress value={65} className="h-2 rounded-full" />
                   </div>
-                  <Button variant="outline" className="w-full rounded-xl border-dashed border-2 hover:bg-primary/5 hover:text-primary transition-all">
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-xl border-dashed border-2 hover:bg-primary/5 hover:text-primary transition-all"
+                  >
                     عرض الخطة الدراسية كاملة
                   </Button>
                 </CardContent>
@@ -174,14 +182,14 @@ export default function StudentProfile() {
           </TabsContent>
 
           <TabsContent value="progress" className="outline-none">
-             <Card className="rounded-3xl border-border/40 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-2xl font-black">النمو المعرفي</CardTitle>
-                </CardHeader>
-                <CardContent className="h-[500px]">
-                  <ProgressChart userId={user.id} details />
-                </CardContent>
-             </Card>
+            <Card className="rounded-3xl border-border/40 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-2xl font-black">النمو المعرفي</CardTitle>
+              </CardHeader>
+              <CardContent className="h-[500px]">
+                <ProgressChart userId={user.id} details />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="gaps" className="outline-none">
