@@ -9,7 +9,8 @@ import { useCountryGrades } from "@/hooks/useCountryGrades";
 
 export function ProfileHeader({ user, dbProfile, progress, cognitiveProfile }: any) {
   const navigate = useNavigate();
-  const { gradeLabel: resolveGradeLabel } = useCountryGrades();
+  const countryCode = dbProfile?.country_code || user?.user_metadata?.country_code || "DZ";
+  const { labelOf: resolveGradeLabel } = useCountryGrades(countryCode);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
