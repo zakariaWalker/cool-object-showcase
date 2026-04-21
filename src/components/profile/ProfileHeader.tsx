@@ -5,10 +5,11 @@ import { Settings, LogOut, Brain, Target, Award, ShieldCheck } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { getGradeLabel } from "@/lib/grade-utils";
+import { useCountryGrades } from "@/hooks/useCountryGrades";
 
 export function ProfileHeader({ user, dbProfile, progress, cognitiveProfile }: any) {
   const navigate = useNavigate();
+  const { gradeLabel: resolveGradeLabel } = useCountryGrades();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -20,7 +21,7 @@ export function ProfileHeader({ user, dbProfile, progress, cognitiveProfile }: a
   const level = progress?.level || 1;
   // ✅ FIX: was dbProfile?.grade — field is grade_code in the profiles table
   const grade = dbProfile?.grade_code || user?.user_metadata?.grade_code || user?.user_metadata?.grade;
-  const gradeLabel = getGradeLabel(grade);
+  const gradeLabel = resolveGradeLabel(grade);
 
   return (
     <motion.div
