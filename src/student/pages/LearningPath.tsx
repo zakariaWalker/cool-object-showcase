@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
+import { useCountryGrades } from "@/hooks/useCountryGrades";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Exercise {
@@ -23,28 +24,6 @@ interface Deconstruction {
   needs: string[];
   steps: string[];
 }
-
-const GRADE_LABELS: Record<string, string> = {
-  middle_1: "1AM",
-  middle_2: "2AM",
-  middle_3: "3AM",
-  middle_4: "4AM",
-  secondary_1: "1AS",
-  secondary_2: "2AS",
-  secondary_3: "3AS",
-};
-
-const GRADE_ORDER = ["middle_1", "middle_2", "middle_3", "middle_4", "secondary_1", "secondary_2", "secondary_3"];
-
-// FIX: reverse map from grade_code ("4AM") to kb_exercises.grade key ("middle_4")
-const GRADE_CODE_TO_KEY: Record<string, string> = Object.fromEntries(
-  Object.entries(GRADE_LABELS).map(([k, v]) => [v, k]),
-);
-
-const resolveGrade = (code?: string) => {
-  if (!code) return "";
-  return GRADE_CODE_TO_KEY[code] || code;
-};
 
 const TYPE_LABELS: Record<string, string> = {
   arithmetic: "حساب",
@@ -148,15 +127,17 @@ export default function LearningPath() {
   const [deconstructions, setDeconstructions] = useState<Deconstruction[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { gradeCode } = useUserCurriculum();
-  const defaultGradeKey = resolveGrade(gradeCode) || "middle_4";
+  const { gradeCode, countryCode } = useUserCurriculum();
+  const { grades, labelOf, loading: loadingGrades } = useCountryGrades(countryCode);
+
+  const defaultGradeKey = gradeCode || (grades.length > 0 ? grades[0].grade_code : "4AM");
   const [selectedGrade, setSelectedGrade] = useState(defaultGradeKey);
   const [selectedType, setSelectedType] = useState("");
   const [completedExIds, setCompletedExIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (gradeCode && !selectedGrade) {
-      setSelectedGrade(resolveGrade(gradeCode));
+      setSelectedGrade(gradeCode);
     }
   }, [gradeCode, selectedGrade]);
 
@@ -289,7 +270,7 @@ export default function LearningPath() {
     });
   };
 
-  if (loading) {
+  if (loading || loadingGrades) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -325,11 +306,11 @@ export default function LearningPath() {
         {/* Controls */}
         <div className="flex items-center gap-4 mb-6">
           <div className="flex gap-2 flex-wrap">
-            {GRADE_ORDER.map((g) => (
+            {grades.map((g) => (
               <button
-                key={g}
+                key={g.grade_code}
                 onClick={() => {
-                  setSelectedGrade(g);
+                  setSelectedGrade(g.grade_code);
                   setSelectedType("");
                 }}
                 className="px-4 py-2 rounded-full text-xs font-bold transition-all border"
@@ -360,9 +341,7 @@ export default function LearningPath() {
         {/* Progress bar */}
         <div className="mb-8 p-4 rounded-xl border border-border bg-card">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold text-foreground">
-              تقدمك في {GRADE_LABELS[selectedGrade] || selectedGrade}
-            </span>
+            <span className="text-sm font-bold text-foreground">تقدمك في {shortLabel(selectedGrade)}</span>
             <span className="text-sm font-bold text-primary">{progress}%</span>
           </div>
           <div className="h-3 bg-muted rounded-full overflow-hidden">
