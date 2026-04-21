@@ -4,9 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/AppShell";
+import CurriculumGuard from "@/components/CurriculumGuard";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
-import Onboarding from "./pages/Onboarding";
 import Home from "./pages/Home";
 import ExercisePage from "./pages/Exercise";
 import AdminKBPage from "./pages/AdminKB";
@@ -35,6 +35,7 @@ import SkillsKBPage from "./pages/SkillsKB";
 import UnifiedKBPage from "./pages/UnifiedKB";
 import TextbookUpload from "./pages/TextbookUpload";
 import TextbookViewer from "./pages/TextbookViewer";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -50,13 +51,62 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/home" element={<Home />} />
-            <Route path="/exercises" element={<ExercisePage />} />
-            <Route path="/tma/:questionId" element={<ExercisePage />} />
-            <Route path="/algebra" element={<ExercisePage />} />
-            <Route path="/geometry" element={<ExercisePage />} />
-            <Route path="/statistics" element={<ExercisePage />} />
-            <Route path="/probability" element={<ExercisePage />} />
-            <Route path="/functions" element={<ExercisePage />} />
+            <Route
+              path="/exercises"
+              element={
+                <CurriculumGuard>
+                  <ExercisePage />
+                </CurriculumGuard>
+              }
+            />
+            <Route
+              path="/tma/:questionId"
+              element={
+                <CurriculumGuard>
+                  <ExercisePage />
+                </CurriculumGuard>
+              }
+            />
+            <Route
+              path="/algebra"
+              element={
+                <CurriculumGuard>
+                  <ExercisePage />
+                </CurriculumGuard>
+              }
+            />
+            <Route
+              path="/geometry"
+              element={
+                <CurriculumGuard>
+                  <ExercisePage />
+                </CurriculumGuard>
+              }
+            />
+            <Route
+              path="/statistics"
+              element={
+                <CurriculumGuard>
+                  <ExercisePage />
+                </CurriculumGuard>
+              }
+            />
+            <Route
+              path="/probability"
+              element={
+                <CurriculumGuard>
+                  <ExercisePage />
+                </CurriculumGuard>
+              }
+            />
+            <Route
+              path="/functions"
+              element={
+                <CurriculumGuard>
+                  <ExercisePage />
+                </CurriculumGuard>
+              }
+            />
             <Route path="/admin" element={<AdminKBPage />} />
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/admin/kb/upload" element={<AdminKBUpload />} />
@@ -67,16 +117,37 @@ const App = () => (
             <Route path="/admin/analytics" element={<PlatformAnalytics />} />
             <Route path="/admin/config" element={<PlatformConfig />} />
             <Route path="/gaps" element={<GapDetector />} />
-            <Route path="/tutor" element={<AITutor />} />
+            <Route
+              path="/tutor"
+              element={
+                <CurriculumGuard>
+                  <AITutor />
+                </CurriculumGuard>
+              }
+            />
             <Route path="/solve/:id" element={<StudentSolver />} />
-            <Route path="/learn" element={<LearningPath />} />
+            <Route
+              path="/learn"
+              element={
+                <CurriculumGuard>
+                  <LearningPath />
+                </CurriculumGuard>
+              }
+            />
             <Route path="/explore" element={<VisualExplorer />} />
             <Route path="/whatif" element={<WhatIf />} />
             <Route path="/exams" element={<ExamBuilderPage />} />
             <Route path="/exam-kb" element={<ExamKBPage />} />
             <Route path="/annales" element={<ExamArchive />} />
             <Route path="/archive-solve/:examId" element={<ExamArchiveSolver />} />
-            <Route path="/diagnostic" element={<DiagnosticExam />} />
+            <Route
+              path="/diagnostic"
+              element={
+                <CurriculumGuard>
+                  <DiagnosticExam />
+                </CurriculumGuard>
+              }
+            />
             <Route path="/profile" element={<StudentProfile />} />
             <Route path="/skills-kb" element={<SkillsKBPage />} />
             <Route path="/unified-kb" element={<UnifiedKBPage />} />
