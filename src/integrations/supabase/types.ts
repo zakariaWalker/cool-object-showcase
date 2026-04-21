@@ -1405,29 +1405,43 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          country_code: string | null
           created_at: string
           full_name: string | null
+          grade_code: string | null
           id: string
           updated_at: string
           user_id: string | null
         }
         Insert: {
           avatar_url?: string | null
+          country_code?: string | null
           created_at?: string
           full_name?: string | null
+          grade_code?: string | null
           id: string
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           avatar_url?: string | null
+          country_code?: string | null
           created_at?: string
           full_name?: string | null
+          grade_code?: string | null
           id?: string
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       student_activity_log: {
         Row: {
