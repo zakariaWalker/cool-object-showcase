@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
-import { useUserCurriculum } from "@/hooks/useUserCurriculum"; // FIX: was useAuth
+import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Exercise {
@@ -24,7 +24,6 @@ interface Deconstruction {
   steps: string[];
 }
 
-// kb_exercises.grade uses old-format keys
 const GRADE_LABELS: Record<string, string> = {
   middle_1: "1AM",
   middle_2: "2AM",
@@ -37,7 +36,6 @@ const GRADE_LABELS: Record<string, string> = {
 
 const GRADE_ORDER = ["middle_1", "middle_2", "middle_3", "middle_4", "secondary_1", "secondary_2", "secondary_3"];
 
-// FIX: reverse map from new grade_code format ("4AM") to old KB key ("middle_4")
 const GRADE_CODE_TO_KEY: Record<string, string> = Object.fromEntries(
   Object.entries(GRADE_LABELS).map(([k, v]) => [v, k]),
 );
@@ -144,15 +142,12 @@ export default function LearningPath() {
   const [deconstructions, setDeconstructions] = useState<Deconstruction[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // FIX: was useAuth().profile?.grade (old format, empty for new users)
-  // Now uses useUserCurriculum() which reads grade_code ("4AM") and maps to old KB key
   const { gradeCode } = useUserCurriculum();
   const defaultGradeKey = GRADE_CODE_TO_KEY[gradeCode] || "middle_4";
   const [selectedGrade, setSelectedGrade] = useState(defaultGradeKey);
   const [selectedType, setSelectedType] = useState("");
   const [completedExIds, setCompletedExIds] = useState<Set<string>>(new Set());
 
-  // FIX: sync selectedGrade when gradeCode loads from Supabase (async)
   useEffect(() => {
     if (gradeCode && GRADE_CODE_TO_KEY[gradeCode]) {
       setSelectedGrade(GRADE_CODE_TO_KEY[gradeCode]);
@@ -163,7 +158,6 @@ export default function LearningPath() {
     loadData();
   }, []);
 
-  // Log learning path visit so Home.tsx can detect it
   useEffect(() => {
     (async () => {
       const {
@@ -178,10 +172,9 @@ export default function LearningPath() {
           xp_earned: 0,
           metadata: { grade: selectedGrade },
         })
-        .then(() => {})
         .catch(() => {});
     })();
-  }, []); // once on mount
+  }, []);
 
   async function loadData() {
     setLoading(true);
