@@ -36,9 +36,15 @@ const GRADE_LABELS: Record<string, string> = {
 
 const GRADE_ORDER = ["middle_1", "middle_2", "middle_3", "middle_4", "secondary_1", "secondary_2", "secondary_3"];
 
+// FIX: reverse map from grade_code ("4AM") to kb_exercises.grade key ("middle_4")
 const GRADE_CODE_TO_KEY: Record<string, string> = Object.fromEntries(
   Object.entries(GRADE_LABELS).map(([k, v]) => [v, k]),
 );
+
+const resolveGrade = (code?: string) => {
+  if (!code) return "";
+  return GRADE_CODE_TO_KEY[code] || code;
+};
 
 const TYPE_LABELS: Record<string, string> = {
   arithmetic: "حساب",
@@ -143,16 +149,16 @@ export default function LearningPath() {
   const [loading, setLoading] = useState(true);
 
   const { gradeCode } = useUserCurriculum();
-  const defaultGradeKey = GRADE_CODE_TO_KEY[gradeCode] || "middle_4";
+  const defaultGradeKey = resolveGrade(gradeCode) || "middle_4";
   const [selectedGrade, setSelectedGrade] = useState(defaultGradeKey);
   const [selectedType, setSelectedType] = useState("");
   const [completedExIds, setCompletedExIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (gradeCode && GRADE_CODE_TO_KEY[gradeCode]) {
-      setSelectedGrade(GRADE_CODE_TO_KEY[gradeCode]);
+    if (gradeCode && !selectedGrade) {
+      setSelectedGrade(resolveGrade(gradeCode));
     }
-  }, [gradeCode]);
+  }, [gradeCode, selectedGrade]);
 
   useEffect(() => {
     loadData();
@@ -333,7 +339,7 @@ export default function LearningPath() {
                   borderColor: selectedGrade === g ? "hsl(var(--primary))" : "hsl(var(--border))",
                 }}
               >
-                {GRADE_LABELS[g]}
+                {GRADE_LABELS[g] || g}
               </button>
             ))}
           </div>
@@ -354,7 +360,9 @@ export default function LearningPath() {
         {/* Progress bar */}
         <div className="mb-8 p-4 rounded-xl border border-border bg-card">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold text-foreground">تقدمك في {GRADE_LABELS[selectedGrade]}</span>
+            <span className="text-sm font-bold text-foreground">
+              تقدمك في {GRADE_LABELS[selectedGrade] || selectedGrade}
+            </span>
             <span className="text-sm font-bold text-primary">{progress}%</span>
           </div>
           <div className="h-3 bg-muted rounded-full overflow-hidden">
