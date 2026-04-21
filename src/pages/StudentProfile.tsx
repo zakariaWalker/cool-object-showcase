@@ -32,11 +32,12 @@ import { ProgressChart } from "@/components/profile/ProgressChart";
 import { KnowledgeGaps } from "@/components/profile/KnowledgeGaps";
 import { AchievementGallery } from "@/components/profile/AchievementGallery";
 
-import { getGradeLabel } from "@/lib/grade-utils";
+import { useCountryGrades } from "@/hooks/useCountryGrades";
 
 export default function StudentProfile() {
   const navigate = useNavigate();
   const { profile: cognitiveProfile } = useProfile();
+  const { gradeLabel: resolveGradeLabel } = useCountryGrades();
   const [user, setUser] = useState<any>(null);
   const [dbProfile, setDbProfile] = useState<any>(null);
   const [progress, setProgress] = useState<any>(null);
@@ -97,8 +98,8 @@ export default function StudentProfile() {
 
   // ✅ FIX: was dbProfile?.grade — field is grade_code in the profiles table
   const userGrade = dbProfile?.grade_code || user?.user_metadata?.grade_code || user?.user_metadata?.grade || "N/A";
-  const gradeLabel = getGradeLabel(userGrade);
-  const isSecondary = userGrade.startsWith("secondary") || userGrade === "3AS";
+  const gradeLabel = resolveGradeLabel(userGrade);
+  const isSecondary = userGrade.includes("AS") || userGrade.startsWith("secondary");
 
   return (
     <div className="min-h-screen bg-background/50 pb-20 pt-6 px-4 md:px-8 mt-16" dir="rtl">
