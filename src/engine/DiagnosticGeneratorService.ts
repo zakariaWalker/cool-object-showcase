@@ -24,11 +24,12 @@ export interface DiagnosticExercise {
  * Generates a set of 'Fair Diagnostic' questions dynamically 
  * based on the student's grade level and patterns in the Knowledge Base (KB).
  */
-export async function generateDiagnosticExercises(level: string): Promise<DiagnosticExercise[]> {
+export async function generateDiagnosticExercises(level: string, countryCode: string = "DZ"): Promise<DiagnosticExercise[]> {
   try {
     const { data, error } = await supabase.functions.invoke("generate-diagnostic-assessment", {
-      body: { 
+      body: {
         level,
+        countryCode,
         purpose: "fair_diagnostic",
         count: 5,
         seed: Math.random() // Force AI variety

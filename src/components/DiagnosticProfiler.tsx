@@ -7,11 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, AlertTriangle, HelpCircle, Brain, Target, Zap, Puzzle, BarChart3, Clock, ArrowRight, Loader2 } from "lucide-react";
 import { ExerciseReportButton } from "./ExerciseReportButton";
 
-export function DiagnosticProfiler({ 
-  level, 
-  onClose 
-}: { 
+export function DiagnosticProfiler({
+  level,
+  countryCode = "DZ",
+  onClose,
+}: {
   level: string;
+  countryCode?: string;
   onClose: () => void;
 }) {
   const { setProfile } = useProfile();
@@ -39,12 +41,12 @@ export function DiagnosticProfiler({
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const data = await generateDiagnosticExercises(level);
+      const data = await generateDiagnosticExercises(level, countryCode);
       setExercises(data);
       setLoading(false);
     }
     load();
-  }, [level]);
+  }, [level, countryCode]);
 
   useEffect(() => {
     if (!loading && exercises.length > 0) {
