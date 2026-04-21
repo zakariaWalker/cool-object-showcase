@@ -113,7 +113,6 @@ export default function AITutor() {
         .slice(0, 100),
     [exercises, gradeFilter, typeFilter, search],
   );
-
   const askTutor = async () => {
     if (!selectedEx) return;
     setAiLoading(true);
@@ -130,15 +129,16 @@ export default function AITutor() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        await supabase
-          .from("student_activity_log")
-          .insert({
+        try {
+          await supabase.from("student_activity_log").insert({
             student_id: user.id,
             action: "tutor_session",
             xp_earned: 0,
             metadata: { exerciseId: selectedEx.id, mode },
-          })
-          .catch(() => {});
+          });
+        } catch {
+          // fire-and-forget, ignore errors
+        }
       }
     } catch (err: any) {
       setExplanation(`❌ خطأ: ${err.message}`);
