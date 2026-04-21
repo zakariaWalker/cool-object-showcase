@@ -24,8 +24,19 @@ export function xpProgress(xp: number): { current: number; next: number; percent
 }
 
 export const LEVEL_TITLES = [
-  "", "مبتدئ", "متعلم", "ناشط", "مثابر", "متقدم",
-  "بارع", "خبير", "أستاذ", "عبقري", "عالم", "فيلسوف", "أسطورة",
+  "",
+  "مبتدئ",
+  "متعلم",
+  "ناشط",
+  "مثابر",
+  "متقدم",
+  "بارع",
+  "خبير",
+  "أستاذ",
+  "عبقري",
+  "عالم",
+  "فيلسوف",
+  "أسطورة",
 ];
 
 // ── XP rewards ─────────────────────────────────────
@@ -36,7 +47,7 @@ export const XP_REWARDS = {
   streak_bonus_3: 30,
   streak_bonus_7: 100,
   streak_bonus_30: 500,
-  diagnostic_complete: 40,
+  diagnostic_complete: 100, // FIX: was 40 — unified with DiagnosticProfiler
   pattern_mastered: 75,
   first_exercise: 20,
   perfect_round: 60,
@@ -63,34 +74,121 @@ export interface StudentStats {
 }
 
 export const BADGES: Badge[] = [
-  { id: "first_step", name: "الخطوة الأولى", description: "حل أول تمرين", emoji: "🌱", tier: "bronze",
-    condition: s => s.total_exercises >= 1 },
-  { id: "ten_solved", name: "المثابر", description: "حل 10 تمارين", emoji: "💪", tier: "bronze",
-    condition: s => s.total_exercises >= 10 },
-  { id: "fifty_solved", name: "المتمرّس", description: "حل 50 تمرين", emoji: "🔥", tier: "silver",
-    condition: s => s.total_exercises >= 50 },
-  { id: "hundred_solved", name: "المحترف", description: "حل 100 تمرين", emoji: "🏆", tier: "gold",
-    condition: s => s.total_exercises >= 100 },
-  { id: "streak_3", name: "ثلاثية", description: "سلسلة 3 أيام متتالية", emoji: "⚡", tier: "bronze",
-    condition: s => s.streak_days >= 3 },
-  { id: "streak_7", name: "أسبوع كامل", description: "سلسلة 7 أيام متتالية", emoji: "🔥", tier: "silver",
-    condition: s => s.streak_days >= 7 },
-  { id: "streak_30", name: "شهر التميّز", description: "سلسلة 30 يوم متتالي", emoji: "👑", tier: "diamond",
-    condition: s => s.streak_days >= 30 },
-  { id: "accuracy_80", name: "الدقيق", description: "نسبة صحة أكثر من 80%", emoji: "🎯", tier: "silver",
-    condition: s => s.total_exercises >= 10 && (s.total_correct / s.total_exercises) >= 0.8 },
-  { id: "accuracy_95", name: "شبه مثالي", description: "نسبة صحة أكثر من 95%", emoji: "💎", tier: "diamond",
-    condition: s => s.total_exercises >= 20 && (s.total_correct / s.total_exercises) >= 0.95 },
-  { id: "level_5", name: "صاعد", description: "الوصول للمستوى 5", emoji: "⭐", tier: "silver",
-    condition: s => s.level >= 5 },
-  { id: "level_10", name: "النجم", description: "الوصول للمستوى 10", emoji: "🌟", tier: "gold",
-    condition: s => s.level >= 10 },
-  { id: "xp_1000", name: "ألف نقطة", description: "جمع 1000 نقطة خبرة", emoji: "💫", tier: "silver",
-    condition: s => s.xp >= 1000 },
+  {
+    id: "first_step",
+    name: "الخطوة الأولى",
+    description: "حل أول تمرين",
+    emoji: "🌱",
+    tier: "bronze",
+    condition: (s) => s.total_exercises >= 1,
+  },
+  {
+    id: "ten_solved",
+    name: "المثابر",
+    description: "حل 10 تمارين",
+    emoji: "💪",
+    tier: "bronze",
+    condition: (s) => s.total_exercises >= 10,
+  },
+  {
+    id: "fifty_solved",
+    name: "المتمرّس",
+    description: "حل 50 تمرين",
+    emoji: "🔥",
+    tier: "silver",
+    condition: (s) => s.total_exercises >= 50,
+  },
+  {
+    id: "hundred_solved",
+    name: "المحترف",
+    description: "حل 100 تمرين",
+    emoji: "🏆",
+    tier: "gold",
+    condition: (s) => s.total_exercises >= 100,
+  },
+  {
+    id: "streak_3",
+    name: "ثلاثية",
+    description: "سلسلة 3 أيام متتالية",
+    emoji: "⚡",
+    tier: "bronze",
+    condition: (s) => s.streak_days >= 3,
+  },
+  {
+    id: "streak_7",
+    name: "أسبوع كامل",
+    description: "سلسلة 7 أيام متتالية",
+    emoji: "🔥",
+    tier: "silver",
+    condition: (s) => s.streak_days >= 7,
+  },
+  {
+    id: "streak_30",
+    name: "شهر التميّز",
+    description: "سلسلة 30 يوم متتالي",
+    emoji: "👑",
+    tier: "diamond",
+    condition: (s) => s.streak_days >= 30,
+  },
+  {
+    id: "accuracy_80",
+    name: "الدقيق",
+    description: "نسبة صحة أكثر من 80%",
+    emoji: "🎯",
+    tier: "silver",
+    condition: (s) => s.total_exercises >= 10 && s.total_correct / s.total_exercises >= 0.8,
+  },
+  {
+    id: "accuracy_95",
+    name: "شبه مثالي",
+    description: "نسبة صحة أكثر من 95%",
+    emoji: "💎",
+    tier: "diamond",
+    condition: (s) => s.total_exercises >= 20 && s.total_correct / s.total_exercises >= 0.95,
+  },
+  {
+    id: "level_5",
+    name: "صاعد",
+    description: "الوصول للمستوى 5",
+    emoji: "⭐",
+    tier: "silver",
+    condition: (s) => s.level >= 5,
+  },
+  {
+    id: "level_10",
+    name: "النجم",
+    description: "الوصول للمستوى 10",
+    emoji: "🌟",
+    tier: "gold",
+    condition: (s) => s.level >= 10,
+  },
+  {
+    id: "xp_1000",
+    name: "ألف نقطة",
+    description: "جمع 1000 نقطة خبرة",
+    emoji: "💫",
+    tier: "silver",
+    condition: (s) => s.xp >= 1000,
+  },
 ];
 
-// ── Student ID (anonymous, localStorage-based) ─────
-export function getStudentId(): string {
+// ── Student ID — Supabase auth first, localStorage fallback for guests ──────
+// FIX: was always localStorage UUID, now uses real user.id for authenticated users
+export async function getStudentId(): Promise<string> {
+  try {
+    // Telegram Mini App
+    // @ts-ignore
+    const tgUser = window?.Telegram?.WebApp?.initDataUnsafe?.user;
+    if (tgUser?.id) return tgUser.id.toString();
+  } catch {}
+
+  // Supabase authenticated user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) return user.id;
+
+  // Anonymous guest fallback (localStorage)
   let id = localStorage.getItem("qed_student_id");
   if (!id) {
     id = crypto.randomUUID();
@@ -101,7 +199,7 @@ export function getStudentId(): string {
 
 // ── Load / Save progress ───────────────────────────
 export async function loadProgress(): Promise<StudentStats> {
-  const studentId = getStudentId();
+  const studentId = await getStudentId();
   const { data } = await (supabase as any)
     .from("student_progress")
     .select("*")
@@ -109,13 +207,12 @@ export async function loadProgress(): Promise<StudentStats> {
     .maybeSingle();
 
   if (data) {
-    // Check streak continuity
+    // FIX: streak continuity uses DB last_active_date only — not localStorage
     const today = new Date().toISOString().slice(0, 10);
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     let streak = data.streak_days || 0;
-    
     if (data.last_active_date !== today && data.last_active_date !== yesterday) {
-      streak = 0; // streak broken
+      streak = 0;
     }
 
     return {
@@ -129,36 +226,34 @@ export async function loadProgress(): Promise<StudentStats> {
     };
   }
 
-  // New student
-  return {
-    xp: 0, level: 1, streak_days: 0,
-    total_exercises: 0, total_correct: 0,
-    badges: [], mastery: {},
-  };
+  return { xp: 0, level: 1, streak_days: 0, total_exercises: 0, total_correct: 0, badges: [], mastery: {} };
 }
 
 export async function saveProgress(stats: StudentStats): Promise<void> {
-  const studentId = getStudentId();
+  const studentId = await getStudentId();
   const today = new Date().toISOString().slice(0, 10);
 
-  await (supabase as any).from("student_progress").upsert({
-    student_id: studentId,
-    xp: stats.xp,
-    level: stats.level,
-    streak_days: stats.streak_days,
-    last_active_date: today,
-    total_exercises: stats.total_exercises,
-    total_correct: stats.total_correct,
-    badges: stats.badges as any,
-    mastery: stats.mastery as any,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: "student_id" });
+  await (supabase as any).from("student_progress").upsert(
+    {
+      student_id: studentId,
+      xp: stats.xp,
+      level: stats.level,
+      streak_days: stats.streak_days,
+      last_active_date: today,
+      total_exercises: stats.total_exercises,
+      total_correct: stats.total_correct,
+      badges: stats.badges as any,
+      mastery: stats.mastery as any,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "student_id" },
+  );
 }
 
 // ── Record activity ────────────────────────────────
 export async function logActivity(action: string, xpEarned: number, metadata: Record<string, any> = {}): Promise<void> {
   await (supabase as any).from("student_activity_log").insert({
-    student_id: getStudentId(),
+    student_id: await getStudentId(),
     action,
     xp_earned: xpEarned,
     metadata: metadata as any,
@@ -172,7 +267,10 @@ export interface XPEvent {
   label: string;
 }
 
-export async function recordExerciseCompletion(correct: boolean, patternId?: string): Promise<{
+export async function recordExerciseCompletion(
+  correct: boolean,
+  patternId?: string,
+): Promise<{
   stats: StudentStats;
   events: XPEvent[];
   newBadges: Badge[];
@@ -194,16 +292,15 @@ export async function recordExerciseCompletion(correct: boolean, patternId?: str
     stats.xp += XP_REWARDS.first_exercise;
   }
 
-  // Streak management
-  const lastDate = localStorage.getItem("qed_last_active");
+  // FIX: streak uses DB last_active_date (already in stats from loadProgress) — not localStorage
+  // stats.streak_days already reflects continuity from loadProgress check
+  const lastActiveDate = await getLastActiveDateFromDB();
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  
-  if (lastDate === yesterday) {
+  if (lastActiveDate === yesterday) {
     stats.streak_days += 1;
-  } else if (lastDate !== today) {
+  } else if (lastActiveDate !== today) {
     stats.streak_days = 1;
   }
-  localStorage.setItem("qed_last_active", today);
 
   // Streak bonuses
   if (stats.streak_days === 3) {
@@ -241,7 +338,6 @@ export async function recordExerciseCompletion(correct: boolean, patternId?: str
     }
   }
 
-  // Save and log
   await saveProgress(stats);
   for (const e of events) {
     await logActivity(e.type, e.xp, { label: e.label });
@@ -250,23 +346,37 @@ export async function recordExerciseCompletion(correct: boolean, patternId?: str
   return { stats, events, newBadges };
 }
 
-// ── Daily challenge ────────────────────────────────
-export async function getDailyChallenge(): Promise<{ exerciseId: string; text: string; grade: string; type: string } | null> {
-  // Use date as seed for consistent daily selection
+// Helper: read last_active_date from DB (avoids localStorage for streak)
+async function getLastActiveDateFromDB(): Promise<string | null> {
+  const studentId = await getStudentId();
+  const { data } = await (supabase as any)
+    .from("student_progress")
+    .select("last_active_date")
+    .eq("student_id", studentId)
+    .maybeSingle();
+  return data?.last_active_date ?? null;
+}
+
+// ── Daily challenge — filtered by student grade ────
+// FIX: was fetching from all grades; now scoped to the student's registered grade
+export async function getDailyChallenge(
+  gradeKey?: string, // old-format key e.g. "middle_4", optional
+): Promise<{ exerciseId: string; text: string; grade: string; type: string } | null> {
   const today = new Date().toISOString().slice(0, 10);
   const seed = today.split("-").reduce((a, b) => a + parseInt(b), 0);
 
-  const { count } = await (supabase as any).from("kb_exercises").select("id", { count: "exact", head: true });
+  let query = (supabase as any).from("kb_exercises").select("id", { count: "exact", head: true });
+  if (gradeKey) query = query.eq("grade", gradeKey);
+
+  const { count } = await query;
   if (!count || count === 0) return null;
 
-  // Use date + a secondary seed to mix it up more if the dataset is small
-  const secondarySeed = new Date().getHours(); // Rotate challenge every hour
+  const secondarySeed = new Date().getHours();
   const offset = (seed + secondarySeed) % count;
-  const { data } = await (supabase as any)
-    .from("kb_exercises")
-    .select("id, text, grade, type")
-    .range(offset, offset)
-    .limit(1);
+
+  let dataQuery = (supabase as any).from("kb_exercises").select("id, text, grade, type");
+  if (gradeKey) dataQuery = dataQuery.eq("grade", gradeKey);
+  const { data } = await dataQuery.range(offset, offset).limit(1);
 
   if (!data || data.length === 0) return null;
   return { exerciseId: data[0].id, text: data[0].text, grade: data[0].grade || "", type: data[0].type || "" };
