@@ -3,8 +3,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useProfile, computeProfileFromRecords, DiagnosticRecord, PROFILES, ProfileType } from "@/engine/profile-store";
 import { LatexRenderer } from "@/components/LatexRenderer";
 import { generateDiagnosticExercises, DiagnosticExercise } from "@/engine/DiagnosticGeneratorService";
+import { XP_REWARDS } from "@/engine/gamification";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, AlertTriangle, HelpCircle, Brain, Target, Zap, Puzzle, BarChart3, Clock, ArrowRight, Loader2 } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertTriangle,
+  HelpCircle,
+  Brain,
+  Target,
+  Zap,
+  Puzzle,
+  BarChart3,
+  Clock,
+  ArrowRight,
+  Loader2,
+} from "lucide-react";
 import { ExerciseReportButton } from "./ExerciseReportButton";
 
 export function DiagnosticProfiler({
@@ -37,7 +50,6 @@ export function DiagnosticProfiler({
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load dynamic exercises on mount
   useEffect(() => {
     async function load() {
       setLoading(true);
@@ -52,7 +64,9 @@ export function DiagnosticProfiler({
     if (!loading && exercises.length > 0) {
       resetExState();
     }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [currentEx, loading, exercises]);
 
   function resetExState() {
@@ -66,13 +80,12 @@ export function DiagnosticProfiler({
     setStrategyChanges(0);
     setHintUsed(false);
     setShowHint(false);
-
-    timerRef.current = setInterval(() => setTimeSecs(s => s + 1), 1000);
+    timerRef.current = setInterval(() => setTimeSecs((s) => s + 1), 1000);
   }
 
   function handleInput(val: string) {
     if (firstActionTime === null) setFirstActionTime((Date.now() - startTime) / 1000);
-    if (inputValue && val !== inputValue) setStrategyChanges(s => s + 1);
+    if (inputValue && val !== inputValue) setStrategyChanges((s) => s + 1);
     setInputValue(val);
   }
 
@@ -93,6 +106,7 @@ export function DiagnosticProfiler({
 
     if (timerRef.current) clearInterval(timerRef.current);
 
+    // FIX: exerciseId typed as string | number to handle both fallback numbers and AI UUIDs
     const record: DiagnosticRecord = {
       exerciseId: ex.id,
       type: ex.type,
@@ -113,7 +127,7 @@ export function DiagnosticProfiler({
     setRecords(newRecords);
 
     if (currentEx < exercises.length - 1) {
-      setCurrentEx(prev => prev + 1);
+      setCurrentEx((prev) => prev + 1);
     } else {
       runAnalysis(newRecords);
     }
@@ -121,46 +135,53 @@ export function DiagnosticProfiler({
 
   async function runAnalysis(finalRecords: DiagnosticRecord[]) {
     setAnalyzing(true);
-    
-    // Artificial delay for 'analysis' feel
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     const { type } = computeProfileFromRecords(finalRecords);
+
+    // FIX: compare exerciseId as string to handle both number (101) and UUID string from AI
     const detected = finalRecords
-      .filter(r => !r.correct)
-      .map(r => exercises.find(e => e.id === r.exerciseId)?.misconception)
+      .filter((r) => !r.correct)
+      .map((r) => exercises.find((e) => String(e.id) === String(r.exerciseId))?.misconception)
       .filter(Boolean) as string[];
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
-      // 1. Save Activity Log
+      // 1. Activity Log — FIX: xp_earned uses XP_REWARDS constant, was hardcoded 100
       await supabase.from("student_activity_log").insert({
         student_id: user.id,
         action: "diagnostic_completed",
-        xp_earned: 100,
-        metadata: { profile: type, level, date: new Date().toISOString() }
+        xp_earned: XP_REWARDS.diagnostic_complete,
+        metadata: { profile: type, level, countryCode, date: new Date().toISOString() },
       });
 
-      // 2. Save Knowledge Gaps
+      // 2. Knowledge Gaps — FIX: added grade_code field so gaps are scoped to the correct level
       if (detected.length > 0) {
-        const gapInserts = detected.map(topic => ({
+        const gapInserts = detected.map((topic) => ({
           student_id: user.id,
           topic,
-          severity: "medium", // Default
-          detected_at: new Date().toISOString()
+          grade_code: level, // FIX: was missing — gaps were level-agnostic
+          severity: "medium",
+          detected_at: new Date().toISOString(),
         }));
         await supabase.from("student_knowledge_gaps").insert(gapInserts);
       }
 
-      // 3. Update Progress (XP)
+      // 3. XP — update student_progress with correct student ID
       const { data: prog } = await supabase.from("student_progress").select("xp").eq("student_id", user.id).single();
-      await supabase.from("student_progress").update({
-        xp: (prog?.xp || 0) + 100,
-        updated_at: new Date().toISOString()
-      }).eq("student_id", user.id);
+      await supabase
+        .from("student_progress")
+        .update({
+          xp: (prog?.xp || 0) + XP_REWARDS.diagnostic_complete,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("student_id", user.id);
     }
 
-    setProfile(type);
+    // FIX: pass level (grade_code) so profile-store persists it to profiles table
+    setProfile(type, level);
     setResult({ profile: type, detectedMisconceptions: detected });
     setAnalyzing(false);
   }
@@ -192,18 +213,20 @@ export function DiagnosticProfiler({
   if (result) {
     const p = PROFILES[result.profile!];
     return (
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6 rtl text-right">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="space-y-6 rtl text-right"
+      >
         <div className="bg-card border-2 border-primary/20 rounded-3xl p-8 text-center space-y-4">
           <div className="text-6xl mb-2">
-            {p.id === 'strategic' ? '🎯' : p.id === 'conceptual' ? '💡' : p.id === 'procedural' ? '📋' : '⚡'}
+            {p.id === "strategic" ? "🎯" : p.id === "conceptual" ? "💡" : p.id === "procedural" ? "📋" : "⚡"}
           </div>
           <div className="space-y-1">
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">{p.id} PROFILE</p>
             <h2 className="text-3xl font-black text-foreground">{p.title}</h2>
           </div>
-          <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto">
-            {p.desc}
-          </p>
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto">{p.desc}</p>
         </div>
 
         {result.detectedMisconceptions.length > 0 && (
@@ -229,8 +252,11 @@ export function DiagnosticProfiler({
           <p className="text-xs text-foreground/90">{p.nextMission}</p>
         </div>
 
-        <button onClick={onClose} className="w-full bg-foreground text-background py-4 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
-          إنهاء والعودة للوحة التجكم ←
+        <button
+          onClick={onClose}
+          className="w-full bg-foreground text-background py-4 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
+        >
+          إنهاء والعودة للوحة التحكم ←
         </button>
       </motion.div>
     );
@@ -258,7 +284,9 @@ export function DiagnosticProfiler({
       <div className="space-y-2">
         <div className="flex justify-between items-end">
           <span className="text-[10px] font-black text-primary uppercase tracking-tight">التشخيص العادل ({level})</span>
-          <span className="text-[10px] text-muted-foreground font-bold">سؤال {currentEx + 1} من {exercises.length}</span>
+          <span className="text-[10px] text-muted-foreground font-bold">
+            سؤال {currentEx + 1} من {exercises.length}
+          </span>
         </div>
         <div className="h-1.5 bg-muted rounded-full overflow-hidden">
           <motion.div animate={{ width: `${progress}%` }} className="h-full bg-primary" />
@@ -268,7 +296,7 @@ export function DiagnosticProfiler({
       {/* Exercise Card */}
       <div className="space-y-5">
         <div className="flex justify-between items-start">
-          <div 
+          <div
             style={{ background: ex.badgeBg, color: ex.badgeColor, borderColor: `${ex.badgeColor}40` }}
             className="px-3 py-1 rounded-full text-[10px] font-black border flex items-center gap-2"
           >
@@ -277,7 +305,10 @@ export function DiagnosticProfiler({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-muted-foreground/40 font-mono text-sm font-bold">
               <Clock className="w-3.5 h-3.5" />
-              {Math.floor(timeSecs / 60).toString().padStart(2, '0')}:{(timeSecs % 60).toString().padStart(2, '0')}
+              {Math.floor(timeSecs / 60)
+                .toString()
+                .padStart(2, "0")}
+              :{(timeSecs % 60).toString().padStart(2, "0")}
             </div>
             {ex.id && String(ex.id).length > 2 && <ExerciseReportButton exerciseId={String(ex.id)} />}
           </div>
@@ -289,16 +320,21 @@ export function DiagnosticProfiler({
 
         {/* Hint */}
         <div className="space-y-2">
-          <button 
-            onClick={() => { setShowHint(!showHint); setHintUsed(true); }}
+          <button
+            onClick={() => {
+              setShowHint(!showHint);
+              setHintUsed(true);
+            }}
             className="text-[10px] font-bold text-muted-foreground flex items-center gap-1.5 hover:text-foreground transition-colors"
           >
             <HelpCircle className="w-3.5 h-3.5" /> هل تحتاج تلميح؟ (سيظهر في التحليل)
           </button>
           <AnimatePresence>
             {showHint && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
                 className="bg-primary/5 border border-primary/10 rounded-lg p-3 text-xs text-primary/80 overflow-hidden"
               >
                 {renderMath(ex.hint)}
@@ -321,7 +357,9 @@ export function DiagnosticProfiler({
                   `}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${inputValue === opt ? "border-primary" : "border-muted-foreground/30"}`}>
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${inputValue === opt ? "border-primary" : "border-muted-foreground/30"}`}
+                    >
                       {inputValue === opt && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
                     </div>
                     {renderMath(opt)}
@@ -335,7 +373,7 @@ export function DiagnosticProfiler({
               <input
                 type="text"
                 value={inputValue}
-                onChange={e => handleInput(e.target.value)}
+                onChange={(e) => handleInput(e.target.value)}
                 placeholder={ex.placeholder}
                 className="w-full p-4 rounded-xl border-2 border-border bg-card text-center font-mono text-lg focus:border-primary outline-none transition-all"
               />
@@ -345,7 +383,9 @@ export function DiagnosticProfiler({
           {/* Explanation */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-[10px] font-black text-muted-foreground uppercase">لماذا اخترت هذا الجواب؟ (اختياري)</label>
+              <label className="text-[10px] font-black text-muted-foreground uppercase">
+                لماذا اخترت هذا الجواب؟ (اختياري)
+              </label>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-muted-foreground">الثقة بالحل:</span>
                 <span className="text-[10px] font-bold text-primary">{confidence}%</span>
@@ -353,19 +393,23 @@ export function DiagnosticProfiler({
             </div>
             <textarea
               value={explanation}
-              onChange={e => setExplanation(e.target.value)}
+              onChange={(e) => setExplanation(e.target.value)}
               placeholder="اشرح لي ماذا دار في ذهنك..."
               rows={2}
               className="w-full p-4 rounded-xl border-2 border-border bg-card text-sm resize-none focus:border-primary outline-none transition-all"
             />
-            <input 
-              type="range" min="0" max="100" value={confidence} onChange={e => setConfidence(Number(e.target.value))}
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={confidence}
+              onChange={(e) => setConfidence(Number(e.target.value))}
               className="w-full h-1.5 bg-muted rounded-full appearance-none accent-primary cursor-pointer"
             />
           </div>
         </div>
 
-        <button 
+        <button
           onClick={submitAnswer}
           disabled={!inputValue}
           className={`
@@ -380,5 +424,3 @@ export function DiagnosticProfiler({
     </div>
   );
 }
-
-
