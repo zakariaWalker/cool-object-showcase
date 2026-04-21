@@ -5,7 +5,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { Brain, ChevronRight, Lock, CheckCircle2, Target, Zap, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -19,8 +18,14 @@ interface Skill {
   difficulty: number | null;
   bloom_level: number | null;
 }
-interface Dep { from_skill_id: string; to_skill_id: string; }
-interface Gap { topic: string; severity: string | null; }
+interface Dep {
+  from_skill_id: string;
+  to_skill_id: string;
+}
+interface Gap {
+  topic: string;
+  severity: string | null;
+}
 
 const DOMAIN_LABEL: Record<string, string> = {
   algebra: "الجبر",
@@ -61,7 +66,9 @@ const LearningPath = () => {
       const [sk, dp, gp] = await Promise.all([
         supabase.from("kb_skills").select("id,name_ar,name,domain,subdomain,grade,difficulty,bloom_level").limit(2000),
         supabase.from("kb_skill_dependencies").select("from_skill_id,to_skill_id").limit(2000),
-        user ? supabase.from("student_knowledge_gaps").select("topic,severity").eq("student_id", user.id) : Promise.resolve({ data: [] as any[] }),
+        user
+          ? supabase.from("student_knowledge_gaps").select("topic,severity").eq("student_id", user.id)
+          : Promise.resolve({ data: [] as any[] }),
       ]);
       setSkills((sk.data || []) as Skill[]);
       setDeps((dp.data || []) as Dep[]);
@@ -79,20 +86,21 @@ const LearningPath = () => {
   const path = useMemo(() => {
     if (!skills.length) return [];
     // Filter by student grade (loose match)
-    const gradeFilter = (s: Skill) => !s.grade || s.grade === grade || s.grade.includes(grade) || grade.includes(s.grade);
+    const gradeFilter = (s: Skill) =>
+      !s.grade || s.grade === grade || s.grade.includes(grade) || grade.includes(s.grade);
     const relevant = skills.filter(gradeFilter);
     if (!relevant.length) return [];
 
     // Mark gap topics as priority
-    const gapTopics = new Set(gaps.map(g => g.topic.toLowerCase()));
+    const gapTopics = new Set(gaps.map((g) => g.topic.toLowerCase()));
     const isWeak = (s: Skill) =>
       gapTopics.has((s.subdomain || "").toLowerCase()) ||
       gapTopics.has((s.domain || "").toLowerCase()) ||
-      [...gapTopics].some(t => (s.name_ar || s.name).toLowerCase().includes(t));
+      [...gapTopics].some((t) => (s.name_ar || s.name).toLowerCase().includes(t));
 
     // Group by domain → subdomain
     const groups: Record<string, Record<string, Skill[]>> = {};
-    relevant.forEach(s => {
+    relevant.forEach((s) => {
       const dom = s.domain || "other";
       const sub = s.subdomain || "أساسيات";
       if (!groups[dom]) groups[dom] = {};
@@ -121,14 +129,18 @@ const LearningPath = () => {
   }, [skills, deps, gaps, grade]);
 
   const totalSkills = path.reduce((sum, u) => sum + u.skills.length, 0);
-  const completedCount = [...completedSkillIds].filter(id => skills.some(s => s.id === id)).length;
+  const completedCount = [...completedSkillIds].filter((id) => skills.some((s) => s.id === id)).length;
   const progress = totalSkills > 0 ? Math.round((completedCount / totalSkills) * 100) : 0;
 
   const toggleSkill = (id: string) => {
-    setCompletedSkillIds(prev => {
+    setCompletedSkillIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      try { localStorage.setItem(`completed-skills-${user?.id || "anon"}-${countryCode}-${grade}`, JSON.stringify([...next])); } catch {}
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+
+      try {
+        localStorage.setItem(`completed-skills-${user?.id || "anon"}-${grade}`, JSON.stringify([...next]));
+      } catch {}
       return next;
     });
   };
@@ -166,7 +178,10 @@ const LearningPath = () => {
           <div className="text-2xl font-black text-primary">{progress}%</div>
         </div>
         <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+          <div
+            className="h-full bg-primary rounded-full transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
         </div>
         <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
           <Target className="w-3 h-3 text-primary" />
@@ -177,7 +192,7 @@ const LearningPath = () => {
       {/* Units */}
       <div className="space-y-3">
         {path.map((unit, idx) => {
-          const completedInUnit = unit.skills.filter(s => completedSkillIds.has(s.id)).length;
+          const completedInUnit = unit.skills.filter((s) => completedSkillIds.has(s.id)).length;
           const unitDone = completedInUnit === unit.skills.length;
           const color = DOMAIN_COLOR[unit.domain] || "var(--primary)";
 
@@ -219,7 +234,7 @@ const LearningPath = () => {
               </div>
               {/* Skill chips */}
               <div className="flex flex-wrap gap-1.5">
-                {unit.skills.slice(0, 8).map(s => {
+                {unit.skills.slice(0, 8).map((s) => {
                   const done = completedSkillIds.has(s.id);
                   return (
                     <button
