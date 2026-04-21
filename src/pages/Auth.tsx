@@ -5,34 +5,7 @@ import { QEDLogo } from "@/components/QEDLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-
-const GRADE_LEVELS = [
-  { id: "middle", label: "المتوسط", grades: [
-    { id: "middle_1", label: "1AM", sub: "أولى متوسط" },
-    { id: "middle_2", label: "2AM", sub: "ثانية متوسط" },
-    { id: "middle_3", label: "3AM", sub: "ثالثة متوسط" },
-    { id: "middle_4", label: "4AM", sub: "رابعة متوسط (BEM)" },
-  ]},
-  { id: "secondary", label: "الثانوي", grades: [
-    { id: "secondary_1", label: "1AS", sub: "أولى ثانوي" },
-    { id: "secondary_2", label: "2AS", sub: "ثانية ثانوي" },
-    { id: "secondary_3", label: "3AS", sub: "ثالثة ثانوي (BAC)" },
-  ]},
-];
-
-const STREAMS: Record<string, { id: string; label: string }[]> = {
-  secondary_1: [
-    { id: "S", label: "علوم" }, { id: "L", label: "آداب" },
-  ],
-  secondary_2: [
-    { id: "S", label: "علوم تجريبية" }, { id: "M", label: "رياضيات" },
-    { id: "MT", label: "تقني رياضي" }, { id: "GE", label: "تسيير و اقتصاد" },
-  ],
-  secondary_3: [
-    { id: "S", label: "علوم تجريبية" }, { id: "M", label: "رياضيات" },
-    { id: "MT", label: "تقني رياضي" }, { id: "GE", label: "تسيير و اقتصاد" },
-  ],
-};
+import { CountryGradePicker } from "@/components/CountryGradePicker";
 
 const ROLES = [
   { id: "student", label: "تلميذ", emoji: "🎓", desc: "أحل التمارين وأتعلم" },
@@ -47,11 +20,11 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("student");
-  const [grade, setGrade] = useState("middle_4");
-  const [stream, setStream] = useState("");
+  const [countryCode, setCountryCode] = useState("DZ");
+  const [gradeCode, setGradeCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<1 | 2>(1); // signup steps
-  
+
   const queryParams = new URLSearchParams(window.location.search);
   const redirectPath = queryParams.get("redirect") || "/home";
 
@@ -61,8 +34,6 @@ export default function Auth() {
       if (session) navigate(redirectPath);
     });
   }, [navigate, redirectPath]);
-
-  const hasStreams = grade.startsWith("secondary_") && STREAMS[grade];
 
   const handleLogin = async () => {
     setLoading(true);
@@ -81,14 +52,21 @@ export default function Auth() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName, role, grade, stream },
+        data: { full_name: fullName, role, country_code: countryCode, grade_code: gradeCode },
         emailRedirectTo: window.location.origin,
       },
     });
+    // Best-effort: persist country/grade on the profile right away (handle_new_user trigger created the row)
+    if (!error && data.user && countryCode && gradeCode) {
+      await (supabase as any)
+        .from("profiles")
+        .update({ country_code: countryCode, grade_code: gradeCode })
+        .eq("id", data.user.id);
+    }
     setLoading(false);
     if (error) {
       toast({ title: "خطأ في التسجيل", description: error.message, variant: "destructive" });
@@ -96,8 +74,6 @@ export default function Auth() {
       toast({ title: "تم التسجيل! تحقق من بريدك الإلكتروني لتفعيل حسابك.", description: "ستصلك رسالة تأكيد." });
     }
   };
-
-  const currentLevel = GRADE_LEVELS.find(l => l.grades.some(g => g.id === grade));
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4" dir="rtl">
@@ -177,64 +153,13 @@ export default function Auth() {
                 </div>
               </div>
 
-              {/* Grade selection (for students) */}
+              {/* Country + Grade picker (for students) */}
               {role === "student" && (
-                <>
-                  <div>
-                    <label className="text-xs font-bold text-muted-foreground mb-2 block">المستوى الدراسي</label>
-                    <div className="flex gap-2 mb-2">
-                      {GRADE_LEVELS.map(level => (
-                        <button
-                          key={level.id}
-                          onClick={() => { setGrade(level.grades[0].id); setStream(""); }}
-                          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${
-                            currentLevel?.id === level.id
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-card text-muted-foreground border-border hover:border-primary/40"
-                          }`}
-                        >
-                          {level.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {currentLevel?.grades.map(g => (
-                        <button
-                          key={g.id}
-                          onClick={() => { setGrade(g.id); if (STREAMS[g.id]) setStream(STREAMS[g.id][0].id); else setStream(""); }}
-                          className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
-                            grade === g.id
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-card text-muted-foreground border-border hover:border-primary/50"
-                          }`}
-                        >
-                          {g.label} — {g.sub}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {hasStreams && (
-                    <div>
-                      <label className="text-xs font-bold text-muted-foreground mb-2 block">🎯 الشعبة</label>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {STREAMS[grade].map(s => (
-                          <button
-                            key={s.id}
-                            onClick={() => setStream(s.id)}
-                            className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
-                              stream === s.id
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "bg-card text-muted-foreground border-border hover:border-primary/50"
-                            }`}
-                          >
-                            {s.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
+                <CountryGradePicker
+                  countryCode={countryCode}
+                  gradeCode={gradeCode}
+                  onChange={(c, g) => { setCountryCode(c); setGradeCode(g); }}
+                />
               )}
 
               <Button onClick={() => setStep(2)} className="w-full h-11 text-sm font-bold">

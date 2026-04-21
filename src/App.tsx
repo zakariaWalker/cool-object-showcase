@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/AppShell";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
+import Onboarding from "./pages/Onboarding";
 import Home from "./pages/Home";
 import ExercisePage from "./pages/Exercise";
 import AdminKBPage from "./pages/AdminKB";
@@ -47,6 +48,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/home" element={<Home />} />
             <Route path="/exercises" element={<ExercisePage />} />
             <Route path="/tma/:questionId" element={<ExercisePage />} />

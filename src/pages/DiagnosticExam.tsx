@@ -1,53 +1,48 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Brain, Zap, Target, Puzzle, ArrowLeft, Play, Loader2 } from "lucide-react";
+import { Brain, Zap, Target, ArrowLeft, Play, Loader2 } from "lucide-react";
 import { DiagnosticProfiler } from "@/components/DiagnosticProfiler";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-
-const GRADE_MAPPING: Record<string, string> = {
-  "middle_1": "1AM",
-  "middle_2": "2AM",
-  "middle_3": "3AM",
-  "middle_4": "4AM",
-  "secondary_1": "1AS",
-  "secondary_2": "2AS",
-  "secondary_3": "3AS",
-};
+import { useUserCurriculum } from "@/hooks/useUserCurriculum";
+import { useCountryGrades } from "@/hooks/useCountryGrades";
 
 export default function DiagnosticExam() {
   const navigate = useNavigate();
   const [isStarted, setIsStarted] = useState(false);
-  const [selectedGrade, setSelectedGrade] = useState<string | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [signedIn, setSignedIn] = useState(false);
+
+  const { countryCode, gradeCode, isComplete, loading: cLoading, setCurriculum } = useUserCurriculum();
+  const { grades, labelOf, cycles } = useCountryGrades(countryCode || "DZ");
+  const [pendingGrade, setPendingGrade] = useState<string>("");
 
   useEffect(() => {
-    async function checkAuth() {
+    (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
-        // Redirect if not registered
         navigate("/auth?redirect=/diagnostic");
         return;
       }
-
-      // Retrieve level from user metadata (stored during signup)
-      const userGrade = user.user_metadata?.grade;
-      if (userGrade && GRADE_MAPPING[userGrade]) {
-        setSelectedGrade(GRADE_MAPPING[userGrade]);
-      } else {
-        // Fallback or if user is a teacher/parent (not a student)
-        // We can let them pick a grade manually or redirect
-      }
-      
+      setSignedIn(true);
       setIsCheckingAuth(false);
-    }
-    
-    checkAuth();
+    })();
   }, [navigate]);
 
-  if (isCheckingAuth) {
+  // If user has no curriculum yet, push them to onboarding
+  useEffect(() => {
+    if (!cLoading && signedIn && !isComplete) {
+      navigate("/onboarding?redirect=/diagnostic");
+    }
+  }, [cLoading, signedIn, isComplete, navigate]);
+
+  // Default the picker to user's grade
+  useEffect(() => {
+    if (!pendingGrade && gradeCode) setPendingGrade(gradeCode);
+  }, [gradeCode, pendingGrade]);
+
+  if (isCheckingAuth || cLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -55,20 +50,24 @@ export default function DiagnosticExam() {
     );
   }
 
+  // Group grades by cycle for cleaner UX
+  const byCycle: Record<string, typeof grades> = {};
+  grades.forEach(g => {
+    const k = g.cycle || "other";
+    (byCycle[k] = byCycle[k] || []).push(g);
+  });
+  const cycleLabel: Record<string, string> = {
+    primary: "ابتدائي", middle: "متوسط/إعدادي", secondary: "ثانوي", other: "مستويات أخرى",
+  };
+
   return (
     <div className="h-full w-full bg-background overflow-y-auto" dir="rtl">
       <div className="max-w-3xl mx-auto p-6 md:p-12 min-h-screen flex flex-col justify-center">
-        
+
         <AnimatePresence mode="wait">
           {!isStarted ? (
-            <motion.div
-              key="intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="space-y-12"
-            >
-              <button 
+            <motion.div key="intro" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="space-y-12">
+              <button
                 onClick={() => navigate("/")}
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
               >
@@ -83,7 +82,8 @@ export default function DiagnosticExam() {
                   التقييم التشخيصي <span className="text-primary">الذهني</span>
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                  هذا ليس امتحاناً مدرسياً عادياً! نحن لا نقيم صحة إجاباتك فقط، بل نحلل <strong className="text-foreground">كيف تفكر</strong>، <strong className="text-foreground">كيف تتعامل مع الفخاخ</strong>، ومستوى <strong className="text-foreground">ثقتك بنفسك</strong>.
+                  مُعدّ خصيصاً لمنهج <strong className="text-foreground">{countryCode === "DZ" ? "الجزائر 🇩🇿" : countryCode === "OM" ? "سلطنة عُمان 🇴🇲" : countryCode}</strong>
+                  {" "}— نقيس كيف تفكر، كيف تتعامل مع الفخاخ، ومستوى ثقتك بنفسك.
                 </p>
               </div>
 
@@ -95,43 +95,78 @@ export default function DiagnosticExam() {
                   <h3 className="font-bold text-foreground mb-1">٤ مراحل غير تقليدية</h3>
                   <p className="text-sm text-muted-foreground">مسألة قياسية، فخ رياضي، لغز منطقي، ومسألة مفتوحة لاستكشاف إبداعك.</p>
                 </div>
-                
+
                 <div className="p-5 rounded-2xl border border-border bg-card">
                   <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center mb-3">
                     <Zap className="w-5 h-5" />
                   </div>
-                  <h3 className="font-bold text-foreground mb-1">قياس التردد وسرعة البديهة</h3>
-                  <p className="text-sm text-muted-foreground">نحلل الوقت المستغرق وتغييرات استراتيجيتك أثناء الحل.</p>
+                  <h3 className="font-bold text-foreground mb-1">يقيس وفق منهج بلدك</h3>
+                  <p className="text-sm text-muted-foreground">المهارات المختارة من قاعدة معرفة منهج {countryCode === "DZ" ? "الجزائر" : "عُمان"} الرسمي.</p>
                 </div>
               </div>
 
-              {/* Level Selector */}
+              {/* Level Selector — dynamic per country */}
               <div className="max-w-xl mx-auto space-y-4">
-                <p className="text-center text-xs font-black text-muted-foreground uppercase tracking-widest">اختر مستواك الدراسي لتخصيص التقييم</p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {["1AM", "2AM", "3AM", "4AM", "1AS", "2AS", "3AS"].map((grade) => (
-                    <button
-                      key={grade}
-                      onClick={() => setSelectedGrade(grade)}
-                      className={`
-                        px-4 py-3 rounded-xl border-2 font-black transition-all text-sm
-                        ${selectedGrade === grade ? "border-primary bg-primary/10 text-primary scale-105" : "border-border hover:border-primary/40 text-muted-foreground"}
-                      `}
-                    >
-                      {grade === "1AM" ? "أولى متوسط" : grade === "2AM" ? "ثانية متوسط" : grade === "3AM" ? "ثالثة متوسط" : grade === "4AM" ? "رابعة متوسط (BEM)" : grade === "1AS" ? "أولى ثانوي" : grade === "2AS" ? "ثانية ثانوي" : "بكالوريا (BAC)"}
-                    </button>
-                  ))}
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">مستواك الحالي</p>
+                  <button
+                    onClick={() => navigate("/onboarding?redirect=/diagnostic")}
+                    className="text-[10px] text-primary font-bold hover:underline"
+                  >
+                    تغيير البلد/المستوى →
+                  </button>
                 </div>
+                {cycles.length > 1 ? (
+                  <div className="space-y-3">
+                    {cycles.map(cyc => (
+                      <div key={cyc}>
+                        <p className="text-[10px] font-bold uppercase text-muted-foreground/70 mb-1.5">{cycleLabel[cyc] || cyc}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {(byCycle[cyc] || []).map(g => (
+                            <button
+                              key={g.grade_code}
+                              onClick={() => setPendingGrade(g.grade_code)}
+                              className={`px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all ${
+                                pendingGrade === g.grade_code ? "border-primary bg-primary/10 text-primary scale-105" : "border-border hover:border-primary/40 text-muted-foreground"
+                              }`}
+                            >
+                              {g.grade_label_ar}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {grades.map(g => (
+                      <button
+                        key={g.grade_code}
+                        onClick={() => setPendingGrade(g.grade_code)}
+                        className={`px-4 py-3 rounded-xl border-2 font-black transition-all text-sm ${
+                          pendingGrade === g.grade_code ? "border-primary bg-primary/10 text-primary scale-105" : "border-border hover:border-primary/40 text-muted-foreground"
+                        }`}
+                      >
+                        {g.grade_label_ar}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-center mt-12">
-                <Button 
-                  size="lg" 
-                  disabled={!selectedGrade}
-                  onClick={() => setIsStarted(true)}
+                <Button
+                  size="lg"
+                  disabled={!pendingGrade}
+                  onClick={async () => {
+                    if (pendingGrade !== gradeCode) {
+                      await setCurriculum(countryCode, pendingGrade);
+                    }
+                    setIsStarted(true);
+                  }}
                   className="gap-3 px-8 text-lg font-bold rounded-2xl h-14"
                 >
-                  <Play className="w-5 h-5" /> {selectedGrade ? "ابدأ التقييم المخصص" : "اختر مستواك أولاً"}
+                  <Play className="w-5 h-5" /> ابدأ التقييم المخصص ({labelOf(pendingGrade) || pendingGrade})
                 </Button>
               </div>
             </motion.div>
@@ -143,14 +178,14 @@ export default function DiagnosticExam() {
               exit={{ opacity: 0, y: 20 }}
               className="max-w-2xl mx-auto w-full bg-card p-6 md:p-8 rounded-3xl border border-border shadow-2xl"
             >
-              <DiagnosticProfiler 
-                level={selectedGrade || "3AS"} 
-                onClose={() => setIsStarted(false)} 
+              <DiagnosticProfiler
+                level={pendingGrade || gradeCode || "4AM"}
+                countryCode={countryCode || "DZ"}
+                onClose={() => setIsStarted(false)}
               />
             </motion.div>
           )}
         </AnimatePresence>
-
       </div>
     </div>
   );
