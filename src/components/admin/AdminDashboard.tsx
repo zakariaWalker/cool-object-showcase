@@ -29,21 +29,36 @@ const TYPE_LABELS: Record<string, string> = {
   other: "أخرى", unclassified: "غير مصنف",
 };
 
+const TYPE_LABELS: Record<string, string> = {
+  compute: "حساب", simplify: "تبسيط", expand: "نشر", factor: "تفكيك",
+  solve_equation: "حل معادلة", solve_inequality: "حل متراجحة",
+  prove: "برهان", geometry: "هندسة", statistics: "إحصاء",
+  probability: "احتمالات", functions: "دوال", sequences: "متتاليات",
+  other: "أخرى", unclassified: "غير مصنف",
+};
+
 export function AdminDashboard({
-  exercises, deconstructions, stats, gradeFilter, setGradeFilter, setView, loaded, onLoadExercises
+  exercises, deconstructions, stats, gradeFilter, setGradeFilter, setView, loaded, onLoadExercises, countryCode
 }: Props) {
+  const { grades: countryGrades, shortLabel } = useCountryGrades(countryCode);
+  const GRADES = useMemo(
+    () => [{ value: "", label: "الكل" }, ...countryGrades.map(g => ({ value: g.grade_code, label: shortLabel(g.grade_code) }))],
+    [countryGrades, shortLabel]
+  );
+
+  // Compute cycle counts dynamically from country_grades cycle metadata
+  const cycleSummary = useMemo(() => {
+    const byCycle: Record<string, number> = {};
+    for (const ex of exercises) {
+      const cycle = countryGrades.find(g => g.grade_code === ex.grade)?.cycle;
+      if (cycle) byCycle[cycle] = (byCycle[cycle] || 0) + 1;
+    }
+    return Object.entries(byCycle)
+      .map(([k, v]) => `${v} ${CYCLE_LABELS_AR[k] || k}`)
+      .join(" + ") || "—";
+  }, [exercises, countryGrades]);
+
   const filtered = gradeFilter ? exercises.filter(e => e.grade === gradeFilter) : exercises;
-
-  // Type distribution
-  const typeCounts: Record<string, number> = {};
-  filtered.forEach(e => { typeCounts[e.type] = (typeCounts[e.type] || 0) + 1; });
-
-  // Grade distribution
-  const gradeCounts: Record<string, number> = {};
-  exercises.forEach(e => { gradeCounts[e.grade] = (gradeCounts[e.grade] || 0) + 1; });
-
-  // Recent deconstructions
-  const recentDecons = deconstructions.slice(-5).reverse();
 
   return (
     <div className="space-y-6">
