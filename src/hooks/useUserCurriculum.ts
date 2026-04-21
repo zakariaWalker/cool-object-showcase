@@ -5,17 +5,22 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface UserCurriculum {
-  countryCode: string;     // "DZ" | "OM" | ...
-  gradeCode: string;       // "4AM" | "G7" | ...
+  countryCode: string; // "DZ" | "OM" | ...
+  gradeCode: string; // "4AM" | "G7" | ...
   loading: boolean;
-  isComplete: boolean;     // true when both fields are present
+  isComplete: boolean; // true when both fields are present
   refresh: () => Promise<void>;
   setCurriculum: (countryCode: string, gradeCode: string) => Promise<void>;
 }
 
 const LEGACY_GRADE_MAP: Record<string, string> = {
-  middle_1: "1AM", middle_2: "2AM", middle_3: "3AM", middle_4: "4AM",
-  secondary_1: "1AS", secondary_2: "2AS", secondary_3: "3AS",
+  middle_1: "1AM",
+  middle_2: "2AM",
+  middle_3: "3AM",
+  middle_4: "4AM",
+  secondary_1: "1AS",
+  secondary_2: "2AS",
+  secondary_3: "3AS",
 };
 
 export function useUserCurriculum(): UserCurriculum {
@@ -25,7 +30,9 @@ export function useUserCurriculum(): UserCurriculum {
 
   const load = async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       setCountryCode("");
       setGradeCode("");
@@ -41,12 +48,23 @@ export function useUserCurriculum(): UserCurriculum {
     let cc = data?.country_code || "";
     let gc = data?.grade_code || "";
 
-    // Fallback to legacy user_metadata.grade if grade_code missing
+    // Fallback to user_metadata
     if (!gc) {
       const meta = (user.user_metadata || {}) as any;
-      const legacy = meta.grade as string | undefined;
-      if (legacy) gc = LEGACY_GRADE_MAP[legacy] || legacy;
+      if (meta.grade_code) {
+        gc = meta.grade_code;
+      } else if (meta.grade) {
+        gc = LEGACY_GRADE_MAP[meta.grade] || meta.grade;
+      }
     }
+
+    if (!cc) {
+      const meta = (user.user_metadata || {}) as any;
+      if (meta.country_code) {
+        cc = meta.country_code;
+      }
+    }
+
     if (!cc && gc) cc = "DZ"; // legacy users default to Algeria
 
     setCountryCode(cc);
@@ -56,17 +74,20 @@ export function useUserCurriculum(): UserCurriculum {
 
   useEffect(() => {
     load();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { load(); });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      load();
+    });
     return () => subscription.unsubscribe();
   }, []);
 
   const setCurriculum = async (cc: string, gc: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
-    await (supabase as any)
-      .from("profiles")
-      .update({ country_code: cc, grade_code: gc })
-      .eq("id", user.id);
+    await (supabase as any).from("profiles").update({ country_code: cc, grade_code: gc }).eq("id", user.id);
     setCountryCode(cc);
     setGradeCode(gc);
   };
