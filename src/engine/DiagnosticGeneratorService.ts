@@ -53,13 +53,8 @@ export async function generateDiagnosticExercises(
  * Randomized from a pool to ensure variety.
  */
 function getFallbackExercises(level: string): DiagnosticExercise[] {
-  const isMiddle =
-    level.includes("AM") ||
-    level === "middle_1" ||
-    level === "middle_2" ||
-    level === "middle_3" ||
-    level === "middle_4";
-  const isBac = level === "3AS" || level === "secondary_3";
+  const isMiddle = level.includes("AM") || level.startsWith("middle");
+  const isBac = level.includes("3AS") || level.startsWith("secondary_3");
 
   const pool: DiagnosticExercise[] = [
     {
