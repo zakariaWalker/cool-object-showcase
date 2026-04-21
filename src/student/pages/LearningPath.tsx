@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { Brain, ChevronRight, Lock, CheckCircle2, Target, Zap, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -127,7 +128,7 @@ const LearningPath = () => {
     setCompletedSkillIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
-      try { localStorage.setItem(`completed-skills-${user?.id || "anon"}`, JSON.stringify([...next])); } catch {}
+      try { localStorage.setItem(`completed-skills-${user?.id || "anon"}-${country}-${grade}`, JSON.stringify([...next])); } catch {}
       return next;
     });
   };
