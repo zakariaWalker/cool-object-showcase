@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { MathExerciseRenderer } from "./MathExerciseRenderer";
 
 interface ExerciseItem {
@@ -38,6 +39,23 @@ interface ChapterGroup {
 interface ExerciseLibraryProps {
   onSelectExercise: (exercise: any) => void;
 }
+
+// Map from new grade_code ("4AM", "G7") → legacy internal key stored in kb_exercises.grade
+// Only DZ grades have legacy keys; other countries use grade_code directly.
+const GRADE_CODE_TO_KEY: Record<string, string> = {
+  "1AM": "middle_1",
+  "2AM": "middle_2",
+  "3AM": "middle_3",
+  "4AM": "middle_4",
+  "1AS": "secondary_1",
+  "2AS": "secondary_2",
+  "3AS": "secondary_3",
+  "1AP": "primary_1",
+  "2AP": "primary_2",
+  "3AP": "primary_3",
+  "4AP": "primary_4",
+  "5AP": "primary_5",
+};
 
 const GRADE_LEVELS = [
   {
@@ -88,21 +106,37 @@ const STREAMS: Record<string, { id: string; label: string; color: string }[]> = 
 
 export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
   const { profile, isAdmin, isTeacher } = useAuth();
+  const { gradeCode } = useUserCurriculum();
+
+  // Translate the new grade_code ("4AM") → the internal key used in kb_exercises.grade ("middle_4")
+  const resolveGrade = (code?: string) => {
+    if (!code) return "";
+    return GRADE_CODE_TO_KEY[code] || code;
+  };
 
   // Initialize from profile or localStorage
   const initGrade = (() => {
-    if (profile?.grade) return profile.grade;
-    try { return localStorage.getItem("elmentor_grade") || "middle_4"; } catch { return "middle_4"; }
+    // gradeCode is the correct field (e.g. "4AM"), translate to internal key
+    if (gradeCode) return resolveGrade(gradeCode);
+    try {
+      return localStorage.getItem("elmentor_grade") || "middle_4";
+    } catch {
+      return "middle_4";
+    }
   })();
   const initStream = (() => {
     if (profile?.stream) return profile.stream;
-    try { return localStorage.getItem("elmentor_stream") || ""; } catch { return ""; }
+    try {
+      return localStorage.getItem("elmentor_stream") || "";
+    } catch {
+      return "";
+    }
   })();
 
   const [selectedGrade, setSelectedGrade] = useState<string>(initGrade);
   const [selectedStream, setSelectedStream] = useState<string>(() => {
     if (initGrade.startsWith("secondary_") && STREAMS[initGrade]) {
-      const valid = STREAMS[initGrade].find(s => s.id === initStream);
+      const valid = STREAMS[initGrade].find((s) => s.id === initStream);
       return valid ? initStream : STREAMS[initGrade][0].id;
     }
     return "";
@@ -113,12 +147,12 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
   const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // SYNC: When profile changes, update filters to match student level
+  // SYNC: When profile loads async, update grade filter to match student's registered level
   useEffect(() => {
-    if (profile && profile.grade) {
-      setSelectedGrade(profile.grade);
+    if (gradeCode && !isAdmin && !isTeacher) {
+      setSelectedGrade(resolveGrade(gradeCode));
     }
-  }, [profile]);
+  }, [gradeCode, isAdmin, isTeacher]);
 
   // Fetch exercises when grade/stream changes
   useEffect(() => {
@@ -127,11 +161,7 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
       setLoading(true);
       setError(null);
       try {
-        let query = (supabase as any)
-          .from("kb_exercises")
-          .select("*")
-          .eq("grade", selectedGrade)
-          .order("chapter");
+        let query = (supabase as any).from("kb_exercises").select("*").eq("grade", selectedGrade).order("chapter");
 
         // For secondary grades with streams, filter by stream
         if (selectedGrade.startsWith("secondary_") && selectedStream) {
@@ -142,16 +172,18 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
         if (fetchError) throw fetchError;
         if (cancelled) return;
 
-        setExercises(data?.map((e: any) => ({
-          id: e.id,
-          text: e.text,
-          type: e.type || "",
-          chapter: e.chapter || "",
-          grade: e.grade || "",
-          stream: e.stream || "",
-          label: e.label || "",
-          source: e.source || "",
-        })) || []);
+        setExercises(
+          data?.map((e: any) => ({
+            id: e.id,
+            text: e.text,
+            type: e.type || "",
+            chapter: e.chapter || "",
+            grade: e.grade || "",
+            stream: e.stream || "",
+            label: e.label || "",
+            source: e.source || "",
+          })) || [],
+        );
 
         // Open first chapter
         if (data && data.length > 0) {
@@ -171,7 +203,9 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
       localStorage.setItem("elmentor_grade", selectedGrade);
       if (selectedStream) localStorage.setItem("elmentor_stream", selectedStream);
     } catch {}
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [selectedGrade, selectedStream]);
 
   // When grade changes, auto-set stream for secondary
@@ -196,7 +230,7 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
   })();
 
   const toggleChapter = (ch: string) => {
-    setOpenChapters(prev => ({ ...prev, [ch]: !prev[ch] }));
+    setOpenChapters((prev) => ({ ...prev, [ch]: !prev[ch] }));
   };
 
   const handleSelectExercise = (ex: KBExercise) => {
@@ -211,8 +245,8 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
     });
   };
 
-  const currentLevel = GRADE_LEVELS.find(l => l.grades.some(g => g.id === selectedGrade));
-  const currentGrade = currentLevel?.grades.find(g => g.id === selectedGrade);
+  const currentLevel = GRADE_LEVELS.find((l) => l.grades.some((g) => g.id === selectedGrade));
+  const currentGrade = currentLevel?.grades.find((g) => g.id === selectedGrade);
   const hasStreams = selectedGrade.startsWith("secondary_") && STREAMS[selectedGrade];
 
   return (
@@ -221,7 +255,7 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
       {(isAdmin || isTeacher) && (
         <div className="px-3 py-2 border-b border-border bg-muted/30">
           <div className="flex gap-2 mb-2">
-            {GRADE_LEVELS.map(level => (
+            {GRADE_LEVELS.map((level) => (
               <button
                 key={level.id}
                 onClick={() => handleGradeChange(level.grades[0].id)}
@@ -237,7 +271,7 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
           </div>
 
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-            {currentLevel?.grades.map(g => (
+            {currentLevel?.grades.map((g) => (
               <button
                 key={g.id}
                 onClick={() => handleGradeChange(g.id)}
@@ -257,9 +291,11 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
       {/* Stream Selector for Secondary - Only for Admin/Teacher */}
       {(isAdmin || isTeacher) && hasStreams && (
         <div className="px-3 py-2 border-b border-border bg-accent/10">
-          <div className="text-[10px] text-muted-foreground font-semibold mb-1.5" dir="rtl">🎯 الشعبة:</div>
+          <div className="text-[10px] text-muted-foreground font-semibold mb-1.5" dir="rtl">
+            🎯 الشعبة:
+          </div>
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-            {STREAMS[selectedGrade].map(s => (
+            {STREAMS[selectedGrade].map((s) => (
               <button
                 key={s.id}
                 onClick={() => setSelectedStream(s.id)}
@@ -268,10 +304,14 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
                     ? "text-primary-foreground shadow-sm"
                     : "bg-card text-muted-foreground border-border hover:opacity-80"
                 }`}
-                style={selectedStream === s.id ? {
-                  background: s.color,
-                  borderColor: s.color,
-                } : {}}
+                style={
+                  selectedStream === s.id
+                    ? {
+                        background: s.color,
+                        borderColor: s.color,
+                      }
+                    : {}
+                }
               >
                 {s.label}
               </button>
@@ -288,7 +328,7 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
               📚 {currentGrade?.sublabel || currentGrade?.label}
               {hasStreams && selectedStream && (
                 <span className="text-[11px] text-muted-foreground mr-2">
-                  — {STREAMS[selectedGrade]?.find(s => s.id === selectedStream)?.label}
+                  — {STREAMS[selectedGrade]?.find((s) => s.id === selectedStream)?.label}
                 </span>
               )}
             </div>
@@ -303,13 +343,19 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
       {loading ? (
         <div className="flex-1 flex flex-col items-center justify-center p-6 gap-3">
           <div style={{ animation: "spin 1s linear infinite", fontSize: 24 }}>⏳</div>
-          <div className="text-[12px] text-muted-foreground font-semibold" dir="rtl">جاري تحميل التمارين...</div>
+          <div className="text-[12px] text-muted-foreground font-semibold" dir="rtl">
+            جاري تحميل التمارين...
+          </div>
         </div>
       ) : error ? (
         <div className="flex-1 flex flex-col items-center justify-center p-6 gap-3 text-center">
           <div className="text-[28px]">😕</div>
-          <div className="text-[13px] font-bold text-foreground" dir="rtl">تعذّر تحميل التمارين</div>
-          <div className="text-[11px] text-muted-foreground max-w-[220px]" dir="rtl">{error}</div>
+          <div className="text-[13px] font-bold text-foreground" dir="rtl">
+            تعذّر تحميل التمارين
+          </div>
+          <div className="text-[11px] text-muted-foreground max-w-[220px]" dir="rtl">
+            {error}
+          </div>
         </div>
       ) : exercises.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center p-6 gap-3 text-center">
@@ -320,7 +366,7 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          {chapterGroups.map(group => (
+          {chapterGroups.map((group) => (
             <div key={group.chapter} className="border border-border rounded-lg bg-card overflow-hidden shadow-sm">
               <button
                 onClick={() => toggleChapter(group.chapter)}
@@ -333,14 +379,12 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
                     {group.exercises.length}
                   </div>
                 </div>
-                <div className="text-[10px] text-muted-foreground">
-                  {openChapters[group.chapter] ? "▲" : "▼"}
-                </div>
+                <div className="text-[10px] text-muted-foreground">{openChapters[group.chapter] ? "▲" : "▼"}</div>
               </button>
 
               {openChapters[group.chapter] && (
                 <div className="p-2 space-y-1.5 bg-muted/20">
-                  {group.exercises.map(ex => {
+                  {group.exercises.map((ex) => {
                     const isSelected = selectedId === ex.id;
                     const isGeometry = (ex.type || "").includes("geometry") || (ex.type || "").includes("هندس");
                     return (
@@ -348,17 +392,21 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
                         key={ex.id}
                         onClick={() => handleSelectExercise(ex)}
                         className={`w-full text-right p-4 rounded-xl transition-all flex flex-col gap-3 group/card ${
-                          isSelected 
-                            ? "bg-primary/5 border-2 border-primary shadow-md" 
+                          isSelected
+                            ? "bg-primary/5 border-2 border-primary shadow-md"
                             : "bg-card border border-border hover:border-primary/40 hover:shadow-sm"
                         }`}
                         dir="rtl"
                       >
                         <div className="flex items-center justify-between w-full">
                           <div className="flex items-center gap-2">
-                            <span className={`text-[11px] font-black px-2 py-0.5 rounded-md ${
-                              isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover/card:bg-primary/10 group-hover/card:text-primary"
-                            }`}>
+                            <span
+                              className={`text-[11px] font-black px-2 py-0.5 rounded-md ${
+                                isSelected
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted text-muted-foreground group-hover/card:bg-primary/10 group-hover/card:text-primary"
+                              }`}
+                            >
                               {ex.source}
                             </span>
                             {ex.type && ex.type !== "unclassified" && (
@@ -367,12 +415,12 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
                               </span>
                             )}
                           </div>
-                          {isGeometry && (
-                            <span className="text-[14px]">📐</span>
-                          )}
+                          {isGeometry && <span className="text-[14px]">📐</span>}
                         </div>
-                        
-                        <div className={`text-[12px] leading-relaxed text-right w-full ${isSelected ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+
+                        <div
+                          className={`text-[12px] leading-relaxed text-right w-full ${isSelected ? "text-foreground font-medium" : "text-muted-foreground"}`}
+                        >
                           <MathExerciseRenderer text={ex.text} className="line-clamp-3" />
                         </div>
 
