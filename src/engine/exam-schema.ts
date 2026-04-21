@@ -9,48 +9,46 @@ import { z } from "zod";
 export const ExamQuestionSchema = z.object({
   /** Section label, e.g. "التمرين الأول", "المسألة", "Exercise 1" */
   sectionLabel: z.string().min(1, "Section label is required"),
-  
+
   /** Question number within the exam (1-based) */
   questionNumber: z.number().int().min(1),
-  
+
   /** Sub-question label if any, e.g. "أ", "ب", "1)", "a)" */
   subQuestion: z.string().optional(),
-  
+
   /** Full question text (may include LaTeX) */
   text: z.string().min(1, "Question text is required"),
-  
+
   /** Points allocated to this question */
   points: z.number().min(0).default(1),
-  
+
   /** Question type/topic classification */
   type: z.string().default("unclassified"),
-  
+
   /** Difficulty level */
   difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
-  
+
   /** Bloom's taxonomy cognitive level */
-  cognitiveLevel: z.enum([
-    "remember", "understand", "apply", "analyze", "evaluate", "create"
-  ]).default("apply"),
-  
+  cognitiveLevel: z.enum(["remember", "understand", "apply", "analyze", "evaluate", "create"]).default("apply"),
+
   /** Bloom level (1-6) */
   bloomLevel: z.number().int().min(1).max(6).default(3),
-  
+
   /** Estimated time in minutes */
   estimatedTimeMin: z.number().min(0).default(5),
-  
+
   /** Number of solution steps */
   stepCount: z.number().int().min(0).default(2),
-  
+
   /** Number of concepts involved */
   conceptCount: z.number().int().min(0).default(1),
-  
+
   /** List of mathematical concepts tested */
   concepts: z.array(z.string()).default([]),
-  
+
   /** IDs of linked KB patterns (optional, can be linked later) */
   linkedPatternIds: z.array(z.string()).default([]),
-  
+
   /** IDs of linked KB exercises (optional, can be linked later) */
   linkedExerciseIds: z.array(z.string()).default([]),
 });
@@ -60,19 +58,19 @@ export const ExamQuestionSchema = z.object({
 export const ExamSchema = z.object({
   /** Exam year, e.g. "2024" */
   year: z.string().min(4, "Year is required (e.g. 2024)"),
-  
+
   /** Session: juin (normal), septembre (catch-up), remplacement */
   session: z.enum(["juin", "septembre", "remplacement"]).default("juin"),
-  
+
   /** Exam format */
   format: z.enum(["bem", "bac", "regular", "devoir"]).default("bem"),
-  
-  /** Grade level, e.g. "middle_4", "secondary_3" */
+
+  /** Grade level, e.g. "4AM", "3AS" */
   grade: z.string().min(1, "Grade is required"),
-  
+
   /** Stream for BAC exams (optional) */
   stream: z.string().optional(),
-  
+
   /** List of questions in this exam */
   questions: z.array(ExamQuestionSchema).min(1, "At least one question is required"),
 });
@@ -80,8 +78,8 @@ export const ExamSchema = z.object({
 // ─── Bulk Import Schema (array of exams) ──────────────────────────────────────
 
 export const ExamBulkImportSchema = z.union([
-  ExamSchema,                    // Single exam
-  z.array(ExamSchema).min(1),   // Array of exams
+  ExamSchema, // Single exam
+  z.array(ExamSchema).min(1), // Array of exams
 ]);
 
 // ─── TypeScript types derived from schema ─────────────────────────────────────
@@ -96,7 +94,7 @@ export const EXAM_JSON_EXAMPLE: ExamInput = {
   year: "2024",
   session: "juin",
   format: "bem",
-  grade: "middle_4",
+  grade: "4AM",
   questions: [
     {
       sectionLabel: "التمرين الأول",
@@ -139,7 +137,7 @@ export const EXAM_BULK_EXAMPLE: ExamInput[] = [
     year: "2023",
     session: "juin",
     format: "bac",
-    grade: "secondary_3",
+    grade: "3AS",
     stream: "sciences",
     questions: [
       {
