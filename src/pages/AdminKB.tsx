@@ -223,6 +223,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               setView={store.setView}
               loaded={store.loaded}
               onLoadExercises={handleLoadExercises}
+              countryCode={store.countryFilter}
             />
           )}
           {store.view === "classify" && (
@@ -233,6 +234,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               gradeFilter={store.gradeFilter}
               setGradeFilter={store.setGradeFilter}
               onClassify={store.classifyExercise}
+              countryCode={store.countryFilter}
             />
           )}
           {store.view === "patterns" && (

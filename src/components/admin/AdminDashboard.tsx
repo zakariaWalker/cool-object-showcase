@@ -29,14 +29,6 @@ const TYPE_LABELS: Record<string, string> = {
   other: "أخرى", unclassified: "غير مصنف",
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  compute: "حساب", simplify: "تبسيط", expand: "نشر", factor: "تفكيك",
-  solve_equation: "حل معادلة", solve_inequality: "حل متراجحة",
-  prove: "برهان", geometry: "هندسة", statistics: "إحصاء",
-  probability: "احتمالات", functions: "دوال", sequences: "متتاليات",
-  other: "أخرى", unclassified: "غير مصنف",
-};
-
 export function AdminDashboard({
   exercises, deconstructions, stats, gradeFilter, setGradeFilter, setView, loaded, onLoadExercises, countryCode
 }: Props) {
@@ -46,7 +38,7 @@ export function AdminDashboard({
     [countryGrades, shortLabel]
   );
 
-  // Compute cycle counts dynamically from country_grades cycle metadata
+  // Compute cycle counts dynamically (no hardcoded middle/secondary)
   const cycleSummary = useMemo(() => {
     const byCycle: Record<string, number> = {};
     for (const ex of exercises) {
@@ -60,12 +52,20 @@ export function AdminDashboard({
 
   const filtered = gradeFilter ? exercises.filter(e => e.grade === gradeFilter) : exercises;
 
+  const typeCounts: Record<string, number> = {};
+  filtered.forEach(e => { typeCounts[e.type] = (typeCounts[e.type] || 0) + 1; });
+
+  const gradeCounts: Record<string, number> = {};
+  exercises.forEach(e => { gradeCounts[e.grade] = (gradeCounts[e.grade] || 0) + 1; });
+
+  const recentDecons = deconstructions.slice(-5).reverse();
+
   return (
     <div className="space-y-6">
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "مجموع التمارين", value: stats.total, sub: loaded ? `${stats.middleCount} متوسط + ${stats.secondaryCount} ثانوي` : "اضغط تحميل التمارين", color: "hsl(var(--primary))", onClick: () => setView("classify") },
+          { label: "مجموع التمارين", value: stats.total, sub: loaded ? cycleSummary : "اضغط تحميل التمارين", color: "hsl(var(--primary))", onClick: () => setView("classify") },
           { label: "مصنّف", value: stats.classified, sub: "الخطوة 1", color: "hsl(var(--secondary))", onClick: () => setView("classify") },
           { label: "مفكَّك", value: stats.deconstructed, sub: "الخطوة 3", color: "hsl(var(--accent))", onClick: () => setView("deconstruct") },
           { label: "نمط في المكتبة", value: stats.patternCount, sub: "الخطوة 2", color: "hsl(var(--probability))", onClick: () => setView("patterns") },
