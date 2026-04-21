@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import { Exercise, Deconstruction, AdminView } from "./useAdminKBStore";
+import { useCountryGrades, CYCLE_LABELS_AR } from "@/hooks/useCountryGrades";
 
 interface Props {
   exercises: Exercise[];
@@ -8,8 +10,7 @@ interface Props {
     classified: number;
     deconstructed: number;
     patternCount: number;
-    middleCount: number;
-    secondaryCount: number;
+    cycleCounts: Record<string, number>;
     progress: number;
   };
   gradeFilter: string;
@@ -17,18 +18,8 @@ interface Props {
   setView: (v: AdminView) => void;
   loaded: boolean;
   onLoadExercises: () => void;
+  countryCode: string;
 }
-
-const GRADES = [
-  { value: "", label: "الكل" },
-  { value: "middle_1", label: "1AM" },
-  { value: "middle_2", label: "2AM" },
-  { value: "middle_3", label: "3AM" },
-  { value: "middle_4", label: "4AM BEM" },
-  { value: "secondary_1", label: "1AS" },
-  { value: "secondary_2", label: "2AS" },
-  { value: "secondary_3", label: "3AS" },
-];
 
 const TYPE_LABELS: Record<string, string> = {
   compute: "حساب", simplify: "تبسيط", expand: "نشر", factor: "تفكيك",
@@ -39,19 +30,34 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export function AdminDashboard({
-  exercises, deconstructions, stats, gradeFilter, setGradeFilter, setView, loaded, onLoadExercises
+  exercises, deconstructions, stats, gradeFilter, setGradeFilter, setView, loaded, onLoadExercises, countryCode
 }: Props) {
+  const { grades: countryGrades, shortLabel } = useCountryGrades(countryCode);
+  const GRADES = useMemo(
+    () => [{ value: "", label: "الكل" }, ...countryGrades.map(g => ({ value: g.grade_code, label: shortLabel(g.grade_code) }))],
+    [countryGrades, shortLabel]
+  );
+
+  // Compute cycle counts dynamically (no hardcoded middle/secondary)
+  const cycleSummary = useMemo(() => {
+    const byCycle: Record<string, number> = {};
+    for (const ex of exercises) {
+      const cycle = countryGrades.find(g => g.grade_code === ex.grade)?.cycle;
+      if (cycle) byCycle[cycle] = (byCycle[cycle] || 0) + 1;
+    }
+    return Object.entries(byCycle)
+      .map(([k, v]) => `${v} ${CYCLE_LABELS_AR[k] || k}`)
+      .join(" + ") || "—";
+  }, [exercises, countryGrades]);
+
   const filtered = gradeFilter ? exercises.filter(e => e.grade === gradeFilter) : exercises;
 
-  // Type distribution
   const typeCounts: Record<string, number> = {};
   filtered.forEach(e => { typeCounts[e.type] = (typeCounts[e.type] || 0) + 1; });
 
-  // Grade distribution
   const gradeCounts: Record<string, number> = {};
   exercises.forEach(e => { gradeCounts[e.grade] = (gradeCounts[e.grade] || 0) + 1; });
 
-  // Recent deconstructions
   const recentDecons = deconstructions.slice(-5).reverse();
 
   return (
@@ -59,7 +65,7 @@ export function AdminDashboard({
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "مجموع التمارين", value: stats.total, sub: loaded ? `${stats.middleCount} متوسط + ${stats.secondaryCount} ثانوي` : "اضغط تحميل التمارين", color: "hsl(var(--primary))", onClick: () => setView("classify") },
+          { label: "مجموع التمارين", value: stats.total, sub: loaded ? cycleSummary : "اضغط تحميل التمارين", color: "hsl(var(--primary))", onClick: () => setView("classify") },
           { label: "مصنّف", value: stats.classified, sub: "الخطوة 1", color: "hsl(var(--secondary))", onClick: () => setView("classify") },
           { label: "مفكَّك", value: stats.deconstructed, sub: "الخطوة 3", color: "hsl(var(--accent))", onClick: () => setView("deconstruct") },
           { label: "نمط في المكتبة", value: stats.patternCount, sub: "الخطوة 2", color: "hsl(var(--probability))", onClick: () => setView("patterns") },

@@ -13,10 +13,13 @@ interface Props {
   deconstructions: Deconstruction[];
 }
 
-const GRADE_LABELS: Record<string, string> = {
+// Generic short labels — uses grade_code as fallback (e.g. "1AM" for DZ, "G7" for OM).
+// For full Arabic labels, the dashboard fetches from country_grades; here we keep it compact.
+const SHORT_LABELS: Record<string, string> = {
   middle_1: "1AM", middle_2: "2AM", middle_3: "3AM", middle_4: "4AM",
   secondary_1: "1AS", secondary_2: "2AS", secondary_3: "3AS",
 };
+const labelForGrade = (g: string) => SHORT_LABELS[g] || g;
 
 const TYPE_LABELS_AR: Record<string, string> = {
   arithmetic: "حساب", algebra: "جبر", fractions: "كسور", equations: "معادلات",
@@ -218,7 +221,7 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
                   <div key={grade}>
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-foreground">{GRADE_LABELS[grade] || grade}</span>
+                        <span className="text-xs font-black text-foreground">{labelForGrade(grade)}</span>
                         <span className="text-[10px] text-muted-foreground">{stats.types.size} أنواع</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -288,7 +291,7 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
           <tbody>
             {insights.allGrades.map(g => (
               <tr key={g}>
-                <td className="p-1.5 font-black text-foreground sticky right-0 bg-card z-10">{GRADE_LABELS[g] || g}</td>
+                <td className="p-1.5 font-black text-foreground sticky right-0 bg-card z-10">{labelForGrade(g)}</td>
                 {insights.allTypes.map(t => {
                   const cell = insights.heatmap[g]?.[t] || { total: 0, covered: 0 };
                   if (cell.total === 0) {
@@ -298,7 +301,7 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
                   const bg = pct >= 80 ? "hsl(var(--geometry) / 0.35)" : pct >= 50 ? "hsl(var(--statistics) / 0.35)" : pct > 0 ? "hsl(var(--functions) / 0.25)" : "hsl(var(--destructive) / 0.2)";
                   const textColor = pct >= 80 ? "hsl(var(--geometry))" : pct >= 50 ? "hsl(158 64% 25%)" : pct > 0 ? "hsl(340 60% 35%)" : "hsl(var(--destructive))";
                   return (
-                    <td key={t} className="p-1" title={`${GRADE_LABELS[g]} × ${TYPE_LABELS_AR[t]}: ${cell.covered}/${cell.total}`}>
+                    <td key={t} className="p-1" title={`${labelForGrade(g)} × ${TYPE_LABELS_AR[t]}: ${cell.covered}/${cell.total}`}>
                       <div className="w-6 h-6 mx-auto rounded flex items-center justify-center text-[8px] font-bold"
                         style={{ background: bg, color: textColor }}>
                         {cell.total}
@@ -375,7 +378,7 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
                 <AlertItem
                   key={grade}
                   severity="medium"
-                  title={`${GRADE_LABELS[grade]} تغطية ضعيفة`}
+                  title={`${labelForGrade(grade)} تغطية ضعيفة`}
                   detail={`${stats.covered}/${stats.total} فقط (${Math.round((stats.covered / stats.total) * 100)}%)`}
                 />
               ))}

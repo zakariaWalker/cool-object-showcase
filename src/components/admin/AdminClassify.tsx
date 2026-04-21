@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Exercise } from "./useAdminKBStore";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 import { Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useCountryGrades } from "@/hooks/useCountryGrades";
 
 interface Props {
   exercises: Exercise[];
@@ -12,6 +13,7 @@ interface Props {
   gradeFilter: string;
   setGradeFilter: (g: string) => void;
   onClassify: (id: string, type: string) => void;
+  countryCode: string;
 }
 
 const TYPES = [
@@ -29,17 +31,14 @@ const TYPES = [
   { value: "other", label: "أخرى", emoji: "❓" },
 ];
 
-const GRADES = [
-  { value: "", label: "الكل" },
-  { value: "middle_1", label: "1AM" }, { value: "middle_2", label: "2AM" },
-  { value: "middle_3", label: "3AM" }, { value: "middle_4", label: "4AM" },
-  { value: "secondary_1", label: "1AS" }, { value: "secondary_2", label: "2AS" },
-  { value: "secondary_3", label: "3AS" },
-];
-
 const PAGE_SIZE = 30;
 
-export function AdminClassify({ exercises, searchQuery, setSearchQuery, gradeFilter, setGradeFilter, onClassify }: Props) {
+export function AdminClassify({ exercises, searchQuery, setSearchQuery, gradeFilter, setGradeFilter, onClassify, countryCode }: Props) {
+  const { grades: countryGrades, shortLabel } = useCountryGrades(countryCode);
+  const GRADES = useMemo(
+    () => [{ value: "", label: "الكل" }, ...countryGrades.map(g => ({ value: g.grade_code, label: shortLabel(g.grade_code) }))],
+    [countryGrades, shortLabel]
+  );
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [typeFilter, setTypeFilter] = useState("");

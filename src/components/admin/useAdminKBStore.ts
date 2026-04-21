@@ -186,13 +186,14 @@ export function useAdminKBStore() {
   const countryExercises = exercises.filter(e => e.countryCode === countryFilter);
   const countryDeconstructions = deconstructions.filter(d => d.countryCode === countryFilter);
 
+  // Cycle counts are computed by the consumer using country_grades metadata.
+  // We just expose totals here; the dashboard hook fills in cycle aggregation.
   const stats = {
     total: countryExercises.length,
     classified: countryExercises.filter(e => e.type !== "other" && e.type !== "unclassified").length,
     deconstructed: countryDeconstructions.length,
     patternCount: patterns.length,
-    middleCount: countryExercises.filter(e => ["middle_1", "middle_2", "middle_3", "middle_4"].includes(e.grade)).length,
-    secondaryCount: countryExercises.filter(e => e.grade?.startsWith("secondary")).length,
+    cycleCounts: {} as Record<string, number>, // populated by the consumer (AdminDashboard) via useCountryGrades
     progress: countryExercises.length ? Math.round((countryDeconstructions.length / countryExercises.length) * 100) : 0,
   };
 
