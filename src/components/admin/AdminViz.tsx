@@ -19,7 +19,7 @@ const GRADE_LABELS: Record<string, string> = {
   middle_1: "1AM", middle_2: "2AM", middle_3: "3AM", middle_4: "4AM",
   secondary_1: "1AS", secondary_2: "2AS", secondary_3: "3AS",
 };
-const labelForGrade = (g: string) => GRADE_LABELS[g] || g;
+const labelForGrade = (g: string) => labelForGrade(g);
 
 const TYPE_LABELS_AR: Record<string, string> = {
   arithmetic: "حساب", algebra: "جبر", fractions: "كسور", equations: "معادلات",
@@ -221,7 +221,7 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
                   <div key={grade}>
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-foreground">{GRADE_LABELS[grade] || grade}</span>
+                        <span className="text-xs font-black text-foreground">{labelForGrade(grade)}</span>
                         <span className="text-[10px] text-muted-foreground">{stats.types.size} أنواع</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -291,7 +291,7 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
           <tbody>
             {insights.allGrades.map(g => (
               <tr key={g}>
-                <td className="p-1.5 font-black text-foreground sticky right-0 bg-card z-10">{GRADE_LABELS[g] || g}</td>
+                <td className="p-1.5 font-black text-foreground sticky right-0 bg-card z-10">{labelForGrade(g)}</td>
                 {insights.allTypes.map(t => {
                   const cell = insights.heatmap[g]?.[t] || { total: 0, covered: 0 };
                   if (cell.total === 0) {

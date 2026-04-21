@@ -462,7 +462,7 @@ export default function KnowledgeGraph3D({ exercises, patterns, deconstructions 
                   <div className="flex flex-wrap gap-1">
                     {Object.entries(selected.grades).sort((a, b) => b[1] - a[1]).map(([g, count]) => (
                       <span key={g} className="px-2 py-0.5 rounded text-[8px] font-bold border border-border bg-muted/50 text-foreground">
-                        {GRADE_LABELS[g] || g}: {count}
+                        {labelForGrade(g)}: {count}
                       </span>
                     ))}
                   </div>
