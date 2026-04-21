@@ -38,7 +38,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function AITutor() {
-  const { countryCode, grade: curriculumGrade } = useUserCurriculum();
+  const { countryCode, gradeCode: curriculumGrade } = useUserCurriculum();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [gradeFilter, setGradeFilter] = useState("");
