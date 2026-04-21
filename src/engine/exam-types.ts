@@ -3,21 +3,21 @@
 export type ExamFormat = "bem" | "bac" | "regular";
 export type ExamDifficulty = "easy" | "medium" | "hard" | "mixed";
 
-export type CognitiveLevel = 
-  | "remember"     // التذكر — recall facts/formulas
-  | "understand"   // الفهم — explain, interpret
-  | "apply"        // التطبيق — use formula in standard context
-  | "analyze"      // التحليل — break down, compare
-  | "evaluate"     // التقييم — justify, critique
-  | "create";      // الإبداع — design, prove, construct
+export type CognitiveLevel =
+  | "remember" // التذكر — recall facts/formulas
+  | "understand" // الفهم — explain, interpret
+  | "apply" // التطبيق — use formula in standard context
+  | "analyze" // التحليل — break down, compare
+  | "evaluate" // التقييم — justify, critique
+  | "create"; // الإبداع — design, prove, construct
 
 export interface ExerciseScoringParams {
-  difficulty: number;        // 1-5
+  difficulty: number; // 1-5
   cognitiveLevel: CognitiveLevel;
-  bloomLevel: number;        // 1-6
-  conceptCount: number;      // how many concepts involved
-  stepCount: number;         // estimated steps to solve
-  estimatedTimeMin: number;  // time in minutes
+  bloomLevel: number; // 1-6
+  conceptCount: number; // how many concepts involved
+  stepCount: number; // estimated steps to solve
+  estimatedTimeMin: number; // time in minutes
   hasSubQuestions: boolean;
   requiresProof: boolean;
   requiresGraph: boolean;
@@ -174,10 +174,38 @@ export const BEM_TEMPLATE: ExamTemplate = {
   totalPoints: 20,
   duration: 120,
   sections: [
-    { id: "ex1", title: "Exercise 1", titleAr: "التمرين الأول", points: 4, exerciseCount: 1, allowedTypes: ["arithmetic", "algebra", "number_sets"] },
-    { id: "ex2", title: "Exercise 2", titleAr: "التمرين الثاني", points: 4, exerciseCount: 1, allowedTypes: ["equations", "fractions", "proportionality"] },
-    { id: "ex3", title: "Exercise 3", titleAr: "التمرين الثالث", points: 4, exerciseCount: 1, allowedTypes: ["geometry_construction", "angles", "parallelogram", "triangle_circle"] },
-    { id: "ex4", title: "Exercise 4", titleAr: "التمرين الرابع", points: 4, exerciseCount: 1, allowedTypes: ["statistics", "probability"] },
+    {
+      id: "ex1",
+      title: "Exercise 1",
+      titleAr: "التمرين الأول",
+      points: 4,
+      exerciseCount: 1,
+      allowedTypes: ["arithmetic", "algebra", "number_sets"],
+    },
+    {
+      id: "ex2",
+      title: "Exercise 2",
+      titleAr: "التمرين الثاني",
+      points: 4,
+      exerciseCount: 1,
+      allowedTypes: ["equations", "fractions", "proportionality"],
+    },
+    {
+      id: "ex3",
+      title: "Exercise 3",
+      titleAr: "التمرين الثالث",
+      points: 4,
+      exerciseCount: 1,
+      allowedTypes: ["geometry_construction", "angles", "parallelogram", "triangle_circle"],
+    },
+    {
+      id: "ex4",
+      title: "Exercise 4",
+      titleAr: "التمرين الرابع",
+      points: 4,
+      exerciseCount: 1,
+      allowedTypes: ["statistics", "probability"],
+    },
     { id: "problem", title: "Problem", titleAr: "المسألة", points: 4, exerciseCount: 1 },
   ],
 };
@@ -191,11 +219,46 @@ export const BAC_TEMPLATE: ExamTemplate = {
   totalPoints: 20,
   duration: 180,
   sections: [
-    { id: "ex1", title: "Exercise 1", titleAr: "التمرين الأول", points: 4, exerciseCount: 1, allowedTypes: ["sequences", "calculus", "advanced_algebra"] },
-    { id: "ex2", title: "Exercise 2", titleAr: "التمرين الثاني", points: 4, exerciseCount: 1, allowedTypes: ["functions", "calculus"] },
-    { id: "ex3", title: "Exercise 3", titleAr: "التمرين الثالث", points: 3, exerciseCount: 1, allowedTypes: ["probability", "statistics"] },
-    { id: "ex4", title: "Exercise 4", titleAr: "التمرين الرابع", points: 3, exerciseCount: 1, allowedTypes: ["analytic_geometry", "trigonometry"] },
-    { id: "problem", title: "Problem", titleAr: "المسألة", points: 6, exerciseCount: 1, allowedTypes: ["functions", "calculus", "sequences"] },
+    {
+      id: "ex1",
+      title: "Exercise 1",
+      titleAr: "التمرين الأول",
+      points: 4,
+      exerciseCount: 1,
+      allowedTypes: ["sequences", "calculus", "advanced_algebra"],
+    },
+    {
+      id: "ex2",
+      title: "Exercise 2",
+      titleAr: "التمرين الثاني",
+      points: 4,
+      exerciseCount: 1,
+      allowedTypes: ["functions", "calculus"],
+    },
+    {
+      id: "ex3",
+      title: "Exercise 3",
+      titleAr: "التمرين الثالث",
+      points: 3,
+      exerciseCount: 1,
+      allowedTypes: ["probability", "statistics"],
+    },
+    {
+      id: "ex4",
+      title: "Exercise 4",
+      titleAr: "التمرين الرابع",
+      points: 3,
+      exerciseCount: 1,
+      allowedTypes: ["analytic_geometry", "trigonometry"],
+    },
+    {
+      id: "problem",
+      title: "Problem",
+      titleAr: "المسألة",
+      points: 6,
+      exerciseCount: 1,
+      allowedTypes: ["functions", "calculus", "sequences"],
+    },
   ],
 };
 
@@ -218,25 +281,43 @@ export const REGULAR_TEMPLATE: ExamTemplate = {
 export const ALL_TEMPLATES = [BEM_TEMPLATE, BAC_TEMPLATE, REGULAR_TEMPLATE];
 
 export const GRADE_OPTIONS = [
-  { value: "middle_1", label: "1AM — أولى متوسط" },
-  { value: "middle_2", label: "2AM — ثانية متوسط" },
-  { value: "middle_3", label: "3AM — ثالثة متوسط" },
-  { value: "middle_4", label: "4AM — رابعة متوسط" },
-  { value: "secondary_1", label: "1AS — أولى ثانوي" },
-  { value: "secondary_2", label: "2AS — ثانية ثانوي" },
-  { value: "secondary_3", label: "3AS — ثالثة ثانوي" },
+  { value: "1AM", label: "1AM — أولى متوسط" },
+  { value: "2AM", label: "2AM — ثانية متوسط" },
+  { value: "3AM", label: "3AM — ثالثة متوسط" },
+  { value: "4AM", label: "4AM — رابعة متوسط" },
+  { value: "1AS", label: "1AS — أولى ثانوي" },
+  { value: "2AS", label: "2AS — ثانية ثانوي" },
+  { value: "3AS", label: "3AS — ثالثة ثانوي" },
 ];
 
 export const TYPE_LABELS_AR: Record<string, string> = {
-  arithmetic: "حساب", algebra: "جبر", fractions: "كسور", equations: "معادلات",
-  geometry_construction: "إنشاءات هندسية", statistics: "إحصاء", probability: "احتمالات",
-  functions: "دوال", trigonometry: "مثلثات", sequences: "متتاليات", calculus: "تحليل",
-  systems: "جمل معادلات", proportionality: "تناسبية", transformations: "تحويلات",
-  solids: "مجسمات", triangle_circle: "مثلث ودائرة", parallelogram: "متوازي أضلاع",
-  angles: "زوايا", number_sets: "مجموعات أعداد", advanced_algebra: "جبر متقدم",
-  prove: "برهان", bac_prep: "تحضير BAC", factor: "تحليل عوامل",
-  solve_equation: "حل معادلات", analytic_geometry: "هندسة تحليلية",
-  unclassified: "غير مصنف", other: "أخرى",
+  arithmetic: "حساب",
+  algebra: "جبر",
+  fractions: "كسور",
+  equations: "معادلات",
+  geometry_construction: "إنشاءات هندسية",
+  statistics: "إحصاء",
+  probability: "احتمالات",
+  functions: "دوال",
+  trigonometry: "مثلثات",
+  sequences: "متتاليات",
+  calculus: "تحليل",
+  systems: "جمل معادلات",
+  proportionality: "تناسبية",
+  transformations: "تحويلات",
+  solids: "مجسمات",
+  triangle_circle: "مثلث ودائرة",
+  parallelogram: "متوازي أضلاع",
+  angles: "زوايا",
+  number_sets: "مجموعات أعداد",
+  advanced_algebra: "جبر متقدم",
+  prove: "برهان",
+  bac_prep: "تحضير BAC",
+  factor: "تحليل عوامل",
+  solve_equation: "حل معادلات",
+  analytic_geometry: "هندسة تحليلية",
+  unclassified: "غير مصنف",
+  other: "أخرى",
 };
 
 // Grading scale
