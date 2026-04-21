@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import { Exercise, Deconstruction, AdminView } from "./useAdminKBStore";
+import { useCountryGrades, CYCLE_LABELS_AR } from "@/hooks/useCountryGrades";
 
 interface Props {
   exercises: Exercise[];
@@ -8,8 +10,7 @@ interface Props {
     classified: number;
     deconstructed: number;
     patternCount: number;
-    middleCount: number;
-    secondaryCount: number;
+    cycleCounts: Record<string, number>;
     progress: number;
   };
   gradeFilter: string;
@@ -17,18 +18,8 @@ interface Props {
   setView: (v: AdminView) => void;
   loaded: boolean;
   onLoadExercises: () => void;
+  countryCode: string;
 }
-
-const GRADES = [
-  { value: "", label: "الكل" },
-  { value: "middle_1", label: "1AM" },
-  { value: "middle_2", label: "2AM" },
-  { value: "middle_3", label: "3AM" },
-  { value: "middle_4", label: "4AM BEM" },
-  { value: "secondary_1", label: "1AS" },
-  { value: "secondary_2", label: "2AS" },
-  { value: "secondary_3", label: "3AS" },
-];
 
 const TYPE_LABELS: Record<string, string> = {
   compute: "حساب", simplify: "تبسيط", expand: "نشر", factor: "تفكيك",
