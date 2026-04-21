@@ -301,7 +301,7 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
                   const bg = pct >= 80 ? "hsl(var(--geometry) / 0.35)" : pct >= 50 ? "hsl(var(--statistics) / 0.35)" : pct > 0 ? "hsl(var(--functions) / 0.25)" : "hsl(var(--destructive) / 0.2)";
                   const textColor = pct >= 80 ? "hsl(var(--geometry))" : pct >= 50 ? "hsl(158 64% 25%)" : pct > 0 ? "hsl(340 60% 35%)" : "hsl(var(--destructive))";
                   return (
-                    <td key={t} className="p-1" title={`${GRADE_LABELS[g]} × ${TYPE_LABELS_AR[t]}: ${cell.covered}/${cell.total}`}>
+                    <td key={t} className="p-1" title={`${labelForGrade(g)} × ${TYPE_LABELS_AR[t]}: ${cell.covered}/${cell.total}`}>
                       <div className="w-6 h-6 mx-auto rounded flex items-center justify-center text-[8px] font-bold"
                         style={{ background: bg, color: textColor }}>
                         {cell.total}
@@ -378,7 +378,7 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
                 <AlertItem
                   key={grade}
                   severity="medium"
-                  title={`${GRADE_LABELS[grade]} تغطية ضعيفة`}
+                  title={`${labelForGrade(grade)} تغطية ضعيفة`}
                   detail={`${stats.covered}/${stats.total} فقط (${Math.round((stats.covered / stats.total) * 100)}%)`}
                 />
               ))}
