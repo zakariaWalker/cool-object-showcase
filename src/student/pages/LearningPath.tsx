@@ -164,15 +164,16 @@ export default function LearningPath() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
-      await supabase
-        .from("student_activity_log")
-        .insert({
+      try {
+        await supabase.from("student_activity_log").insert({
           student_id: user.id,
           action: "learning_path_opened",
           xp_earned: 0,
           metadata: { grade: selectedGrade },
-        })
-        .catch(() => {});
+        });
+      } catch {
+        // fire-and-forget, ignore errors
+      }
     })();
   }, []);
 
