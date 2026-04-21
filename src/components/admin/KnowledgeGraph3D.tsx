@@ -81,10 +81,11 @@ const TYPE_LABELS_AR: Record<string, string> = {
   solve_equation: "حل معادلات", analytic_geometry: "هندسة تحليلية",
 };
 
-const GRADE_LABELS: Record<string, string> = {
+const SHORT_LABELS: Record<string, string> = {
   middle_1: "1AM", middle_2: "2AM", middle_3: "3AM", middle_4: "4AM",
   secondary_1: "1AS", secondary_2: "2AS", secondary_3: "3AS",
 };
+const labelForGrade = (g: string) => SHORT_LABELS[g] || g;
 
 // ─── Premium SVG Icons per domain ───────────────────────────────────────────
 function DomainIcon({ domain, size = 48 }: { domain: string; size?: number }) {

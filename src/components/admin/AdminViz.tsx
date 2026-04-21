@@ -15,11 +15,11 @@ interface Props {
 
 // Generic short labels — uses grade_code as fallback (e.g. "1AM" for DZ, "G7" for OM).
 // For full Arabic labels, the dashboard fetches from country_grades; here we keep it compact.
-const GRADE_LABELS: Record<string, string> = {
+const SHORT_LABELS: Record<string, string> = {
   middle_1: "1AM", middle_2: "2AM", middle_3: "3AM", middle_4: "4AM",
   secondary_1: "1AS", secondary_2: "2AS", secondary_3: "3AS",
 };
-const labelForGrade = (g: string) => labelForGrade(g);
+const labelForGrade = (g: string) => SHORT_LABELS[g] || g;
 
 const TYPE_LABELS_AR: Record<string, string> = {
   arithmetic: "حساب", algebra: "جبر", fractions: "كسور", equations: "معادلات",
