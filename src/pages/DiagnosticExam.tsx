@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Brain, Zap, Target, ArrowLeft, Play, Loader2 } from "lucide-react";
+import { Brain, Zap, Target, ArrowLeft, Play, Loader2, Lock } from "lucide-react";
 import { DiagnosticProfiler } from "@/components/DiagnosticProfiler";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { useCountryGrades } from "@/hooks/useCountryGrades";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function DiagnosticExam() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export default function DiagnosticExam() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
 
+  const { isAdmin } = useAuth();
   const { countryCode, gradeCode, isComplete, loading: cLoading, setCurriculum } = useUserCurriculum();
   const { grades, labelOf, cycles } = useCountryGrades(countryCode || "DZ");
   const [pendingGrade, setPendingGrade] = useState<string>("");
@@ -105,18 +107,27 @@ export default function DiagnosticExam() {
                 </div>
               </div>
 
-              {/* Level Selector — dynamic per country */}
+              {/* Level — locked for students, editable for admins */}
               <div className="max-w-xl mx-auto space-y-4">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">مستواك الحالي</p>
-                  <button
-                    onClick={() => navigate("/onboarding?redirect=/diagnostic")}
-                    className="text-[10px] text-primary font-bold hover:underline"
-                  >
-                    تغيير البلد/المستوى →
-                  </button>
+                  {isAdmin && (
+                    <span className="text-[10px] text-primary font-bold uppercase">وضع المشرف</span>
+                  )}
                 </div>
-                {cycles.length > 1 ? (
+
+                {!isAdmin ? (
+                  // Locked badge for students — level comes from registered profile, cannot be changed here
+                  <div className="flex items-center justify-center gap-3 p-5 rounded-2xl bg-primary/5 border-2 border-primary/20">
+                    <Lock className="w-5 h-5 text-primary/60" />
+                    <div className="text-center">
+                      <div className="text-lg font-black text-primary">{labelOf(gradeCode) || gradeCode}</div>
+                      <div className="text-[10px] text-muted-foreground font-bold mt-0.5">
+                        المستوى المسجَّل في حسابك
+                      </div>
+                    </div>
+                  </div>
+                ) : cycles.length > 1 ? (
                   <div className="space-y-3">
                     {cycles.map(cyc => (
                       <div key={cyc}>
@@ -157,16 +168,19 @@ export default function DiagnosticExam() {
               <div className="flex justify-center mt-12">
                 <Button
                   size="lg"
-                  disabled={!pendingGrade}
+                  disabled={!pendingGrade && !gradeCode}
                   onClick={async () => {
-                    if (pendingGrade !== gradeCode) {
+                    // Students always use registered grade. Only admins may switch.
+                    const finalGrade = isAdmin ? (pendingGrade || gradeCode) : gradeCode;
+                    if (isAdmin && pendingGrade && pendingGrade !== gradeCode) {
                       await setCurriculum(countryCode, pendingGrade);
                     }
+                    setPendingGrade(finalGrade);
                     setIsStarted(true);
                   }}
                   className="gap-3 px-8 text-lg font-bold rounded-2xl h-14"
                 >
-                  <Play className="w-5 h-5" /> ابدأ التقييم المخصص ({labelOf(pendingGrade) || pendingGrade})
+                  <Play className="w-5 h-5" /> ابدأ التقييم المخصص ({labelOf(isAdmin ? (pendingGrade || gradeCode) : gradeCode) || gradeCode})
                 </Button>
               </div>
             </motion.div>

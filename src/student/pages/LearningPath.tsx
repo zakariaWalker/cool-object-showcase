@@ -3,7 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { useCountryGrades } from "@/hooks/useCountryGrades";
+import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
+import { Lock } from "lucide-react";
 
 interface Exercise {
   id: string;
@@ -129,17 +131,20 @@ export default function LearningPath() {
 
   const { gradeCode, countryCode } = useUserCurriculum();
   const { grades, labelOf, shortLabel, loading: loadingGrades } = useCountryGrades(countryCode);
+  const { isAdmin, isTeacher } = useAuth();
+  const canSwitchGrade = isAdmin || isTeacher;
 
   const defaultGradeKey = gradeCode || (grades.length > 0 ? grades[0].grade_code : "4AM");
   const [selectedGrade, setSelectedGrade] = useState(defaultGradeKey);
   const [selectedType, setSelectedType] = useState("");
   const [completedExIds, setCompletedExIds] = useState<Set<string>>(new Set());
 
+  // Students are always locked to their registered grade
   useEffect(() => {
-    if (gradeCode && !selectedGrade) {
+    if (gradeCode && (!canSwitchGrade || !selectedGrade)) {
       setSelectedGrade(gradeCode);
     }
-  }, [gradeCode, selectedGrade]);
+  }, [gradeCode, selectedGrade, canSwitchGrade]);
 
   useEffect(() => {
     loadData();
@@ -304,26 +309,34 @@ export default function LearningPath() {
 
       <div className="max-w-5xl mx-auto p-6">
         {/* Controls */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex gap-2 flex-wrap">
-            {grades.map((g) => (
-              <button
-                key={g.grade_code}
-                onClick={() => {
-                  setSelectedGrade(g.grade_code);
-                  setSelectedType("");
-                }}
-                className="px-4 py-2 rounded-full text-xs font-bold transition-all border"
-                style={{
-                  background: selectedGrade === g.grade_code ? "hsl(var(--primary))" : "hsl(var(--card))",
-                  color: selectedGrade === g.grade_code ? "hsl(var(--primary-foreground))" : "hsl(var(--foreground))",
-                  borderColor: selectedGrade === g.grade_code ? "hsl(var(--primary))" : "hsl(var(--border))",
-                }}
-              >
-                {g.grade_label_ar}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-4 mb-6 flex-wrap">
+          {canSwitchGrade ? (
+            <div className="flex gap-2 flex-wrap">
+              {grades.map((g) => (
+                <button
+                  key={g.grade_code}
+                  onClick={() => {
+                    setSelectedGrade(g.grade_code);
+                    setSelectedType("");
+                  }}
+                  className="px-4 py-2 rounded-full text-xs font-bold transition-all border"
+                  style={{
+                    background: selectedGrade === g.grade_code ? "hsl(var(--primary))" : "hsl(var(--card))",
+                    color: selectedGrade === g.grade_code ? "hsl(var(--primary-foreground))" : "hsl(var(--foreground))",
+                    borderColor: selectedGrade === g.grade_code ? "hsl(var(--primary))" : "hsl(var(--border))",
+                  }}
+                >
+                  {g.grade_label_ar}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/5 border border-primary/20">
+              <Lock className="w-3.5 h-3.5 text-primary/60" />
+              <span className="text-xs font-bold text-primary">{labelOf(selectedGrade) || selectedGrade}</span>
+              <span className="text-[10px] text-muted-foreground font-bold">— مستوى مسجَّل</span>
+            </div>
+          )}
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
