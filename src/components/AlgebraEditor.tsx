@@ -327,9 +327,37 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
                     <textarea
                       ref={el => { inputRefs.current[i] = el; }}
                       value={step}
-                      onChange={e => updateStep(i, e.target.value)}
+                      onChange={e => {
+                        updateStep(i, e.target.value);
+                        // auto-grow to mirror handwritten lines
+                        const t = e.currentTarget;
+                        t.style.height = "auto";
+                        t.style.height = Math.min(t.scrollHeight, 240) + "px";
+                      }}
                       onFocus={() => setActiveStep(i)}
-                      placeholder={i === 0 ? placeholder : `الخطوة ${i + 1}...`}
+                      onKeyDown={e => {
+                        // Enter alone → next step (mirrors lifting the pen to a new line)
+                        if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey) {
+                          e.preventDefault();
+                          if (i === steps.length - 1) {
+                            addStep();
+                          } else {
+                            setActiveStep(i + 1);
+                            setTimeout(() => inputRefs.current[i + 1]?.focus(), 30);
+                          }
+                        }
+                        // Backspace on empty line → delete this step
+                        if (e.key === "Backspace" && step === "" && steps.length > 1) {
+                          e.preventDefault();
+                          removeStep(i);
+                          setTimeout(() => inputRefs.current[Math.max(0, i - 1)]?.focus(), 30);
+                        }
+                      }}
+                      placeholder={
+                        i === 0
+                          ? (placeholder || "اكتب الخطوة الأولى — كما لو كنت تكتبها على الكراس...")
+                          : `الخطوة ${i + 1} — تابع برهانك...`
+                      }
                       className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm text-foreground font-mono resize-none min-h-[50px] focus:outline-none focus:border-primary/50 transition-all placeholder:text-muted-foreground/60"
                       rows={1}
                       dir="ltr"
@@ -368,6 +396,7 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
           >
             <Plus size={14} className="group-hover:rotate-90 transition-transform" />
             إضافة خطوة حل جديدة
+            <span className="text-[9px] text-muted-foreground font-mono mr-2">(أو اضغط Enter)</span>
           </button>
         )}
       </div>
