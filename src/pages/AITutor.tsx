@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
+import { useAuth } from "@/hooks/useAuth";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
+import { Lock } from "lucide-react";
 
 interface Exercise {
   id: string;
@@ -43,6 +45,8 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function AITutor() {
   const { countryCode, gradeCode: curriculumGrade } = useUserCurriculum();
+  const { isAdmin, isTeacher } = useAuth();
+  const canSwitchGrade = isAdmin || isTeacher;
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [gradeFilter, setGradeFilter] = useState("");
@@ -64,8 +68,11 @@ export default function AITutor() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (curriculumGrade && GRADE_CODE_TO_KEY[curriculumGrade]) {
-        setGradeFilter(GRADE_CODE_TO_KEY[curriculumGrade]);
+      if (curriculumGrade) {
+        // Use the student's registered grade. The KB stores grades in two formats:
+        // legacy DZ keys (middle_4) and the new code (4AM, G7). Try the legacy mapping
+        // first; if no mapping exists (e.g. Oman G7), use the code directly.
+        setGradeFilter(GRADE_CODE_TO_KEY[curriculumGrade] || curriculumGrade);
       } else if (user?.user_metadata?.grade) {
         setGradeFilter(user.user_metadata.grade);
       }
@@ -261,18 +268,27 @@ export default function AITutor() {
               className="w-full px-3 py-2 rounded-lg border border-border bg-card text-foreground text-sm"
             />
             <div className="flex gap-2">
-              <select
-                value={gradeFilter}
-                onChange={(e) => setGradeFilter(e.target.value)}
-                className="flex-1 px-2 py-2 rounded-lg border border-border bg-card text-foreground text-xs"
-              >
-                <option value="">كل المستويات</option>
-                {Object.entries(GRADE_LABELS).map(([v, l]) => (
-                  <option key={v} value={v}>
-                    {l}
-                  </option>
-                ))}
-              </select>
+              {canSwitchGrade ? (
+                <select
+                  value={gradeFilter}
+                  onChange={(e) => setGradeFilter(e.target.value)}
+                  className="flex-1 px-2 py-2 rounded-lg border border-border bg-card text-foreground text-xs"
+                >
+                  <option value="">كل المستويات</option>
+                  {Object.entries(GRADE_LABELS).map(([v, l]) => (
+                    <option key={v} value={v}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5">
+                  <Lock className="w-3 h-3 text-primary/60" />
+                  <span className="text-xs font-bold text-primary">
+                    {GRADE_LABELS[gradeFilter] || curriculumGrade || "—"}
+                  </span>
+                </div>
+              )}
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
