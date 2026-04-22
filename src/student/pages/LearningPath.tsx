@@ -172,12 +172,15 @@ export default function LearningPath() {
   async function loadData() {
     setLoading(true);
     const PAGE = 1000;
+    const countryFilter = countryCode || "DZ";
+
     const allEx: any[] = [];
     let from = 0;
     while (true) {
       const { data } = await (supabase as any)
         .from("kb_exercises")
         .select("*")
+        .eq("country_code", countryFilter)
         .order("grade")
         .range(from, from + PAGE - 1);
       if (!data || data.length === 0) break;
@@ -191,6 +194,7 @@ export default function LearningPath() {
       const { data } = await (supabase as any)
         .from("kb_deconstructions")
         .select("*")
+        .eq("country_code", countryFilter)
         .range(from, from + PAGE - 1);
       if (!data || data.length === 0) break;
       allDecon.push(...data);
@@ -219,6 +223,12 @@ export default function LearningPath() {
     setLoading(false);
   }
 
+  // Reload whenever the user's country changes
+  useEffect(() => {
+    if (countryCode) loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countryCode]);
+
   const types = useMemo(() => {
     const typeSet = new Set(
       exercises
@@ -237,15 +247,31 @@ export default function LearningPath() {
       deconMap.set(d.exercise_id, list);
     });
 
+    // Include exercises even if not yet deconstructed — group orphans by type
     const filtered = exercises.filter((e) => {
       if (e.grade !== selectedGrade) return false;
       if (selectedType && e.type !== selectedType) return false;
-      return deconMap.has(e.id);
+      return true;
     });
 
     const patternGroups = new Map<string, { pattern: Pattern; exercises: Exercise[]; avgNeeds: number }>();
+
     filtered.forEach((ex) => {
       const decons = deconMap.get(ex.id) || [];
+      if (decons.length === 0) {
+        const typeKey = `orphan:${ex.type || "general"}`;
+        const synth: Pattern = {
+          id: typeKey,
+          name: TYPE_LABELS[ex.type || "general"] || ex.type || "تمارين عامة",
+          type: ex.type || "general",
+          steps: [],
+          concepts: [],
+        };
+        const group = patternGroups.get(typeKey) || { pattern: synth, exercises: [], avgNeeds: 99 };
+        group.exercises.push(ex);
+        patternGroups.set(typeKey, group);
+        return;
+      }
       decons.forEach((d) => {
         const pat = patterns.find((p) => p.id === d.pattern_id);
         if (!pat) return;
