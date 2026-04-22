@@ -3,9 +3,25 @@ import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  User, Home as HomeIcon, Stethoscope, Target, Map as MapIcon, PencilLine,
-  Bot, Telescope, FlaskConical, FileEdit, Library, Sparkles, Network, BookOpen,
-  Settings, Flag, Archive, type LucideIcon,
+  User,
+  Home as HomeIcon,
+  Stethoscope,
+  Target,
+  Map as MapIcon,
+  PencilLine,
+  Bot,
+  Telescope,
+  FlaskConical,
+  FileEdit,
+  Library,
+  Sparkles,
+  Network,
+  BookOpen,
+  Settings,
+  Flag,
+  Archive,
+  GitCompare,
+  type LucideIcon,
 } from "lucide-react";
 import { GamificationDashboard } from "./GamificationDashboard";
 import { QEDLogo } from "./QEDLogo";
@@ -41,16 +57,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Protected routes check for guests
   // Guests can ONLY access landing ("/") and Diagnostic Assessment ("/gaps")
   useEffect(() => {
-    const publicPaths = ["/", "/auth", "/gaps", "/diagnostic", "/annales"];
+    const publicPaths = ["/", "/auth", "/onboarding", "/gaps", "/diagnostic", "/annales"];
     const isPublic =
-      publicPaths.includes(currentPath) || currentPath.startsWith("/tma") || currentPath.startsWith("/archive-solve");
+      publicPaths.includes(currentPath) ||
+      currentPath.startsWith("/tma") ||
+      currentPath.startsWith("/archive-solve") ||
+      currentPath.startsWith("/solve/");
     if (isGuest && !isPublic) {
       navigate("/auth");
     }
   }, [isGuest, currentPath, navigate]);
 
-  // Don't show shell on landing, auth, or TMA pages
-  if (currentPath === "/" || currentPath === "/auth" || currentPath.startsWith("/tma")) return <>{children}</>;
+  // Don't show shell on landing, auth, onboarding, or TMA pages
+  if (currentPath === "/" || currentPath === "/auth" || currentPath === "/onboarding" || currentPath.startsWith("/tma"))
+    return <>{children}</>;
 
   // Filter steps for navigation: Guests only see Diagnostic, Students hide admin-only steps
   const visibleSteps = WORKFLOW_STEPS.filter((step) => {
@@ -147,6 +167,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   `}
                 >
                   <Settings className="w-4 h-4" /> <span className="hidden lg:inline">قاعدة المعرفة</span>
+                </Link>
+                <Link
+                  to="/admin/exam-compare"
+                  className={`
+                    flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12px] font-black transition-all border-2
+                    ${
+                      currentPath === "/admin/exam-compare"
+                        ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20"
+                        : "border-border/40 text-muted-foreground hover:border-primary/40 hover:text-primary"
+                    }
+                  `}
+                >
+                  <GitCompare className="w-4 h-4" /> <span className="hidden lg:inline">مقارنة الامتحانات</span>
                 </Link>
                 <Link
                   to="/admin/reports"

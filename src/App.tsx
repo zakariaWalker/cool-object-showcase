@@ -12,7 +12,6 @@ import Home from "./pages/Home";
 import ExercisePage from "./pages/Exercise";
 import AdminKBPage from "./pages/AdminKB";
 import AdminKBUpload from "./pages/AdminKBUpload";
-import ExamCompare from "./admin/pages/ExamCompare";
 import CurriculumManager from "./admin/pages/CurriculumManager";
 import UserManagement from "./admin/pages/UserManagement";
 import ContentReview from "./admin/pages/ContentReview";
@@ -38,6 +37,7 @@ import UnifiedKBPage from "./pages/UnifiedKB";
 import TextbookUpload from "./pages/TextbookUpload";
 import TextbookViewer from "./pages/TextbookViewer";
 import Onboarding from "./pages/Onboarding";
+import ExamCompare from "./admin/pages/ExamCompare";
 
 const queryClient = new QueryClient();
 
@@ -112,7 +112,6 @@ const App = () => (
             <Route path="/admin" element={<AdminKBPage />} />
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/admin/kb/upload" element={<AdminKBUpload />} />
-            <Route path="/admin/exam-compare" element={<ExamCompare />} />
             <Route path="/admin/curricula" element={<CurriculumManager />} />
             <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/content" element={<ContentReview />} />
@@ -120,6 +119,8 @@ const App = () => (
             <Route path="/admin/analytics" element={<PlatformAnalytics />} />
             <Route path="/admin/config" element={<PlatformConfig />} />
             <Route path="/gaps" element={<GapDetector />} />
+            <Route path="/admin/exam-" element={<PlatformConfig />} />
+
             <Route
               path="/tutor"
               element={
