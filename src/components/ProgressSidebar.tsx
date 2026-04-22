@@ -1,6 +1,6 @@
 // ===== Progress Sidebar — Student-Friendly Edition =====
 
-import { useMemo, forwardRef } from "react";
+import { useMemo, forwardRef, useState } from "react"; // ✅ added useState
 import { getProgress, getDueForReview, clearProgress } from "@/engine/progress-store";
 import { Domain } from "@/engine/types";
 import { motion } from "framer-motion";
@@ -20,6 +20,9 @@ interface Props {
 export const ProgressSidebar = forwardRef<HTMLDivElement, Props>(({ onSelectExercise }, ref) => {
   const progress = getProgress();
   const due = getDueForReview();
+
+  // ✅ replaced window.__fc_state hack with proper React state
+  const [cardIdx, setCardIdx] = useState(0);
 
   const totalByDomain = useMemo(() => {
     const total = progress.totalSolved || 1;
@@ -156,18 +159,8 @@ export const ProgressSidebar = forwardRef<HTMLDivElement, Props>(({ onSelectExer
       {/* Flashcard review mode */}
       {due.length > 0 &&
         (() => {
-          const [cardIdx, setCardIdx] =
-            (window as any).__fc_state ??
-            (() => {
-              (window as any).__fc_state = [
-                0,
-                (v: number) => {
-                  (window as any).__fc_state[0] = v;
-                },
-              ];
-              return (window as any).__fc_state;
-            })();
-          const card = due[0];
+          // ✅ cardIdx/setCardIdx now come from useState above — no IIFE state hack
+          const card = due[cardIdx] ?? due[0];
           const info = DOMAIN_INFO[card.domain];
           return (
             <div style={{ padding: "10px 14px", borderBottom: "1px solid hsl(var(--border))", background: "#FFF1F2" }}>
@@ -213,9 +206,8 @@ export const ProgressSidebar = forwardRef<HTMLDivElement, Props>(({ onSelectExer
                   حلّه الآن ↗
                 </button>
                 <button
-                  onClick={() => {
-                    /* mark as snoozed for 1 day */
-                  }}
+                  // ✅ snooze now advances to the next card instead of doing nothing
+                  onClick={() => setCardIdx((i) => Math.min(i + 1, due.length - 1))}
                   style={{
                     padding: "7px 10px",
                     borderRadius: 8,
@@ -338,3 +330,5 @@ export const ProgressSidebar = forwardRef<HTMLDivElement, Props>(({ onSelectExer
 });
 
 ProgressSidebar.displayName = "ProgressSidebar";
+
+export default ProgressSidebar; // ✅ added default export to fix "Component is not a function"
