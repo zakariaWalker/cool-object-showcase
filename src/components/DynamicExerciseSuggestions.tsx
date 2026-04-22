@@ -1,7 +1,7 @@
 // ===== Dynamic Exercise Suggestions =====
 // Fetches random exercises from the KB database to show as quick-start cards
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 
@@ -49,7 +49,7 @@ const resolveGrade = (code?: string) => {
   return GRADE_CODE_TO_KEY[code] || code;
 };
 
-export function DynamicExerciseSuggestions({ onSelectExercise }: Props) {
+export const DynamicExerciseSuggestions = forwardRef<HTMLDivElement, Props>(({ onSelectExercise }, ref) => {
   const [suggestions, setSuggestions] = useState<SuggestedExercise[]>([]);
   const [loading, setLoading] = useState(true);
   const { gradeCode } = useUserCurriculum();
@@ -59,12 +59,8 @@ export function DynamicExerciseSuggestions({ onSelectExercise }: Props) {
     try {
       const targetGrade = resolveGrade(gradeCode);
 
-      // Build query to get count
       let countQuery = (supabase as any).from("kb_exercises").select("*", { count: "exact", head: true });
-
-      if (targetGrade) {
-        countQuery = countQuery.eq("grade", targetGrade);
-      }
+      if (targetGrade) countQuery = countQuery.eq("grade", targetGrade);
 
       const { count } = await countQuery;
 
@@ -74,7 +70,6 @@ export function DynamicExerciseSuggestions({ onSelectExercise }: Props) {
         return;
       }
 
-      // Pick 6 random offsets
       const offsets = new Set<number>();
       while (offsets.size < Math.min(6, count)) {
         offsets.add(Math.floor(Math.random() * count));
@@ -83,13 +78,9 @@ export function DynamicExerciseSuggestions({ onSelectExercise }: Props) {
       const results: SuggestedExercise[] = [];
       for (const offset of offsets) {
         let fetchQuery = (supabase as any).from("kb_exercises").select("id, text, grade, chapter, type, source");
-
-        if (targetGrade) {
-          fetchQuery = fetchQuery.eq("grade", targetGrade);
-        }
+        if (targetGrade) fetchQuery = fetchQuery.eq("grade", targetGrade);
 
         const { data } = await fetchQuery.range(offset, offset).limit(1);
-
         if (data && data[0]) {
           results.push({
             id: data[0].id,
@@ -124,23 +115,21 @@ export function DynamicExerciseSuggestions({ onSelectExercise }: Props) {
     });
   };
 
-  const gradeLabel = (g: string) => {
-    return GRADE_LABELS[g] || g;
-  };
+  const gradeLabel = (g: string) => GRADE_LABELS[g] || g;
 
   if (loading) {
     return (
-      <div style={{ padding: 16, textAlign: "center" }}>
+      <div ref={ref} style={{ padding: 16, textAlign: "center" }}>
         <div style={{ fontSize: 20, animation: "spin 1s linear infinite" }}>⏳</div>
         <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
-  if (suggestions.length === 0) return null;
+  if (suggestions.length === 0) return <div ref={ref} />;
 
   return (
-    <div dir="rtl">
+    <div ref={ref} dir="rtl">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <h3
           style={{
@@ -235,4 +224,6 @@ export function DynamicExerciseSuggestions({ onSelectExercise }: Props) {
       </div>
     </div>
   );
-}
+});
+
+DynamicExerciseSuggestions.displayName = "DynamicExerciseSuggestions";
