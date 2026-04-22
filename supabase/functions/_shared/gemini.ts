@@ -36,12 +36,23 @@ export function getGeminiKey(): string {
   return key;
 }
 
-export async function callGemini(
+// Fallback chain when the requested model is overloaded (503).
+// Tried in order, skipping the requested one.
+const FALLBACK_CHAIN = [
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+];
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function singleCall(
+  model: string,
   messages: GeminiMessage[],
-  config: GeminiConfig = {}
-): Promise<GeminiResponse> {
-  const apiKey = getGeminiKey();
-  const model = config.model || "gemini-2.5-flash";
+  config: GeminiConfig,
+  apiKey: string,
+): Promise<Response> {
   const url = `${GEMINI_BASE}/models/${model}:generateContent?key=${apiKey}`;
 
   const body: any = {
@@ -54,34 +65,80 @@ export async function callGemini(
   };
 
   if (config.systemInstruction) {
-    body.systemInstruction = {
-      parts: [{ text: config.systemInstruction }],
-    };
+    body.systemInstruction = { parts: [{ text: config.systemInstruction }] };
   }
 
   if (config.tools) {
     body.tools = config.tools;
-    if (config.toolConfig) {
-      body.toolConfig = config.toolConfig;
-    }
+    if (config.toolConfig) body.toolConfig = config.toolConfig;
   }
 
-  const response = await fetch(url, {
+  return fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+}
 
-  if (!response.ok) {
-    const errText = await response.text();
-    if (response.status === 429) {
-      throw new GeminiError("RATE_LIMIT", "تم تجاوز حد الطلبات. حاول لاحقاً.", 429);
+export async function callGemini(
+  messages: GeminiMessage[],
+  config: GeminiConfig = {}
+): Promise<GeminiResponse> {
+  const apiKey = getGeminiKey();
+  const requested = config.model || "gemini-2.5-flash";
+  // Build try-list: requested first, then fallbacks (deduped)
+  const tryList: string[] = [requested, ...FALLBACK_CHAIN.filter((m) => m !== requested)];
+
+  let lastErr: { status: number; text: string } | null = null;
+
+  for (let i = 0; i < tryList.length; i++) {
+    const model = tryList[i];
+    // Per-model retry with exponential backoff for transient 503/500
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const response = await singleCall(model, messages, config, apiKey);
+
+      if (response.ok) {
+        if (i > 0 || attempt > 0) {
+          console.log(`[Gemini] Recovered with model=${model} attempt=${attempt + 1}`);
+        }
+        return await parseGeminiResponse(response);
+      }
+
+      const errText = await response.text();
+      lastErr = { status: response.status, text: errText };
+
+      // Hard fails — don't retry, don't try fallback
+      if (response.status === 429) {
+        throw new GeminiError("RATE_LIMIT", "تم تجاوز حد الطلبات. حاول مجدداً بعد دقيقة.", 429);
+      }
+      if (response.status === 402 || response.status === 403) {
+        throw new GeminiError("QUOTA", "حصة API منتهية. تحقق من مفتاح Gemini.", 402);
+      }
+      if (response.status === 400) {
+        throw new GeminiError("API_ERROR", `Gemini 400: ${errText.slice(0, 300)}`, 400);
+      }
+
+      // 503/500/504 → retry with backoff, then fall through to next model
+      if (response.status === 503 || response.status === 500 || response.status === 504) {
+        const waitMs = 600 * Math.pow(2, attempt); // 600, 1200, 2400
+        console.warn(`[Gemini] ${model} returned ${response.status}, retry ${attempt + 1}/3 in ${waitMs}ms`);
+        await sleep(waitMs);
+        continue;
+      }
+
+      // Other errors — break per-model loop, try next fallback
+      break;
     }
-    if (response.status === 402 || response.status === 403) {
-      throw new GeminiError("QUOTA", "حصة API منتهية. تحقق من مفتاح Gemini.", 402);
-    }
-    throw new GeminiError("API_ERROR", `Gemini error ${response.status}: ${errText.slice(0, 300)}`, response.status);
   }
+
+  throw new GeminiError(
+    "OVERLOADED",
+    "نماذج Gemini مشغولة حالياً (503). جرّبنا عدة بدائل دون نجاح. أعد المحاولة بعد قليل.",
+    503,
+  );
+}
+
+async function parseGeminiResponse(response: Response): Promise<GeminiResponse> {
 
   const data = await response.json();
   const candidate = data?.candidates?.[0];
