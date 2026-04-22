@@ -509,7 +509,12 @@ export default function LearningPath() {
         {learningPath.length === 0 && (
           <div className="text-center py-20 text-muted-foreground">
             <div className="text-4xl mb-4">📚</div>
-            <p>لا توجد تمارين مفكّكة لهذا المستوى بعد. يجب تفكيك التمارين أولاً من لوحة الإدارة.</p>
+            <p className="font-bold text-foreground mb-1">
+              لا توجد تمارين متاحة في {shortLabel(selectedGrade)} بعد
+            </p>
+            <p className="text-xs">
+              يجب على الإدارة إضافة تمارين لهذا المستوى من قاعدة المعرفة أولاً.
+            </p>
           </div>
         )}
       </div>
