@@ -295,19 +295,44 @@
     background: white !important;
     color: black !important;
     font-size: 11pt;
+    height: auto !important;
+    overflow: visible !important;
   }
 
-  body * { visibility: hidden; }
-  #exam-paper, #exam-paper * { visibility: visible; }
+  /* Hide everything except the exam paper.
+     Use display:none on top-level wrappers so they don't reserve space,
+     but keep #exam-paper and its ancestors flowing in normal document flow
+     so multi-page content paginates correctly (no position:absolute clipping). */
+  body > *:not(#exam-paper):not(:has(#exam-paper)) {
+    display: none !important;
+  }
+
+  /* Reset every wrapper that contains the paper so it inherits normal flow */
+  body :has(#exam-paper) {
+    position: static !important;
+    inset: auto !important;
+    overflow: visible !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+  }
+
   #exam-paper {
-    position: absolute;
-    inset: 0;
-    width: 100%;
+    position: static !important;
+    width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
     background: white !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
   }
 
   .print\:hidden { display: none !important; }
