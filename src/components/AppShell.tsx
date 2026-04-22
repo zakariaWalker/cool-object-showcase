@@ -20,7 +20,7 @@ import {
   Settings,
   Flag,
   Archive,
-  GitCompare,
+  ArrowLeftRight,
   type LucideIcon,
 } from "lucide-react";
 import { GamificationDashboard } from "./GamificationDashboard";
@@ -54,8 +54,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, profile, isAdmin, signOut } = useAuth();
   const isGuest = !user;
 
-  // Protected routes check for guests
-  // Guests can ONLY access landing ("/") and Diagnostic Assessment ("/gaps")
   useEffect(() => {
     const publicPaths = ["/", "/auth", "/onboarding", "/gaps", "/diagnostic", "/annales"];
     const isPublic =
@@ -72,7 +70,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (currentPath === "/" || currentPath === "/auth" || currentPath === "/onboarding" || currentPath.startsWith("/tma"))
     return <>{children}</>;
 
-  // Filter steps for navigation: Guests only see Diagnostic, Students hide admin-only steps
   const visibleSteps = WORKFLOW_STEPS.filter((step) => {
     if (isGuest) return step.path === "/gaps" || step.path === "/diagnostic";
     if (step.adminOnly && !isAdmin) return false;
@@ -88,7 +85,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden font-sans">
-      {/* Top nav bar with Glassmorphism */}
       <nav
         dir="rtl"
         className="flex-shrink-0 border-b border-border/40 bg-card/60 backdrop-blur-xl sticky top-0 z-50 px-6 h-20 flex items-center shadow-lg shadow-black/5"
@@ -102,7 +98,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </Link>
 
-          {/* Divider */}
           <div className="w-px h-10 bg-border/40 mx-6 flex-shrink-0" />
 
           {/* Workflow steps */}
@@ -179,7 +174,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     }
                   `}
                 >
-                  <GitCompare className="w-4 h-4" /> <span className="hidden lg:inline">مقارنة الامتحانات</span>
+                  <ArrowLeftRight className="w-4 h-4" /> <span className="hidden lg:inline">مقارنة الامتحانات</span>
                 </Link>
                 <Link
                   to="/admin/reports"
@@ -240,10 +235,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
       </nav>
 
-      {/* Compact gamification bar */}
       {currentPath !== "/" && <GamificationDashboard compact />}
 
-      {/* Page content */}
       <main className="flex-1 overflow-y-auto custom-scrollbar">{children}</main>
     </div>
   );
