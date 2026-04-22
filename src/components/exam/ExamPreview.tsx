@@ -45,10 +45,10 @@ export function ExamPreview({ exam, onClose }: Props) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 print:static print:bg-transparent print:p-0 print:block print:overflow-visible overflow-y-auto"
       onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }}
-        className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl bg-white text-black" dir="rtl">
+        className="w-full max-w-4xl rounded-xl bg-white text-black my-4 print:my-0 print:max-w-none print:rounded-none print:overflow-visible" dir="rtl">
         {/* Action bar */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between print:hidden z-10">
           <div className="flex items-center gap-3">
