@@ -24,8 +24,10 @@ Deno.serve(async (req) => {
     const db = createClient(supabaseUrl, supabaseKey);
 
     let skillContext = "";
+    let exerciseContext = "";
+    let misconceptionContext = "";
     try {
-      // Skills mapped to this country+grade via curriculum_mappings
+      // 1) Skills mapped to this country+grade via curriculum_mappings
       const { data: maps } = await db
         .from("curriculum_mappings")
         .select("skill_id, chapter_label, semester")
@@ -34,7 +36,7 @@ Deno.serve(async (req) => {
 
       let skillIds = (maps || []).map((m: any) => m.skill_id);
 
-      // Fallback: if no mappings yet, use kb_skills.grade
+      // Fallback: kb_skills.grade
       if (skillIds.length === 0) {
         const { data: gskills } = await db
           .from("kb_skills")
@@ -47,18 +49,43 @@ Deno.serve(async (req) => {
       if (skillIds.length > 0) {
         const { data: skills } = await db
           .from("kb_skills")
-          .select("name_ar, name, domain, subdomain, difficulty, bloom_level")
+          .select("id, name_ar, name, domain, subdomain, difficulty, bloom_level")
           .in("id", skillIds.slice(0, 40));
 
         if (skills?.length) {
           const list = skills.map((s: any) =>
             `- ${s.name_ar || s.name} [${s.domain}/${s.subdomain || "—"}] (صعوبة:${s.difficulty || 1})`
           ).join("\n");
-          skillContext = `\n\nمهارات منهج ${COUNTRY_NAMES[countryCode] || countryCode} للمستوى ${level} (يجب اختيار أسئلة منها فقط):\n${list}`;
+          skillContext = `\n\n## مهارات منهج ${COUNTRY_NAMES[countryCode] || countryCode} للمستوى ${level} (المرجع الرسمي):\n${list}`;
+
+          // 2) Common misconceptions for these skills
+          const { data: errors } = await db
+            .from("kb_skill_errors")
+            .select("error_description, fix_hint, severity")
+            .in("skill_id", skills.map((s: any) => s.id))
+            .order("frequency", { ascending: false })
+            .limit(15);
+          if (errors?.length) {
+            misconceptionContext = `\n\n## أخطاء شائعة موثَّقة في قاعدة المعرفة لهذه المهارات (يجب أن يستهدفها التشخيص):\n` +
+              errors.map((e: any) => `- ${e.error_description}${e.fix_hint ? ` (تصحيح: ${e.fix_hint})` : ""}`).join("\n");
+          }
         }
       }
+
+      // 3) Sample of real exercises from the country's KB at this grade — gives the AI authentic style
+      const { data: exs } = await db
+        .from("kb_exercises")
+        .select("text, type, difficulty, bloom_level")
+        .eq("country_code", countryCode)
+        .eq("grade", level)
+        .order("difficulty", { ascending: true })
+        .limit(8);
+      if (exs?.length) {
+        exerciseContext = `\n\n## أمثلة على تمارين حقيقية من قاعدة المعرفة لهذا المستوى (للأسلوب فقط — لا تنسخها حرفياً):\n` +
+          exs.map((e: any, i: number) => `${i + 1}. [${e.type || "—"}] ${e.text.slice(0, 240)}`).join("\n");
+      }
     } catch (e) {
-      console.warn("skill context load failed (non-fatal):", e);
+      console.warn("KB context load failed (non-fatal):", e);
     }
 
     const countryHint = COUNTRY_NAMES[countryCode] || `بلد كود ${countryCode}`;
@@ -66,16 +93,17 @@ Deno.serve(async (req) => {
     const prompt = `أنت خبير بيداغوجي في الرياضيات وفق منهاج ${countryHint}.
 المهمة: توليد "تقييم تشخيصي عادل" (Fair Diagnostic) للمستوى ${level} بهذا المنهج بالضبط.
 البصمة العشوائية لهذا الطلب: ${seed} (يجب توليد أسئلة مختلفة عن المرات السابقة).
-${skillContext}
+${skillContext}${misconceptionContext}${exerciseContext}
 
-مبادئ التقييم العادل:
-1. التفكير > النتيجة: لا تسأل "احسب x"، بل اسأل "آمال حسبت x بهذه الطريقة، هل هي محقة؟ لماذا؟".
-2. كشف المفاهيم الخاطئة الشائعة في هذا المنهج تحديداً.
-3. التنوع: ولد ${count} أسئلة تشمل: تحليل منطقي، فخ رياضي، لغز عددي، ومسألة مفتوحة.
-4. التنوع النوعي: استخدم "qcm" للخيارات و "numeric" للتوقعات العددية.
-5. الالتزام بمصطلحات وأسلوب منهج ${countryHint} (مثلاً عُمان: G7-G12، الجزائر: AM/AS).
+## مبادئ التقييم العادل:
+1. **التفكير > النتيجة**: لا تسأل "احسب x"، بل اسأل "آمال حسبت x بهذه الطريقة، هل هي محقة؟ لماذا؟".
+2. **استهداف المفاهيم الخاطئة الموثَّقة أعلاه** كلما أمكن (هذا هو هدف التشخيص الأساسي).
+3. **التنوع الكامل**: ولّد ${count} أسئلة تشمل بالضبط: تحليل منطقي، فخ رياضي، لغز عددي، مسألة مفتوحة، وسؤال استراتيجي.
+4. **الاستناد إلى قاعدة المعرفة**: استخدم المهارات المذكورة أعلاه كمرجع — لا تخترع مفاهيم خارج المنهج.
+5. **الالتزام بمصطلحات وأسلوب منهج ${countryHint}** (مثلاً عُمان: G7-G12، الجزائر: AM/AS).
+6. **التنوع النوعي**: استخدم "qcm" للخيارات و "numeric" للتوقعات العددية.
 
-المطلوب: توليد JSON فقط بالهيكل التالي:
+## المطلوب: توليد JSON فقط بالهيكل التالي:
 {
   "exercises": [
     {
@@ -88,7 +116,7 @@ ${skillContext}
       "hint": "تلميح يساعد الطالب",
       "kind": "qcm|numeric|text",
       "icon": "إيموجي مناسب",
-      "misconception": "اسم المفهوم الخاطئ الذي يكشفه هذا السؤال",
+      "misconception": "اسم المفهوم الخاطئ الذي يكشفه هذا السؤال (يفضَّل من القائمة أعلاه)",
       "badgeColor": "var(--primary) أو var(--destructive) إلخ",
       "badgeBg": "rgba(...) مناسبة",
       "placeholder": "نص المساعدة في الإدخال"
