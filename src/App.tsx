@@ -118,9 +118,8 @@ const App = () => (
             <Route path="/admin/billing" element={<BillingPage />} />
             <Route path="/admin/analytics" element={<PlatformAnalytics />} />
             <Route path="/admin/config" element={<PlatformConfig />} />
+            <Route path="/admin/exam-compare" element={<ExamCompare />} />
             <Route path="/gaps" element={<GapDetector />} />
-            <Route path="/admin/exam-" element={<PlatformConfig />} />
-
             <Route
               path="/tutor"
               element={
