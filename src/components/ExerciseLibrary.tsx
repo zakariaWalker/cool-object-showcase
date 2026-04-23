@@ -106,7 +106,7 @@ const STREAMS: Record<string, { id: string; label: string; color: string }[]> = 
 
 export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
   const { profile, isAdmin, isTeacher } = useAuth();
-  const { gradeCode } = useUserCurriculum();
+  const { gradeCode, countryCode } = useUserCurriculum();
 
   // Translate the new grade_code ("4AM") → the internal key used in kb_exercises.grade ("middle_4")
   const resolveGrade = (code?: string) => {
@@ -115,27 +115,12 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
   };
 
   // Initialize from profile or localStorage
-  const initGrade = (() => {
-    // gradeCode is the correct field (e.g. "4AM"), translate to internal key
-    if (gradeCode) return resolveGrade(gradeCode);
-    try {
-      return localStorage.getItem("elmentor_grade") || "middle_4";
-    } catch {
-      return "middle_4";
-    }
-  })();
-  const initStream = (() => {
-    if (profile?.stream) return profile.stream;
-    try {
-      return localStorage.getItem("elmentor_stream") || "";
-    } catch {
-      return "";
-    }
-  })();
+  const initGrade = gradeCode || "4AM";
+  const initStream = profile?.stream || "";
 
   const [selectedGrade, setSelectedGrade] = useState<string>(initGrade);
   const [selectedStream, setSelectedStream] = useState<string>(() => {
-    if (initGrade.startsWith("secondary_") && STREAMS[initGrade]) {
+    if (STREAMS[initGrade]) {
       const valid = STREAMS[initGrade].find((s) => s.id === initStream);
       return valid ? initStream : STREAMS[initGrade][0].id;
     }
@@ -150,7 +135,7 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
   // SYNC: When profile loads async, update grade filter to match student's registered level
   useEffect(() => {
     if (gradeCode && !isAdmin && !isTeacher) {
-      setSelectedGrade(resolveGrade(gradeCode));
+      setSelectedGrade(gradeCode);
     }
   }, [gradeCode, isAdmin, isTeacher]);
 
@@ -161,10 +146,16 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
       setLoading(true);
       setError(null);
       try {
-        let query = (supabase as any).from("kb_exercises").select("*").eq("grade", selectedGrade).order("chapter");
+        const gradeCandidates = Array.from(new Set([selectedGrade, resolveGrade(selectedGrade)].filter(Boolean)));
+        let query = (supabase as any)
+          .from("kb_exercises")
+          .select("*")
+          .eq("country_code", countryCode || "DZ")
+          .in("grade", gradeCandidates)
+          .order("chapter");
 
         // For secondary grades with streams, filter by stream
-        if (selectedGrade.startsWith("secondary_") && selectedStream) {
+        if (STREAMS[selectedGrade] && selectedStream) {
           query = query.eq("stream", selectedStream);
         }
 
@@ -199,19 +190,15 @@ export function ExerciseLibrary({ onSelectExercise }: ExerciseLibraryProps) {
     };
 
     fetchExercises();
-    try {
-      localStorage.setItem("elmentor_grade", selectedGrade);
-      if (selectedStream) localStorage.setItem("elmentor_stream", selectedStream);
-    } catch {}
     return () => {
       cancelled = true;
     };
-  }, [selectedGrade, selectedStream]);
+  }, [selectedGrade, selectedStream, countryCode]);
 
   // When grade changes, auto-set stream for secondary
   const handleGradeChange = (grade: string) => {
     setSelectedGrade(grade);
-    if (grade.startsWith("secondary_") && STREAMS[grade]) {
+    if (STREAMS[grade]) {
       setSelectedStream(STREAMS[grade][0].id);
     } else {
       setSelectedStream("");

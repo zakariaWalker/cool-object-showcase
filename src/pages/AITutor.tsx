@@ -69,10 +69,7 @@ export default function AITutor() {
       } = await supabase.auth.getUser();
 
       if (curriculumGrade) {
-        // Use the student's registered grade. The KB stores grades in two formats:
-        // legacy DZ keys (middle_4) and the new code (4AM, G7). Try the legacy mapping
-        // first; if no mapping exists (e.g. Oman G7), use the code directly.
-        setGradeFilter(GRADE_CODE_TO_KEY[curriculumGrade] || curriculumGrade);
+        setGradeFilter(curriculumGrade);
       } else if (user?.user_metadata?.grade) {
         setGradeFilter(user.user_metadata.grade);
       }
@@ -285,7 +282,7 @@ export default function AITutor() {
                 <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5">
                   <Lock className="w-3 h-3 text-primary/60" />
                   <span className="text-xs font-bold text-primary">
-                    {GRADE_LABELS[gradeFilter] || curriculumGrade || "—"}
+                    {curriculumGrade || GRADE_LABELS[gradeFilter] || gradeFilter || "—"}
                   </span>
                 </div>
               )}
