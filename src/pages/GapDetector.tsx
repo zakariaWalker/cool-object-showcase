@@ -70,14 +70,13 @@ export default function GapDetector() {
   const { gradeCode } = useUserCurriculum();
   const { isAdmin, isTeacher } = useAuth();
 
-  // Map grade_code → kb key, default to empty (shows all grades for guests)
-  const defaultGradeKey = GRADE_CODE_TO_KEY[gradeCode] || "";
-  const [gradeFilter, setGradeFilter] = useState(defaultGradeKey);
+  // The DB stores grade as the short code ("2AS"); use it directly.
+  const [gradeFilter, setGradeFilter] = useState(gradeCode || "");
 
-  // FIX: sync gradeFilter when gradeCode loads async from Supabase
+  // Sync gradeFilter when gradeCode loads async from Supabase
   useEffect(() => {
-    if (gradeCode && GRADE_CODE_TO_KEY[gradeCode] && !gradeFilter) {
-      setGradeFilter(GRADE_CODE_TO_KEY[gradeCode]);
+    if (gradeCode && !gradeFilter) {
+      setGradeFilter(gradeCode);
     }
   }, [gradeCode, gradeFilter]);
 
