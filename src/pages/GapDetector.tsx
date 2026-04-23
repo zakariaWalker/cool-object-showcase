@@ -101,12 +101,21 @@ export default function GapDetector() {
   async function loadData() {
     setLoading(true);
     const PAGE = 1000;
+    const { countryCode } = await (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { countryCode: "DZ" };
+      const { data } = await (supabase as any)
+        .from("profiles").select("country_code").eq("id", user.id).maybeSingle();
+      return { countryCode: data?.country_code || "DZ" };
+    })();
+
     const allEx: any[] = [];
     let from = 0;
     while (true) {
       const { data } = await (supabase as any)
         .from("kb_exercises")
         .select("*")
+        .eq("country_code", countryCode)
         .order("grade")
         .range(from, from + PAGE - 1);
       if (!data || data.length === 0) break;
@@ -121,6 +130,7 @@ export default function GapDetector() {
       const { data } = await (supabase as any)
         .from("kb_deconstructions")
         .select("*")
+        .eq("country_code", countryCode)
         .range(from, from + PAGE - 1);
       if (!data || data.length === 0) break;
       allDecon.push(...data);
