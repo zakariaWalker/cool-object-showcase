@@ -62,6 +62,9 @@ export default function AITutor() {
   const [kbPattern, setKbPattern] = useState<any>(null);
   const [kbLoading, setKbLoading] = useState(false);
 
+  // Translate legacy long key ("middle_2") → short DB code ("2AS")
+  const normalizeGrade = (g?: string) => (g ? GRADE_LABELS[g] || g : "");
+
   useEffect(() => {
     async function init() {
       const {
@@ -71,7 +74,7 @@ export default function AITutor() {
       if (curriculumGrade) {
         setGradeFilter(curriculumGrade);
       } else if (user?.user_metadata?.grade) {
-        setGradeFilter(user.user_metadata.grade);
+        setGradeFilter(normalizeGrade(user.user_metadata.grade));
       }
       loadExercises();
     }
@@ -105,18 +108,19 @@ export default function AITutor() {
     [exercises],
   );
 
-  const filtered = useMemo(
-    () =>
-      exercises
-        .filter((e) => {
-          if (gradeFilter && e.grade !== gradeFilter) return false;
-          if (typeFilter && e.type !== typeFilter) return false;
-          if (search && !e.text.toLowerCase().includes(search.toLowerCase())) return false;
-          return true;
-        })
-        .slice(0, 100),
-    [exercises, gradeFilter, typeFilter, search],
-  );
+  const filtered = useMemo(() => {
+    const candidates = new Set(
+      [gradeFilter, GRADE_CODE_TO_KEY[gradeFilter] || ""].filter(Boolean),
+    );
+    return exercises
+      .filter((e) => {
+        if (gradeFilter && !candidates.has(e.grade)) return false;
+        if (typeFilter && e.type !== typeFilter) return false;
+        if (search && !e.text.toLowerCase().includes(search.toLowerCase())) return false;
+        return true;
+      })
+      .slice(0, 100);
+  }, [exercises, gradeFilter, typeFilter, search]);
   const askTutor = async () => {
     if (!selectedEx) return;
     setAiLoading(true);
