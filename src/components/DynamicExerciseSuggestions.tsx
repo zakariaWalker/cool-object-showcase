@@ -57,10 +57,14 @@ export const DynamicExerciseSuggestions = forwardRef<HTMLDivElement, Props>(({ o
   const loadRandomExercises = async () => {
     setLoading(true);
     try {
-      const targetGrade = resolveGrade(gradeCode);
+      // The DB stores grade as the short code ("2AS"). Pass both the raw code
+      // and the legacy long key so old rows are still picked up.
+      const candidates = Array.from(
+        new Set([gradeCode, resolveGrade(gradeCode)].filter(Boolean) as string[]),
+      );
 
       let countQuery = (supabase as any).from("kb_exercises").select("*", { count: "exact", head: true });
-      if (targetGrade) countQuery = countQuery.eq("grade", targetGrade);
+      if (candidates.length) countQuery = countQuery.in("grade", candidates);
 
       const { count } = await countQuery;
 
@@ -78,7 +82,7 @@ export const DynamicExerciseSuggestions = forwardRef<HTMLDivElement, Props>(({ o
       const results: SuggestedExercise[] = [];
       for (const offset of offsets) {
         let fetchQuery = (supabase as any).from("kb_exercises").select("id, text, grade, chapter, type, source");
-        if (targetGrade) fetchQuery = fetchQuery.eq("grade", targetGrade);
+        if (candidates.length) fetchQuery = fetchQuery.in("grade", candidates);
 
         const { data } = await fetchQuery.range(offset, offset).limit(1);
         if (data && data[0]) {
