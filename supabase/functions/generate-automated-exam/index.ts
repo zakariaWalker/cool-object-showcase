@@ -6,139 +6,354 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+// ─────────────────────────────────────────────────────────────
+// CURRICULUM REGISTRY
+// Each entry: topics students MUST see, example exercise starters,
+// and the required section structure for a full paper.
+// ─────────────────────────────────────────────────────────────
+const CURRICULUM: Record<
+  string,
+  {
+    labelAr: string;
+    examType: string;
+    topics: string[];
+    sectionBlueprint: Array<{ titleAr: string; topicHint: string; points: number; subQMin: number; subQMax: number }>;
+    integrationContext: string;
+  }
+> = {
+  // ── Terminal Science (3AS) ────────────────────────────────
+  "3AS": {
+    labelAr: "السنة الثالثة ثانوي - شعبة العلوم",
+    examType: "BAC",
+    topics: [
+      "المتتاليات الحسابية والهندسية (الحد العام، مجموع المتتالية، إثبات طبيعة المتتالية)",
+      "المتتاليات التراجعية (u_{n+1} = f(u_n)، النهايات، الرتابة بالإشارة)",
+      "نهايات الدوال والمتتاليات (صور غير محددة، التكافؤات، المستقيمات المقاربة)",
+      "حساب المشتقات (مشتق الجداء، الخارج، الدالة المركبة، المماس)",
+      "دراسة الدوال (جدول الاشتقاق، الإشارة، الاقتراب، التمثيل البياني)",
+      "الدوال الأسية واللوغاريتمية (ln, exp، خصائص، معادلات، متراجحات)",
+      "الدوال الناطقة (المقاربات، المناقشة البيانية لعدد الحلول)",
+      "مبرهنة القيم المتوسطة (IVT) والتقريب بالتكرار",
+      "المعادلات التفاضلية من الدرجة الأولى (y' + ay = b)",
+      "التكامل (دوال بدائية، حساب المساحات والتكاملات المحدودة)",
+      "الاحتمالات (قانون القسمة الشرطية، الاستقلالية، ترتيبات وتوافيق)",
+      "الأعداد المركبة (الصيغة الجبرية والمثلثية، المعادلات في C)",
+      "الهندسة في الفضاء (متجهات، معادلات المستوى، ميل المستقيم)",
+    ],
+    sectionBlueprint: [
+      {
+        titleAr: "التمرين الأول",
+        topicHint: "متتاليات (حسابية أو هندسية أو تراجعية)",
+        points: 5,
+        subQMin: 4,
+        subQMax: 6,
+      },
+      {
+        titleAr: "التمرين الثاني",
+        topicHint: "دراسة دالة (أسية أو لوغاريتمية أو ناطقة) مع رسم وتحليل",
+        points: 6,
+        subQMin: 5,
+        subQMax: 8,
+      },
+      {
+        titleAr: "التمرين الثالث",
+        topicHint: "احتمالات أو أعداد مركبة أو معادلات تفاضلية أو تكامل",
+        points: 5,
+        subQMin: 4,
+        subQMax: 6,
+      },
+      {
+        titleAr: "المسألة الإدماجية",
+        topicHint: "وضعية ادماجية حياتية تجمع دوال + متتاليات أو احتمالات + مساحات",
+        points: 4,
+        subQMin: 4,
+        subQMax: 5,
+      },
+    ],
+    integrationContext:
+      "سياق الاقتصاد أو التحليل السكاني أو الفيزياء أو الإيكولوجيا - يُدمج دالة ومتتالية في نفس الوضعية",
+  },
 
-  try {
-    const { mode, template, grade, patterns, kbExam, style, country = "DZ" } = await req.json();
+  // ── 2AS (Première) ────────────────────────────────────────
+  "2AS": {
+    labelAr: "السنة الثانية ثانوي",
+    examType: "Fard",
+    topics: [
+      "الدوال العددية (المجال، الرتابة، الإشارة، الدراسة الكاملة)",
+      "المشتقات (تعريف، قواعد الاشتقاق، المماس)",
+      "المتتاليات العددية (الحد العام، النهايات الأولية)",
+      "الإحصاء (التباين، الانحراف المعياري، التمثيلات البيانية)",
+      "المعادلات والمتراجحات من الدرجة الثانية",
+      "المثلثية (دوال الجيب والجيب التمام، الدوائر المثلثية)",
+      "الهندسة التحليلية (الأشعة، معادلات المستقيم، الدائرة)",
+    ],
+    sectionBlueprint: [
+      {
+        titleAr: "التمرين الأول",
+        topicHint: "متتاليات أو معادلات من الدرجة الثانية",
+        points: 4,
+        subQMin: 3,
+        subQMax: 5,
+      },
+      { titleAr: "التمرين الثاني", topicHint: "دراسة دالة مع المشتقات والجدول", points: 5, subQMin: 4, subQMax: 6 },
+      { titleAr: "التمرين الثالث", topicHint: "إحصاء أو مثلثية أو هندسة تحليلية", points: 4, subQMin: 3, subQMax: 5 },
+      { titleAr: "المسألة الإدماجية", topicHint: "وضعية حياتية تجمع دوال ومعادلات", points: 7, subQMin: 4, subQMax: 5 },
+    ],
+    integrationContext: "سياق التخطيط المدني أو الاقتصاد البسيط أو المسافة والسرعة",
+  },
 
-    // ── Pedagogical reference distilled from real BEM/BAC papers ──
-    const realExamRules = `
-هذه قواعد صارمة مستخرجة من الامتحانات الرسمية الجزائرية الحقيقية (BEM / BAC):
+  // ── BEM (3e Moyenne) ──────────────────────────────────────
+  BEM: {
+    labelAr: "شهادة التعليم المتوسط",
+    examType: "BEM",
+    topics: [
+      "الحساب العددي (جذور، كتابة علمية، PGCD, PPCM)",
+      "الجبر (نشر، تبسيط، تحليل، حل معادلات من الدرجة الأولى والثانية)",
+      "الهندسة المستوية (فيثاغورس، طاليس، نسب مثلثية، دائرة، مساحات)",
+      "الأعداد النسبية والعمليات عليها",
+      "الدوال الخطية والتآلفية (جدول قيم، تمثيل بياني، معادلة المستقيم)",
+      "الإحصاء (وسيط، منوال، وسط حسابي، تمثيل بياني)",
+      "التناسب والنسب المئوية",
+    ],
+    sectionBlueprint: [
+      {
+        titleAr: "التمرين الأول",
+        topicHint: "حساب عددي (جذور أو كتابة علمية أو PGCD)",
+        points: 4,
+        subQMin: 3,
+        subQMax: 4,
+      },
+      { titleAr: "التمرين الثاني", topicHint: "جبر (نشر وتحليل ومعادلة)", points: 4, subQMin: 3, subQMax: 5 },
+      {
+        titleAr: "التمرين الثالث",
+        topicHint: "هندسة مستوية (مثلث أو دائرة بأبعاد محددة)",
+        points: 4,
+        subQMin: 3,
+        subQMax: 4,
+      },
+      {
+        titleAr: "المسألة الإدماجية",
+        topicHint: "وضعية حياتية (شراء أو بناء أو مساحة) تجمع أكثر من مبحث",
+        points: 8,
+        subQMin: 4,
+        subQMax: 5,
+      },
+    ],
+    integrationContext: "قصة شراء مواد بناء، تبليط، رحلة مدرسية، حديقة منزلية - طالب جزائري في المدينة",
+  },
+};
 
-1. البنية القياسية:
-   - الجزء الأول: 3 إلى 4 تمارين قصيرة-متوسطة (12 نقطة إجمالاً تقريباً)
-   - الجزء الثاني: مسألة إدماجية واحدة (8 نقاط) بسياق واقعي حياتي
+// Default fallback for unknown grades
+const DEFAULT_CURRICULUM_KEY = "BEM";
 
-2. صياغة كل تمرين تتبع هذه البنية:
-   - **عبارة افتتاحية** قصيرة تُحدد السياق (مثال: "نعتبر التعبير الجبري A حيث:")
-   - **معطيات رياضية** بصيغة LaTeX سليمة ($A = (2x-3)^2 + (2x-3)(x+5)$)
-   - **3 إلى 5 أسئلة فرعية مرقمة** (1) … 2) … 3) …) متدرجة الصعوبة
-   - كل سؤال فرعي يبدأ بفعل أمر واحد: أحسب، حلّ، بيّن أن، أنشر ثم بسّط، استنتج، أنشئ، أرسم
-   - الأسئلة مترابطة: السؤال الثاني يستعمل نتيجة الأول
+function resolveCurriculumKey(grade: string): string {
+  if (!grade) return DEFAULT_CURRICULUM_KEY;
+  const g = grade.trim().toUpperCase();
+  if (g.includes("3AS") || g.includes("3 AS") || g.includes("BAC")) return "3AS";
+  if (g.includes("2AS") || g.includes("2 AS") || g.includes("PREMIERE")) return "2AS";
+  if (g.includes("BEM") || g.includes("4EM") || g.includes("3MOY")) return "BEM";
+  return DEFAULT_CURRICULUM_KEY;
+}
 
-3. توزيع الأنواع المتوقع لكل امتحان (يجب احترامه):
-   - تمرين 1: حساب عددي / حساب جذور / كتابة علمية / PGCD
-   - تمرين 2: حساب جبري (نشر، تبسيط، تحليل، معادلات)
-   - تمرين 3: هندسة (فيثاغورس، طالس، نسب مثلثية، أشعة)
-   - تمرين 4 (اختياري): إحصاء أو دوال خطية
-   - مسألة إدماجية: وضعية حياتية (شراء، بناء، مساحة، رحلة...) تتطلب 4-5 خطوات منطقية
+// ─────────────────────────────────────────────────────────────
+// BUILD PROMPT
+// ─────────────────────────────────────────────────────────────
+function buildSyntheticPrompt(
+  template: Record<string, unknown>,
+  grade: string,
+  patterns: Record<string, unknown> | undefined,
+  country: string,
+  currKey: string,
+): string {
+  const curr = CURRICULUM[currKey];
 
-4. الأسلوب اللغوي الإلزامي:
-   - ابدأ التمرين بـ: "نعتبر …" / "ليكن …" / "لتكن الدالة …" / "ABC مثلث …"
-   - استخدم الصيغ الرسمية: "بيّن أن"، "استنتج"، "أحسب بدلالة x"، "حلّ في R المعادلة"
-   - في الهندسة: اذكر الأبعاد بالأرقام والوحدات (سم، م)
+  const topicList = curr.topics.map((t, i) => `  ${i + 1}. ${t}`).join("\n");
 
-5. الترقيم:
-   - كل تمرين بين 3 و 6 نقاط (مجموع الأسئلة الفرعية)
-   - المسألة الإدماجية = 8 نقاط بالضبط
-   - وزّع النقاط على الأسئلة الفرعية بشكل واقعي (0.5 إلى 2 نقطة لكل سؤال)`;
+  const blueprintText = curr.sectionBlueprint
+    .map((s, i) => {
+      return `  • ${s.titleAr} (${s.points} نقاط): موضوع "${s.topicHint}" — يجب أن يحتوي على ${s.subQMin} إلى ${s.subQMax} أسئلة فرعية مرقمة ومترابطة منطقياً`;
+    })
+    .join("\n");
 
-    const bloomPlan = `
-توزيع بلوم المعتمد للامتحانات الرسمية:
-- التمرين 1 (حساب): B2-B3 (فهم وتطبيق)
-- التمرين 2 (جبر): B3-B4 (تطبيق وتحليل)
-- التمرين 3 (هندسة): B3-B5 (تطبيق، تحليل، تقييم - برهنة)
-- المسألة الإدماجية: B4-B6 (تحليل، تقييم، إبداع)`;
+  const totalSubQ = curr.sectionBlueprint.reduce((sum, s) => sum + s.subQMin, 0);
 
-    let prompt = "";
-    if (mode === "synthetic") {
-      prompt = `أنت مفتش تربوي معتمد متخصص في امتحانات ${template.format === "bem" ? "شهادة التعليم المتوسط (BEM)" : template.format === "bac" ? "البكالوريا (BAC)" : "الفروض الفصلية"} للمنهاج ${country === "DZ" ? "الجزائري" : country}.
-مهمتك: توليد امتحان كامل بصيغة ${template.labelAr} للمستوى ${grade} يبدو **كأنه امتحان رسمي حقيقي 100%**.
+  return `أنت مفتش رياضيات معتمد متخصص في منهاج ${curr.labelAr} ${country === "DZ" ? "(المنهاج الجزائري)" : `(${country})`}.
+مهمتك: توليد امتحان كامل من نوع "${template.format ?? curr.examType}" للمستوى ${grade}.
 
-${realExamRules}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+المنهاج الإلزامي لهذا المستوى (${currKey})
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+المواضيع المقررة التي يجب أن يغطيها الامتحان:
+${topicList}
 
-${bloomPlan}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+الهيكل الإلزامي للامتحان
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${blueprintText}
 
-المعايير البيداغوجية المستهدفة:
-- منحنى الصعوبة: ${patterns?.difficultyCurve || 'تدريجي صاعد'}
-- نسبة الأسئلة غير المباشرة: ${patterns?.explicitImplicitRatio || 0.4}
-- توزيع المواضيع: ${patterns?.structuralNotes || 'متوازن: ثلث جبر، ثلث هندسة، ثلث تحليل/إحصاء'}
+▸ إجمالي الأسئلة الفرعية: لا يقل عن ${totalSubQ} سؤالاً فرعياً (مجموع كل التمارين).
+▸ المسألة الإدماجية: ${curr.integrationContext}.
 
-قالب الأقسام المطلوب احترامه: ${JSON.stringify(template.sections)}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+قواعد صياغة الأسئلة (إلزامية)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. كل تمرين يبدأ بعبارة افتتاحية تحدد السياق:
+   - للمتتاليات: "لتكن $(u_n)$ متتالية حيث $u_0 = ...$ و $u_{n+1} = ...$"
+   - للدوال: "لتكن الدالة $f$ المعرفة على المجال $I$ بـ: $f(x) = ...$"
+   - للهندسة: "ABC مثلث قائم في A حيث $AB = ...$ سم، $AC = ...$ سم"
 
-⚠️ تنبيهات حاسمة:
-- لا تولّد أي تمرين أقل من 3 أسئلة فرعية
-- المسألة الإدماجية يجب أن تكون قصة واقعية متصلة بحياة طالب جزائري
-- كل LaTeX يجب أن يكون داخل $...$ (مضمّن) أو $$...$$ (منفصل)
-- لا تستخدم \\\\ أو رموز غريبة - فقط LaTeX قياسي
-- النص العربي خارج LaTeX، الرموز الرياضية فقط داخله
+2. بنية الأسئلة الفرعية الإلزامية:
+   - كل سؤال فرعي = فعل أمر واحد فقط: أحسب / أثبت أن / استنتج / أنشئ / أرسم / حلّ / بيّن أن / أدرس
+   - تدرج الصعوبة: السؤال 1 = B2، السؤال 2-3 = B3، الأسئلة الأخيرة = B4-B5
+   - الترابط المنطقي: كل سؤال يبني على نتيجة السؤال السابق
 
-أعد JSON فقط بالهيكل:
+3. مستويات بلوم الهدف لكل تمرين:
+   - التمرين 1: B2-B3 (فهم وتطبيق مباشر)
+   - التمرين 2: B3-B4 (تطبيق وتحليل + رسم)
+   - التمرين 3: B3-B5 (تطبيق، تحليل، برهنة)
+   - المسألة الإدماجية: B4-B6 (تحليل، تقييم، إبداع)
+   ➤ متوسط بلوم المستهدف للورقة كاملة: بين 3.0 و 3.8
+
+4. LaTeX:
+   - داخل النص: $...$
+   - أسطر مستقلة: $$...$$
+   - لا تستخدم \\\\ أو %% أو رموز TeX غير قياسية
+   - الأرقام والوحدات خارج LaTeX: "يساوي $x = 5$ سم"
+
+5. اكتمال الأسئلة (حرج):
+   - كل سؤال فرعي يجب أن يكون جملة عربية كاملة مع المطلوب الواضح
+   - لا تقطع جملة في منتصفها
+   - لا تترك سؤالاً دون مطلوب محدد
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+صيغة الإخراج: JSON فقط، لا markdown، لا شرح خارجي
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   "exam": {
-    "title": "${template.format === "bem" ? "اختبار شهادة التعليم المتوسط - دورة تجريبية" : template.format === "bac" ? "اختبار البكالوريا - دورة تجريبية" : "اختبار الفصل"}",
-    "format": "${template.format}",
+    "title": "اختبار في الرياضيات - ${curr.labelAr}",
+    "format": "${template.format ?? curr.examType}",
     "grade": "${grade}",
-    "duration": ${template.duration},
-    "totalPoints": ${template.totalPoints},
+    "duration": ${template.duration ?? 120},
+    "totalPoints": ${template.totalPoints ?? 20},
     "sections": [
       {
-        "id": "section_id",
+        "id": "section_1",
         "title": "التمرين الأول",
-        "points": 4,
+        "points": 5,
+        "topicCovered": "اسم الموضوع المغطى",
         "exercises": [
           {
-            "id": "ex_unique_1",
-            "text": "نعتبر التعبير: $A = ...$\\n\\n1) أحسب ... (1ن)\\n2) بيّن أن ... (1.5ن)\\n3) استنتج ... (1.5ن)",
-            "points": 4,
-            "type": "algebra",
+            "id": "ex_1",
+            "text": "لتكن ...\\n\\n1) أحسب ... (1ن)\\n2) بيّن أن ... (1.5ن)\\n3) استنتج ... (1.5ن)\\n4) حلّ في $\\\\mathbb{R}$ المعادلة ... (1ن)",
+            "points": 5,
+            "type": "sequences",
             "source": "ai",
-            "bloomLevel": 3
+            "bloomLevel": 3,
+            "subQuestionCount": 4
           }
         ]
       }
     ]
   }
 }`;
+}
+
+function buildEnhancePrompt(kbExam: unknown, currKey: string): string {
+  const curr = CURRICULUM[currKey];
+  const topicList = curr.topics.map((t, i) => `  ${i + 1}. ${t}`).join("\n");
+
+  return `أنت مفتش رياضيات معتمد. لديك امتحان مستخرج من قاعدة المعرفة. مهمتك تطويره ليطابق معايير امتحان ${curr.labelAr} الرسمي.
+
+الامتحان الحالي:
+${JSON.stringify(kbExam)}
+
+المواضيع المقررة لهذا المستوى التي يجب أن يغطيها الامتحان المحسّن:
+${topicList}
+
+التحسينات المطلوبة (إلزامية):
+1. تحقق من أن كل تمرين يغطي موضوعاً من المنهاج أعلاه - إذا كان موضوع التمرين لا ينتمي لهذا المستوى، أعد كتابته بموضوع مناسب
+2. أكمل الأسئلة الفرعية الناقصة أو المقطوعة - كل سؤال يجب أن يكون جملة عربية كاملة مع مطلوب واضح
+3. أضف أسئلة فرعية للتمارين القصيرة: كل تمرين يجب أن يحتوي على 4 إلى 6 أسئلة فرعية مرقمة
+4. أعد صياغة الأسئلة بالأسلوب الرسمي: "نعتبر" / "لتكن" / "بيّن أن" / "استنتج" / "حلّ في $\\mathbb{R}$"
+5. وزّع النقاط بشكل واقعي (0.5 إلى 2 نقطة لكل سؤال فرعي)
+6. أضف bloomLevel (1-6) لكل تمرين - استهدف متوسطاً بين 3.0 و 3.8 للورقة كاملة
+7. أضف حقل topicCovered لكل section
+8. تأكد من سلامة LaTeX داخل $...$
+
+أعد JSON بنفس الهيكل مع التحسينات. JSON فقط، لا markdown.`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// HANDLER
+// ─────────────────────────────────────────────────────────────
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const { mode, template, grade, patterns, kbExam, style, country = "DZ" } = await req.json();
+
+    const currKey = resolveCurriculumKey(grade ?? "");
+    const curr = CURRICULUM[currKey];
+
+    let prompt: string;
+
+    if (mode === "synthetic") {
+      prompt = buildSyntheticPrompt(template ?? {}, grade ?? "", patterns, country, currKey);
     } else {
-      prompt = `أنت مفتش تربوي. لديك امتحان مستخرج من قاعدة المعرفة. مهمتك تطويره ليطابق معايير امتحان رسمي حقيقي.
-
-الامتحان الحالي: ${JSON.stringify(kbExam)}
-
-${realExamRules}
-
-${bloomPlan}
-
-التحسينات المطلوبة:
-1. حافظ على المواضيع الأساسية لكل تمرين (لا تبدلها)
-2. أضف أسئلة فرعية للتمارين القصيرة (يجب أن يحتوي كل تمرين على 3-5 أسئلة فرعية مرقمة)
-3. أعد صياغة الأسئلة بأسلوب رسمي (نعتبر، ليكن، بيّن أن، استنتج)
-4. حسّن المسألة الإدماجية لتكون قصة واقعية متصلة (طالب جزائري، سياق حياتي)
-5. وزّع النقاط بشكل واقعي على الأسئلة الفرعية
-6. أضف bloomLevel (1-6) لكل تمرين
-7. تأكد من سلامة LaTeX داخل $...$
-
-أعد JSON بنفس الهيكل مع التحسينات.`;
+      prompt = buildEnhancePrompt(kbExam, currKey);
     }
 
-    const response = await callGemini(
-      [{ role: "user", parts: [{ text: prompt }] }],
-      {
-        systemInstruction: "أنت مفتش رياضيات معتمد. أجب بـ JSON صالح فقط بدون أي نص خارج JSON. لا markdown، لا ```json، فقط الـ JSON الخام.",
-        temperature: 0.35,
-      }
-    );
+    const systemInstruction = [
+      `أنت مفتش رياضيات معتمد متخصص في منهاج ${curr.labelAr}.`,
+      "أجب بـ JSON صالح فقط.",
+      "لا markdown، لا ```json، لا أي نص خارج JSON الخام.",
+      "كل سؤال فرعي يجب أن يكون جملة عربية كاملة غير مقطوعة.",
+      `الامتحان يجب أن يتضمن مواضيع ${currKey} الرسمية فقط، لا مواضيع من سنوات أدنى.`,
+    ].join(" ");
+
+    const response = await callGemini([{ role: "user", parts: [{ text: prompt }] }], {
+      systemInstruction,
+      temperature: 0.3,
+      // Increase output budget so long exams don't get truncated
+      maxOutputTokens: 8192,
+    });
 
     const parsed = extractJSON(response.text);
 
-    return new Response(JSON.stringify(parsed), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // ── Post-generation validation (lightweight) ──────────────
+    const exam = (parsed as Record<string, unknown>).exam as Record<string, unknown> | undefined;
+    const sections = (exam?.sections as unknown[]) ?? [];
+    const warnings: string[] = [];
+
+    let totalSubQ = 0;
+    for (const sec of sections as Array<Record<string, unknown>>) {
+      const exs = (sec.exercises as Array<Record<string, unknown>>) ?? [];
+      for (const ex of exs) {
+        const text = (ex.text as string) ?? "";
+        // Count numbered sub-questions like "1)" or "1."
+        const matches = text.match(/^\s*\d+[\)\.]/gm);
+        const count = matches?.length ?? 0;
+        totalSubQ += count;
+        ex.subQuestionCount = count;
+        if (count < 3) {
+          warnings.push(`تمرين ${ex.id}: يحتوي على ${count} أسئلة فرعية فقط (الحد الأدنى 3)`);
+        }
+      }
+    }
+
+    if (totalSubQ < 12) {
+      warnings.push(`إجمالي الأسئلة الفرعية ${totalSubQ} أقل من الحد الأدنى المتوقع (12).`);
+    }
+
+    return new Response(
+      JSON.stringify({ ...parsed, _meta: { curriculumKey: currKey, totalSubQuestions: totalSubQ, warnings } }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (err) {
     if (err instanceof GeminiError) {
       return new Response(JSON.stringify({ error: err.message }), {
-        status: err.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: err.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     return new Response(JSON.stringify({ error: (err as Error).message }), {
