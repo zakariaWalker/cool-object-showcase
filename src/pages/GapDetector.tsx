@@ -315,11 +315,11 @@ export default function GapDetector() {
               >
                 كل المستويات
               </button>
-              {Object.entries(GRADE_LABELS).map(([key, label]) => (
+              {Object.entries(GRADE_LABELS).map(([legacyKey, label]) => (
                 <button
-                  key={key}
-                  onClick={() => setGradeFilter(key)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${gradeFilter === key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+                  key={label}
+                  onClick={() => setGradeFilter(label)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${gradeFilter === label ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
                 >
                   {label}
                 </button>
@@ -329,7 +329,7 @@ export default function GapDetector() {
 
           {gradeFilter && !isAdmin && !isTeacher && (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
-              <span className="text-xs text-primary font-bold">المستوى المحدد: {GRADE_LABELS[gradeFilter]}</span>
+              <span className="text-xs text-primary font-bold">المستوى المحدد: {gradeFilter}</span>
               <button
                 onClick={() => setGradeFilter("")}
                 className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
@@ -343,7 +343,7 @@ export default function GapDetector() {
             <div className="text-5xl">🎯</div>
             <h2 className="text-xl font-black">
               {availableExercises.length} تمرين متاح
-              {gradeFilter ? ` في ${GRADE_LABELS[gradeFilter]}` : ""}
+              {gradeFilter ? ` في ${gradeFilter}` : ""}
             </h2>
             <p className="text-sm text-muted-foreground">
               سيتم اختيار {Math.min(QUIZ_SIZE, availableExercises.length)} تمرين تلقائياً للتقييم. بعد كل جولة، يركّز
@@ -386,7 +386,7 @@ export default function GapDetector() {
             />
           </div>
           <span className="text-[10px] font-bold text-primary">
-            {GRADE_LABELS[q.exercise.grade] || q.exercise.grade}
+            {q.exercise.grade}
           </span>
         </div>
 
