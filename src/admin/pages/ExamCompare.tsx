@@ -199,11 +199,18 @@ export default function ExamCompare() {
               className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground"
             >
               <option value="">— اختر —</option>
-              {builtExams.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.title} ({b.format} · {b.grade})
-                </option>
-              ))}
+              {builtExams.map((b) => {
+                const secs = (b.sections as any[]) || [];
+                const qCount = secs.reduce(
+                  (n, s) => n + ((s.exercises || s.questions || s.items || []).length),
+                  0,
+                );
+                return (
+                  <option key={b.id} value={b.id}>
+                    {b.title} ({b.format} · {b.grade}) — {qCount} سؤال
+                  </option>
+                );
+              })}
             </select>
           </div>
         </div>
