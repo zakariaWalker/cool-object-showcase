@@ -201,7 +201,32 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
       try { results.push(await generateKBOnlyExam(template, grade)); } catch {}
       try { results.push(await generateAIOnlyExam(template, grade, structuralPatterns, styleProfile)); } catch {}
       try { results.push(await generateHybridExam(template, grade, structuralPatterns)); } catch {}
-      setComparisonResults(results.filter(r => r?.exam?.sections));
+      const valid = results.filter(r => r?.exam?.sections);
+      setComparisonResults(valid);
+
+      // Persist each generated variant to built_exams so Admin > ExamCompare can pick them up.
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const rows = valid.map((r) => ({
+            user_id: user.id,
+            title: `[${r.engine}] ${r.exam.title || template.labelAr}`,
+            format: r.exam.format || template.format,
+            grade: r.exam.grade || grade,
+            duration: r.exam.duration || template.duration,
+            total_points: r.exam.totalPoints || template.totalPoints,
+            sections: r.exam.sections as any,
+            status: "generated",
+            metadata: { engine: r.engine, metrics: r.metrics, generated_at: new Date().toISOString() } as any,
+          }));
+          if (rows.length) {
+            await (supabase as any).from("built_exams").insert(rows);
+          }
+        }
+      } catch (saveErr) {
+        console.warn("[ExamBuilder] failed to persist generated variants", saveErr);
+      }
     } catch (e) {
       console.error(e);
       toast.error("فشل التوليد التلقائي. تأكد من إعداد مفتاح AI.");
