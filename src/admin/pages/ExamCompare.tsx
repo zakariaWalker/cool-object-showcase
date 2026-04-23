@@ -95,15 +95,16 @@ export default function ExamCompare() {
         .eq("upload_id", realId)
         .order("question_number", { ascending: true });
 
-      // Generated: pull sections.exercises from built_exams
+      // Generated: pull sections.exercises from built_exams (handles multiple shapes)
       const built = builtExams.find((b) => b.id === genId);
       const generatedQs: any[] = [];
       const sections = (built?.sections as any[]) || [];
       sections.forEach((s) => {
-        (s.exercises || []).forEach((ex: any) => {
+        const items = s.exercises || s.questions || s.items || [];
+        items.forEach((ex: any) => {
           generatedQs.push({
-            text: ex.text || "",
-            type: ex.type || s.id || "—",
+            text: ex.text || ex.statement || ex.question || "",
+            type: ex.type || s.type || s.id || "—",
             difficulty: ex.difficulty,
             bloom_level: ex.bloomLevel || ex.bloom_level,
             concepts: ex.concepts || [],
@@ -112,8 +113,15 @@ export default function ExamCompare() {
         });
       });
 
-      if (!realQs?.length || !generatedQs.length) {
-        setError("لم يتم العثور على أسئلة كافية للمقارنة");
+      if (!realQs?.length) {
+        setError("لم يتم استخراج أسئلة من الامتحان الحقيقي");
+        setComparing(false);
+        return;
+      }
+      if (!generatedQs.length) {
+        setError(
+          `الامتحان المولَّد فارغ (لا يحتوي على أسئلة قابلة للقراءة). افتح "بناء الامتحانات" → اختر القالب → "توليد ثلاثي" ليتم حفظ النسخ المولَّدة تلقائياً، ثم أعد المحاولة.`,
+        );
         setComparing(false);
         return;
       }
@@ -191,11 +199,18 @@ export default function ExamCompare() {
               className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground"
             >
               <option value="">— اختر —</option>
-              {builtExams.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.title} ({b.format} · {b.grade})
-                </option>
-              ))}
+              {builtExams.map((b) => {
+                const secs = (b.sections as any[]) || [];
+                const qCount = secs.reduce(
+                  (n, s) => n + ((s.exercises || s.questions || s.items || []).length),
+                  0,
+                );
+                return (
+                  <option key={b.id} value={b.id}>
+                    {b.title} ({b.format} · {b.grade}) — {qCount} سؤال
+                  </option>
+                );
+              })}
             </select>
           </div>
         </div>

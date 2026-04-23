@@ -70,14 +70,13 @@ export default function GapDetector() {
   const { gradeCode } = useUserCurriculum();
   const { isAdmin, isTeacher } = useAuth();
 
-  // Map grade_code → kb key, default to empty (shows all grades for guests)
-  const defaultGradeKey = GRADE_CODE_TO_KEY[gradeCode] || "";
-  const [gradeFilter, setGradeFilter] = useState(defaultGradeKey);
+  // The DB stores grade as the short code ("2AS"); use it directly.
+  const [gradeFilter, setGradeFilter] = useState(gradeCode || "");
 
-  // FIX: sync gradeFilter when gradeCode loads async from Supabase
+  // Sync gradeFilter when gradeCode loads async from Supabase
   useEffect(() => {
-    if (gradeCode && GRADE_CODE_TO_KEY[gradeCode] && !gradeFilter) {
-      setGradeFilter(GRADE_CODE_TO_KEY[gradeCode]);
+    if (gradeCode && !gradeFilter) {
+      setGradeFilter(gradeCode);
     }
   }, [gradeCode, gradeFilter]);
 
@@ -102,12 +101,21 @@ export default function GapDetector() {
   async function loadData() {
     setLoading(true);
     const PAGE = 1000;
+    const { countryCode } = await (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { countryCode: "DZ" };
+      const { data } = await (supabase as any)
+        .from("profiles").select("country_code").eq("id", user.id).maybeSingle();
+      return { countryCode: data?.country_code || "DZ" };
+    })();
+
     const allEx: any[] = [];
     let from = 0;
     while (true) {
       const { data } = await (supabase as any)
         .from("kb_exercises")
         .select("*")
+        .eq("country_code", countryCode)
         .order("grade")
         .range(from, from + PAGE - 1);
       if (!data || data.length === 0) break;
@@ -122,6 +130,7 @@ export default function GapDetector() {
       const { data } = await (supabase as any)
         .from("kb_deconstructions")
         .select("*")
+        .eq("country_code", countryCode)
         .range(from, from + PAGE - 1);
       if (!data || data.length === 0) break;
       allDecon.push(...data);
@@ -316,11 +325,11 @@ export default function GapDetector() {
               >
                 كل المستويات
               </button>
-              {Object.entries(GRADE_LABELS).map(([key, label]) => (
+              {Object.entries(GRADE_LABELS).map(([legacyKey, label]) => (
                 <button
-                  key={key}
-                  onClick={() => setGradeFilter(key)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${gradeFilter === key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+                  key={label}
+                  onClick={() => setGradeFilter(label)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${gradeFilter === label ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
                 >
                   {label}
                 </button>
@@ -330,7 +339,7 @@ export default function GapDetector() {
 
           {gradeFilter && !isAdmin && !isTeacher && (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
-              <span className="text-xs text-primary font-bold">المستوى المحدد: {GRADE_LABELS[gradeFilter]}</span>
+              <span className="text-xs text-primary font-bold">المستوى المحدد: {gradeFilter}</span>
               <button
                 onClick={() => setGradeFilter("")}
                 className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
@@ -344,7 +353,7 @@ export default function GapDetector() {
             <div className="text-5xl">🎯</div>
             <h2 className="text-xl font-black">
               {availableExercises.length} تمرين متاح
-              {gradeFilter ? ` في ${GRADE_LABELS[gradeFilter]}` : ""}
+              {gradeFilter ? ` في ${gradeFilter}` : ""}
             </h2>
             <p className="text-sm text-muted-foreground">
               سيتم اختيار {Math.min(QUIZ_SIZE, availableExercises.length)} تمرين تلقائياً للتقييم. بعد كل جولة، يركّز
@@ -387,7 +396,7 @@ export default function GapDetector() {
             />
           </div>
           <span className="text-[10px] font-bold text-primary">
-            {GRADE_LABELS[q.exercise.grade] || q.exercise.grade}
+            {q.exercise.grade}
           </span>
         </div>
 
