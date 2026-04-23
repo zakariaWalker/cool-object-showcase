@@ -37,6 +37,12 @@ export function DatasetBrowser({ onSelectExercise }: DatasetBrowserProps) {
 
   const currentChapter = dataset?.chapters[activeChapter];
   const currentExercise = activeExercise != null ? currentChapter?.exercises[activeExercise] : null;
+  const chapters = Array.isArray(dataset?.chapters) ? dataset.chapters : [];
+  const meta = dataset?._meta ?? {
+    label: "ملف تمارين",
+    total_chapters: chapters.length,
+    total_exercises: chapters.reduce((sum, chapter) => sum + (chapter.exercises?.length || 0), 0),
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -70,10 +76,10 @@ export function DatasetBrowser({ onSelectExercise }: DatasetBrowserProps) {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-[13px] text-foreground font-semibold" dir="rtl">
-                  {dataset._meta.label}
+                  {meta.label}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
-                  {dataset._meta.total_chapters} فصل — {dataset._meta.total_exercises} تمرين
+                  {meta.total_chapters} فصل — {meta.total_exercises} تمرين
                 </div>
               </div>
               <button
@@ -88,7 +94,7 @@ export function DatasetBrowser({ onSelectExercise }: DatasetBrowserProps) {
           {/* Chapters tabs */}
           <div className="border-b border-border overflow-x-auto">
             <div className="flex">
-              {dataset.chapters.map((ch, i) => (
+              {chapters.map((ch, i) => (
                 <button
                   key={i}
                   onClick={() => { setActiveChapter(i); setActiveExercise(null); }}
