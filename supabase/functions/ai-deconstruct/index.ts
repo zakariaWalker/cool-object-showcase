@@ -121,8 +121,15 @@ ${e.text}`).join("\n\n")}
             d.pattern_id = newPatId;
           }
 
+          // Skip if pattern_id is not a valid UUID (e.g. AI returned "new_pattern_1")
+          if (!isUuid(d.pattern_id)) {
+            console.warn("Skipping invalid pattern_id:", d.pattern_id);
+            results.push({ exerciseId: d.exercise_id, success: false, error: "invalid pattern_id" });
+            continue;
+          }
+
           const { error: deconErr } = await db.from("kb_deconstructions").insert({
-            exercise_id: d.exercise_id,
+            exercise_id: isUuid(d.exercise_id) ? d.exercise_id : null,
             pattern_id: d.pattern_id,
             steps: d.steps || [],
             needs: d.needs || [],
@@ -139,7 +146,7 @@ ${e.text}`).join("\n\n")}
         }
       } catch (err) {
         if (err instanceof GeminiError && err.code === "RATE_LIMIT") {
-          await new Promise(r => setTimeout(r, 5000));
+          await new Promise(r => setTimeout(r, 3000));
           i -= batchSize;
           continue;
         }
@@ -150,10 +157,6 @@ ${e.text}`).join("\n\n")}
         }
         console.error("Batch error:", err);
         continue;
-      }
-
-      if (i + batchSize < exercises.length) {
-        await new Promise(r => setTimeout(r, 1500));
       }
     }
 
