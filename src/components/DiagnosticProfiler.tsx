@@ -138,21 +138,24 @@ export function DiagnosticProfiler({
 
   async function runAnalysis(finalRecords: DiagnosticRecord[]) {
     setAnalyzing(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     const { type } = computeProfileFromRecords(finalRecords);
 
-    // FIX: compare exerciseId as string to handle both number (101) and UUID string from AI
-    const detected = finalRecords
+    // Pull the misconception strings + types from the failed exercises
+    const failedExercises = finalRecords
       .filter((r) => !r.correct)
-      .map((r) => exercises.find((e) => String(e.id) === String(r.exerciseId))?.misconception)
-      .filter(Boolean) as string[];
+      .map((r) => exercises.find((e) => String(e.id) === String(r.exerciseId)))
+      .filter(Boolean) as DiagnosticExercise[];
+
+    const detected = failedExercises.map((e) => e.misconception).filter(Boolean);
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
     if (user) {
-      // 1. Activity Log — FIX: xp_earned uses XP_REWARDS constant, was hardcoded 100
+      // 1) Activity log + XP
       await supabase.from("student_activity_log").insert({
         student_id: user.id,
         action: "diagnostic_completed",
@@ -160,27 +163,40 @@ export function DiagnosticProfiler({
         metadata: { profile: type, level, countryCode, date: new Date().toISOString() },
       });
 
-      // 2. Knowledge Gaps — FIX: added grade_code field so gaps are scoped to the correct level
-      if (detected.length > 0) {
-        const gapInserts = detected.map((topic) => ({
-          student_id: user.id,
-          topic,
-          grade_code: level, // FIX: was missing — gaps were level-agnostic
-          severity: "medium",
-          detected_at: new Date().toISOString(),
-        }));
-        await supabase.from("student_knowledge_gaps").insert(gapInserts);
-      }
-
-      // 3. XP — update student_progress with correct student ID
-      const { data: prog } = await supabase.from("student_progress").select("xp").eq("student_id", user.id).single();
+      const { data: prog } = await supabase
+        .from("student_progress")
+        .select("xp")
+        .eq("student_id", user.id)
+        .maybeSingle();
       await supabase
         .from("student_progress")
-        .update({
-          xp: (prog?.xp || 0) + XP_REWARDS.diagnostic_complete,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("student_id", user.id);
+        .upsert(
+          {
+            student_id: user.id,
+            xp: (prog?.xp || 0) + XP_REWARDS.diagnostic_complete,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "student_id" },
+        );
+
+      // 2) Cognitive loop — route every failed exercise through the tracker.
+      // The tracker handles counters in the DB and promotes to
+      // student_knowledge_gaps once the configured threshold is hit.
+      let promotedCount = 0;
+      for (const ex of failedExercises) {
+        if (!ex.misconceptionType) continue;
+        try {
+          const res = await track({ type: ex.misconceptionType });
+          if (res?.promoted) promotedCount += 1;
+        } catch (e) {
+          console.warn("tracker failed for", ex.misconceptionType, e);
+        }
+      }
+      if (promotedCount > 0) {
+        toast.success(`تم رصد ${promotedCount} نقطة ضعف متكررة`, {
+          description: "أضفناها لمسار التقوية الخاص بك.",
+        });
+      }
     }
 
     // FIX: pass level (grade_code) so profile-store persists it to profiles table
