@@ -145,7 +145,7 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
     .in("id", skillIds.slice(0, 40));
   if (!skills?.length) return [];
 
-  const skillById = new Map(skills.map((s: any) => [s.id, s]));
+  const skillById = new Map<string, any>(skills.map((s: any) => [s.id as string, s]));
 
   // Pull documented misconceptions for these skills (highest-frequency first)
   const { data: errors } = await db
