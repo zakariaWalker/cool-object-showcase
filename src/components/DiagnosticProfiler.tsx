@@ -19,6 +19,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { ExerciseReportButton } from "./ExerciseReportButton";
+import { useMisconceptionTracker } from "@/hooks/useMisconceptionTracker";
+import { toast } from "sonner";
 
 export function DiagnosticProfiler({
   level,
