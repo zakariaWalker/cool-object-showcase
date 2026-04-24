@@ -107,8 +107,14 @@ export async function callGemini(
       const errText = await response.text();
       lastErr = { status: response.status, text: errText };
 
-      // Hard fails — don't retry, don't try fallback
+      // 429 → retry with longer backoff before giving up
       if (response.status === 429) {
+        if (attempt < 2) {
+          const waitMs = 1500 * Math.pow(2, attempt); // 1.5s, 3s
+          console.warn(`[Gemini] ${model} returned 429, retry ${attempt + 1}/3 in ${waitMs}ms`);
+          await sleep(waitMs);
+          continue;
+        }
         throw new GeminiError("RATE_LIMIT", "تم تجاوز حد الطلبات. حاول مجدداً بعد دقيقة.", 429);
       }
       if (response.status === 402 || response.status === 403) {
