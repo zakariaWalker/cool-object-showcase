@@ -126,8 +126,8 @@ export function DiagnosticProfiler({
       strategyChanges,
       hintUsed,
       correct: isCorrect,
-      explanation,
-      confidence: confidence / 100,
+      explanation: "",
+      confidence: 0.5,
       answer: inputValue,
     };
 
