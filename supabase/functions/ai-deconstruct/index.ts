@@ -11,19 +11,32 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { exercises, patterns, batchSize = 5 } = await req.json();
+    const { exercises: rawExercises, patterns, batchSize: rawBatchSize = 3 } = await req.json();
+
+    // Cap to avoid 150s edge timeout — client must chunk larger jobs
+    const MAX_PER_REQUEST = 6;
+    const batchSize = Math.min(rawBatchSize, 3);
+    const exercises = (rawExercises || []).slice(0, MAX_PER_REQUEST);
+    const truncated = (rawExercises || []).length > MAX_PER_REQUEST;
+    const startTime = Date.now();
+    const TIME_BUDGET_MS = 130_000; // leave headroom before 150s timeout
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const db = createClient(supabaseUrl, supabaseKey);
 
-    const patternList = patterns.map((p: any) =>
+    const patternList = (patterns || []).map((p: any) =>
       `- ID: ${p.id} | Name: ${p.name} | Type: ${p.type} | Steps: ${(p.steps || []).join(" → ")}`
     ).join("\n");
 
     const results: any[] = [];
+    const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s || "");
 
     for (let i = 0; i < exercises.length; i += batchSize) {
+      if (Date.now() - startTime > TIME_BUDGET_MS) {
+        console.warn("Time budget exceeded, stopping early");
+        break;
+      }
       const batch = exercises.slice(i, i + batchSize);
 
       const prompt = `أنت خبير رياضيات تعليمي جزائري. قم بتفكيك التمارين التالية إلى أنماط حل.
