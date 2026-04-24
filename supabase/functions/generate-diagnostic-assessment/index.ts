@@ -146,6 +146,14 @@ ${skillContext}${misconceptionContext}${exerciseContext}
     });
   } catch (err) {
     if (err instanceof GeminiError) {
+      // For rate limits / overload, return a graceful fallback so the user still sees a diagnostic
+      if (err.status === 429 || err.status === 503) {
+        console.warn(`[diagnostic] AI ${err.status} — returning fallback exercises`);
+        return new Response(
+          JSON.stringify({ exercises: getFallbackPool(), fallback: true, reason: err.code }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
       return new Response(JSON.stringify({ error: err.message }), {
         status: err.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -156,3 +164,34 @@ ${skillContext}${misconceptionContext}${exerciseContext}
     });
   }
 });
+
+function getFallbackPool() {
+  const pool = [
+    { id: 101, type: "logic", typeName: "تحليل منطقي",
+      question: "قالت آمال: $(x+5)^2 = x^2 + 25$. هل هي محقة؟",
+      options: ["نعم، صحيحة", "لا، خطأ في القواعد"], answer: "لا، خطأ في القواعد",
+      hint: "تذكر مربع المجموع.", kind: "qcm", icon: "💡",
+      misconception: "خطأ في توزيع القوى", badgeColor: "var(--algebra)", badgeBg: "rgba(167,139,250,0.08)" },
+    { id: 102, type: "trap", typeName: "فخ المتراجحات",
+      question: "حل المتراجحة: $-3x > 9$ هو:",
+      options: ["$x > -3$", "$x < -3$", "$x > 3$", "$x < 3$"], answer: "$x < -3$",
+      hint: "ماذا يحدث عند الضرب في عدد سالب؟", kind: "qcm", icon: "🪤",
+      misconception: "نسيان قلب المتراجحة", badgeColor: "var(--destructive)", badgeBg: "rgba(248,113,113,0.08)" },
+    { id: 103, type: "standard", typeName: "حساب ذهني",
+      question: "ما هو نصف $2^{10}$؟",
+      options: ["$1^{10}$", "$2^5$", "$2^9$", "$1^5$"], answer: "$2^9$",
+      hint: "القسمة على 2 = طرح 1 من الأس.", kind: "qcm", icon: "🔢",
+      misconception: "خطأ في قوانين الأسس", badgeColor: "var(--primary)", badgeBg: "rgba(59,130,246,0.08)" },
+    { id: 104, type: "logic", typeName: "تحدي المساحات",
+      question: "إذا ضاعفنا طول ضلع مربع، هل تتضاعف مساحته؟",
+      options: ["نعم، تتضاعف", "لا، تصبح 4 أضعاف", "لا، تصبح 8 أضعاف"], answer: "لا، تصبح 4 أضعاف",
+      hint: "$(2s)^2 = ?$", kind: "qcm", icon: "📐",
+      misconception: "عدم إدراك التغير التربيعي", badgeColor: "var(--geometry)", badgeBg: "rgba(16,185,129,0.08)" },
+    { id: 105, type: "strategic", typeName: "تفكير تراجعي",
+      question: "عدد إذا أضفنا له 5 ثم ضربناه في 2 حصلنا على 20. ما هو؟",
+      answer: "5", hint: "ابدأ من النتيجة وارجع للخلف.", kind: "numeric", icon: "🎯",
+      misconception: "صعوبة في النمذجة العكسية", badgeColor: "var(--accent)", badgeBg: "rgba(245,158,11,0.08)",
+      placeholder: "اكتب العدد فقط..." },
+  ];
+  return pool;
+}
