@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Brain, Zap, Target, ArrowLeft, Play, Loader2, Lock } from "lucide-react";
+import { Sparkles, Zap, Trophy, Timer, Eye, ArrowLeft, Play, Loader2, TrendingUp, Lock } from "lucide-react";
 import { DiagnosticProfiler } from "@/components/DiagnosticProfiler";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { useCountryGrades } from "@/hooks/useCountryGrades";
@@ -17,7 +16,7 @@ export default function DiagnosticExam() {
 
   const { isAdmin } = useAuth();
   const { countryCode, gradeCode, isComplete, loading: cLoading, setCurriculum } = useUserCurriculum();
-  const { grades, labelOf, cycles } = useCountryGrades(countryCode || "DZ");
+  const { grades, labelOf } = useCountryGrades(countryCode || "DZ");
   const [pendingGrade, setPendingGrade] = useState<string>("");
 
   useEffect(() => {
@@ -32,14 +31,12 @@ export default function DiagnosticExam() {
     })();
   }, [navigate]);
 
-  // If user has no curriculum yet, push them to onboarding
   useEffect(() => {
     if (!cLoading && signedIn && !isComplete) {
       navigate("/onboarding?redirect=/diagnostic");
     }
   }, [cLoading, signedIn, isComplete, navigate]);
 
-  // Default the picker to user's grade
   useEffect(() => {
     if (!pendingGrade && gradeCode) setPendingGrade(gradeCode);
   }, [gradeCode, pendingGrade]);
@@ -52,109 +49,107 @@ export default function DiagnosticExam() {
     );
   }
 
-  // Group grades by cycle for cleaner UX
-  const byCycle: Record<string, typeof grades> = {};
-  grades.forEach(g => {
-    const k = g.cycle || "other";
-    (byCycle[k] = byCycle[k] || []).push(g);
-  });
-  const cycleLabel: Record<string, string> = {
-    primary: "ابتدائي", middle: "متوسط/إعدادي", secondary: "ثانوي", other: "مستويات أخرى",
-  };
-
   return (
     <div className="h-full w-full bg-background overflow-y-auto" dir="rtl">
       <div className="max-w-3xl mx-auto p-6 md:p-12 min-h-screen flex flex-col justify-center">
-
         <AnimatePresence mode="wait">
           {!isStarted ? (
-            <motion.div key="intro" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="space-y-12">
+            <motion.div
+              key="intro"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="space-y-10"
+            >
               <button
                 onClick={() => navigate("/")}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ArrowLeft className="w-4 h-4 ml-1" /> العودة للرئيسية
+                <ArrowLeft className="w-4 h-4 ml-1" /> العودة
               </button>
 
-              <div className="text-center space-y-4">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-primary/10 text-primary mb-4">
-                  <Brain className="w-10 h-10" />
-                </div>
-                <h1 className="text-3xl md:text-5xl font-black text-foreground">
-                  التقييم التشخيصي <span className="text-primary">الذهني</span>
-                </h1>
-                <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                  مُعدّ خصيصاً لمنهج <strong className="text-foreground">{countryCode === "DZ" ? "الجزائر 🇩🇿" : countryCode === "OM" ? "سلطنة عُمان 🇴🇲" : countryCode}</strong>
-                  {" "}— نقيس كيف تفكر، كيف تتعامل مع الفخاخ، ومستوى ثقتك بنفسك.
-                </p>
-              </div>
+              {/* HERO — curiosity-driven, not "test" */}
+              <div className="text-center space-y-5">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1, rotate: [0, -5, 5, 0] }}
+                  transition={{ duration: 0.6, type: "spring" }}
+                  className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-primary via-primary to-accent text-white shadow-2xl shadow-primary/30"
+                >
+                  <Eye className="w-12 h-12" />
+                </motion.div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-                <div className="p-5 rounded-2xl border border-border bg-card">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-3">
-                    <Target className="w-5 h-5" />
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 text-[10px] font-black uppercase tracking-wider">
+                    <Sparkles className="w-3 h-3" /> تحدي مجاني · 3 دقائق فقط
                   </div>
-                  <h3 className="font-bold text-foreground mb-1">٤ مراحل غير تقليدية</h3>
-                  <p className="text-sm text-muted-foreground">مسألة قياسية، فخ رياضي، لغز منطقي، ومسألة مفتوحة لاستكشاف إبداعك.</p>
-                </div>
-
-                <div className="p-5 rounded-2xl border border-border bg-card">
-                  <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center mb-3">
-                    <Zap className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-bold text-foreground mb-1">يقيس وفق منهج بلدك</h3>
-                  <p className="text-sm text-muted-foreground">المهارات المختارة من قاعدة معرفة منهج {countryCode === "DZ" ? "الجزائر" : "عُمان"} الرسمي.</p>
+                  <h1 className="text-4xl md:text-6xl font-black text-foreground leading-tight">
+                    وين تقدر <span className="text-primary">توصل</span><br />في الرياضيات؟
+                  </h1>
+                  <p className="text-base md:text-lg text-muted-foreground max-w-md mx-auto leading-relaxed pt-2">
+                    شوف الحقيقة اللي ما يقولهالك حد —<br />
+                    <strong className="text-foreground">واش يخليك تخسر النقاط في الامتحان؟</strong>
+                  </p>
                 </div>
               </div>
 
-              {/* Level — locked for students, editable for admins */}
-              <div className="max-w-xl mx-auto space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">مستواك الحالي</p>
-                  {isAdmin && (
-                    <span className="text-[10px] text-primary font-bold uppercase">وضع المشرف</span>
-                  )}
-                </div>
-
-                {!isAdmin ? (
-                  // Locked badge for students — level comes from registered profile, cannot be changed here
-                  <div className="flex items-center justify-center gap-3 p-5 rounded-2xl bg-primary/5 border-2 border-primary/20">
-                    <Lock className="w-5 h-5 text-primary/60" />
-                    <div className="text-center">
-                      <div className="text-lg font-black text-primary">{labelOf(gradeCode) || gradeCode}</div>
-                      <div className="text-[10px] text-muted-foreground font-bold mt-0.5">
-                        المستوى المسجَّل في حسابك
-                      </div>
+              {/* WHAT YOU GET — instant rewards, not vague benefits */}
+              <div className="grid grid-cols-3 gap-3 max-w-xl mx-auto">
+                {[
+                  { icon: Timer, label: "3 دقائق", sub: "بسرعة", color: "text-cyan-600", bg: "bg-cyan-500/10" },
+                  { icon: TrendingUp, label: "نتيجة فورية", sub: "مع تفسير", color: "text-emerald-600", bg: "bg-emerald-500/10" },
+                  { icon: Trophy, label: "+100 XP", sub: "هدية ضمان", color: "text-amber-600", bg: "bg-amber-500/10" },
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 + i * 0.1 }}
+                    className="bg-card border border-border rounded-2xl p-4 text-center"
+                  >
+                    <div className={`w-10 h-10 rounded-xl ${item.bg} ${item.color} flex items-center justify-center mx-auto mb-2`}>
+                      <item.icon className="w-5 h-5" />
                     </div>
-                  </div>
-                ) : cycles.length > 1 ? (
-                  <div className="space-y-3">
-                    {cycles.map(cyc => (
-                      <div key={cyc}>
-                        <p className="text-[10px] font-bold uppercase text-muted-foreground/70 mb-1.5">{cycleLabel[cyc] || cyc}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {(byCycle[cyc] || []).map(g => (
-                            <button
-                              key={g.grade_code}
-                              onClick={() => setPendingGrade(g.grade_code)}
-                              className={`px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all ${
-                                pendingGrade === g.grade_code ? "border-primary bg-primary/10 text-primary scale-105" : "border-border hover:border-primary/40 text-muted-foreground"
-                              }`}
-                            >
-                              {g.grade_label_ar}
-                            </button>
-                          ))}
-                        </div>
+                    <div className="text-sm font-black text-foreground">{item.label}</div>
+                    <div className="text-[10px] text-muted-foreground font-bold mt-0.5">{item.sub}</div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* SOCIAL PROOF — comparison hook */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 border border-primary/20 rounded-2xl p-5 max-w-xl mx-auto"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex -space-x-2 rtl:space-x-reverse">
+                    {["🎯", "🔥", "⚡", "💎"].map((e, i) => (
+                      <div key={i} className="w-8 h-8 rounded-full bg-card border-2 border-background flex items-center justify-center text-sm shadow">
+                        {e}
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="flex flex-wrap justify-center gap-2">
+                  <div className="text-xs text-foreground/80 font-bold">
+                    أكثر من <span className="text-primary font-black">2,400 تلميذ</span> اكتشفوا مستواهم هذا الأسبوع
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Admin-only grade switcher */}
+              {isAdmin && (
+                <div className="max-w-xl mx-auto">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">المستوى</p>
+                    <span className="text-[10px] text-primary font-bold uppercase">وضع المشرف</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
                     {grades.map(g => (
                       <button
                         key={g.grade_code}
                         onClick={() => setPendingGrade(g.grade_code)}
-                        className={`px-4 py-3 rounded-xl border-2 font-black transition-all text-sm ${
+                        className={`px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all ${
                           pendingGrade === g.grade_code ? "border-primary bg-primary/10 text-primary scale-105" : "border-border hover:border-primary/40 text-muted-foreground"
                         }`}
                       >
@@ -162,15 +157,19 @@ export default function DiagnosticExam() {
                       </button>
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              <div className="flex justify-center mt-12">
-                <Button
-                  size="lg"
+              {/* MAIN CTA — game-like, not "start test" */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="space-y-3"
+              >
+                <button
                   disabled={!pendingGrade && !gradeCode}
                   onClick={async () => {
-                    // Students always use registered grade. Only admins may switch.
                     const finalGrade = isAdmin ? (pendingGrade || gradeCode) : gradeCode;
                     if (isAdmin && pendingGrade && pendingGrade !== gradeCode) {
                       await setCurriculum(countryCode, pendingGrade);
@@ -178,11 +177,21 @@ export default function DiagnosticExam() {
                     setPendingGrade(finalGrade);
                     setIsStarted(true);
                   }}
-                  className="gap-3 px-8 text-lg font-bold rounded-2xl h-14"
+                  className="w-full max-w-md mx-auto flex items-center justify-center gap-3 px-8 py-5 rounded-2xl bg-gradient-to-r from-primary via-primary to-accent text-white font-black text-lg shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
                 >
-                  <Play className="w-5 h-5" /> ابدأ التقييم المخصص ({labelOf(isAdmin ? (pendingGrade || gradeCode) : gradeCode) || gradeCode})
-                </Button>
-              </div>
+                  <Play className="w-5 h-5 fill-white" />
+                  ابدأ التحدي الآن
+                  <Zap className="w-5 h-5" />
+                </button>
+                <p className="text-center text-[11px] text-muted-foreground">
+                  بدون تسجيل · بدون نقاط حقيقية · فقط متعة الاكتشاف
+                </p>
+                {!isAdmin && gradeCode && (
+                  <p className="text-center text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1">
+                    <Lock className="w-3 h-3" /> {labelOf(gradeCode) || gradeCode}
+                  </p>
+                )}
+              </motion.div>
             </motion.div>
           ) : (
             <motion.div
