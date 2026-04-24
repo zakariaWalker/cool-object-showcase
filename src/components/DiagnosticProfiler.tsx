@@ -407,34 +407,8 @@ export function DiagnosticProfiler({
             </div>
           )}
 
-          {/* Explanation */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-black text-muted-foreground uppercase">
-                لماذا اخترت هذا الجواب؟ (اختياري)
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-muted-foreground">الثقة بالحل:</span>
-                <span className="text-[10px] font-bold text-primary">{confidence}%</span>
-              </div>
-            </div>
-            <textarea
-              value={explanation}
-              onChange={(e) => setExplanation(e.target.value)}
-              placeholder="اشرح لي ماذا دار في ذهنك..."
-              rows={2}
-              className="w-full p-4 rounded-xl border-2 border-border bg-card text-sm resize-none focus:border-primary outline-none transition-all"
-            />
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={confidence}
-              onChange={(e) => setConfidence(Number(e.target.value))}
-              className="w-full h-1.5 bg-muted rounded-full appearance-none accent-primary cursor-pointer"
-            />
-          </div>
         </div>
+
 
         <button
           onClick={submitAnswer}
