@@ -174,6 +174,58 @@ export class GeminiError extends Error {
   }
 }
 
+function isEscapedQuote(text: string, index: number): boolean {
+  let backslashes = 0;
+  for (let i = index - 1; i >= 0 && text[i] === "\\"; i--) backslashes++;
+  return backslashes % 2 === 1;
+}
+
+function sanitizeJsonEscapes(text: string): string {
+  let result = "";
+  let inString = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (ch === '"' && !isEscapedQuote(text, i)) {
+      inString = !inString;
+      result += ch;
+      continue;
+    }
+
+    if (ch === "\\" && inString) {
+      const next = text[i + 1];
+
+      if (!next) {
+        result += "\\\\";
+        continue;
+      }
+
+      if ('"\\/bfnrt'.includes(next)) {
+        result += ch + next;
+        i++;
+        continue;
+      }
+
+      if (next === "u") {
+        const unicodeDigits = text.slice(i + 2, i + 6);
+        if (/^[0-9a-fA-F]{4}$/.test(unicodeDigits)) {
+          result += `\\u${unicodeDigits}`;
+          i += 5;
+          continue;
+        }
+      }
+
+      result += "\\\\";
+      continue;
+    }
+
+    result += ch;
+  }
+
+  return result;
+}
+
 /** Extract JSON from text that may contain markdown fences */
 export function extractJSON(text: string): any {
   // Strip markdown fences
@@ -219,9 +271,9 @@ export function extractJSON(text: string): any {
     try {
       return JSON.parse(cleaned);
     } catch {
-      // Last resort: fix invalid escape sequences (e.g. LaTeX \frac, \sqrt inside JSON strings).
-      // JSON only allows \" \\ \/ \b \f \n \r \t \uXXXX — escape any other backslash.
-      const fixed = cleaned.replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
+      // Last resort: sanitize invalid escape sequences inside JSON strings,
+      // including malformed unicode escapes and LaTeX-style backslashes.
+      const fixed = sanitizeJsonEscapes(cleaned);
       try {
         return JSON.parse(fixed);
       } catch (e) {
