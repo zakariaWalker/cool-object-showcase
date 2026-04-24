@@ -95,8 +95,9 @@ ${formatList(generatedQuestions)}
       [{ role: "user", parts: [{ text: prompt }] }],
       {
         systemInstruction:
-          "أنت محلّل بيداغوجي. أجب دائماً بـ JSON صالح فقط، دون أي نص خارج JSON.",
+          "أنت محلّل بيداغوجي. أجب دائماً بـ JSON صالح فقط، دون أي نص خارج JSON. إذا احتجت إلى رموز LaTeX داخل القيم النصية فاكتب الشرطة المائلة العكسية مزدوجة (\\\\frac) لتبقى السلسلة JSON صالحة.",
         temperature: 0.3,
+        responseMimeType: "application/json",
       },
     );
 
