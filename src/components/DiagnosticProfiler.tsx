@@ -197,17 +197,33 @@ export function DiagnosticProfiler({
           console.warn("tracker failed for", ex.misconceptionType, e);
         }
       }
-      if (promotedCount > 0) {
-        toast.success(`تم رصد ${promotedCount} نقطة ضعف متكررة`, {
-          description: "أضفناها لمسار التقوية الخاص بك.",
-        });
-      }
+      // Toast deferred — shown inside reveal animation instead.
     }
 
     // FIX: pass level (grade_code) so profile-store persists it to profiles table
     setProfile(type, level);
-    setResult({ profile: type, detectedMisconceptions: detected });
+    const correctCount = finalRecords.filter((r) => r.correct).length;
+    const score = Math.round((correctCount / finalRecords.length) * 100);
+    let promotedCount = 0;
+    for (const ex of failedExercises) {
+      if (!ex.misconceptionType) continue;
+      try {
+        const res = await track({ type: ex.misconceptionType });
+        if (res?.promoted) promotedCount += 1;
+      } catch {}
+    }
+    setResult({
+      profile: type,
+      detectedMisconceptions: detected,
+      score,
+      correctCount,
+      promotedGaps: promotedCount,
+    });
     setAnalyzing(false);
+    // Trigger sequenced reveal
+    setTimeout(() => setRevealStep(1), 400);
+    setTimeout(() => setRevealStep(2), 1400);
+    setTimeout(() => setRevealStep(3), 2400);
   }
 
   function renderMath(text: string) {
