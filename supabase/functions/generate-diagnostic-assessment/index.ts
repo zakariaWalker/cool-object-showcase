@@ -122,13 +122,20 @@ ${skillContext}${misconceptionContext}${exerciseContext}
       "placeholder": "نص المساعدة في الإدخال"
     }
   ]
-}`;
+}
+
+## قواعد صارمة لصلاحية JSON:
+- أعد JSON خام فقط بدون أي شرح أو markdown fences.
+- داخل أي نص يحتوي LaTeX يجب تهريب الشرطة العكسية هكذا: \\sqrt و \\frac وليس \sqrt أو \frac.
+- لا تستخدم أي escape غير صالح داخل السلاسل النصية.
+- إذا لم تحتج حقلاً اختيارياً فاحذفه بدلاً من وضع قيمة غير صالحة.`;
 
     const response = await callGemini(
       [{ role: "user", parts: [{ text: prompt }] }],
       {
         systemInstruction: `أنت خبير في بناء التقييمات التشخيصية العادلة وفق منهج ${countryHint}. أجب دائماً بـ JSON صالح فقط.`,
         temperature: 0.8,
+        responseMimeType: "application/json",
       }
     );
 
