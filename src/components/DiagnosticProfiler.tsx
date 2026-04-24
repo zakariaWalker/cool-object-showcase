@@ -45,13 +45,18 @@ export function DiagnosticProfiler({
   const [startTime, setStartTime] = useState(0);
   const [firstActionTime, setFirstActionTime] = useState<number | null>(null);
   const [inputValue, setInputValue] = useState("");
-  const [explanation, setExplanation] = useState("");
-  const [confidence, setConfidence] = useState(50);
   const [strategyChanges, setStrategyChanges] = useState(0);
   const [hintUsed, setHintUsed] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState<{ profile: ProfileType; detectedMisconceptions: string[] } | null>(null);
+  const [result, setResult] = useState<{
+    profile: ProfileType;
+    detectedMisconceptions: string[];
+    score: number;
+    correctCount: number;
+    promotedGaps: number;
+  } | null>(null);
+  const [revealStep, setRevealStep] = useState(0);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
