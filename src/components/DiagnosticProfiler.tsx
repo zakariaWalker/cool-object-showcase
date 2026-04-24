@@ -85,8 +85,6 @@ export function DiagnosticProfiler({
     setStartTime(Date.now());
     setFirstActionTime(null);
     setInputValue("");
-    setExplanation("");
-    setConfidence(50);
     setStrategyChanges(0);
     setHintUsed(false);
     setShowHint(false);
