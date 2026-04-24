@@ -6,21 +6,22 @@ import { generateDiagnosticExercises, DiagnosticExercise } from "@/engine/Diagno
 import { XP_REWARDS } from "@/engine/gamification";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  CheckCircle2,
   AlertTriangle,
   HelpCircle,
   Brain,
   Target,
-  Zap,
-  Puzzle,
-  BarChart3,
   Clock,
   ArrowRight,
-  Loader2,
+  Trophy,
+  TrendingUp,
+  Sparkles,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { ExerciseReportButton } from "./ExerciseReportButton";
 import { useMisconceptionTracker } from "@/hooks/useMisconceptionTracker";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export function DiagnosticProfiler({
   level,
