@@ -160,7 +160,7 @@ ${e.text}`).join("\n\n")}
       }
     }
 
-    return new Response(JSON.stringify({ success: true, processed: results.length, results }), {
+    return new Response(JSON.stringify({ success: true, processed: results.length, results, truncated, maxPerRequest: MAX_PER_REQUEST }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
