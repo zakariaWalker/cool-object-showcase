@@ -1,6 +1,8 @@
 // ===== Parse Textbook — PDF or raw text → structured chapters/lessons/activities =====
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
