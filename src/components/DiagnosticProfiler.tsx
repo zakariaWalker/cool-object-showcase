@@ -184,20 +184,7 @@ export function DiagnosticProfiler({
           { onConflict: "student_id" },
         );
 
-      // 2) Cognitive loop — route every failed exercise through the tracker.
-      // The tracker handles counters in the DB and promotes to
-      // student_knowledge_gaps once the configured threshold is hit.
-      let promotedCount = 0;
-      for (const ex of failedExercises) {
-        if (!ex.misconceptionType) continue;
-        try {
-          const res = await track({ type: ex.misconceptionType });
-          if (res?.promoted) promotedCount += 1;
-        } catch (e) {
-          console.warn("tracker failed for", ex.misconceptionType, e);
-        }
-      }
-      // Toast deferred — shown inside reveal animation instead.
+      // Cognitive loop runs below (outside auth block) so we can compute promotedCount once.
     }
 
     // FIX: pass level (grade_code) so profile-store persists it to profiles table
