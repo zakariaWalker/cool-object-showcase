@@ -218,8 +218,15 @@ export function extractJSON(text: string): any {
       .replace(/\\'/g, "'");
     try {
       return JSON.parse(cleaned);
-    } catch (e) {
-      throw new Error(`Could not parse JSON from AI response: ${(e as Error).message?.slice(0, 100)}`);
+    } catch {
+      // Last resort: fix invalid escape sequences (e.g. LaTeX \frac, \sqrt inside JSON strings).
+      // JSON only allows \" \\ \/ \b \f \n \r \t \uXXXX — escape any other backslash.
+      const fixed = cleaned.replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
+      try {
+        return JSON.parse(fixed);
+      } catch (e) {
+        throw new Error(`Could not parse JSON from AI response: ${(e as Error).message?.slice(0, 100)}`);
+      }
     }
   }
 }
