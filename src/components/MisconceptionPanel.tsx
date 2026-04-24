@@ -7,6 +7,8 @@ import { explainMisconception } from "@/engine/ai-layer";
 import { Misconception } from "@/engine/types";
 import { LatexRenderer } from "./LatexRenderer";
 import { motion, AnimatePresence } from "framer-motion";
+import { useMisconceptionTracker } from "@/hooks/useMisconceptionTracker";
+import { toast } from "@/hooks/use-toast";
 
 interface Props {
   correctAnswer: string;
