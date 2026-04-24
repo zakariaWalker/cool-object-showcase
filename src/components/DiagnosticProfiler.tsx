@@ -6,21 +6,22 @@ import { generateDiagnosticExercises, DiagnosticExercise } from "@/engine/Diagno
 import { XP_REWARDS } from "@/engine/gamification";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  CheckCircle2,
   AlertTriangle,
   HelpCircle,
   Brain,
   Target,
-  Zap,
-  Puzzle,
-  BarChart3,
   Clock,
   ArrowRight,
-  Loader2,
+  Trophy,
+  TrendingUp,
+  Sparkles,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { ExerciseReportButton } from "./ExerciseReportButton";
 import { useMisconceptionTracker } from "@/hooks/useMisconceptionTracker";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export function DiagnosticProfiler({
   level,
@@ -33,6 +34,7 @@ export function DiagnosticProfiler({
 }) {
   const { setProfile } = useProfile();
   const { track } = useMisconceptionTracker();
+  const navigate = useNavigate();
   const [exercises, setExercises] = useState<DiagnosticExercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentEx, setCurrentEx] = useState(0);
@@ -43,13 +45,18 @@ export function DiagnosticProfiler({
   const [startTime, setStartTime] = useState(0);
   const [firstActionTime, setFirstActionTime] = useState<number | null>(null);
   const [inputValue, setInputValue] = useState("");
-  const [explanation, setExplanation] = useState("");
-  const [confidence, setConfidence] = useState(50);
   const [strategyChanges, setStrategyChanges] = useState(0);
   const [hintUsed, setHintUsed] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState<{ profile: ProfileType; detectedMisconceptions: string[] } | null>(null);
+  const [result, setResult] = useState<{
+    profile: ProfileType;
+    detectedMisconceptions: string[];
+    score: number;
+    correctCount: number;
+    promotedGaps: number;
+  } | null>(null);
+  const [revealStep, setRevealStep] = useState(0);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -78,8 +85,6 @@ export function DiagnosticProfiler({
     setStartTime(Date.now());
     setFirstActionTime(null);
     setInputValue("");
-    setExplanation("");
-    setConfidence(50);
     setStrategyChanges(0);
     setHintUsed(false);
     setShowHint(false);
@@ -121,8 +126,8 @@ export function DiagnosticProfiler({
       strategyChanges,
       hintUsed,
       correct: isCorrect,
-      explanation,
-      confidence: confidence / 100,
+      explanation: "",
+      confidence: 0.5,
       answer: inputValue,
     };
 
@@ -179,30 +184,33 @@ export function DiagnosticProfiler({
           { onConflict: "student_id" },
         );
 
-      // 2) Cognitive loop — route every failed exercise through the tracker.
-      // The tracker handles counters in the DB and promotes to
-      // student_knowledge_gaps once the configured threshold is hit.
-      let promotedCount = 0;
-      for (const ex of failedExercises) {
-        if (!ex.misconceptionType) continue;
-        try {
-          const res = await track({ type: ex.misconceptionType });
-          if (res?.promoted) promotedCount += 1;
-        } catch (e) {
-          console.warn("tracker failed for", ex.misconceptionType, e);
-        }
-      }
-      if (promotedCount > 0) {
-        toast.success(`تم رصد ${promotedCount} نقطة ضعف متكررة`, {
-          description: "أضفناها لمسار التقوية الخاص بك.",
-        });
-      }
+      // Cognitive loop runs below (outside auth block) so we can compute promotedCount once.
     }
 
     // FIX: pass level (grade_code) so profile-store persists it to profiles table
     setProfile(type, level);
-    setResult({ profile: type, detectedMisconceptions: detected });
+    const correctCount = finalRecords.filter((r) => r.correct).length;
+    const score = Math.round((correctCount / finalRecords.length) * 100);
+    let promotedCount = 0;
+    for (const ex of failedExercises) {
+      if (!ex.misconceptionType) continue;
+      try {
+        const res = await track({ type: ex.misconceptionType });
+        if (res?.promoted) promotedCount += 1;
+      } catch {}
+    }
+    setResult({
+      profile: type,
+      detectedMisconceptions: detected,
+      score,
+      correctCount,
+      promotedGaps: promotedCount,
+    });
     setAnalyzing(false);
+    // Trigger sequenced reveal
+    setTimeout(() => setRevealStep(1), 400);
+    setTimeout(() => setRevealStep(2), 1400);
+    setTimeout(() => setRevealStep(3), 2400);
   }
 
   function renderMath(text: string) {
@@ -231,55 +239,144 @@ export function DiagnosticProfiler({
 
   if (result) {
     const p = PROFILES[result.profile!];
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="space-y-6 rtl text-right"
-      >
-        <div className="bg-card border-2 border-primary/20 rounded-3xl p-8 text-center space-y-4">
-          <div className="text-6xl mb-2">
-            {p.id === "strategic" ? "🎯" : p.id === "conceptual" ? "💡" : p.id === "procedural" ? "📋" : "⚡"}
-          </div>
-          <div className="space-y-1">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">{p.id} PROFILE</p>
-            <h2 className="text-3xl font-black text-foreground">{p.title}</h2>
-          </div>
-          <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto">{p.desc}</p>
-        </div>
+    const scoreColor =
+      result.score >= 75 ? "text-emerald-600" : result.score >= 50 ? "text-amber-600" : "text-rose-600";
+    const scoreBg =
+      result.score >= 75 ? "from-emerald-500/20 to-emerald-500/5" : result.score >= 50 ? "from-amber-500/20 to-amber-500/5" : "from-rose-500/20 to-rose-500/5";
+    const scoreEmoji = result.score >= 75 ? "🚀" : result.score >= 50 ? "💪" : "🌱";
+    const scoreMsg =
+      result.score >= 75
+        ? "ممتاز! أنت في القمة"
+        : result.score >= 50
+          ? "بداية قوية — قابلة للتطوير"
+          : "اكتشفنا فرص ضخمة للنمو";
 
-        {result.detectedMisconceptions.length > 0 && (
-          <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5 space-y-3">
-            <h3 className="text-sm font-black text-destructive flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" /> الثغرات المكتشفة في تفكيرك:
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5 rtl text-right">
+        {/* SCORE REVEAL — animated big number */}
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 200, damping: 15 }}
+          className={`relative overflow-hidden bg-gradient-to-br ${scoreBg} border-2 border-primary/20 rounded-3xl p-8 text-center`}
+        >
+          <div className="text-5xl mb-3">{scoreEmoji}</div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black mb-2">مستواك الحقيقي</p>
+          <motion.div
+            key={result.score}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.3, type: "spring", stiffness: 150 }}
+            className={`text-7xl md:text-8xl font-black ${scoreColor} leading-none`}
+          >
+            {result.score}<span className="text-3xl">%</span>
+          </motion.div>
+          <p className="text-sm font-bold text-foreground/80 mt-3">{scoreMsg}</p>
+
+          {/* Visual heatmap of answers */}
+          <div className="flex justify-center gap-1.5 mt-5">
+            {records.map((r, i) => (
+              <motion.div
+                key={i}
+                initial={{ scale: 0, y: 10 }}
+                animate={{ scale: 1, y: 0 }}
+                transition={{ delay: 0.6 + i * 0.08 }}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                  r.correct ? "bg-emerald-500/20 text-emerald-600" : "bg-rose-500/20 text-rose-600"
+                }`}
+              >
+                {r.correct ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* XP REWARD — instant gratification */}
+        {revealStep >= 1 && (
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 rounded-2xl p-4 flex items-center gap-4"
+          >
+            <motion.div
+              animate={{ rotate: [0, -10, 10, 0] }}
+              transition={{ duration: 0.6 }}
+              className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/40"
+            >
+              <Trophy className="w-6 h-6" />
+            </motion.div>
+            <div className="flex-1">
+              <div className="text-xs text-muted-foreground font-bold">مكافأة فورية</div>
+              <div className="text-base font-black text-amber-700">+{XP_REWARDS.diagnostic_complete} XP مفتوحة</div>
+            </div>
+            <Sparkles className="w-5 h-5 text-amber-500" />
+          </motion.div>
+        )}
+
+        {/* THINKING PROFILE — reveal step 2 */}
+        {revealStep >= 2 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border rounded-2xl p-5">
+            <div className="flex items-start gap-4">
+              <div className="text-4xl shrink-0">
+                {p.id === "strategic" ? "🎯" : p.id === "conceptual" ? "💡" : p.id === "procedural" ? "📋" : "⚡"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">نمط تفكيرك</p>
+                <h3 className="text-lg font-black text-foreground">{p.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-1">{p.desc}</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* WEAKNESSES — reveal step 3 — framed as "secret intel" not failure */}
+        {revealStep >= 3 && result.detectedMisconceptions.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-br from-rose-500/5 to-transparent border border-rose-500/20 rounded-2xl p-5 space-y-3"
+          >
+            <h3 className="text-sm font-black text-rose-700 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" /> الفخاخ اللي خسّرتك نقاط:
             </h3>
             <ul className="space-y-2">
-              {result.detectedMisconceptions.map((m, i) => (
+              {result.detectedMisconceptions.slice(0, 3).map((m, i) => (
                 <li key={i} className="text-xs text-foreground/80 flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-destructive mt-1.5 shrink-0" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
                   {m}
                 </li>
               ))}
             </ul>
-          </div>
+            {result.promotedGaps > 0 && (
+              <div className="text-[10px] text-rose-600 font-bold mt-2 pt-2 border-t border-rose-500/10">
+                ✨ أضفنا {result.promotedGaps} نقطة لمسار التقوية المخصص
+              </div>
+            )}
+          </motion.div>
         )}
 
-        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 space-y-2">
-          <h3 className="text-sm font-black text-primary flex items-center gap-2">
-            <Target className="w-4 h-4" /> توصية المحرك الرياضي:
-          </h3>
-          <p className="text-xs text-foreground/90">{p.nextMission}</p>
-        </div>
-
-        <button
-          onClick={onClose}
-          className="w-full bg-foreground text-background py-4 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
-        >
-          إنهاء والعودة للوحة التحكم ←
-        </button>
+        {/* CTA — unlock next path */}
+        {revealStep >= 3 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+            <button
+              onClick={() => navigate("/learning-path")}
+              className="w-full bg-gradient-to-r from-primary to-accent text-white py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              <TrendingUp className="w-5 h-5" />
+              افتح مسار التقوية المخصص
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors"
+            >
+              لاحقاً — العودة للوحة
+            </button>
+          </motion.div>
+        )}
       </motion.div>
     );
   }
+
 
   if (analyzing) {
     return (
@@ -399,34 +496,8 @@ export function DiagnosticProfiler({
             </div>
           )}
 
-          {/* Explanation */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-black text-muted-foreground uppercase">
-                لماذا اخترت هذا الجواب؟ (اختياري)
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-muted-foreground">الثقة بالحل:</span>
-                <span className="text-[10px] font-bold text-primary">{confidence}%</span>
-              </div>
-            </div>
-            <textarea
-              value={explanation}
-              onChange={(e) => setExplanation(e.target.value)}
-              placeholder="اشرح لي ماذا دار في ذهنك..."
-              rows={2}
-              className="w-full p-4 rounded-xl border-2 border-border bg-card text-sm resize-none focus:border-primary outline-none transition-all"
-            />
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={confidence}
-              onChange={(e) => setConfidence(Number(e.target.value))}
-              className="w-full h-1.5 bg-muted rounded-full appearance-none accent-primary cursor-pointer"
-            />
-          </div>
         </div>
+
 
         <button
           onClick={submitAnswer}
