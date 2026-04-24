@@ -7,6 +7,8 @@ import { explainMisconception } from "@/engine/ai-layer";
 import { Misconception } from "@/engine/types";
 import { LatexRenderer } from "./LatexRenderer";
 import { motion, AnimatePresence } from "framer-motion";
+import { useMisconceptionTracker } from "@/hooks/useMisconceptionTracker";
+import { toast } from "@/hooks/use-toast";
 
 interface Props {
   correctAnswer: string;
@@ -26,13 +28,24 @@ export function MisconceptionPanel({ correctAnswer, domain }: Props) {
   const [aiLoading, setAiLoading] = useState(false);
   const [checked, setChecked] = useState(false);
 
-  const check = useCallback(() => {
+  const { track } = useMisconceptionTracker();
+
+  const check = useCallback(async () => {
     if (!attempt.trim()) return;
     const result = detectMisconception(attempt, correctAnswer);
     setMisconception(result);
     setChecked(true);
     setAiHint(null);
-  }, [attempt, correctAnswer]);
+
+    // Close the cognitive loop: count repeat errors → promote to knowledge gap
+    const tracked = await track(result);
+    if (tracked?.promoted) {
+      toast({
+        title: "تم اكتشاف نقطة ضعف متكررة",
+        description: `سُجّلت في فجواتك المعرفية: ${tracked.topic}`,
+      });
+    }
+  }, [attempt, correctAnswer, track]);
 
   const getAIHint = useCallback(async () => {
     if (!misconception) return;
