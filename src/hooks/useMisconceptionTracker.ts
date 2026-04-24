@@ -98,14 +98,6 @@ export function useMisconceptionTracker() {
       });
     }
 
-    // Bump frequency on the linked skill error catalogue (best-effort)
-    if (map.skill_id) {
-      await supabase.rpc("increment_skill_error_frequency", {
-        p_skill_id: map.skill_id,
-        p_error_type: m.type,
-      }).then(() => {}, () => {/* RPC optional */});
-    }
-
     // Reset local counter so we don't re-promote on every subsequent error
     counters[m.type] = 0;
     writeCounters(user.id, counters);
