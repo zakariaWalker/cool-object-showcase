@@ -1,9 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export interface DiagnosticExercise {
-  // FIX: was `number` only — AI edge function may return UUID strings.
-  // Using `string | number` lets exercises.find(e => String(e.id) === String(r.exerciseId))
-  // work correctly for both fallback pool (101,102...) and AI-generated UUIDs.
+  // FIX: was `number` only — AI/KB may return string IDs (UUIDs or `kb-err-...`).
   id: string | number;
   type: "logic" | "trap" | "standard" | "open" | "strategic";
   typeName: string;
@@ -14,6 +12,8 @@ export interface DiagnosticExercise {
   kind: "qcm" | "numeric" | "text";
   icon: string;
   misconception: string;
+  /** Stable misconception type matching public.misconception_skill_map.misconception_type */
+  misconceptionType?: string;
   badgeColor: string;
   badgeBg: string;
   placeholder?: string;
