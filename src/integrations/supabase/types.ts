@@ -322,6 +322,39 @@ export type Database = {
           },
         ]
       }
+      diagnostic_cache: {
+        Row: {
+          cache_key: string
+          country_code: string
+          created_at: string
+          exercises: Json
+          expires_at: string
+          id: string
+          level: string
+          source: string
+        }
+        Insert: {
+          cache_key: string
+          country_code: string
+          created_at?: string
+          exercises?: Json
+          expires_at?: string
+          id?: string
+          level: string
+          source?: string
+        }
+        Update: {
+          cache_key?: string
+          country_code?: string
+          created_at?: string
+          exercises?: Json
+          expires_at?: string
+          id?: string
+          level?: string
+          source?: string
+        }
+        Relationships: []
+      }
       exam_analytics: {
         Row: {
           concept_frequency: Json | null
@@ -1347,6 +1380,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      misconception_counters: {
+        Row: {
+          count: number
+          created_at: string
+          id: string
+          last_seen_at: string
+          misconception_type: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          misconception_type: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          misconception_type?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       misconception_skill_map: {
         Row: {
