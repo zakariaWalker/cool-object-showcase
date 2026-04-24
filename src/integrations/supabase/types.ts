@@ -1348,6 +1348,50 @@ export type Database = {
           },
         ]
       }
+      misconception_skill_map: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          misconception_type: string
+          severity: string
+          skill_id: string | null
+          skill_name: string
+          threshold: number
+          topic_ar: string
+        }
+        Insert: {
+          created_at?: string
+          domain?: string
+          id?: string
+          misconception_type: string
+          severity?: string
+          skill_id?: string | null
+          skill_name: string
+          threshold?: number
+          topic_ar: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          misconception_type?: string
+          severity?: string
+          skill_id?: string | null
+          skill_name?: string
+          threshold?: number
+          topic_ar?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "misconception_skill_map_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "kb_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_logs: {
         Row: {
           created_at: string | null
@@ -1495,25 +1539,48 @@ export type Database = {
         Row: {
           detected_at: string
           id: string
+          last_occurred_at: string
+          misconception_type: string | null
+          occurrence_count: number
+          resolved: boolean
           severity: string | null
+          skill_id: string | null
           student_id: string
           topic: string
         }
         Insert: {
           detected_at?: string
           id?: string
+          last_occurred_at?: string
+          misconception_type?: string | null
+          occurrence_count?: number
+          resolved?: boolean
           severity?: string | null
+          skill_id?: string | null
           student_id: string
           topic: string
         }
         Update: {
           detected_at?: string
           id?: string
+          last_occurred_at?: string
+          misconception_type?: string | null
+          occurrence_count?: number
+          resolved?: boolean
           severity?: string | null
+          skill_id?: string | null
           student_id?: string
           topic?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "student_knowledge_gaps_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "kb_skills"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_progress: {
         Row: {
