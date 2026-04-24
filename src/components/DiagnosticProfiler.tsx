@@ -32,6 +32,7 @@ export function DiagnosticProfiler({
   onClose: () => void;
 }) {
   const { setProfile } = useProfile();
+  const { track } = useMisconceptionTracker();
   const [exercises, setExercises] = useState<DiagnosticExercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentEx, setCurrentEx] = useState(0);
