@@ -82,17 +82,28 @@ export function AdminClassify({ exercises, searchQuery, setSearchQuery, gradeFil
 
     const guess = (text: string): string => {
       const t = text.toLowerCase();
-      if (/(انشر|طوّر|développ|expand|نشر)/i.test(t)) return "expand";
-      if (/(حلّل|عامل|factoris|factor|تفكيك)/i.test(t)) return "factor";
-      if (/(تراجح|inéquation|inequal)/i.test(t)) return "solve_inequality";
-      if (/(عادل|équation|=.*[a-z]|حلّ.*معادل)/i.test(t)) return "solve_equation";
-      if (/(برهن|أثبت|démontr|prove)/i.test(t)) return "prove";
-      if (/(مثلث|دائر|مستقيم|زاوي|triangle|cercle|géométr)/i.test(t)) return "geometry";
-      if (/(تكرار|متوسط|وسيط|moyenne|médiane|إحصاء)/i.test(t)) return "statistics";
-      if (/(احتمال|probabilit)/i.test(t)) return "probability";
-      if (/(دالة|fonction|f\(x\))/i.test(t)) return "functions";
-      if (/(بسّط|simplif|اختزل)/i.test(t)) return "simplify";
-      if (/(احسب|calcul|compute)/i.test(t)) return "compute";
+      // Expansion / development
+      if (/(انشر|طوّر|انشُر|وسّع|développ|expand)/i.test(t)) return "expand";
+      // Factoring
+      if (/(حلّل|عامل|فكّك|إلى عوامل|factoris|factor)/i.test(t)) return "factor";
+      // Inequalities (Algerian: تراجح / Omani: متباينة)
+      if (/(تراجح|متباين|متباينة|متباينات|inéquation|inequal|≤|≥|<|>)/i.test(t)) return "solve_inequality";
+      // Equations
+      if (/(معادل|عادل|équation|equation|حلّ.*معادل|أوجد قيم|أوجد قيمة س)/i.test(t)) return "solve_equation";
+      // Proofs
+      if (/(برهن|أثبت|بيّن أن|استنتج أن|démontr|prove)/i.test(t)) return "prove";
+      // Geometry (incl. Omani: مجسّم، رؤوس، ضلع، محيط، مساحة)
+      if (/(مثلث|دائر|مستقيم|زاوي|مجسّم|مجسم|رؤوس|أوجه|أضلاع|محيط|مساحة|حجم|متوازي|مستطيل|مربّع|مربع|triangle|cercle|géométr|cube|prism)/i.test(t)) return "geometry";
+      // Statistics (incl. Omani: تمثيل بياني، جدول تكراري، نسبة، تحويل وحدات)
+      if (/(تكرار|متوسط|وسيط|منوال|تمثيل بياني|جدول تكراري|بيانات|إحصاء|moyenne|médiane|نسبة|تناسب|تحويل|أسعار|سعر)/i.test(t)) return "statistics";
+      // Probability
+      if (/(احتمال|احتمالات|عشوائي|probabilit)/i.test(t)) return "probability";
+      // Functions (incl. Omani: اقتران، تمثيل دالة)
+      if (/(دالة|دوال|اقتران|اقترانات|fonction|f\(x\)|g\(x\))/i.test(t)) return "functions";
+      // Simplify
+      if (/(بسّط|بسط|اختزل|simplif)/i.test(t)) return "simplify";
+      // Compute / evaluate
+      if (/(احسب|أوجد قيمة|قدّر|calcul|compute|ناتج)/i.test(t)) return "compute";
       return "other";
     };
 

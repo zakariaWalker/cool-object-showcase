@@ -190,7 +190,7 @@ export function useAdminKBStore() {
   // We just expose totals here; the dashboard hook fills in cycle aggregation.
   const stats = {
     total: countryExercises.length,
-    classified: countryExercises.filter(e => e.type !== "other" && e.type !== "unclassified").length,
+    classified: countryExercises.filter(e => e.type && e.type !== "unclassified").length,
     deconstructed: countryDeconstructions.length,
     patternCount: patterns.length,
     cycleCounts: {} as Record<string, number>, // populated by the consumer (AdminDashboard) via useCountryGrades
