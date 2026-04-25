@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
 import { LatexRenderer } from "@/components/LatexRenderer";
+import { AlgebraSolvingGuide } from "@/components/AlgebraSolvingGuide";
 import { inferAnswerSchema, gradeAnswer, type Verdict } from "@/engine/answer-schema";
 
 // Mirror of detectEditorType from StudentAnswerEditor — used only to show
@@ -145,6 +146,11 @@ export default function AlgebraStudio() {
             </div>
           )}
         </div>
+
+        {/* Smart solving guide — explains the method, steps, symbols & pitfalls */}
+        {committed && editorKind === "algebra" && (
+          <AlgebraSolvingGuide problemText={committed} />
+        )}
 
         {/* Smart editor — auto-routes algebra ↔ geometry */}
         <StudentAnswerEditor
