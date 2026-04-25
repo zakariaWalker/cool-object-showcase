@@ -245,13 +245,28 @@ function RenderedExerciseTable({ header, rows, mathFont }: { header?: string[]; 
 
 // ─── KaTeX inline renderer ────────────────────────────────────────────────────
 
+// Broken-LaTeX sanitizer — our PDF ingestion sometimes drops fraction
+// numerators/denominators leaving fragments like  \frac{}{}  or  \frac{a}{} .
+// KaTeX would happily render an empty box; we'd rather drop the fragment so the
+// rest of the line stays readable.
+function sanitizeLatex(src: string): string {
+  let out = src;
+  // \frac with one or both args empty / non-numeric (√, _, …) → drop
+  out = out.replace(/\\d?frac\s*\{\s*\}\s*\{[^}]*\}/g, "□");
+  out = out.replace(/\\d?frac\s*\{[^}]*\}\s*\{\s*\}/g, "□");
+  out = out.replace(/\\d?frac\s*\{\s*\}\s*\{\s*[√]\s*\}/g, "□");
+  // Stray double "==" produced by parser glitches
+  out = out.replace(/==/g, "=");
+  return out;
+}
+
 function KatexSpan({ latex, displayMode }: { latex: string; displayMode: boolean }) {
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     if (!ref.current) return;
     try {
-      katex.render(latex, ref.current, {
+      katex.render(sanitizeLatex(latex), ref.current, {
         displayMode,
         throwOnError: false,
         trust: true,
