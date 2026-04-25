@@ -12,6 +12,8 @@ import {
   type Verdict,
   type AnswerSchema,
 } from "@/engine/answer-schema";
+import { GeometryCanvas, type VerifyResult } from "@/components/geometry/GeometryCanvas";
+import { inferConstraints } from "@/engine/figures/construction-checks";
 
 export default function StudentSolver() {
   const { id } = useParams();
