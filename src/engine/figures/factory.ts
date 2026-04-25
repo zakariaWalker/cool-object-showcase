@@ -10,7 +10,12 @@ interface ExerciseLike {
   text?: string | null;
 }
 
+// Order matters: most-specific compound keywords FIRST, generic ones LAST.
+// Each pattern is matched against exercise TEXT (the actual question), not the
+// chapter — chapters often list every topic in a unit ("triangles - quadrilaterals
+// - lines") which would otherwise hijack the detector.
 const KIND_KEYWORDS: Array<{ kind: FigureKind; patterns: RegExp }> = [
+  // 3D solids (compound first)
   { kind: "parallelepiped", patterns: /متوازي\s*المستطيل|parallelepip|parallélépip|cuboid|rectangular box/i },
   { kind: "cube",           patterns: /\bمكعّ?ب\b|\bcube\b/i },
   { kind: "prism",          patterns: /موشور|prism|prisme/i },
@@ -18,26 +23,54 @@ const KIND_KEYWORDS: Array<{ kind: FigureKind; patterns: RegExp }> = [
   { kind: "cone",           patterns: /مخروط|\bcone\b|\bcône\b/i },
   { kind: "cylinder",       patterns: /أسطوان|cylinder|cylindre/i },
   { kind: "sphere",         patterns: /\bكرة\b|sphere|sphère/i },
-  { kind: "right_triangle", patterns: /مثلث\s*قائم|right\s*triangle|triangle\s*rectangle/i },
-  { kind: "triangle",       patterns: /مثلث|triangle/i },
+  // 2D quadrilaterals — must come BEFORE circle/triangle so "متوازي أضلاع"
+  // and "معيّن" (rhombus) win over generic words
+  { kind: "parallelogram",  patterns: /متوازي\s*أضلاع|parallelogram|parallélogramme/i },
+  { kind: "rhombus",        patterns: /معيّن|rhombus|losange/i },
+  { kind: "trapezoid",      patterns: /شبه\s*منحرف|trapezoid|trapèze/i },
   { kind: "rectangle",      patterns: /مستطيل|rectangle/i },
   { kind: "square",         patterns: /\bمربّ?ع\b|\bsquare\b|\bcarré\b/i },
-  { kind: "rhombus",        patterns: /معيّن|rhombus|losange/i },
-  { kind: "parallelogram",  patterns: /متوازي\s*أضلاع|parallelogram|parallélogramme/i },
-  { kind: "trapezoid",      patterns: /شبه\s*منحرف|trapezoid|trapèze/i },
+  // Conics
   { kind: "circle",         patterns: /دائرة|circle|cercle/i },
+  // Triangles (specific → general)
+  { kind: "right_triangle", patterns: /مثلث\s*قائم|right\s*triangle|triangle\s*rectangle/i },
+  { kind: "triangle",       patterns: /مثلث(?!ات)|triangle(?!s)/i }, // avoid "مثلثات" (plural in chapter titles)
+  // Coordinate
   { kind: "function_plot",  patterns: /دالة|منحنى|function|courbe/i },
 ];
 
+/**
+ * Detect figure kind from exercise content.
+ *
+ * Strategy:
+ *  1. Inspect the exercise TEXT first (the actual question wording).
+ *  2. If nothing matches, try the explicit `type` column.
+ *  3. NEVER infer from `chapter` alone — chapter labels are usually a list of
+ *     topics covered by the unit (e.g. "lines - triangles - quadrilaterals")
+ *     which would otherwise force every exercise to render a triangle.
+ */
 export function detectFigureKind(ex: ExerciseLike): FigureKind | null {
-  const blob = `${ex.type || ""} ${ex.chapter || ""} ${ex.text || ""}`;
+  const text = ex.text || "";
+  const type = ex.type || "";
+
+  // 1. Try the question text — strongest signal
   for (const { kind, patterns } of KIND_KEYWORDS) {
-    if (patterns.test(blob)) return kind;
+    if (patterns.test(text)) return kind;
   }
-  // The KB sometimes mis-labels solids as "parallelogram" (the seeded data does)
-  if ((ex.type || "").toLowerCase() === "parallelogram" && /مجسّ?م|أوجه|أحرف|رؤوس/.test(ex.text || "")) {
+
+  // 2. Try the explicit type column (single-shape labels only)
+  for (const { kind, patterns } of KIND_KEYWORDS) {
+    if (patterns.test(type)) return kind;
+  }
+
+  // 3. Mis-labelled solids edge case
+  if (type.toLowerCase() === "parallelogram" && /مجسّ?م|أوجه|أحرف|رؤوس/.test(text)) {
     return "parallelepiped";
   }
+
+  // 4. Compound types like "triangle_circle" mean the exercise mixes shapes —
+  //    we cannot pick one safely without more context. Return null so the
+  //    renderer shows nothing rather than the wrong shape.
   return null;
 }
 
