@@ -462,14 +462,81 @@ export function AdminViz({ exercises, patterns, deconstructions, countryCode = "
               />
             )}
 
-            {/* Unused patterns */}
+            {/* Unused patterns + linking action */}
             {insights.unusedPatterns.length > 0 && (
-              <AlertItem
-                severity="medium"
-                title={`${insights.unusedPatterns.length} أنماط غير مستخدمة`}
-                detail={insights.unusedPatterns.slice(0, 5).map(p => p.name).join("، ")}
-              />
+              <div className="p-3 rounded-lg space-y-2" style={{ background: "hsl(var(--statistics) / 0.08)" }}>
+                <div className="flex items-start gap-2">
+                  <span className="text-sm flex-shrink-0">🟡</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-bold" style={{ color: "hsl(var(--statistics))" }}>
+                      {insights.unusedPatterns.length} نمط بدون تفكيكات
+                    </div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5 leading-relaxed">
+                      {insights.linkableUncovered.length > 0
+                        ? `${insights.linkableUncovered.length} تمرين قابل للربط الآلي بهذه الأنماط`
+                        : "لا توجد تمارين غير مفكّكة بأنواع متطابقة"}
+                    </div>
+                  </div>
+                </div>
+                {onAdd && insights.linkableUncovered.length > 0 && (
+                  <button
+                    onClick={handleLinkPatterns}
+                    disabled={linking}
+                    className="w-full text-[11px] font-bold py-2 rounded-lg transition-all disabled:opacity-50"
+                    style={{
+                      background: linking ? "hsl(var(--muted))" : "hsl(var(--statistics))",
+                      color: linking ? "hsl(var(--muted-foreground))" : "#fff",
+                    }}
+                  >
+                    {linking
+                      ? `⏳ جاري الربط… ${linkProgress.done}/${linkProgress.total}`
+                      : `⚡ اربط الأنماط بـ ${insights.linkableUncovered.length} تمرين`}
+                  </button>
+                )}
+              </div>
             )}
+
+            {/* Weak coverage cells (grade × type with <3 exercises) */}
+            {insights.weakCells.length > 0 && (
+              <div className="p-3 rounded-lg space-y-2" style={{ background: "hsl(var(--functions) / 0.08)" }}>
+                <div className="flex items-start gap-2">
+                  <span className="text-sm flex-shrink-0">🟡</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-bold" style={{ color: "hsl(var(--functions))" }}>
+                      {insights.weakCells.length} مجال بتغطية ضعيفة جداً
+                    </div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5 leading-relaxed">
+                      مستويات × أنواع بأقلّ من 3 تمارين — تحتاج لإضافة محتوى للتوازن
+                    </div>
+                  </div>
+                </div>
+                <details className="text-[10px]">
+                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+                    عرض القائمة ({insights.weakCells.slice(0, 8).length} من {insights.weakCells.length})
+                  </summary>
+                  <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                    {insights.weakCells.slice(0, 20).map((w, i) => (
+                      <div key={`${w.grade}-${w.type}-${i}`} className="flex items-center justify-between gap-2 py-1 px-2 rounded bg-card/60">
+                        <span className="font-bold text-foreground">
+                          {labelForGrade(w.grade)} · {TYPE_LABELS_AR[w.type] || w.type}
+                        </span>
+                        <span className="text-muted-foreground font-mono">
+                          {w.total} تمرين
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+                <button
+                  onClick={handleExportWeakDomains}
+                  className="w-full text-[11px] font-bold py-2 rounded-lg transition-all"
+                  style={{ background: "hsl(var(--functions))", color: "#fff" }}
+                >
+                  📥 صدّر خطّة المجالات الضعيفة (JSON)
+                </button>
+              </div>
+            )}
+
 
             {/* Low coverage grades */}
             {Object.entries(insights.gradeStats)
