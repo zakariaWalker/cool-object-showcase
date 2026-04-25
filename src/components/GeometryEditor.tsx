@@ -295,14 +295,23 @@ export function GeometryEditor({ onSubmit, initialLevel = "middle", exerciseText
             <Compass size={18} />
           </div>
           <div>
-            <button 
-              onClick={() => setShowLevelSelect(!showLevelSelect)}
-              className="flex items-center gap-1.5 text-sm font-bold text-foreground hover:text-primary transition-colors"
+            <button
+              onClick={() => !lockLevel && setShowLevelSelect(!showLevelSelect)}
+              disabled={lockLevel}
+              className="flex items-center gap-1.5 text-sm font-bold text-foreground hover:text-primary transition-colors disabled:cursor-default disabled:hover:text-foreground"
+              title={lockLevel ? "المستوى مُعتمد من ملفك الشخصي" : "تغيير المستوى"}
             >
-              محرر الهندسة ({LEVEL_LABELS[level]})
-              <ChevronDown size={14} className={`transition-transform ${showLevelSelect ? "rotate-180" : ""}`} />
+              محرر الهندسة ({LEVEL_LABELS[level]}) {lockLevel && "🔒"}
+              {!lockLevel && (
+                <ChevronDown size={14} className={`transition-transform ${showLevelSelect ? "rotate-180" : ""}`} />
+              )}
             </button>
-            <p className="text-[10px] text-muted-foreground">أنشئ أشكالاً هندسية بدقة رياضية</p>
+            <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+              <span>أنشئ أشكالاً هندسية بدقة رياضية</span>
+              <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold">
+                {DOMAIN_LABELS[domain]}
+              </span>
+            </p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -315,15 +324,15 @@ export function GeometryEditor({ onSubmit, initialLevel = "middle", exerciseText
         </div>
       </div>
 
-      {/* Level Selector */}
+      {/* Level Selector — hidden when locked */}
       <AnimatePresence>
-        {showLevelSelect && (
+        {showLevelSelect && !lockLevel && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="bg-primary/5 border-b border-border/50 overflow-hidden">
             <div className="p-3 flex gap-2">
               {(Object.keys(LEVEL_LABELS) as Level[]).map(l => (
                 <button
                   key={l}
-                  onClick={() => { setLevel(l); setShowLevelSelect(false); setTool("point"); setShowAxes(l !== "primary"); }}
+                  onClick={() => { setLevel(l); setShowLevelSelect(false); setTool(defaultToolForDomain(l, domain)); setShowAxes(l !== "primary" || domain === "analytic" || domain === "functions"); }}
                   className={`flex-1 flex flex-col items-center p-2 rounded-xl border transition-all ${level === l ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-card border-border text-muted-foreground hover:text-foreground"}`}
                 >
                   <GraduationCap size={16} />
