@@ -78,27 +78,21 @@ export default function TextbookBlog() {
     if (!slugOrId) return;
     (async () => {
       // Try slug first, then fallback to id
-      let tbQuery = supabase
+      const { data: bySlug } = await (supabase as any)
         .from("textbooks")
         .select("id, slug, title, grade, country_code, description, metadata")
         .eq("status", "completed")
-        .eq("is_public" as any, true)
-        .limit(1);
-      const { data: bySlug } = await supabase
-        .from("textbooks")
-        .select("id, slug, title, grade, country_code, description, metadata")
-        .eq("status", "completed")
-        .eq("is_public" as any, true)
-        .eq("slug" as any, slugOrId)
+        .eq("is_public", true)
+        .eq("slug", slugOrId)
         .maybeSingle();
 
       let tb: any = bySlug;
       if (!tb) {
-        const { data: byId } = await supabase
+        const { data: byId } = await (supabase as any)
           .from("textbooks")
           .select("id, slug, title, grade, country_code, description, metadata")
           .eq("status", "completed")
-          .eq("is_public" as any, true)
+          .eq("is_public", true)
           .eq("id", slugOrId)
           .maybeSingle();
         tb = byId;

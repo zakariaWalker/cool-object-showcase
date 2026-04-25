@@ -31,11 +31,11 @@ export default function TextbooksIndex() {
   useEffect(() => {
     (async () => {
       const [tbRes, cRes] = await Promise.all([
-        supabase
+        (supabase as any)
           .from("textbooks")
           .select("id, slug, title, grade, country_code, description, metadata, created_at")
           .eq("status", "completed")
-          .eq("is_public" as any, true)
+          .eq("is_public", true)
           .order("created_at", { ascending: false })
           .limit(200),
         supabase.from("countries").select("code, name_ar, flag_emoji").eq("is_active", true),
