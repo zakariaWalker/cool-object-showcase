@@ -219,11 +219,77 @@ export default function GapDetector() {
     [availableExercises, deconstructions, patterns, usedExerciseIds],
   );
 
-  const answerQuestion = async (correct: boolean) => {
+  /** Local sanity check — rejects empty / too-short / pure-gibberish answers before calling AI. */
+  function validateAnswerInput(raw: string): string | null {
+    const t = raw.trim();
+    if (!t) return "اكتب إجابتك أولاً";
+    if (t.length < 2) return "الإجابة قصيرة جداً";
+    // Reject when there's no math content AND no Arabic/Latin word characters
+    const hasDigit = /\d/.test(t);
+    const hasMathOp = /[+\-*/=^√()<>]|frac|sqrt/.test(t);
+    const hasWord = /[\u0600-\u06FFa-zA-Z]{2,}/.test(t);
+    if (!hasDigit && !hasMathOp && !hasWord) return "الإجابة غير مفهومة — استخدم أرقاماً أو رموزاً رياضية";
+    // Reject pure repeated character spam (e.g. "aaaaaa", "ييييي")
+    if (/^(.)\1{4,}$/.test(t.replace(/\s/g, ""))) return "الإجابة تبدو عشوائية — حاول مجدداً";
+    return null;
+  }
+
+  const submitAnswer = async () => {
+    const err = validateAnswerInput(answerText);
+    if (err) {
+      setInputError(err);
+      return;
+    }
+    setInputError("");
+    setGrading(true);
+
     const q = quizQuestions[currentQ];
+    let correct = false;
+    let feedback = "";
+
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-correct-diagnostic", {
+        body: {
+          questions: [
+            {
+              id: q.exercise.id,
+              text: q.exercise.text,
+              type: q.exercise.type,
+              difficulty: "متوسط",
+              points: 1,
+              concepts: q.decon.needs || [],
+            },
+          ],
+          answers: [
+            {
+              questionId: q.exercise.id,
+              answer: answerText.trim(),
+              steps: [],
+              timeSpent: 0,
+              confidence: 50,
+            },
+          ],
+        },
+      });
+      if (error) throw error;
+      const c = data?.corrections?.[0];
+      // Pass threshold: at least half the points
+      const score = Number(c?.score ?? 0);
+      const max = Number(c?.maxScore ?? 1) || 1;
+      correct = score / max >= 0.5;
+      feedback = c?.feedback || "";
+    } catch (e) {
+      console.error("AI grading failed:", e);
+      // Conservative fallback: mark incorrect rather than falsely correct
+      correct = false;
+      feedback = "تعذّر التصحيح الآلي — سُجِّل كخطأ احتياطياً";
+    }
+
     const newAnswer: QuizAnswer = { questionIndex: currentQ, exerciseId: q.exercise.id, correct };
     setAnswers((prev) => [...prev, newAnswer]);
+    setGradeFeedback(feedback);
     setShowSolution(true);
+    setGrading(false);
 
     const { events, newBadges } = await recordExerciseCompletion(correct, q.pattern?.id);
     if (events.length > 0) setXpEvents(events);
@@ -232,6 +298,9 @@ export default function GapDetector() {
 
   const nextQuestion = () => {
     setShowSolution(false);
+    setAnswerText("");
+    setGradeFeedback("");
+    setInputError("");
     if (currentQ + 1 < quizQuestions.length) {
       setCurrentQ((prev) => prev + 1);
     } else {
