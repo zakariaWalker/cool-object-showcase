@@ -44,6 +44,7 @@ const WORKFLOW_STEPS: Step[] = [
   { path: "/whatif", label: "ماذا لو؟", icon: FlaskConical, step: 8 },
   { path: "/geometry-studio", label: "استوديو الهندسة", icon: Compass, step: 8 },
   { path: "/algebra-studio", label: "استوديو الجبر", icon: Sigma, step: 8 },
+  { path: "/textbooks", label: "المكتبة", icon: BookOpen, step: 9 },
   { path: "/annales", label: "الأرشيف", icon: Archive, step: 9 },
   { path: "/exams", label: "الامتحانات", icon: FileEdit, step: 10, adminOnly: true },
   { path: "/exam-kb", label: "KB امتحانات", icon: Library, step: 11, adminOnly: true },
@@ -60,11 +61,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isGuest = !user;
 
   useEffect(() => {
-    const publicPaths = ["/", "/auth", "/onboarding", "/gaps", "/diagnostic", "/annales", "/geometry-studio", "/algebra-studio"];
+    const publicPaths = ["/", "/auth", "/onboarding", "/gaps", "/diagnostic", "/annales", "/geometry-studio", "/algebra-studio", "/textbooks"];
     const isPublic =
       publicPaths.includes(currentPath) ||
       currentPath.startsWith("/tma") ||
       currentPath.startsWith("/archive-solve") ||
+      currentPath.startsWith("/textbooks/") ||
       currentPath.startsWith("/solve/");
     if (isGuest && !isPublic) {
       navigate("/auth");
@@ -76,7 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 
   const visibleSteps = WORKFLOW_STEPS.filter((step) => {
-    if (isGuest) return step.path === "/gaps" || step.path === "/diagnostic" || step.path === "/geometry-studio" || step.path === "/algebra-studio";
+    if (isGuest) return ["/gaps", "/diagnostic", "/geometry-studio", "/algebra-studio", "/textbooks"].includes(step.path);
     if (step.adminOnly && !isAdmin) return false;
     return true;
   });
