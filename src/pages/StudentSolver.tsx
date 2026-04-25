@@ -20,7 +20,8 @@ export default function StudentSolver() {
   const [exercise, setExercise] = useState<any>(null);
   const [deconstruction, setDeconstruction] = useState<any>(null);
   const [pattern, setPattern] = useState<any>(null);
-  
+  const [manualFigureSpec, setManualFigureSpec] = useState<FigureSpec | null>(null);
+
   const [currentStep, setCurrentStep] = useState(0);
   const [studentInput, setStudentInput] = useState("");
   const [stepStatus, setStepStatus] = useState<"typing" | "correct" | "partial" | "incorrect" | "hint_shown">("typing");
