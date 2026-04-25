@@ -7,65 +7,68 @@ import {
   ArrowLeft,
   BookOpen,
   Target,
-  TrendingUp,
   ShieldCheck,
-  Sparkles,
   GraduationCap,
   Users,
   CheckCircle2,
-  Clock,
-  Brain,
-  LineChart,
+  Eye,
+  HelpCircle,
+  Wallet,
+  TrendingUp,
+  Sparkles,
 } from "lucide-react";
 
-// ── Two audience tracks: Student (energetic) + Parent (trust) ──
+// ── Two audience tracks ──
+// Student: darija, baccalauréat-focused, concrete
 const STUDENT_BENEFITS = [
   {
-    icon: <Brain className="w-5 h-5" />,
-    title: "تشخيص ذكي يكشف ثغراتك",
-    desc: "تقييم قصير يحلل طريقة تفكيرك مش بس إجاباتك.",
+    icon: <Eye className="w-5 h-5" />,
+    title: "نكتشفولك وين راك تغلط",
+    desc: "تقييم قصير يبيّنلك بالضبط نقاط الضعف اللي تخسّرلك النقاط في الباك.",
   },
   {
     icon: <Target className="w-5 h-5" />,
-    title: "خطة مخصصة لك وحدك",
-    desc: "تمارين مرتبة حسب نقاط ضعفك — بلا تضييع وقت.",
+    title: "تمارين على قد مستواك",
+    desc: "ما نضيّعوش وقتك في تمارين تعرفها — كلش مرتّب حسب احتياجك.",
   },
   {
-    icon: <Sparkles className="w-5 h-5" />,
-    title: "AI يشرحلك خطوة بخطوة",
-    desc: "مدرس ذكي معاك 24/7 يفهمك حتى تفهم.",
+    icon: <HelpCircle className="w-5 h-5" />,
+    title: "نشرحولك حتى تفهم",
+    desc: "ما نعطيوكش الحل ديركت — نمشيو معاك خطوة بخطوة باش تفهم بصح.",
   },
 ];
 
+// Parent: formal Arabic, trust-building, financial relief
 const PARENT_BENEFITS = [
   {
-    icon: <LineChart className="w-5 h-5" />,
-    title: "تقارير أسبوعية شفافة",
-    desc: "تعرف مستوى ابنك الحقيقي بدون تخمين أو سؤال.",
+    icon: <Eye className="w-5 h-5" />,
+    title: "تعرف مستوى ابنك الحقيقي",
+    desc: "تقرير واضح يُظهر نقاط الضعف بدقة — بدون تخمين أو انتظار العلامات.",
   },
   {
     icon: <ShieldCheck className="w-5 h-5" />,
-    title: "متابعة دقيقة للتقدم",
-    desc: "نُحدّد نقاط الضعف ونعالجها قبل أن تتراكم.",
+    title: "متابعة التقدّم أسبوعياً",
+    desc: "تشاهد تطوّر ابنك مع الوقت، وتعرف هل يتحسّن فعلاً أم لا.",
   },
   {
-    icon: <Clock className="w-5 h-5" />,
-    title: "وقت مدروس، نتائج ملموسة",
-    desc: "20 دقيقة يومياً مركّزة أفضل من ساعات عشوائية.",
+    icon: <Wallet className="w-5 h-5" />,
+    title: "بديل عن الدروس الخصوصية الباهظة",
+    desc: "مرافقة منظّمة لابنك في الرياضيات، بجزء بسيط من تكلفة الأستاذ الخاص.",
   },
 ];
 
 const STEPS = [
-  { n: "01", t: "تشخيص", d: "تقييم ذكي يحدّد مستواك بدقة" },
-  { n: "02", t: "خطة", d: "مسار تعلّم مخصص لثغراتك" },
-  { n: "03", t: "تطبيق", d: "تمارين تفاعلية مع AI tutor" },
-  { n: "04", t: "تقدّم", d: "تحسّن قابل للقياس أسبوعياً" },
+  { n: "01", t: "تشخيص قصير", d: "تقييم 15 دقيقة يحدّد مستواك بدقة" },
+  { n: "02", t: "خطة مخصّصة", d: "قائمة تمارين مرتّبة على حسب ثغراتك" },
+  { n: "03", t: "تمارين موجّهة", d: "تحلّ خطوة بخطوة مع شرح عند الخطأ" },
+  { n: "04", t: "تتبّع التقدّم", d: "تقرير واضح يُظهر تحسّنك أسبوعياً" },
 ];
 
-const STATS = [
-  { v: "+5", l: "نقاط معدّل في الشهر" },
-  { v: "70%", l: "ثغرات مكتشفة آلياً" },
-  { v: "24/7", l: "مدرس AI متاح" },
+// Honest, modest stats — no inflated promises
+const TRUST_POINTS = [
+  { v: "15د", l: "تشخيص أوّلي" },
+  { v: "100%", l: "متوافق مع برنامج الباك" },
+  { v: "24/7", l: "متاح في أي وقت" },
 ];
 
 interface BookCard {
@@ -104,7 +107,7 @@ export default function Landing() {
               الدروس
             </a>
             <a href="#how" className="hidden md:inline text-sm font-bold text-muted-foreground hover:text-foreground transition-colors">
-              كيف يعمل
+              كيف يخدم
             </a>
             <Link to="/auth" className="text-sm font-bold text-primary hover:text-primary/80 transition-colors">
               دخول ←
@@ -124,6 +127,12 @@ export default function Landing() {
           transition={{ duration: 0.8 }}
           className="relative z-10 max-w-3xl space-y-8"
         >
+          {/* Algerian context badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black">
+            <Sparkles className="w-3.5 h-3.5" />
+            مصمَّم خصّيصاً للبرنامج الجزائري — باك وبيام
+          </div>
+
           {/* Audience tabs */}
           <div className="inline-flex items-center gap-1 p-1 rounded-2xl bg-muted/60 border border-border/50">
             <button
@@ -146,7 +155,7 @@ export default function Landing() {
               }`}
             >
               <Users className="w-4 h-4" />
-              أنا ولي أمر
+              ولي الأمر
             </button>
           </div>
 
@@ -162,11 +171,11 @@ export default function Landing() {
                 ارفع معدّلك في الرياضيات
                 <br />
                 <span className="bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
-                  بطريقة ذكية
+                  للباك والبيام
                 </span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                AI شخصي يكتشف ثغراتك، يبنيلك خطة، و يدربك خطوة بخطوة. مش حفظ — فهم حقيقي.
+                نكتشفولك وين راك تغلط، نمدّولك تمارين على قد مستواك، ونشرحولك حتى تفهم بصح — مش حفظ.
               </p>
             </motion.div>
           ) : (
@@ -178,14 +187,14 @@ export default function Landing() {
               className="space-y-7"
             >
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-foreground leading-[1.1]">
-                تابع تقدّم ابنك
+                مرافقة ابنك في الرياضيات
                 <br />
                 <span className="bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
-                  بشفافية كاملة
+                  بدون قلق
                 </span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed font-medium">
-                تقارير أسبوعية واضحة تُظهر نقاط الضعف والتحسّن. أنت دائماً في صورة ما يحدث.
+                تعرف مستوى ابنك الحقيقي، تتابع تقدّمه أسبوعياً، وتوفّر على نفسك تكلفة الدروس الخصوصية.
               </p>
             </motion.div>
           )}
@@ -194,10 +203,10 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
               <Link
-                to={audience === "student" ? "/home" : "/auth"}
+                to={audience === "student" ? "/diagnostic" : "/auth"}
                 className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-base text-primary-foreground shadow-2xl shadow-primary/25 hover:shadow-primary/40 transition-all bg-gradient-to-l from-primary to-primary/80"
               >
-                {audience === "student" ? "ابدأ التشخيص المجاني" : "أنشئ حساب ولي أمر"}
+                {audience === "student" ? "ابدأ التشخيص — مجاناً" : "سجّل لمتابعة ابنك"}
                 <ArrowLeft className="w-5 h-5" />
               </Link>
             </motion.div>
@@ -206,26 +215,26 @@ export default function Landing() {
               className="inline-flex items-center gap-2 px-6 py-4 rounded-2xl font-bold text-sm text-foreground border-2 border-border hover:border-foreground/30 transition-colors"
             >
               <BookOpen className="w-4 h-4" />
-              تصفّح الدروس
+              {audience === "student" ? "شوف الدروس" : "تصفّح المحتوى"}
             </a>
           </div>
 
           {/* Trust line */}
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> مجاني للبدء</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> بدون تسجيل معقّد</span>
             <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> بدون بطاقة بنكية</span>
-            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> نتائج فورية</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> النتيجة فورية</span>
           </div>
         </motion.div>
 
-        {/* Stats strip */}
+        {/* Trust points strip — honest, no inflated numbers */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
           className="relative z-10 grid grid-cols-3 gap-4 md:gap-12 mt-16 max-w-2xl mx-auto"
         >
-          {STATS.map((s, i) => (
+          {TRUST_POINTS.map((s, i) => (
             <div key={i} className="text-center">
               <div className="text-2xl md:text-4xl font-black bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
                 {s.v}
@@ -268,10 +277,13 @@ export default function Landing() {
       <section id="how" className="bg-muted/30 border-y border-border py-20 px-6">
         <div className="max-w-5xl mx-auto space-y-12">
           <div className="text-center space-y-3">
-            <span className="text-xs font-black text-primary uppercase tracking-wider">العملية</span>
+            <span className="text-xs font-black text-primary uppercase tracking-wider">كيف يخدم</span>
             <h2 className="text-3xl md:text-4xl font-black text-foreground">
-              4 خطوات نحو تحسّن حقيقي
+              4 خطوات بسيطة، نتيجة واضحة
             </h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              نفس الطريقة اللي يستعملها أحسن الأساتذة — لكن مهيكَلة ومتاحة 24/7.
+            </p>
           </div>
 
           <div className="grid md:grid-cols-4 gap-4">
@@ -293,16 +305,62 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── Parent reassurance section (only shown when parent audience) ── */}
+      {audience === "parent" && (
+        <section className="max-w-4xl mx-auto px-6 py-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="bg-gradient-to-br from-primary/5 via-card to-accent/5 border border-primary/20 rounded-3xl p-8 md:p-12 space-y-6"
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-black">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              لولي الأمر
+            </div>
+            <h2 className="text-2xl md:text-3xl font-black text-foreground leading-tight">
+              لست مضطراً لاختيار بين تكلفة باهظة أو ترك ابنك بلا متابعة
+            </h2>
+            <div className="grid md:grid-cols-2 gap-5 pt-2">
+              <div className="space-y-2">
+                <div className="text-sm font-black text-foreground">📊 شفافية كاملة</div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  تصلك تقارير دورية تُظهر بالضبط ما الذي يفهمه ابنك، وما الذي يحتاج تعزيزه.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm font-black text-foreground">💰 توفير حقيقي</div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  مرافقة شاملة بسعر أقل بكثير من ساعة واحدة من الدروس الخصوصية.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm font-black text-foreground">🇩🇿 محتوى جزائري</div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  متوافق 100% مع برنامج الجيل الثاني، باك وبيام — وليس محتوى أجنبي مترجَم.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm font-black text-foreground">🤝 لا يلغي دور الأستاذ</div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  أداة مكمّلة تساعد ابنك على التدرّب الذاتي، ليصبح أكثر استعداداً في القسم.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+      )}
+
       {/* ── Textbooks / Blog section ── */}
       <section id="textbooks" className="max-w-6xl mx-auto px-6 py-24 space-y-12">
         <div className="flex items-end justify-between flex-wrap gap-4">
           <div className="space-y-2">
             <span className="text-xs font-black text-primary uppercase tracking-wider">المكتبة</span>
             <h2 className="text-3xl md:text-4xl font-black text-foreground">
-              دروس الرياضيات تفاعلية
+              دروس مبسّطة، تمارين باك، حلول مفهومة
             </h2>
             <p className="text-sm text-muted-foreground max-w-md">
-              كتب مدرسية معاد بناؤها كمدوّنة حيّة — أمثلة، رسوم، تمارين تفاعلية.
+              محتوى مهيكَل حسب البرنامج الرسمي — اقرأ، تدرّب، وافهم في نفس المكان.
             </p>
           </div>
           <Link
@@ -372,27 +430,27 @@ export default function Landing() {
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black">
             <TrendingUp className="w-3.5 h-3.5" />
-            ابدأ اليوم — نتائج خلال أسبوعين
+            ابدأ التشخيص — تشوف نتيجتك في 15 دقيقة
           </div>
 
           <h2 className="text-3xl md:text-5xl font-black text-foreground leading-tight">
-            معدّل أعلى يبدأ
+            وقّاش تعرف مستواك
             <br />
             <span className="bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
-              من دقيقتين
+              بالضبط؟
             </span>
           </h2>
 
           <p className="text-muted-foreground max-w-md mx-auto">
-            تشخيص مجاني، خطة مخصصة، ونتائج قابلة للقياس. بلا التزام.
+            تشخيص مجاني، بدون تسجيل معقّد، يعطيك صورة واضحة على نقاط القوة والضعف.
           </p>
 
           <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
             <Link
-              to="/home"
+              to="/diagnostic"
               className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-primary-foreground shadow-2xl shadow-primary/25 transition-all bg-gradient-to-l from-primary to-primary/80"
             >
-              ابدأ التقييم المجاني
+              ابدأ التشخيص المجاني
               <ArrowLeft className="w-5 h-5" />
             </Link>
           </motion.div>
@@ -403,7 +461,7 @@ export default function Landing() {
       <footer className="border-t border-border py-8 px-6 text-center">
         <div className="flex items-center justify-center gap-3 text-muted-foreground text-xs">
           <QEDLogo size="sm" />
-          <span>© {new Date().getFullYear()} QED — محرك الرياضيات الذكي</span>
+          <span>© {new Date().getFullYear()} QED — منصّة الرياضيات للتلميذ الجزائري</span>
         </div>
       </footer>
     </div>
