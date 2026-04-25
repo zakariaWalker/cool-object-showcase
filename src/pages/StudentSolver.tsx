@@ -134,6 +134,12 @@ export default function StudentSolver() {
 
   const steps = deconstruction.steps;
 
+  // Detect exercises that reference a missing figure/diagram
+  const referencesFigure = /الشكل المرفق|المجسم المرفق|الشكل أدناه|الشكل التالي|انظر الشكل|حسب الشكل|figure ci-(dessous|contre|jointe)|voir la figure/i
+    .test(`${exercise.text || ""} ${steps.join(" ")}`);
+  const hasFigureData = !!(exercise.figure_url || exercise.diagram_spec || exercise.image_url);
+  const figureMissing = referencesFigure && !hasFigureData;
+
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
