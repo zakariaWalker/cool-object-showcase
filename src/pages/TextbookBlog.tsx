@@ -1,10 +1,10 @@
 // ===== Public textbook reader — interactive blog-style with collapsible chapters =====
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  BookOpen, ChevronDown, ChevronLeft, Lightbulb, Target, PenTool, Award, Star, Brain,
-  Lock, ArrowRight, Sparkles, CheckCircle, ListOrdered,
+  BookOpen, ChevronDown, ChevronLeft, ChevronRight, Lightbulb, Target, PenTool, Award, Star, Brain,
+  Lock, ArrowRight, Sparkles, CheckCircle, ListOrdered, Menu, X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
