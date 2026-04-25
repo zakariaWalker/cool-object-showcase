@@ -1,11 +1,15 @@
 // ===== Guided Step-by-Step Exercise View =====
 // Progressive disclosure: shows one step at a time with interactive choices
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { MathExerciseRenderer } from "./MathExerciseRenderer";
+import { GeometryCanvas } from "./geometry/GeometryCanvas";
+import { inferAnswerSchema } from "@/engine/answer-schema";
+import { inferConstraints } from "@/engine/figures/construction-checks";
+import { buildAutoFigureSpec } from "@/engine/figures/factory";
 
 interface GuidedStepViewProps {
   exerciseText: string;
@@ -44,6 +48,12 @@ export function GuidedStepView({
 
   const totalSteps = steps.length;
   const isComplete = revealedSteps.size === totalSteps;
+
+  // Auto-detect a figure for geometry exercises so the canvas can seed itself.
+  const figureSpec = useMemo(
+    () => buildAutoFigureSpec({ text: exerciseText, type: patternType }),
+    [exerciseText, patternType],
+  );
 
   const handleRevealStep = (idx: number) => {
     setRevealedSteps(prev => new Set([...prev, idx]));
@@ -223,6 +233,22 @@ export function GuidedStepView({
                         </div>
                       </div>
                     )}
+
+                    {/* Geometry canvas — appears when the revealed step is a
+                        construction / observation on a figure. */}
+                    {isRevealed && (() => {
+                      const schema = inferAnswerSchema(exerciseText, step);
+                      if (schema.type !== "construction") return null;
+                      const constraints = inferConstraints(step);
+                      return (
+                        <div className="px-4 pb-3 space-y-2">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                            <span>📐</span> لوحة الإنشاء التفاعلية
+                          </div>
+                          <GeometryCanvas seedSpec={figureSpec} constraints={constraints} />
+                        </div>
+                      );
+                    })()}
 
                     {/* Interactive choice for current unrevealed step */}
                     {isCurrent && (
