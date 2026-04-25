@@ -112,7 +112,11 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
   const [preview, setPreview] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showLevelSelect, setShowLevelSelect] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const inputRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
+
+  // Adaptive UI: hide power-features for younger students unless they opt in
+  const isSimple = level !== "secondary" && !showAdvanced;
 
   const updateStep = (index: number, value: string) => {
     const newSteps = [...steps];
@@ -181,41 +185,60 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
             <Calculator size={18} />
           </div>
           <div>
-            <button 
-              onClick={() => setShowLevelSelect(!showLevelSelect)}
-              className="flex items-center gap-1.5 text-sm font-bold text-foreground hover:text-primary transition-colors"
-            >
-              محرر الجبر ({LEVEL_LABELS[level]})
-              <ChevronDown size={14} className={`transition-transform ${showLevelSelect ? "rotate-180" : ""}`} />
-            </button>
-            <p className="text-[10px] text-muted-foreground">صمم حلك بطريقة رياضية دقيقة</p>
+            {isSimple ? (
+              <span className="text-sm font-bold text-foreground">اكتب حلّك</span>
+            ) : (
+              <button 
+                onClick={() => setShowLevelSelect(!showLevelSelect)}
+                className="flex items-center gap-1.5 text-sm font-bold text-foreground hover:text-primary transition-colors"
+              >
+                محرر الجبر ({LEVEL_LABELS[level]})
+                <ChevronDown size={14} className={`transition-transform ${showLevelSelect ? "rotate-180" : ""}`} />
+              </button>
+            )}
+            <p className="text-[10px] text-muted-foreground">
+              {isSimple ? "خطوة بخطوة — اضغط Enter للسطر التالي" : "صمم حلك بطريقة رياضية دقيقة"}
+            </p>
           </div>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => setShowTemplates(!showTemplates)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all border ${
-              showTemplates 
-                ? "bg-primary text-primary-foreground border-primary" 
-                : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            <Layout size={12} />
-            قوالب جاهزة
-          </button>
-          <button
-            onClick={() => setPreview(!preview)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-all border border-transparent"
-          >
-            {preview ? <Edit3 size={12} /> : <Eye size={12} />}
-            {preview ? "تعديل" : "معاينة"}
-          </button>
+          {!isSimple && (
+            <>
+              <button
+                onClick={() => setShowTemplates(!showTemplates)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all border ${
+                  showTemplates 
+                    ? "bg-primary text-primary-foreground border-primary" 
+                    : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <Layout size={12} />
+                قوالب جاهزة
+              </button>
+              <button
+                onClick={() => setPreview(!preview)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-all border border-transparent"
+              >
+                {preview ? <Edit3 size={12} /> : <Eye size={12} />}
+                {preview ? "تعديل" : "معاينة"}
+              </button>
+            </>
+          )}
+          {level !== "secondary" && (
+            <button
+              onClick={() => setShowAdvanced(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-all border border-transparent"
+              title="إظهار/إخفاء الأدوات المتقدمة"
+            >
+              {showAdvanced ? "وضع بسيط" : "أدوات متقدمة"}
+            </button>
+          )}
         </div>
       </div>
 
       {/* Level Selector Modal/Panel */}
       <AnimatePresence>
-        {showLevelSelect && (
+        {showLevelSelect && !isSimple && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -242,9 +265,9 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
         )}
       </AnimatePresence>
 
-      {/* Templates Panel - Filtered by Level */}
+      {/* Templates Panel - Filtered by Level (hidden in simple mode) */}
       <AnimatePresence>
-        {showTemplates && (
+        {showTemplates && !isSimple && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -279,8 +302,8 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
             <LatexRenderer latex={sym.label} />
           </button>
         ))}
-        {/* Fillers to keep basic symbols always available unless primary */}
-        {level !== "primary" && (
+        {/* Extra advanced symbols only for secondary or when user opts in */}
+        {level !== "primary" && !isSimple && (
           <>
             <div className="w-px h-6 bg-border mx-1" />
             {[{ label: "±", insert: "\\pm" }, { label: "≠", insert: "\\neq" }, { label: "×", insert: "\\times" }].map((sym, i) => (
@@ -405,7 +428,7 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
       <div className="px-5 py-4 border-t border-border/50 bg-muted/20 flex items-center justify-between">
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
           <Type size={12} />
-          <span>استخدم الرموز أعلاه للإدراج الرياضي. يمكنك كتابة الشرح باللغة العربية بين الخطوات.</span>
+          <span>{isSimple ? "اكتب كل خطوة على سطر — اضغط Enter للسطر الجديد." : "استخدم الرموز أعلاه للإدراج الرياضي. يمكنك كتابة الشرح باللغة العربية بين الخطوات."}</span>
         </div>
         <button
           onClick={handleSubmit}
