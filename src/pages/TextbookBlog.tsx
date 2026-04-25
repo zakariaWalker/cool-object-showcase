@@ -568,8 +568,8 @@ function ActivityCard({ act, user, navigate }: { act: Activity; user: any; navig
               {showSolution ? "▲ إخفاء الحل" : "▼ عرض الحل المفصّل"}
             </button>
             {showSolution && (
-              <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded text-sm text-foreground">
-                <SmartContent text={act.solution_text} />
+              <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded animate-fade-in">
+                <RichContent text={act.solution_text} />
               </div>
             )}
           </div>
