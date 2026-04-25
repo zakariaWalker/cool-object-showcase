@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 import { DeconstructionImporter } from "./DeconstructionImporter";
+import { ruleBasedDeconstruct } from "./ruleBasedDeconstructor";
 
 interface Props {
   exercises: Exercise[];
