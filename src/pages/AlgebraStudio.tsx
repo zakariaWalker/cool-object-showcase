@@ -147,6 +147,11 @@ export default function AlgebraStudio() {
           )}
         </div>
 
+        {/* Smart solving guide — explains the method, steps, symbols & pitfalls */}
+        {committed && editorKind === "algebra" && (
+          <AlgebraSolvingGuide problemText={committed} />
+        )}
+
         {/* Smart editor — auto-routes algebra ↔ geometry */}
         <StudentAnswerEditor
           exerciseText={committed || ""}
