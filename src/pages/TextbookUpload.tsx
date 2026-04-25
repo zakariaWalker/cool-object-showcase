@@ -116,9 +116,12 @@ export default function TextbookUpload() {
           user_id: user.id,
           title,
           grade,
+          country_code: countryCode,
           file_path: filePath,
           status: "pending",
-        })
+          subject: "math",
+          is_public: true,
+        } as any)
         .select()
         .single();
       if (insertErr) throw insertErr;
