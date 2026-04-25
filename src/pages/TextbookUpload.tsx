@@ -5,21 +5,11 @@ import { Upload, BookOpen, Loader2, CheckCircle, XCircle, FileText, Ban, Clipboa
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate } from "react-router-dom";
-
-const GRADES = [
-  { value: "1AM", label: "1ère Année Moyenne" },
-  { value: "2AM", label: "2ème Année Moyenne" },
-  { value: "3AM", label: "3ème Année Moyenne" },
-  { value: "4AM", label: "4ème Année Moyenne (BEM)" },
-  { value: "1AS", label: "1ère Année Secondaire" },
-  { value: "2AS", label: "2ème Année Secondaire" },
-  { value: "3AS", label: "3ème Année Secondaire (BAC)" },
-];
+import { useNavigate, Link } from "react-router-dom";
+import { CountryGradePicker } from "@/components/CountryGradePicker";
 
 interface TextbookRow {
   id: string;
@@ -36,7 +26,8 @@ export default function TextbookUpload() {
   const [pastedText, setPastedText] = useState("");
   const [inputMode, setInputMode] = useState<"pdf" | "text">("pdf");
   const [title, setTitle] = useState("");
-  const [grade, setGrade] = useState("");
+  const [countryCode, setCountryCode] = useState<string>(() => localStorage.getItem("textbook_country") || "DZ");
+  const [grade, setGrade] = useState<string>(() => localStorage.getItem("textbook_grade") || "");
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -125,9 +116,12 @@ export default function TextbookUpload() {
           user_id: user.id,
           title,
           grade,
+          country_code: countryCode,
           file_path: filePath,
           status: "pending",
-        })
+          subject: "math",
+          is_public: true,
+        } as any)
         .select()
         .single();
       if (insertErr) throw insertErr;
@@ -183,26 +177,26 @@ export default function TextbookUpload() {
             <CardTitle className="text-lg">📤 رفع كتاب جديد</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">عنوان الكتاب</label>
-                <Input
-                  placeholder="مثال: كتاب الرياضيات السنة الرابعة متوسط"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">المستوى</label>
-                <Select value={grade} onValueChange={setGrade}>
-                  <SelectTrigger><SelectValue placeholder="اختر المستوى" /></SelectTrigger>
-                  <SelectContent>
-                    {GRADES.map(g => (
-                      <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">عنوان الكتاب</label>
+              <Input
+                placeholder="مثال: كتاب الرياضيات السنة الرابعة متوسط"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+
+            <div className="rounded-xl border border-border p-4 bg-muted/30">
+              <CountryGradePicker
+                countryCode={countryCode}
+                gradeCode={grade}
+                onChange={(c, g) => {
+                  setCountryCode(c);
+                  setGrade(g);
+                  localStorage.setItem("textbook_country", c);
+                  if (g) localStorage.setItem("textbook_grade", g);
+                }}
+              />
             </div>
 
             <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "pdf" | "text")} dir="rtl">

@@ -194,6 +194,9 @@ ${workingText.substring(0, 18000)}
       "title": "Titre français",
       "title_ar": "العنوان بالعربية",
       "domain": "algebra|geometry|statistics|probability|functions|numbers|trigonometry",
+      "exercises": [
+        { "order": 1, "exercise_number": "1", "statement": "نص التمرين الكامل بـ $LaTeX$", "questions": ["السؤال 1", "السؤال 2"], "solution": "الحل المفصّل خطوة بخطوة بـ $LaTeX$", "expected_answer": "الإجابة النهائية", "answer_type": "numeric|expression|text", "difficulty": 2, "bloom_level": 3, "hints": ["تلميح 1", "تلميح 2"], "concepts": ["مفهوم 1", "مفهوم 2"] }
+      ],
       "lessons": [
         {
           "order": 1,
@@ -223,6 +226,7 @@ ${workingText.substring(0, 18000)}
 - اكتب كل الصيغ الرياضية بـ LaTeX داخل $...$
 - title_ar إجباري بالعربية، title بالفرنسية
 - التمارين دائماً is_interactive: true مع expected_answer
+- ⭐ "exercises" على مستوى الفصل: استخرج كل التمارين الموجودة فعلياً في نهاية كل فصل (تمارين 1, 2, 3...) كاملةً مع نصوصها وحلولها — هذه منفصلة عن activities الدرسية
 - اجعل المحتوى تربوياً واضحاً، ليس مجرد نسخ خام
 - JSON صالح 100% فقط`;
 
@@ -237,6 +241,7 @@ ${workingText.substring(0, 18000)}
 
     // ── Step 3: Insert structure ──
     let totalActivities = 0;
+    let totalExercises = 0;
     const insertedLessonIds: string[] = [];
     const lessonDomainMap: Record<string, string> = {};
 
@@ -248,6 +253,31 @@ ${workingText.substring(0, 18000)}
       }).select().single();
 
       if (!chapterRow) continue;
+
+      // Chapter-level extracted exercises (separate from pedagogical activities)
+      const chapterExercises = (ch.exercises || []).map((ex: any, i: number) => ({
+        textbook_id,
+        chapter_id: chapterRow.id,
+        order_index: ex.order || i + 1,
+        exercise_number: String(ex.exercise_number || ex.order || i + 1),
+        statement: ex.statement || "",
+        statement_latex: ex.statement || "",
+        questions: ex.questions || [],
+        solution: ex.solution || "",
+        solution_latex: ex.solution || "",
+        difficulty: ex.difficulty || 2,
+        bloom_level: ex.bloom_level || 3,
+        hints: ex.hints || [],
+        expected_answer: ex.expected_answer || "",
+        answer_type: ex.answer_type || "text",
+        domain: ch.domain || "",
+        concepts: ex.concepts || [],
+      })).filter((e: any) => e.statement && e.statement.length > 5);
+
+      if (chapterExercises.length > 0) {
+        await db.from("textbook_exercises").insert(chapterExercises);
+        totalExercises += chapterExercises.length;
+      }
 
       for (const lesson of ch.lessons || []) {
         const { data: lessonRow } = await db.from("textbook_lessons").insert({
@@ -350,11 +380,12 @@ ${workingText.substring(0, 18000)}
         ...((textbook.metadata as any) || {}),
         chapters_count: parsed.chapters.length,
         activities_count: totalActivities,
+        exercises_count: totalExercises,
         processed_at: new Date().toISOString(),
       },
     }).eq("id", textbook_id);
 
-    console.log(`✓ Textbook ${textbook_id}: ${parsed.chapters.length} chapters, ${totalActivities} activities`);
+    console.log(`✓ Textbook ${textbook_id}: ${parsed.chapters.length} chapters, ${totalActivities} activities, ${totalExercises} exercises`);
   } catch (e: any) {
     console.error("parse-textbook error:", e);
     try {
