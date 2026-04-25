@@ -90,6 +90,16 @@ export default function StudentSolver() {
     [exercise?.text, currentStepText],
   );
 
+  // Detect whether the exercise / current step is geometric — drives editor choice.
+  const isGeometryStep = useMemo(() => {
+    const t = (exercise?.type || "").toLowerCase();
+    if (t.includes("هندس") || t.includes("geometr")) return true;
+    const txt = `${exercise?.text || ""} ${currentStepText}`.toLowerCase();
+    if (/ارسم|أنشئ|المثلث|مثلث|الدائرة|دائرة|المستقيم|مستقيم|قطعة|تحويل|دوران|انسحاب|تماثل|زاوية|منحنى|مجسم|متوازي|مكعب|رؤوس|أوجه|أضلاع/.test(txt)) return true;
+    if (/triangle|circle|rectangle|parallelo|trapèze|losange|plot|curve|cube|prism/.test(txt)) return true;
+    return false;
+  }, [exercise?.type, exercise?.text, currentStepText]);
+
   // Resolve which figure to render: manual override → auto-detected default → none
   const figureSpec: FigureSpec | null = useMemo(() => {
     if (manualFigureSpec) return manualFigureSpec;
