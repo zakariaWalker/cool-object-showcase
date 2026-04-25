@@ -234,6 +234,22 @@ export function GuidedStepView({
                       </div>
                     )}
 
+                    {/* Geometry canvas — appears when the revealed step is a
+                        construction / observation on a figure. */}
+                    {isRevealed && (() => {
+                      const schema = inferAnswerSchema(exerciseText, step);
+                      if (schema.type !== "construction") return null;
+                      const constraints = inferConstraints(step);
+                      return (
+                        <div className="px-4 pb-3 space-y-2">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                            <span>📐</span> لوحة الإنشاء التفاعلية
+                          </div>
+                          <GeometryCanvas seedSpec={figureSpec} constraints={constraints} />
+                        </div>
+                      );
+                    })()}
+
                     {/* Interactive choice for current unrevealed step */}
                     {isCurrent && (
                       <div className="px-4 pb-4 space-y-2">
