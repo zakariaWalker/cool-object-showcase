@@ -179,6 +179,62 @@ export function GeometryEditor({ onSubmit, initialLevel = "middle", exerciseText
     } else if (tool === "function") {
       const formula = prompt("أدخل معادلة الدالة (مثال: x*x/20):", "x*x/100");
       if (formula) setFunctions([...functions, { formula, color: "hsl(var(--primary))" }]);
+    } else if (tool === "triangle") {
+      // 3-click triangle
+      if (!nearest) {
+        const label = String.fromCharCode(nextLabel.current++);
+        const newPts = [...points, { x, y, label }];
+        setPoints(newPts);
+        const sel = [...selection, label];
+        if (sel.length === 3) {
+          setSegments([
+            ...segments,
+            { from: sel[0], to: sel[1], type: "segment" },
+            { from: sel[1], to: sel[2], type: "segment" },
+            { from: sel[2], to: sel[0], type: "segment" },
+          ]);
+          setSelection([]);
+        } else {
+          setSelection(sel);
+        }
+      }
+    } else if (tool === "rect") {
+      // 2-click axis-aligned rectangle (opposite corners)
+      if (!nearest) {
+        const label = String.fromCharCode(nextLabel.current++);
+        const newPts = [...points, { x, y, label }];
+        setPoints(newPts);
+        const sel = [...selection, label];
+        if (sel.length === 2) {
+          const a = newPts.find(p => p.label === sel[0])!;
+          const b = newPts.find(p => p.label === sel[1])!;
+          const c = { x: b.x, y: a.y, label: String.fromCharCode(nextLabel.current++) };
+          const d = { x: a.x, y: b.y, label: String.fromCharCode(nextLabel.current++) };
+          setPoints([...newPts, c, d]);
+          setSegments([
+            ...segments,
+            { from: a.label, to: c.label, type: "segment" },
+            { from: c.label, to: b.label, type: "segment" },
+            { from: b.label, to: d.label, type: "segment" },
+            { from: d.label, to: a.label, type: "segment" },
+          ]);
+          setSelection([]);
+        } else {
+          setSelection(sel);
+        }
+      }
+    } else if (tool === "rotate" || tool === "reflect") {
+      // Pick two points → record the transformation as a note (geometric instruction).
+      if (nearest) {
+        const sel = [...selection, nearest.label];
+        if (sel.length === 2) {
+          const verb = tool === "rotate" ? "دوران مركزه" : "تماثل محوره";
+          setNotes((n) => `${n}${n ? "\n" : ""}${verb} ${sel[0]} يُطبَّق على ${sel[1]}`);
+          setSelection([]);
+        } else {
+          setSelection(sel);
+        }
+      }
     }
   };
 
