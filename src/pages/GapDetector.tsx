@@ -560,7 +560,7 @@ export default function GapDetector() {
             )}
 
             <div className="text-base leading-relaxed text-foreground mb-6">
-              <MathExerciseRenderer text={q.exercise.text} />
+              <MathExerciseRenderer text={normalizeFlatTable(q.exercise.text)} />
             </div>
 
             {!showSolution && (
