@@ -7,6 +7,7 @@ import katex from "katex";
 import "katex/dist/katex.min.css";
 import { MathExerciseRenderer } from "./MathExerciseRenderer";
 import { GeometryCanvas } from "./geometry/GeometryCanvas";
+import { AlgebraEditor } from "./AlgebraEditor";
 import { inferAnswerSchema } from "@/engine/answer-schema";
 import { inferConstraints } from "@/engine/figures/construction-checks";
 import { buildAutoFigureSpec } from "@/engine/figures/factory";
