@@ -13,6 +13,7 @@ import {
   type AnswerSchema,
 } from "@/engine/answer-schema";
 import { GeometryCanvas, type VerifyResult } from "@/components/geometry/GeometryCanvas";
+import { AlgebraEditor } from "@/components/AlgebraEditor";
 import { inferConstraints } from "@/engine/figures/construction-checks";
 
 export default function StudentSolver() {
