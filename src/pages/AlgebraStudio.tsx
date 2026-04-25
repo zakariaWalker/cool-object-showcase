@@ -2,12 +2,28 @@
 // Describe a problem; the studio infers the answer schema AND auto-switches
 // between the AlgebraEditor and the GeometryCanvas (via StudentAnswerEditor).
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
 import { LatexRenderer } from "@/components/LatexRenderer";
+import { MathContent } from "@/components/MathContent";
 import { AlgebraSolvingGuide } from "@/components/AlgebraSolvingGuide";
 import { inferAnswerSchema, gradeAnswer, type Verdict } from "@/engine/answer-schema";
+import { supabase } from "@/integrations/supabase/client";
+import { useUserCurriculum } from "@/hooks/useUserCurriculum";
+
+const GRADE_CODE_TO_KEY: Record<string, string> = {
+  "1AM": "middle_1", "2AM": "middle_2", "3AM": "middle_3", "4AM": "middle_4",
+  "1AS": "secondary_1", "2AS": "secondary_2", "3AS": "secondary_3",
+  "1AP": "primary_1", "2AP": "primary_2", "3AP": "primary_3", "4AP": "primary_4", "5AP": "primary_5",
+};
+
+interface KBExerciseLite {
+  id: string;
+  text: string;
+  chapter: string | null;
+  source: string | null;
+}
 
 // Mirror of detectEditorType from StudentAnswerEditor — used only to show
 // the user which editor will appear after committing the task.
