@@ -174,6 +174,53 @@ export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, 
     }
   };
 
+  // Rule-based instant deconstruction — no AI, no network calls per exercise
+  const handleRuleDeconstruct = async (scope: "page" | "filtered" | "all_remaining") => {
+    const source = scope === "page" ? pageItems : scope === "filtered" ? filtered : exercises;
+    const notDeconstructed = source.filter(e => !deconIds.has(e.id));
+
+    if (notDeconstructed.length === 0) {
+      toast.info("كل التمارين مفكّكة بالفعل!");
+      return;
+    }
+    if (patterns.length === 0) {
+      toast.error("لا توجد أنماط في قاعدة البيانات. أنشئ أنماطاً أولاً.");
+      return;
+    }
+
+    setAiLoading(true);
+    setAiProgress({ done: 0, total: notDeconstructed.length });
+
+    try {
+      const results = ruleBasedDeconstruct(notDeconstructed, patterns, deconIds);
+      const created = results.filter(r => r.deconstruction).map(r => r.deconstruction!);
+      const skipped = results.length - created.length;
+
+      // Persist sequentially via onAdd (already debounced through the store)
+      let done = 0;
+      for (const d of created) {
+        onAdd(d);
+        done++;
+        if (done % 25 === 0) {
+          setAiProgress({ done, total: created.length });
+          // micro yield to keep UI responsive on huge batches
+          await new Promise(r => setTimeout(r, 0));
+        }
+      }
+      setAiProgress({ done: created.length, total: created.length });
+
+      toast.success(
+        `⚡ تفكيك فوريّ: ${created.length} تمرين${skipped ? ` • تخطّينا ${skipped} (لا يوجد نمط مطابق)` : ""}`
+      );
+      reload();
+    } catch (err) {
+      toast.error("خطأ غير متوقع في التفكيك الآلي");
+      console.error("[ruleBasedDeconstruct]", err);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Stats bar */}
