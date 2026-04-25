@@ -380,11 +380,12 @@ ${workingText.substring(0, 18000)}
         ...((textbook.metadata as any) || {}),
         chapters_count: parsed.chapters.length,
         activities_count: totalActivities,
+        exercises_count: totalExercises,
         processed_at: new Date().toISOString(),
       },
     }).eq("id", textbook_id);
 
-    console.log(`✓ Textbook ${textbook_id}: ${parsed.chapters.length} chapters, ${totalActivities} activities`);
+    console.log(`✓ Textbook ${textbook_id}: ${parsed.chapters.length} chapters, ${totalActivities} activities, ${totalExercises} exercises`);
   } catch (e: any) {
     console.error("parse-textbook error:", e);
     try {
