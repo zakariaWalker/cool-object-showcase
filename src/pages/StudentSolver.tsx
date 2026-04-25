@@ -163,19 +163,10 @@ export default function StudentSolver() {
 
   const steps = deconstruction.steps;
 
-  // ----- Auto-render geometry when the exercise references a figure -----
-  const fullText = `${exercise.text || ""} ${exercise.chapter || ""} ${exercise.type || ""} ${steps.join(" ")}`;
-
-  // Detect a rectangular box / parallelepiped (1AM topic "متوازي المستطيلات")
-  const isParallelepiped =
-    /متوازي\s*المستطيل|parallelepip|parallélépip|cuboid|rectangular box/i.test(fullText) ||
-    (exercise.type || "").toLowerCase() === "parallelogram";
-
-  const referencesFigure = /الشكل المرفق|المجسم المرفق|الشكل أدناه|الشكل التالي|انظر الشكل|حسب الشكل|figure ci-(dessous|contre|jointe)|voir la figure/i
-    .test(fullText);
-  const hasFigureData = !!(exercise.figure_url || exercise.diagram_spec || exercise.image_url);
-  const canAutoRender = isParallelepiped;
-  const figureMissing = referencesFigure && !hasFigureData && !canAutoRender;
+  // Detect if exercise text references a figure that we couldn't render
+  const fullText = `${exercise.text || ""} ${exercise.chapter || ""} ${steps.join(" ")}`;
+  const referencesFigure = /الشكل المرفق|المجسم المرفق|الشكل أدناه|الشكل التالي|انظر الشكل|حسب الشكل|figure ci-(dessous|contre|jointe)|voir la figure/i.test(fullText);
+  const figureMissing = referencesFigure && !figureSpec;
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -208,21 +199,26 @@ export default function StudentSolver() {
             <MathExerciseRenderer text={exercise.text} />
           </div>
 
-          {/* Auto-rendered geometry diagram */}
-          {canAutoRender && (
+          {/* Unified geometry renderer — adapts per step */}
+          {figureSpec && (
             <div className="mt-5 p-4 rounded-lg border border-border bg-background/50">
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 text-center">
-                الشكل: متوازي المستطيلات ABCDEFGH
+                الشكل: {figureSpec.label || figureSpec.kind}
               </div>
-              <ParallelepipedDiagram highlight={highlightVertices} />
-              {highlightVertices.length > 0 && (
-                <div className="text-xs text-muted-foreground text-center mt-2">
-                  الرؤوس المُبرَزة:{" "}
-                  <span className="font-bold text-primary" dir="ltr">
-                    {highlightVertices.join(", ")}
-                  </span>
+              <FigureRenderer spec={figureSpec} highlights={figureHighlights} />
+              {(figureHighlights.vertices?.length || figureHighlights.edges?.length || figureHighlights.faces?.length) ? (
+                <div className="text-xs text-muted-foreground text-center mt-2 space-x-3 rtl:space-x-reverse">
+                  {figureHighlights.vertices?.length ? (
+                    <span>الرؤوس: <span className="font-bold text-primary" dir="ltr">{figureHighlights.vertices.join(", ")}</span></span>
+                  ) : null}
+                  {figureHighlights.edges?.length ? (
+                    <span>الأحرف: <span className="font-bold text-primary" dir="ltr">[{figureHighlights.edges.join("], [")}]</span></span>
+                  ) : null}
+                  {figureHighlights.faces?.length ? (
+                    <span>الأوجه: <span className="font-bold text-primary" dir="ltr">{figureHighlights.faces.join(", ")}</span></span>
+                  ) : null}
                 </div>
-              )}
+              ) : null}
             </div>
           )}
 
