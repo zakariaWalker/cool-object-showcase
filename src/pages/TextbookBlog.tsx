@@ -162,6 +162,46 @@ export default function TextbookBlog() {
     })();
   }, [slugOrId]);
 
+  // Scroll-spy: track active chapter + reading progress
+  useEffect(() => {
+    if (chapters.length === 0) return;
+    const onScroll = () => {
+      const doc = document.documentElement;
+      const scrollTop = window.scrollY;
+      const max = doc.scrollHeight - window.innerHeight;
+      setReadProgress(max > 0 ? Math.min(100, Math.max(0, (scrollTop / max) * 100)) : 0);
+
+      // active section = first one whose top is below the offset (e.g. nav 120px)
+      const offset = 140;
+      let current: string | null = chapters[0]?.id || null;
+      for (const ch of chapters) {
+        const el = document.getElementById(`chapter-${ch.id}`);
+        if (!el) continue;
+        const top = el.getBoundingClientRect().top;
+        if (top - offset <= 0) current = ch.id;
+        else break;
+      }
+      setActiveChapterId(current);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [chapters]);
+
+  const goToChapter = (id: string) => {
+    setOpenChapter(id);
+    setTocOpen(false);
+    // wait a tick so the chapter expands before scrolling
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`chapter-${id}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  const currentIndex = activeChapterId ? chapters.findIndex(c => c.id === activeChapterId) : -1;
+  const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
+  const nextChapter = currentIndex >= 0 && currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
