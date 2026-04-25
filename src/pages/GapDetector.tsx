@@ -3,7 +3,7 @@ import { useUserCurriculum } from "@/hooks/useUserCurriculum"; // FIX: was useAu
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
-import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
+
 import { recordExerciseCompletion, XPEvent, Badge } from "@/engine/gamification";
 import { XPPopup, BadgeUnlockOverlay } from "@/components/GamificationDashboard";
 import { AnimatePresence } from "framer-motion";
@@ -87,6 +87,12 @@ export default function GapDetector() {
   const [answers, setAnswers] = useState<QuizAnswer[]>([]);
   const [showSolution, setShowSolution] = useState(false);
   const [roundHistory, setRoundHistory] = useState<QuizAnswer[][]>([]);
+
+  // Answer input + grading state
+  const [answerText, setAnswerText] = useState("");
+  const [grading, setGrading] = useState(false);
+  const [gradeFeedback, setGradeFeedback] = useState<string>("");
+  const [inputError, setInputError] = useState<string>("");
 
   const [usedExerciseIds, setUsedExerciseIds] = useState<Set<string>>(new Set());
 
@@ -213,11 +219,77 @@ export default function GapDetector() {
     [availableExercises, deconstructions, patterns, usedExerciseIds],
   );
 
-  const answerQuestion = async (correct: boolean) => {
+  /** Local sanity check — rejects empty / too-short / pure-gibberish answers before calling AI. */
+  function validateAnswerInput(raw: string): string | null {
+    const t = raw.trim();
+    if (!t) return "اكتب إجابتك أولاً";
+    if (t.length < 2) return "الإجابة قصيرة جداً";
+    // Reject when there's no math content AND no Arabic/Latin word characters
+    const hasDigit = /\d/.test(t);
+    const hasMathOp = /[+\-*/=^√()<>]|frac|sqrt/.test(t);
+    const hasWord = /[\u0600-\u06FFa-zA-Z]{2,}/.test(t);
+    if (!hasDigit && !hasMathOp && !hasWord) return "الإجابة غير مفهومة — استخدم أرقاماً أو رموزاً رياضية";
+    // Reject pure repeated character spam (e.g. "aaaaaa", "ييييي")
+    if (/^(.)\1{4,}$/.test(t.replace(/\s/g, ""))) return "الإجابة تبدو عشوائية — حاول مجدداً";
+    return null;
+  }
+
+  const submitAnswer = async () => {
+    const err = validateAnswerInput(answerText);
+    if (err) {
+      setInputError(err);
+      return;
+    }
+    setInputError("");
+    setGrading(true);
+
     const q = quizQuestions[currentQ];
+    let correct = false;
+    let feedback = "";
+
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-correct-diagnostic", {
+        body: {
+          questions: [
+            {
+              id: q.exercise.id,
+              text: q.exercise.text,
+              type: q.exercise.type,
+              difficulty: "متوسط",
+              points: 1,
+              concepts: q.decon.needs || [],
+            },
+          ],
+          answers: [
+            {
+              questionId: q.exercise.id,
+              answer: answerText.trim(),
+              steps: [],
+              timeSpent: 0,
+              confidence: 50,
+            },
+          ],
+        },
+      });
+      if (error) throw error;
+      const c = data?.corrections?.[0];
+      // Pass threshold: at least half the points
+      const score = Number(c?.score ?? 0);
+      const max = Number(c?.maxScore ?? 1) || 1;
+      correct = score / max >= 0.5;
+      feedback = c?.feedback || "";
+    } catch (e) {
+      console.error("AI grading failed:", e);
+      // Conservative fallback: mark incorrect rather than falsely correct
+      correct = false;
+      feedback = "تعذّر التصحيح الآلي — سُجِّل كخطأ احتياطياً";
+    }
+
     const newAnswer: QuizAnswer = { questionIndex: currentQ, exerciseId: q.exercise.id, correct };
     setAnswers((prev) => [...prev, newAnswer]);
+    setGradeFeedback(feedback);
     setShowSolution(true);
+    setGrading(false);
 
     const { events, newBadges } = await recordExerciseCompletion(correct, q.pattern?.id);
     if (events.length > 0) setXpEvents(events);
@@ -226,6 +298,9 @@ export default function GapDetector() {
 
   const nextQuestion = () => {
     setShowSolution(false);
+    setAnswerText("");
+    setGradeFeedback("");
+    setInputError("");
     if (currentQ + 1 < quizQuestions.length) {
       setCurrentQ((prev) => prev + 1);
     } else {
@@ -418,27 +493,39 @@ export default function GapDetector() {
             </div>
 
             {!showSolution && (
-              <div className="space-y-4">
-                <StudentAnswerEditor
-                  exerciseType={q.exercise.type}
-                  exerciseText={q.exercise.text}
-                  onSubmitAlgebra={() => answerQuestion(true)}
-                  onSubmitGeometry={() => answerQuestion(true)}
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wide">
+                  اكتب إجابتك (نص أو معادلة)
+                </label>
+                <textarea
+                  value={answerText}
+                  onChange={(e) => {
+                    setAnswerText(e.target.value);
+                    if (inputError) setInputError("");
+                  }}
+                  placeholder="مثال: x = 5  أو  المساحة = 12 cm²"
+                  rows={3}
+                  disabled={grading}
+                  className="w-full p-4 rounded-xl border-2 border-border bg-card text-sm font-mono focus:border-primary outline-none transition-all resize-none disabled:opacity-60"
+                  dir="auto"
                 />
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => answerQuestion(true)}
-                    className="flex-1 py-3 rounded-xl text-xs font-bold border-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 transition-all"
-                  >
-                    ✅ حللته بنجاح
-                  </button>
-                  <button
-                    onClick={() => answerQuestion(false)}
-                    className="flex-1 py-3 rounded-xl text-xs font-bold border-2 border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/15 transition-all"
-                  >
-                    ❌ لم أتمكن
-                  </button>
-                </div>
+                {inputError && (
+                  <p className="text-xs text-destructive font-bold">⚠ {inputError}</p>
+                )}
+                <button
+                  onClick={submitAnswer}
+                  disabled={grading || !answerText.trim()}
+                  className="w-full py-3 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {grading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
+                      جاري التصحيح الذكي...
+                    </>
+                  ) : (
+                    "إرسال الإجابة"
+                  )}
+                </button>
               </div>
             )}
 
@@ -450,6 +537,11 @@ export default function GapDetector() {
                   <div className="text-sm font-bold mb-2">
                     {answers[answers.length - 1]?.correct ? "✅ أحسنت!" : "❌ لا بأس، إليك خطوات الحل:"}
                   </div>
+                  {gradeFeedback && (
+                    <div className="text-xs text-foreground/80 mb-3 p-2 rounded-lg bg-background/50 border border-border/50">
+                      💬 {gradeFeedback}
+                    </div>
+                  )}
 
                   {q.decon.steps && q.decon.steps.length > 0 && (
                     <div className="space-y-2 mt-3">
