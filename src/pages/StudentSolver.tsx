@@ -365,7 +365,26 @@ export default function StudentSolver() {
               <>
             {/* Input Area */}
             <div className="pl-14 space-y-4">
-              {schema.type === "algebra" || schema.type === "expression" || schema.type === "text" ? (
+              {isGeometryStep ? (
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <span>📐</span> لوحة الإنشاء التفاعلية
+                  </div>
+                  <GeometryCanvas
+                    seedSpec={figureSpec}
+                    constraints={inferConstraints(`${exercise?.text || ""} ${currentStepText}`)}
+                    onSubmit={(r: VerifyResult) => {
+                      setStudentInput(JSON.stringify(r));
+                      const passed = r.total > 0 && r.passed === r.total;
+                      setVerdict({
+                        status: passed ? "correct" : r.passed > 0 ? "partial" : "incorrect",
+                        message: r.total > 0 ? `${r.passed} / ${r.total} من القيود محقّقة` : "تم استلام إنشائك.",
+                      });
+                      setStepStatus(passed ? "correct" : r.passed > 0 ? "partial" : "hint_shown");
+                    }}
+                  />
+                </div>
+              ) : schema.type === "algebra" || schema.type === "expression" || schema.type === "text" ? (
                 <AlgebraEditor
                   initialLevel={exercise.grade?.includes("secondary") || exercise.grade?.includes("3AS") ? "secondary" : "middle"}
                   placeholder="اكتب خطوة الحل هنا..."
