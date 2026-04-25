@@ -57,9 +57,11 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const db = createClient(supabaseUrl, supabaseKey);
 
-    const cacheKey = `diag:${countryCode}:${level}:${count}`;
+    // Cache the LARGE pool, not the served set. Slice + shuffle on every request.
+    const POOL_SIZE = Math.max(count * 6, 30); // build a big varied pool
+    const cacheKey = `diag:pool:${countryCode}:${level}`;
 
-    // ── 1) Cache lookup (24h) ────────────────────────────────────────────
+    // ── 1) Cache lookup (pool of items, 6h TTL) ─────────────────────────
     if (!forceRefresh) {
       const { data: cached } = await db
         .from("diagnostic_cache")
@@ -69,42 +71,44 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (cached?.exercises && Array.isArray(cached.exercises) && cached.exercises.length >= count) {
-        // Return a randomized slice so users don't see the same order twice
-        const shuffled = [...cached.exercises].sort(() => Math.random() - 0.5).slice(0, count);
+        const picked = pickFromPool(cached.exercises, count, seed);
         return new Response(
-          JSON.stringify({ exercises: shuffled, source: cached.source, cached: true }),
+          JSON.stringify({ exercises: picked, source: cached.source, cached: true, poolSize: cached.exercises.length }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
     }
 
-    // ── 2) KB-first: try to build from real skills + errors ─────────────
-    const kbExercises = await buildFromKB(db, level, countryCode, count);
-    if (kbExercises.length >= count) {
-      await writeCache(db, cacheKey, level, countryCode, kbExercises, "kb");
+    // ── 2) KB-first: build a LARGE varied pool ──────────────────────────
+    const kbPool = await buildFromKB(db, level, countryCode, POOL_SIZE);
+    if (kbPool.length >= count * 3) {
+      // Enough variety from KB alone
+      await writeCache(db, cacheKey, level, countryCode, kbPool, "kb");
+      const picked = pickFromPool(kbPool, count, seed);
       return new Response(
-        JSON.stringify({ exercises: kbExercises.slice(0, count), source: "kb" }),
+        JSON.stringify({ exercises: picked, source: "kb", poolSize: kbPool.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     // ── 3) AI augment / fallback ────────────────────────────────────────
     try {
-      const aiExercises = await generateWithAI(db, level, countryCode, count, seed);
-      const merged = [...kbExercises, ...aiExercises].slice(0, count);
-      await writeCache(db, cacheKey, level, countryCode, merged, kbExercises.length ? "hybrid" : "ai");
+      const aiExercises = await generateWithAI(db, level, countryCode, Math.max(count * 2, 10), seed);
+      const merged = dedupePool([...kbPool, ...aiExercises]);
+      await writeCache(db, cacheKey, level, countryCode, merged, kbPool.length ? "hybrid" : "ai");
+      const picked = pickFromPool(merged, count, seed);
       return new Response(
-        JSON.stringify({ exercises: merged, source: kbExercises.length ? "hybrid" : "ai" }),
+        JSON.stringify({ exercises: picked, source: kbPool.length ? "hybrid" : "ai", poolSize: merged.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     } catch (aiErr) {
       console.warn("[diagnostic] AI failed, using KB+static fallback:", aiErr);
       const staticPool = getStaticFallbackPool();
-      const merged = [...kbExercises, ...staticPool].slice(0, count);
-      // Still cache, but shorter implicit TTL is OK (24h default)
+      const merged = dedupePool([...kbPool, ...staticPool]);
       await writeCache(db, cacheKey, level, countryCode, merged, "fallback");
+      const picked = pickFromPool(merged, count, seed);
       return new Response(
-        JSON.stringify({ exercises: merged, source: "fallback", reason: (aiErr as any)?.code }),
+        JSON.stringify({ exercises: picked, source: "fallback", reason: (aiErr as any)?.code, poolSize: merged.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -115,6 +119,62 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// Picking: seeded shuffle ensures different students get different sets,
+// while same seed reproduces (useful for retries).
+// ─────────────────────────────────────────────────────────────────────────
+function mulberry32(a: number) {
+  return function () {
+    let t = (a += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function pickFromPool(pool: any[], count: number, seed: number): any[] {
+  const rng = mulberry32(Math.floor((seed || Math.random()) * 1e9));
+  const arr = [...pool];
+  // Fisher-Yates with seeded RNG
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  // Diversify by type: try to pick at most ceil(count/3) per type
+  const byType: Record<string, any[]> = {};
+  for (const it of arr) {
+    const t = it.type || "standard";
+    (byType[t] ||= []).push(it);
+  }
+  const types = Object.keys(byType);
+  const out: any[] = [];
+  let i = 0;
+  while (out.length < count && types.some((t) => byType[t].length > 0)) {
+    const t = types[i % types.length];
+    const next = byType[t].shift();
+    if (next) out.push(next);
+    i++;
+  }
+  // Fill any remainder
+  for (const it of arr) {
+    if (out.length >= count) break;
+    if (!out.includes(it)) out.push(it);
+  }
+  return out.slice(0, count);
+}
+
+function dedupePool(items: any[]): any[] {
+  const seen = new Set<string>();
+  const out: any[] = [];
+  for (const it of items) {
+    const key = (it.question || "").trim().slice(0, 120);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(it);
+  }
+  return out;
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 // KB-first builder: synthesizes diagnostic items from kb_skills + kb_skill_errors
