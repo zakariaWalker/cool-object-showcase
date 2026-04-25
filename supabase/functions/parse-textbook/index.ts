@@ -241,6 +241,7 @@ ${workingText.substring(0, 18000)}
 
     // ── Step 3: Insert structure ──
     let totalActivities = 0;
+    let totalExercises = 0;
     const insertedLessonIds: string[] = [];
     const lessonDomainMap: Record<string, string> = {};
 
@@ -252,6 +253,31 @@ ${workingText.substring(0, 18000)}
       }).select().single();
 
       if (!chapterRow) continue;
+
+      // Chapter-level extracted exercises (separate from pedagogical activities)
+      const chapterExercises = (ch.exercises || []).map((ex: any, i: number) => ({
+        textbook_id,
+        chapter_id: chapterRow.id,
+        order_index: ex.order || i + 1,
+        exercise_number: String(ex.exercise_number || ex.order || i + 1),
+        statement: ex.statement || "",
+        statement_latex: ex.statement || "",
+        questions: ex.questions || [],
+        solution: ex.solution || "",
+        solution_latex: ex.solution || "",
+        difficulty: ex.difficulty || 2,
+        bloom_level: ex.bloom_level || 3,
+        hints: ex.hints || [],
+        expected_answer: ex.expected_answer || "",
+        answer_type: ex.answer_type || "text",
+        domain: ch.domain || "",
+        concepts: ex.concepts || [],
+      })).filter((e: any) => e.statement && e.statement.length > 5);
+
+      if (chapterExercises.length > 0) {
+        await db.from("textbook_exercises").insert(chapterExercises);
+        totalExercises += chapterExercises.length;
+      }
 
       for (const lesson of ch.lessons || []) {
         const { data: lessonRow } = await db.from("textbook_lessons").insert({
