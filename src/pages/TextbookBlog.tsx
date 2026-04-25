@@ -351,7 +351,7 @@ export default function TextbookBlog() {
                 </button>
 
                 {isOpen && (
-                  <div className="mt-4 space-y-6 pr-4 border-r-2 border-primary/10">
+                  <div className="mt-4 space-y-6 pr-4 border-r-2 border-primary/10 animate-fade-in">
                     {/* Lessons */}
                     {lessons.map(lesson => {
                       const acts = activitiesByLesson[lesson.id] || [];
