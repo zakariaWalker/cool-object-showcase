@@ -38,6 +38,7 @@ import TextbookUpload from "./pages/TextbookUpload";
 import TextbookViewer from "./pages/TextbookViewer";
 import Onboarding from "./pages/Onboarding";
 import ExamCompare from "./admin/pages/ExamCompare";
+import GeometryStudio from "./pages/GeometryStudio";
 
 const queryClient = new QueryClient();
 
@@ -156,6 +157,7 @@ const App = () => (
             <Route path="/unified-kb" element={<UnifiedKBPage />} />
             <Route path="/textbook-upload" element={<TextbookUpload />} />
             <Route path="/textbook/:id" element={<TextbookViewer />} />
+            <Route path="/geometry-studio" element={<GeometryStudio />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppShell>
