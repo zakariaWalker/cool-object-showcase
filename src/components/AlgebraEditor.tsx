@@ -428,7 +428,7 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
       <div className="px-5 py-4 border-t border-border/50 bg-muted/20 flex items-center justify-between">
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
           <Type size={12} />
-          <span>استخدم الرموز أعلاه للإدراج الرياضي. يمكنك كتابة الشرح باللغة العربية بين الخطوات.</span>
+          <span>{isSimple ? "اكتب كل خطوة على سطر — اضغط Enter للسطر الجديد." : "استخدم الرموز أعلاه للإدراج الرياضي. يمكنك كتابة الشرح باللغة العربية بين الخطوات."}</span>
         </div>
         <button
           onClick={handleSubmit}
