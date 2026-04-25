@@ -175,9 +175,41 @@ export default function GapDetector() {
     setLoading(false);
   }
 
+  /** Detect exercises that reference visuals/tables but have no usable data → unsolvable in quiz */
+  function isUnrenderable(text: string): boolean {
+    if (!text) return true;
+    // Reference to missing image/figure with no data
+    if (/\[(رسم|شكل|صورة|مخطط)[^\]]*\]/.test(text) && !/\|.*---/.test(text)) return true;
+    // "انظر إلى الشكل/الرسم" without any markdown table/figure
+    if (/(انظر|لاحظ).{0,20}(الشكل|الرسم|المخطط|الصورة)/.test(text) && !/\|.*---/.test(text)) return true;
+    return false;
+  }
+
+  /**
+   * Convert flattened inline table data into a markdown table.
+   * Example: "الجدول التالي: 9 7 5 3 27 21 15 9" → 2-row markdown table.
+   */
+  function normalizeFlatTable(text: string): string {
+    const m = text.match(/الجدول\s+التالي\s*:?\s*((?:[\d٠-٩]+[\s,،]+){4,}[\d٠-٩]+)/);
+    if (!m) return text;
+    const numStr = m[1].trim().replace(/،/g, " ");
+    const nums = numStr.split(/[\s,]+/).filter(Boolean);
+    if (nums.length < 4 || nums.length % 2 !== 0) return text;
+    const half = nums.length / 2;
+    const row1 = nums.slice(0, half);
+    const row2 = nums.slice(half);
+    const header = "| " + row1.map(() => " ").join(" | ") + " |";
+    const sep = "| " + row1.map(() => "---").join(" | ") + " |";
+    const r1 = "| " + row1.join(" | ") + " |";
+    const r2 = "| " + row2.join(" | ") + " |";
+    return text.replace(m[0], `\n\n${header}\n${sep}\n${r1}\n${r2}\n\n`);
+  }
+
   const availableExercises = useMemo(() => {
     const deconIds = new Set(deconstructions.map((d) => d.exercise_id));
-    return exercises.filter((e) => deconIds.has(e.id) && (!gradeFilter || e.grade === gradeFilter));
+    return exercises.filter(
+      (e) => deconIds.has(e.id) && (!gradeFilter || e.grade === gradeFilter) && !isUnrenderable(e.text),
+    );
   }, [exercises, deconstructions, gradeFilter]);
 
   const generateQuiz = useCallback(
