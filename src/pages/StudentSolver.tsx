@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
+import { ParallelepipedDiagram } from "@/components/geometry/ParallelepipedDiagram";
 import {
   inferAnswerSchema,
   gradeAnswer,
@@ -74,6 +75,12 @@ export default function StudentSolver() {
     [exercise?.text, currentStepText],
   );
 
+  // Pull single-letter vertex labels (A..H) from the current step to highlight on the diagram
+  const highlightVertices = useMemo(() => {
+    const matches = (currentStepText || "").match(/\b[A-H]\b/g) || [];
+    return Array.from(new Set(matches));
+  }, [currentStepText]);
+
   const handleCheck = () => {
     if (!studentInput.trim()) return;
     const v = gradeAnswer(studentInput, schema);
@@ -134,11 +141,19 @@ export default function StudentSolver() {
 
   const steps = deconstruction.steps;
 
-  // Detect exercises that reference a missing figure/diagram
+  // ----- Auto-render geometry when the exercise references a figure -----
+  const fullText = `${exercise.text || ""} ${exercise.chapter || ""} ${exercise.type || ""} ${steps.join(" ")}`;
+
+  // Detect a rectangular box / parallelepiped (1AM topic "متوازي المستطيلات")
+  const isParallelepiped =
+    /متوازي\s*المستطيل|parallelepip|parallélépip|cuboid|rectangular box/i.test(fullText) ||
+    (exercise.type || "").toLowerCase() === "parallelogram";
+
   const referencesFigure = /الشكل المرفق|المجسم المرفق|الشكل أدناه|الشكل التالي|انظر الشكل|حسب الشكل|figure ci-(dessous|contre|jointe)|voir la figure/i
-    .test(`${exercise.text || ""} ${steps.join(" ")}`);
+    .test(fullText);
   const hasFigureData = !!(exercise.figure_url || exercise.diagram_spec || exercise.image_url);
-  const figureMissing = referencesFigure && !hasFigureData;
+  const canAutoRender = isParallelepiped;
+  const figureMissing = referencesFigure && !hasFigureData && !canAutoRender;
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -171,13 +186,31 @@ export default function StudentSolver() {
             <MathExerciseRenderer text={exercise.text} />
           </div>
 
+          {/* Auto-rendered geometry diagram */}
+          {canAutoRender && (
+            <div className="mt-5 p-4 rounded-lg border border-border bg-background/50">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 text-center">
+                الشكل: متوازي المستطيلات ABCDEFGH
+              </div>
+              <ParallelepipedDiagram highlight={highlightVertices} />
+              {highlightVertices.length > 0 && (
+                <div className="text-xs text-muted-foreground text-center mt-2">
+                  الرؤوس المُبرَزة:{" "}
+                  <span className="font-bold text-primary" dir="ltr">
+                    {highlightVertices.join(", ")}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           {figureMissing && (
             <div className="mt-4 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 flex gap-3 items-start">
               <span className="text-xl shrink-0">⚠️</span>
               <div className="flex-1 text-xs leading-relaxed">
                 <div className="font-bold text-amber-700 mb-1">الشكل المرفق غير متوفّر</div>
                 <p className="text-muted-foreground">
-                  هذا التمرين يشير إلى شكل أو مجسّم لم يُرفق مع النص. حاول الاعتماد على وصف التمرين، أو اختر تمريناً آخر يحتوي على كل المعطيات اللازمة.
+                  هذا التمرين يشير إلى شكل لم يُرفق مع النص. اختر تمريناً آخر يحتوي على كل المعطيات اللازمة.
                 </p>
                 <button
                   onClick={() => navigate("/exercises")}
