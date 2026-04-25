@@ -328,7 +328,12 @@ export default function TextbookBlog() {
             const isLast = i === chapters.length - 1;
             const isFirst = i === 0;
             return (
-              <section key={ch.id} id={`chapter-${ch.id}`} className="scroll-mt-24">
+              <section
+                key={ch.id}
+                id={`chapter-${ch.id}`}
+                className="scroll-mt-24 animate-fade-in"
+                style={{ animationDelay: `${Math.min(i * 60, 240)}ms` }}
+              >
                 <button
                   onClick={() => setOpenChapter(isOpen ? null : ch.id)}
                   className="w-full flex items-center justify-between gap-3 p-5 rounded-2xl border-2 border-border bg-card hover:border-primary/50 transition-all"
