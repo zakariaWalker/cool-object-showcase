@@ -194,6 +194,9 @@ ${workingText.substring(0, 18000)}
       "title": "Titre français",
       "title_ar": "العنوان بالعربية",
       "domain": "algebra|geometry|statistics|probability|functions|numbers|trigonometry",
+      "exercises": [
+        { "order": 1, "exercise_number": "1", "statement": "نص التمرين الكامل بـ $LaTeX$", "questions": ["السؤال 1", "السؤال 2"], "solution": "الحل المفصّل خطوة بخطوة بـ $LaTeX$", "expected_answer": "الإجابة النهائية", "answer_type": "numeric|expression|text", "difficulty": 2, "bloom_level": 3, "hints": ["تلميح 1", "تلميح 2"], "concepts": ["مفهوم 1", "مفهوم 2"] }
+      ],
       "lessons": [
         {
           "order": 1,
@@ -223,6 +226,7 @@ ${workingText.substring(0, 18000)}
 - اكتب كل الصيغ الرياضية بـ LaTeX داخل $...$
 - title_ar إجباري بالعربية، title بالفرنسية
 - التمارين دائماً is_interactive: true مع expected_answer
+- ⭐ "exercises" على مستوى الفصل: استخرج كل التمارين الموجودة فعلياً في نهاية كل فصل (تمارين 1, 2, 3...) كاملةً مع نصوصها وحلولها — هذه منفصلة عن activities الدرسية
 - اجعل المحتوى تربوياً واضحاً، ليس مجرد نسخ خام
 - JSON صالح 100% فقط`;
 
