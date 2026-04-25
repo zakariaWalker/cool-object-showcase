@@ -134,6 +134,12 @@ export default function StudentSolver() {
 
   const steps = deconstruction.steps;
 
+  // Detect exercises that reference a missing figure/diagram
+  const referencesFigure = /الشكل المرفق|المجسم المرفق|الشكل أدناه|الشكل التالي|انظر الشكل|حسب الشكل|figure ci-(dessous|contre|jointe)|voir la figure/i
+    .test(`${exercise.text || ""} ${steps.join(" ")}`);
+  const hasFigureData = !!(exercise.figure_url || exercise.diagram_spec || exercise.image_url);
+  const figureMissing = referencesFigure && !hasFigureData;
+
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
@@ -164,6 +170,24 @@ export default function StudentSolver() {
           <div className="text-sm">
             <MathExerciseRenderer text={exercise.text} />
           </div>
+
+          {figureMissing && (
+            <div className="mt-4 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 flex gap-3 items-start">
+              <span className="text-xl shrink-0">⚠️</span>
+              <div className="flex-1 text-xs leading-relaxed">
+                <div className="font-bold text-amber-700 mb-1">الشكل المرفق غير متوفّر</div>
+                <p className="text-muted-foreground">
+                  هذا التمرين يشير إلى شكل أو مجسّم لم يُرفق مع النص. حاول الاعتماد على وصف التمرين، أو اختر تمريناً آخر يحتوي على كل المعطيات اللازمة.
+                </p>
+                <button
+                  onClick={() => navigate("/exercises")}
+                  className="mt-2 text-xs font-bold text-primary hover:underline"
+                >
+                  اختيار تمرين آخر ←
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Solver Area */}
