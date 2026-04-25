@@ -493,27 +493,39 @@ export default function GapDetector() {
             </div>
 
             {!showSolution && (
-              <div className="space-y-4">
-                <StudentAnswerEditor
-                  exerciseType={q.exercise.type}
-                  exerciseText={q.exercise.text}
-                  onSubmitAlgebra={() => answerQuestion(true)}
-                  onSubmitGeometry={() => answerQuestion(true)}
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wide">
+                  اكتب إجابتك (نص أو معادلة)
+                </label>
+                <textarea
+                  value={answerText}
+                  onChange={(e) => {
+                    setAnswerText(e.target.value);
+                    if (inputError) setInputError("");
+                  }}
+                  placeholder="مثال: x = 5  أو  المساحة = 12 cm²"
+                  rows={3}
+                  disabled={grading}
+                  className="w-full p-4 rounded-xl border-2 border-border bg-card text-sm font-mono focus:border-primary outline-none transition-all resize-none disabled:opacity-60"
+                  dir="auto"
                 />
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => answerQuestion(true)}
-                    className="flex-1 py-3 rounded-xl text-xs font-bold border-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 transition-all"
-                  >
-                    ✅ حللته بنجاح
-                  </button>
-                  <button
-                    onClick={() => answerQuestion(false)}
-                    className="flex-1 py-3 rounded-xl text-xs font-bold border-2 border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/15 transition-all"
-                  >
-                    ❌ لم أتمكن
-                  </button>
-                </div>
+                {inputError && (
+                  <p className="text-xs text-destructive font-bold">⚠ {inputError}</p>
+                )}
+                <button
+                  onClick={submitAnswer}
+                  disabled={grading || !answerText.trim()}
+                  className="w-full py-3 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {grading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
+                      جاري التصحيح الذكي...
+                    </>
+                  ) : (
+                    "إرسال الإجابة"
+                  )}
+                </button>
               </div>
             )}
 
