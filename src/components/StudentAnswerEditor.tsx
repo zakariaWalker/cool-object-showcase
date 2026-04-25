@@ -70,8 +70,11 @@ export function StudentAnswerEditor({ exerciseType, exerciseLevel, exerciseText,
     gradeCodeToLevel(gradeCode) ||
     (exerciseLevel ? detectLevelFromText(exerciseLevel, exerciseText) : detectLevelFromText(undefined, exerciseText));
 
+  // Lock the level whenever it derives from the registered profile (so students can't accidentally change it).
+  const lockLevel = !!gradeCodeToLevel(gradeCode);
+
   if (editorType === "geometry") {
-    return <GeometryEditor onSubmit={onSubmitGeometry} initialLevel={resolvedLevel} className={className} />;
+    return <GeometryEditor onSubmit={onSubmitGeometry} initialLevel={resolvedLevel} exerciseText={exerciseText} lockLevel={lockLevel} className={className} />;
   }
 
   return <AlgebraEditor onSubmit={onSubmitAlgebra} initialLevel={resolvedLevel} className={className} />;
