@@ -36,6 +36,8 @@ import SkillsKBPage from "./pages/SkillsKB";
 import UnifiedKBPage from "./pages/UnifiedKB";
 import TextbookUpload from "./pages/TextbookUpload";
 import TextbookViewer from "./pages/TextbookViewer";
+import TextbooksIndex from "./pages/TextbooksIndex";
+import TextbookBlog from "./pages/TextbookBlog";
 import Onboarding from "./pages/Onboarding";
 import ExamCompare from "./admin/pages/ExamCompare";
 import GeometryStudio from "./pages/GeometryStudio";
