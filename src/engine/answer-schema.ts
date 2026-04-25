@@ -272,6 +272,10 @@ export function gradeAnswer(input: string, schema: AnswerSchema): Verdict {
       return { status: "unknown", message: "تم استلام إجابتك." };
     }
 
+    case "construction":
+      // Student confirmed they completed the drawing.
+      return { status: "correct", message: "أحسنت! تابع للخطوة التالية." };
+
     case "comparison":
     case "expression":
     case "text":
