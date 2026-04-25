@@ -17,6 +17,7 @@ export type AnswerType =
   | "range_filter" // pick numbers from a given list that fall in [min,max]
   | "comparison" // which of two quantities is bigger (a|b|equal)
   | "expression" // free-form algebraic — fall back to soft check
+  | "construction" // geometric construction ("ارسم", "أنشئ"): student confirms drawing
   | "text"; // open-ended
 
 export interface AnswerSchema {
