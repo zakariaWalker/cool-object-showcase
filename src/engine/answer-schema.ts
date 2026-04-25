@@ -17,6 +17,7 @@ export type AnswerType =
   | "range_filter" // pick numbers from a given list that fall in [min,max]
   | "comparison" // which of two quantities is bigger (a|b|equal)
   | "expression" // free-form algebraic — fall back to soft check
+  | "construction" // geometric construction ("ارسم", "أنشئ"): student confirms drawing
   | "text"; // open-ended
 
 export interface AnswerSchema {
@@ -142,12 +143,20 @@ export function inferAnswerSchema(exerciseText: string, stepText: string): Answe
     return { type: "comparison" };
   }
 
-  // ── Pattern C: explicit "احسب" / "أوجد" expecting one number
+  // ── Pattern C: geometric construction — "ارسم" / "أنشئ" / "أكمل رسم"
+  // The step asks the student to DRAW something on the figure, not to compute.
+  // We can't grade a drawing automatically, so we render a confirmation UI
+  // instead of a text editor.
+  if (/(?:^|\s)(?:ارسم|اِرسم|أنشئ|أنشِئ|أكمل\s+رسم|ارسموا|tracer?|dessiner?|construire?)\b/i.test(step)) {
+    return { type: "construction" };
+  }
+
+  // ── Pattern D: explicit "احسب" / "أوجد" expecting one number
   if (/(احسب|أوجد|جد|قيمة)/.test(combined) && !/قائمة|الأعداد/.test(combined)) {
     return { type: "number" };
   }
 
-  // ── Pattern D: "حدد الأعداد" → list
+  // ── Pattern E: "حدد الأعداد" → list
   if (/حدد\s+الأعداد|اذكر\s+الأعداد|اكتب\s+الأعداد/.test(combined)) {
     return { type: "number_list" };
   }
@@ -262,6 +271,10 @@ export function gradeAnswer(input: string, schema: AnswerSchema): Verdict {
       }
       return { status: "unknown", message: "تم استلام إجابتك." };
     }
+
+    case "construction":
+      // Student confirmed they completed the drawing.
+      return { status: "correct", message: "أحسنت! تابع للخطوة التالية." };
 
     case "comparison":
     case "expression":
