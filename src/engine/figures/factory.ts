@@ -221,3 +221,73 @@ export function defaultFigureSpec(kind: FigureKind): FigureSpec {
       return { kind: "axes" };
   }
 }
+
+// =====================================================================
+// Label extraction & remapping
+// =====================================================================
+
+/** Expected vertex count per shape, used to extract labels from text. */
+const EXPECTED_LABEL_COUNT: Partial<Record<FigureKind, number>> = {
+  triangle: 3,
+  right_triangle: 3,
+  rectangle: 4,
+  square: 4,
+  rhombus: 4,
+  parallelogram: 4,
+  trapezoid: 4,
+  quadrilateral: 4,
+  parallelepiped: 8,
+  cube: 8,
+  prism: 6,
+  pyramid: 5,
+};
+
+/**
+ * Try to extract the actual vertex labels from the question text,
+ * e.g. "المعيّن KLMN" → ["K","L","M","N"]. Returns null if no run of
+ * exactly the right length is found.
+ */
+export function extractLabelsFromText(text: string, kind: FigureKind): string[] | null {
+  const expected = EXPECTED_LABEL_COUNT[kind];
+  if (!expected || !text) return null;
+  const re = new RegExp(`\\b([A-Z]{${expected}})\\b`);
+  const m = text.match(re);
+  if (!m) return null;
+  const letters = m[1].split("");
+  if (new Set(letters).size !== letters.length) return null; // avoid duplicates
+  return letters;
+}
+
+/** Return a clone of the spec with vertex labels remapped to `newLabels`. */
+export function relabelSpec(spec: FigureSpec, newLabels: string[]): FigureSpec {
+  if (!spec.vertices) return spec;
+  const oldLabels = Object.keys(spec.vertices);
+  if (oldLabels.length !== newLabels.length) return spec;
+
+  const map: Record<string, string> = {};
+  oldLabels.forEach((old, i) => { map[old] = newLabels[i]; });
+
+  const newVertices: Record<string, [number, number, number?]> = {};
+  for (const [old, p] of Object.entries(spec.vertices)) newVertices[map[old]] = p;
+
+  const newEdges = spec.edges?.map(([a, b]) => [map[a] || a, map[b] || b] as [string, string]);
+  const newFaces = spec.faces?.map((f) => f.map((l) => map[l] || l));
+
+  return {
+    ...spec,
+    label: newLabels.join(""),
+    vertices: newVertices,
+    edges: newEdges,
+    faces: newFaces,
+  };
+}
+
+/** Detect kind, build default spec, then relabel using exercise text. */
+export function buildAutoFigureSpec(ex: ExerciseLike): FigureSpec | null {
+  const kind = detectFigureKind(ex);
+  if (!kind) return null;
+  const base = defaultFigureSpec(kind);
+  const labels = extractLabelsFromText(ex.text || "", kind);
+  return labels ? relabelSpec(base, labels) : base;
+}
+
