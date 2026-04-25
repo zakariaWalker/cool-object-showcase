@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 import { DeconstructionImporter } from "./DeconstructionImporter";
+import { ruleBasedDeconstruct } from "./ruleBasedDeconstructor";
 
 interface Props {
   exercises: Exercise[];
@@ -173,6 +174,53 @@ export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, 
     }
   };
 
+  // Rule-based instant deconstruction — no AI, no network calls per exercise
+  const handleRuleDeconstruct = async (scope: "page" | "filtered" | "all_remaining") => {
+    const source = scope === "page" ? pageItems : scope === "filtered" ? filtered : exercises;
+    const notDeconstructed = source.filter(e => !deconIds.has(e.id));
+
+    if (notDeconstructed.length === 0) {
+      toast.info("كل التمارين مفكّكة بالفعل!");
+      return;
+    }
+    if (patterns.length === 0) {
+      toast.error("لا توجد أنماط في قاعدة البيانات. أنشئ أنماطاً أولاً.");
+      return;
+    }
+
+    setAiLoading(true);
+    setAiProgress({ done: 0, total: notDeconstructed.length });
+
+    try {
+      const results = ruleBasedDeconstruct(notDeconstructed, patterns, deconIds);
+      const created = results.filter(r => r.deconstruction).map(r => r.deconstruction!);
+      const skipped = results.length - created.length;
+
+      // Persist sequentially via onAdd (already debounced through the store)
+      let done = 0;
+      for (const d of created) {
+        onAdd(d);
+        done++;
+        if (done % 25 === 0) {
+          setAiProgress({ done, total: created.length });
+          // micro yield to keep UI responsive on huge batches
+          await new Promise(r => setTimeout(r, 0));
+        }
+      }
+      setAiProgress({ done: created.length, total: created.length });
+
+      toast.success(
+        `⚡ تفكيك فوريّ: ${created.length} تمرين${skipped ? ` • تخطّينا ${skipped} (لا يوجد نمط مطابق)` : ""}`
+      );
+      reload();
+    } catch (err) {
+      toast.error("خطأ غير متوقع في التفكيك الآلي");
+      console.error("[ruleBasedDeconstruct]", err);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Stats bar */}
@@ -195,6 +243,33 @@ export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, 
             )}
           </div>
         ))}
+      </div>
+
+      {/* Rule-based instant deconstruction (no AI) */}
+      <div className="glass-card rounded-lg p-4 border border-primary/40">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-bold text-foreground">⚡ تفكيك فوريّ (بدون ذكاء اصطناعي)</h4>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-bold">
+            موصى به
+          </span>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed">
+          يطابق نوع كلّ تمرين مع نمط جاهز من المكتبة وينسخ خطواته فوراً — مجاني، سريع (~10ث للـ335 تمرين)، وقابل للتحسين لاحقاً بالذكاء الاصطناعي.
+        </p>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => handleRuleDeconstruct("page")} disabled={aiLoading}
+            className="px-4 py-2 rounded-lg text-xs font-bold border border-border bg-card text-foreground hover:bg-accent transition-all disabled:opacity-50">
+            ⚡ الصفحة الحالية
+          </button>
+          <button onClick={() => handleRuleDeconstruct("filtered")} disabled={aiLoading}
+            className="px-4 py-2 rounded-lg text-xs font-bold border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-all disabled:opacity-50">
+            ⚡ المفلترة ({filtered.filter(e => !deconIds.has(e.id)).length})
+          </button>
+          <button onClick={() => handleRuleDeconstruct("all_remaining")} disabled={aiLoading}
+            className="px-4 py-2 rounded-lg text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
+            🚀 الكلّ فوراً ({stats.notDeconstructed})
+          </button>
+        </div>
       </div>
 
       {/* AI Controls */}
