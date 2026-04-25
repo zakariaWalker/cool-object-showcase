@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProfile, computeProfileFromRecords, DiagnosticRecord, PROFILES, ProfileType } from "@/engine/profile-store";
 import { LatexRenderer } from "@/components/LatexRenderer";
+import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 import { generateDiagnosticExercises, DiagnosticExercise } from "@/engine/DiagnosticGeneratorService";
 import { XP_REWARDS } from "@/engine/gamification";
 import { supabase } from "@/integrations/supabase/client";
@@ -213,14 +214,19 @@ export function DiagnosticProfiler({
     setTimeout(() => setRevealStep(3), 2400);
   }
 
+  /** Strip dangling figure-reference markers — the renderer auto-draws shapes. */
+  function stripFigureRefs(text: string): string {
+    return text
+      .replace(/\[(رسم|شكل|صورة|مخطط)[^\]]*\]/g, "")
+      .replace(/\(\s*(تخيل|انظر إلى)\s*[^)]*\)/g, "")
+      .replace(/(انظر|لاحظ)\s+(إلى\s+)?(الشكل|الرسم|المخطط|الصورة)\s*(المقابل|التالي|أدناه)?\s*[:.،]?/g, "")
+      .replace(/في\s+الشكل\s+(المقابل|التالي|أدناه)\s*[،,:]?\s*/g, "")
+      .replace(/[ \t]{2,}/g, " ")
+      .trim();
+  }
+
   function renderMath(text: string) {
-    const parts = text.split(/(\$[^$]+\$)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith("$") && part.endsWith("$")) {
-        return <LatexRenderer key={i} latex={part.slice(1, -1)} className="inline" />;
-      }
-      return <span key={i}>{part}</span>;
-    });
+    return <MathExerciseRenderer text={stripFigureRefs(text)} showDiagram />;
   }
 
   if (loading) {
