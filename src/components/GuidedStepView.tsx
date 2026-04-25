@@ -1,11 +1,15 @@
 // ===== Guided Step-by-Step Exercise View =====
 // Progressive disclosure: shows one step at a time with interactive choices
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { MathExerciseRenderer } from "./MathExerciseRenderer";
+import { GeometryCanvas } from "./geometry/GeometryCanvas";
+import { inferAnswerSchema } from "@/engine/answer-schema";
+import { inferConstraints } from "@/engine/figures/construction-checks";
+import { buildAutoFigureSpec } from "@/engine/figures/factory";
 
 interface GuidedStepViewProps {
   exerciseText: string;
