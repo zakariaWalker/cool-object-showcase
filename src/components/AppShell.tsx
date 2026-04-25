@@ -22,6 +22,7 @@ import {
   Archive,
   ArrowLeftRight,
   Compass,
+  Sigma,
   type LucideIcon,
 } from "lucide-react";
 import { GamificationDashboard } from "./GamificationDashboard";
@@ -41,6 +42,7 @@ const WORKFLOW_STEPS: Step[] = [
   { path: "/explore", label: "الاستكشاف", icon: Telescope, step: 7 },
   { path: "/whatif", label: "ماذا لو؟", icon: FlaskConical, step: 8 },
   { path: "/geometry-studio", label: "استوديو الهندسة", icon: Compass, step: 8 },
+  { path: "/algebra-studio", label: "استوديو الجبر", icon: Sigma, step: 8 },
   { path: "/annales", label: "الأرشيف", icon: Archive, step: 9 },
   { path: "/exams", label: "الامتحانات", icon: FileEdit, step: 10, adminOnly: true },
   { path: "/exam-kb", label: "KB امتحانات", icon: Library, step: 11, adminOnly: true },
@@ -57,7 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isGuest = !user;
 
   useEffect(() => {
-    const publicPaths = ["/", "/auth", "/onboarding", "/gaps", "/diagnostic", "/annales", "/geometry-studio"];
+    const publicPaths = ["/", "/auth", "/onboarding", "/gaps", "/diagnostic", "/annales", "/geometry-studio", "/algebra-studio"];
     const isPublic =
       publicPaths.includes(currentPath) ||
       currentPath.startsWith("/tma") ||
@@ -73,7 +75,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 
   const visibleSteps = WORKFLOW_STEPS.filter((step) => {
-    if (isGuest) return step.path === "/gaps" || step.path === "/diagnostic" || step.path === "/geometry-studio";
+    if (isGuest) return step.path === "/gaps" || step.path === "/diagnostic" || step.path === "/geometry-studio" || step.path === "/algebra-studio";
     if (step.adminOnly && !isAdmin) return false;
     return true;
   });

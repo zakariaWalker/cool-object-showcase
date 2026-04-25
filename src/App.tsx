@@ -39,6 +39,7 @@ import TextbookViewer from "./pages/TextbookViewer";
 import Onboarding from "./pages/Onboarding";
 import ExamCompare from "./admin/pages/ExamCompare";
 import GeometryStudio from "./pages/GeometryStudio";
+import AlgebraStudio from "./pages/AlgebraStudio";
 
 const queryClient = new QueryClient();
 
@@ -158,6 +159,7 @@ const App = () => (
             <Route path="/textbook-upload" element={<TextbookUpload />} />
             <Route path="/textbook/:id" element={<TextbookViewer />} />
             <Route path="/geometry-studio" element={<GeometryStudio />} />
+            <Route path="/algebra-studio" element={<AlgebraStudio />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppShell>
