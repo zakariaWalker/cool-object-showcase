@@ -114,14 +114,106 @@ export function AdminViz({ exercises, patterns, deconstructions, countryCode = "
     const exerciseTypes = new Set(exercises.map(e => e.type));
     const orphanPatterns = patterns.filter(p => p.type && !exerciseTypes.has(p.type));
 
+    // 9. Linkable: uncovered exercises that COULD receive a pattern (their type has at least one pattern)
+    const patternTypes = new Set(patterns.map(p => (p.type || "").toLowerCase()).filter(Boolean));
+    const uncoveredExercises = exercises.filter(e => !deconExIds.has(e.id));
+    const linkableUncovered = uncoveredExercises.filter(e => {
+      const t = (e.type || "").toLowerCase();
+      return t && t !== "unclassified" && (patternTypes.has(t) || patterns.some(p => (p.type || "").toLowerCase() === t));
+    });
+
+    // 10. Weak coverage cells: (grade × type) combos that exist in curriculum but have <3 exercises
+    type Weak = { grade: string; type: string; total: number; covered: number };
+    const weakCells: Weak[] = [];
+    allGrades.forEach(g => {
+      allTypes.forEach(t => {
+        const c = heatmap[g]?.[t];
+        if (c && c.total > 0 && c.total < 3) {
+          weakCells.push({ grade: g, type: t, total: c.total, covered: c.covered });
+        }
+      });
+    });
+    weakCells.sort((a, b) => a.total - b.total);
+
     return {
       covered, uncovered, coveragePct, gradeStats, typeStats,
       topPatterns, unusedPatterns, aiCount, manualCount,
       heatmap, allGrades, allTypes, typesWithNoPatterns, orphanPatterns,
+      linkableUncovered, weakCells,
     };
   }, [exercises, patterns, deconstructions]);
 
   const coverageColor = insights.coveragePct >= 70 ? "hsl(var(--geometry))" : insights.coveragePct >= 40 ? "hsl(var(--statistics))" : "hsl(var(--functions))";
+
+  // ── Action: rule-based bulk linking of unused patterns to uncovered exercises ──
+  async function handleLinkPatterns() {
+    if (!onAdd || linking) return;
+    const targets = insights.linkableUncovered;
+    if (targets.length === 0) {
+      toast.info("لا توجد تمارين غير مفكّكة قابلة للربط");
+      return;
+    }
+    setLinking(true);
+    setLinkProgress({ done: 0, total: targets.length });
+
+    try {
+      const existingIds = new Set(deconstructions.map(d => d.exerciseId));
+      const results = ruleBasedDeconstruct(targets, patterns, existingIds);
+      const created = results.filter(r => r.deconstruction).map(r => r.deconstruction!);
+
+      // Persist in batches of 200 directly to Supabase to avoid 500+ sequential inserts
+      const BATCH = 200;
+      const isUUID = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+      let inserted = 0;
+      for (let i = 0; i < created.length; i += BATCH) {
+        const batch = created.slice(i, i + BATCH)
+          .filter(d => isUUID(d.exerciseId) && (!d.patternId || isUUID(d.patternId)))
+          .map(d => ({
+            exercise_id: d.exerciseId,
+            pattern_id: d.patternId,
+            steps: d.steps || [],
+            needs: d.needs,
+            notes: d.notes,
+            country_code: d.countryCode || countryCode,
+            ai_generated: false,
+          }));
+        if (batch.length === 0) continue;
+        const { error } = await (supabase as any).from("kb_deconstructions").insert(batch);
+        if (error) throw error;
+        inserted += batch.length;
+        setLinkProgress({ done: Math.min(i + BATCH, created.length), total: created.length });
+      }
+
+      toast.success(`✅ تم ربط ${inserted} تمرين بنمط (${created.length - inserted} متجاوَز)`);
+      reload?.();
+    } catch (err: any) {
+      console.error("[link patterns]", err);
+      toast.error(`فشل الربط: ${err.message || err}`);
+    } finally {
+      setLinking(false);
+    }
+  }
+
+  // ── Action: export weak-domain plan as JSON for AI generation ──
+  function handleExportWeakDomains() {
+    const plan = insights.weakCells.map(w => ({
+      grade: w.grade,
+      type: w.type,
+      type_ar: TYPE_LABELS_AR[w.type] || w.type,
+      current_count: w.total,
+      target_count: 5,
+      need: 5 - w.total,
+    }));
+    const blob = new Blob([JSON.stringify({ countryCode, weakDomains: plan }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `weak-domains-${countryCode}-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`📥 تم تصدير ${plan.length} مجال ضعيف`);
+  }
+
 
   return (
     <div className="space-y-5" dir="rtl">
