@@ -18,6 +18,7 @@ export type AnswerType =
   | "comparison" // which of two quantities is bigger (a|b|equal)
   | "expression" // free-form algebraic — fall back to soft check
   | "construction" // geometric construction ("ارسم", "أنشئ"): student confirms drawing
+  | "algebra" // algebraic calculation: student should write step-by-step solution
   | "text"; // open-ended
 
 export interface AnswerSchema {
