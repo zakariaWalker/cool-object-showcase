@@ -143,11 +143,15 @@ export function inferAnswerSchema(exerciseText: string, stepText: string): Answe
     return { type: "comparison" };
   }
 
-  // ── Pattern C: geometric construction — "ارسم" / "أنشئ" / "أكمل رسم"
-  // The step asks the student to DRAW something on the figure, not to compute.
-  // We can't grade a drawing automatically, so we render a confirmation UI
-  // instead of a text editor.
-  if (/(?:^|\s)(?:ارسم|اِرسم|أنشئ|أنشِئ|أكمل\s+رسم|ارسموا|tracer?|dessiner?|construire?)\b/i.test(step)) {
+  // ── Pattern C: geometric construction / figure interaction
+  // Covers: drawing verbs ("ارسم"، "أنشئ"، "أكمل رسم")
+  //   AND observation/identification verbs when the step mentions a figure element
+  //   (الشكل، المستقيم، النقطة، الزاوية، D1, A, ...). Such steps belong on the
+  //   geometry canvas, not in a free-text editor.
+  const drawVerb = /(?:^|\s)(?:ارسم|اِرسم|أنشئ|أنشِئ|أكمل\s+رسم|ارسموا|tracer?|dessiner?|construire?)\b/i.test(step);
+  const observeVerb = /(?:^|\s)(?:لاحظ|ملاحظ[ةه]|حدد|عيّن|عين|أتمم|أكمل|اقرأ|observer?|identifier?)\b/i.test(step);
+  const figureNoun = /(?:الشكل|المستقيم|النقطة|الزاوية|الدائرة|المثلث|المضلع|المستوي|figure|droite|cercle|triangle)/i.test(step);
+  if (drawVerb || (observeVerb && figureNoun)) {
     return { type: "construction" };
   }
 
