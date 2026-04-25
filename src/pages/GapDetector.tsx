@@ -537,6 +537,11 @@ export default function GapDetector() {
                   <div className="text-sm font-bold mb-2">
                     {answers[answers.length - 1]?.correct ? "✅ أحسنت!" : "❌ لا بأس، إليك خطوات الحل:"}
                   </div>
+                  {gradeFeedback && (
+                    <div className="text-xs text-foreground/80 mb-3 p-2 rounded-lg bg-background/50 border border-border/50">
+                      💬 {gradeFeedback}
+                    </div>
+                  )}
 
                   {q.decon.steps && q.decon.steps.length > 0 && (
                     <div className="space-y-2 mt-3">
