@@ -65,6 +65,14 @@ export default function StudentSolver() {
           setPattern(patData);
         }
       }
+
+      // 4. Fetch optional manual figure spec override
+      const { data: figData } = await (supabase as any)
+        .from("kb_figures")
+        .select("spec")
+        .eq("exercise_id", id)
+        .maybeSingle();
+      if (figData?.spec) setManualFigureSpec(figData.spec as FigureSpec);
     } catch (e) {
       console.error("Error loading solver data:", e);
     } finally {
