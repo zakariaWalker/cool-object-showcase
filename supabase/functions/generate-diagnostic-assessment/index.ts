@@ -197,15 +197,16 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
   } catch (e) {
     console.warn("KB skill lookup failed:", e);
   }
-  if (skillIds.length === 0) return [];
-
-  const { data: skills } = await db
-    .from("kb_skills")
-    .select("id, name_ar, name, domain, subdomain")
-    .in("id", skillIds.slice(0, 40));
-  if (!skills?.length) return [];
-
-  const skillById = new Map<string, any>(skills.map((s: any) => [s.id as string, s]));
+  // If no skills found, still try to serve raw exercises from KB by grade — better than nothing
+  let skills: any[] = [];
+  if (skillIds.length > 0) {
+    const { data } = await db
+      .from("kb_skills")
+      .select("id, name_ar, name, domain, subdomain")
+      .in("id", skillIds.slice(0, 40));
+    skills = data || [];
+  }
+  const skillById = new Map<string, any>((skills || []).map((s: any) => [s.id as string, s]));
 
   // ── Fetch a LARGE pool of exercises for this grade
   // Strategy: prefer skill-linked exercises, but fall back to grade-matched exercises
