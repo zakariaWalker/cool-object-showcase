@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { QEDLogo } from "@/components/QEDLogo";
@@ -16,6 +16,9 @@ import {
   Wallet,
   TrendingUp,
   Sparkles,
+  Search,
+  Clock,
+  ArrowUpLeft,
 } from "lucide-react";
 
 // ── Two audience tracks ──
@@ -82,6 +85,8 @@ interface BookCard {
 export default function Landing() {
   const [books, setBooks] = useState<BookCard[]>([]);
   const [audience, setAudience] = useState<"student" | "parent">("student");
+  const [query, setQuery] = useState("");
+  const [gradeFilter, setGradeFilter] = useState<string>("all");
 
   useEffect(() => {
     (async () => {
@@ -91,10 +96,28 @@ export default function Landing() {
         .eq("status", "completed")
         .eq("is_public", true)
         .order("created_at", { ascending: false })
-        .limit(6);
+        .limit(30);
       setBooks(data || []);
     })();
   }, []);
+
+  const grades = useMemo(() => {
+    const s = new Set<string>();
+    books.forEach((b) => b.grade && s.add(b.grade));
+    return Array.from(s);
+  }, [books]);
+
+  const filteredBooks = useMemo(() => {
+    return books.filter((b) => {
+      const matchesGrade = gradeFilter === "all" || b.grade === gradeFilter;
+      const q = query.trim().toLowerCase();
+      const matchesQuery =
+        !q ||
+        b.title.toLowerCase().includes(q) ||
+        (b.description?.toLowerCase().includes(q) ?? false);
+      return matchesGrade && matchesQuery;
+    });
+  }, [books, query, gradeFilter]);
 
   return (
     <div className="relative bg-background min-h-screen overflow-x-hidden" dir="rtl">
@@ -351,71 +374,144 @@ export default function Landing() {
         </section>
       )}
 
-      {/* ── Textbooks / Blog section ── */}
-      <section id="textbooks" className="max-w-6xl mx-auto px-6 py-24 space-y-12">
-        <div className="flex items-end justify-between flex-wrap gap-4">
-          <div className="space-y-2">
-            <span className="text-xs font-black text-primary uppercase tracking-wider">المكتبة</span>
-            <h2 className="text-3xl md:text-4xl font-black text-foreground">
-              دروس مبسّطة، تمارين باك، حلول مفهومة
-            </h2>
-            <p className="text-sm text-muted-foreground max-w-md">
-              محتوى مهيكَل حسب البرنامج الرسمي — اقرأ، تدرّب، وافهم في نفس المكان.
-            </p>
-          </div>
-          <Link
-            to="/textbooks"
-            className="inline-flex items-center gap-2 text-sm font-black text-primary hover:text-primary/80 transition-colors"
-          >
-            كل الدروس
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+      {/* ── Textbooks Feed (with search + grade filter) ── */}
+      <section id="textbooks" className="max-w-5xl mx-auto px-6 py-24 space-y-10">
+        <div className="space-y-3">
+          <span className="text-xs font-black text-primary uppercase tracking-wider">المكتبة</span>
+          <h2 className="text-3xl md:text-5xl font-black text-foreground leading-tight">
+            دروس مبسّطة، تمارين باك،
+            <br />
+            <span className="text-muted-foreground/70">حلول مفهومة.</span>
+          </h2>
+          <p className="text-sm md:text-base text-muted-foreground max-w-xl">
+            محتوى مهيكَل حسب البرنامج الرسمي — اقرأ، تدرّب، وافهم في نفس المكان.
+          </p>
         </div>
 
-        {books.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {books.map((b, i) => (
+        {/* Filter bar */}
+        <div className="flex flex-col gap-4 sticky top-16 bg-background/80 backdrop-blur-xl py-4 -mx-6 px-6 border-b border-border/50 z-30">
+          <div className="relative">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ابحث عن درس أو موضوع..."
+              className="w-full bg-muted/50 border border-border rounded-2xl pr-11 pl-4 py-3 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:bg-background transition-all"
+            />
+          </div>
+          {grades.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mb-1 scrollbar-thin">
+              <button
+                onClick={() => setGradeFilter("all")}
+                className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-black transition-all ${
+                  gradeFilter === "all"
+                    ? "bg-foreground text-background"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                }`}
+              >
+                الكل
+              </button>
+              {grades.map((g) => (
+                <button
+                  key={g}
+                  onClick={() => setGradeFilter(g)}
+                  className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-black transition-all uppercase ${
+                    gradeFilter === g
+                      ? "bg-foreground text-background"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Feed list */}
+        {filteredBooks.length > 0 ? (
+          <div className="divide-y divide-border">
+            {filteredBooks.map((b, i) => (
               <motion.div
                 key={b.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ delay: Math.min(i * 0.04, 0.3) }}
               >
                 <Link
                   to={`/textbooks/${b.slug || b.id}`}
-                  className="block bg-card border border-border rounded-2xl p-6 h-full hover:border-primary/40 hover:shadow-xl transition-all group"
+                  className="group flex items-start gap-5 py-6 hover:bg-muted/30 -mx-4 px-4 rounded-2xl transition-colors"
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/15 to-accent/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <BookOpen className="w-5 h-5" />
-                    </div>
-                    {b.grade && (
-                      <span className="text-[10px] font-black text-muted-foreground bg-muted px-2.5 py-1 rounded-full uppercase">
-                        {b.grade}
+                  {/* Cover / icon */}
+                  <div className="shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-primary/15 to-accent/10 text-primary flex items-center justify-center group-hover:scale-105 group-hover:rotate-3 transition-transform">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {b.grade && (
+                        <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          {b.grade}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        درس تفاعلي
                       </span>
+                    </div>
+                    <h3 className="text-lg md:text-xl font-black text-foreground leading-snug group-hover:text-primary transition-colors line-clamp-2">
+                      {b.title}
+                    </h3>
+                    {b.description && (
+                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+                        {b.description}
+                      </p>
                     )}
                   </div>
-                  <h3 className="text-base font-black text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                    {b.title}
-                  </h3>
-                  {b.description && (
-                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
-                      {b.description}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-primary mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    اقرأ الدرس
-                    <ArrowLeft className="w-3.5 h-3.5" />
+
+                  {/* Arrow */}
+                  <div className="shrink-0 self-center text-muted-foreground group-hover:text-primary group-hover:-translate-x-1 transition-all">
+                    <ArrowUpLeft className="w-5 h-5" />
                   </div>
                 </Link>
               </motion.div>
             ))}
           </div>
         ) : (
-          <div className="bg-card border border-dashed border-border rounded-2xl p-12 text-center text-sm text-muted-foreground">
-            <BookOpen className="w-8 h-8 mx-auto mb-3 opacity-30" />
-            دروس جديدة تُضاف قريباً
+          <div className="bg-card border border-dashed border-border rounded-2xl p-16 text-center space-y-3">
+            <BookOpen className="w-10 h-10 mx-auto opacity-20" />
+            <div className="text-sm font-bold text-foreground">
+              {query || gradeFilter !== "all"
+                ? "ما لقيناش نتائج لهذا البحث"
+                : "دروس جديدة تُضاف قريباً"}
+            </div>
+            {(query || gradeFilter !== "all") && (
+              <button
+                onClick={() => {
+                  setQuery("");
+                  setGradeFilter("all");
+                }}
+                className="text-xs font-black text-primary hover:underline"
+              >
+                مسح التصفية
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* See all */}
+        {filteredBooks.length > 0 && (
+          <div className="text-center pt-4">
+            <Link
+              to="/textbooks"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-muted hover:bg-muted/70 text-foreground text-sm font-black transition-colors"
+            >
+              تصفّح كل المكتبة
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
           </div>
         )}
       </section>
