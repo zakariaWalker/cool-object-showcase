@@ -559,7 +559,7 @@ export default function GapDetector() {
                   {grading ? (
                     <>
                       <span className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
-                      جاري التصحيح الذكي...
+                      جاري التصحيح...
                     </>
                   ) : (
                     "إرسال الإجابة"
