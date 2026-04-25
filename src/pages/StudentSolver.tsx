@@ -149,13 +149,6 @@ export default function StudentSolver() {
     /متوازي\s*المستطيل|parallelepip|parallélépip|cuboid|rectangular box/i.test(fullText) ||
     (exercise.type || "").toLowerCase() === "parallelogram";
 
-  // Pull single-letter vertex labels (A..H) from the current step to highlight
-  const highlightVertices = useMemo(() => {
-    const stepText = currentStepText || "";
-    const matches = stepText.match(/\b[A-H]\b/g) || [];
-    return Array.from(new Set(matches));
-  }, [currentStepText]);
-
   const referencesFigure = /الشكل المرفق|المجسم المرفق|الشكل أدناه|الشكل التالي|انظر الشكل|حسب الشكل|figure ci-(dessous|contre|jointe)|voir la figure/i
     .test(fullText);
   const hasFigureData = !!(exercise.figure_url || exercise.diagram_spec || exercise.image_url);
