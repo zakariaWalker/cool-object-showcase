@@ -4,7 +4,6 @@
 // and verifies it against the constraints inferred from the step.
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import "jsxgraph/distrib/jsxgraph.css";
 import JXG from "jsxgraph";
 import type { FigureSpec } from "@/engine/figures/types";
 import type { Constraint } from "@/engine/figures/construction-checks";
