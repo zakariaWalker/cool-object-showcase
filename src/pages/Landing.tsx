@@ -85,6 +85,8 @@ interface BookCard {
 export default function Landing() {
   const [books, setBooks] = useState<BookCard[]>([]);
   const [audience, setAudience] = useState<"student" | "parent">("student");
+  const [query, setQuery] = useState("");
+  const [gradeFilter, setGradeFilter] = useState<string>("all");
 
   useEffect(() => {
     (async () => {
@@ -94,10 +96,28 @@ export default function Landing() {
         .eq("status", "completed")
         .eq("is_public", true)
         .order("created_at", { ascending: false })
-        .limit(6);
+        .limit(30);
       setBooks(data || []);
     })();
   }, []);
+
+  const grades = useMemo(() => {
+    const s = new Set<string>();
+    books.forEach((b) => b.grade && s.add(b.grade));
+    return Array.from(s);
+  }, [books]);
+
+  const filteredBooks = useMemo(() => {
+    return books.filter((b) => {
+      const matchesGrade = gradeFilter === "all" || b.grade === gradeFilter;
+      const q = query.trim().toLowerCase();
+      const matchesQuery =
+        !q ||
+        b.title.toLowerCase().includes(q) ||
+        (b.description?.toLowerCase().includes(q) ?? false);
+      return matchesGrade && matchesQuery;
+    });
+  }, [books, query, gradeFilter]);
 
   return (
     <div className="relative bg-background min-h-screen overflow-x-hidden" dir="rtl">
