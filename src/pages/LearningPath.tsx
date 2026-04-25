@@ -150,16 +150,19 @@ export default function LearningPath() {
   const [loading, setLoading] = useState(true);
   const { gradeCode } = useUserCurriculum();
 
-  const defaultGradeKey = resolveGrade(gradeCode) || "middle_4";
-  const [selectedGrade, setSelectedGrade] = useState(defaultGradeKey);
+  // Lock to the student's registered grade. If no profile yet, fall back to 4AM.
+  const userGradeKey = resolveGrade(gradeCode);
+  const [selectedGrade, setSelectedGrade] = useState(userGradeKey || "middle_4");
   const [selectedType, setSelectedType] = useState("");
   const [completedExIds, setCompletedExIds] = useState<Set<string>>(new Set());
 
+  // Always sync to the registered grade when it loads/changes — no manual switching allowed.
   useEffect(() => {
-    if (gradeCode && !selectedGrade) {
-      setSelectedGrade(resolveGrade(gradeCode));
+    if (userGradeKey && userGradeKey !== selectedGrade) {
+      setSelectedGrade(userGradeKey);
+      setSelectedType("");
     }
-  }, [gradeCode, selectedGrade]);
+  }, [userGradeKey]);
 
   useEffect(() => {
     loadData();
@@ -308,26 +311,16 @@ export default function LearningPath() {
       </div>
 
       <div className="max-w-5xl mx-auto p-6">
-        {/* Controls */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex gap-2 flex-wrap">
-            {GRADE_ORDER.map((g) => (
-              <button
-                key={g}
-                onClick={() => {
-                  setSelectedGrade(g);
-                  setSelectedType("");
-                }}
-                className="px-4 py-2 rounded-full text-xs font-bold transition-all border"
-                style={{
-                  background: selectedGrade === g ? "hsl(var(--primary))" : "hsl(var(--card))",
-                  color: selectedGrade === g ? "hsl(var(--primary-foreground))" : "hsl(var(--foreground))",
-                  borderColor: selectedGrade === g ? "hsl(var(--primary))" : "hsl(var(--border))",
-                }}
-              >
-                {GRADE_LABELS[g] || g}
-              </button>
-            ))}
+        {/* Controls — grade is LOCKED to the registered profile grade */}
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
+          <div
+            className="flex items-center gap-2 px-4 py-2 rounded-full border bg-primary/5 border-primary/30"
+            title="مستواك الدراسي مرتبط بحسابك. لتغييره، حدّث ملفك الشخصي."
+          >
+            <span className="text-[10px] text-muted-foreground font-bold">مستواك:</span>
+            <span className="text-xs font-black text-primary">
+              🔒 {GRADE_LABELS[selectedGrade] || selectedGrade}
+            </span>
           </div>
           <select
             value={selectedType}
@@ -341,6 +334,12 @@ export default function LearningPath() {
               </option>
             ))}
           </select>
+          <a
+            href="/onboarding"
+            className="text-[10px] text-muted-foreground hover:text-primary underline"
+          >
+            تغيير المستوى من الإعدادات
+          </a>
         </div>
 
         {/* Progress bar */}
