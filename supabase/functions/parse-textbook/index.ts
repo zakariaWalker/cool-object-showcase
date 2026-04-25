@@ -31,8 +31,8 @@ async function withRetry<T>(fn: () => Promise<T>, label: string, maxAttempts = 4
 // Models in fallback order (primary → faster/cheaper backup when overloaded)
 const TEXT_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
 
-// ── Gemini call (text only) with retry + model fallback ──
-async function callGeminiText(prompt: string, systemPrompt: string): Promise<string> {
+// ── Gemini call (text only) with retry + model fallback + truncation detection ──
+async function callGeminiText(prompt: string, systemPrompt: string, maxTokens = 32768): Promise<string> {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_API_KEY not set");
 
@@ -46,14 +46,19 @@ async function callGeminiText(prompt: string, systemPrompt: string): Promise<str
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 8192, responseMimeType: "application/json" },
+            generationConfig: { temperature: 0.2, maxOutputTokens: maxTokens, responseMimeType: "application/json" },
           }),
         });
         if (!res.ok) throw new Error(`Gemini error ${res.status}: ${(await res.text()).slice(0, 300)}`);
         const data = await res.json();
+        const finishReason = data.candidates?.[0]?.finishReason;
         const text = (data.candidates?.[0]?.content?.parts ?? [])
           .map((p: { text?: string }) => p.text ?? "").join("").trim();
-        if (!text) throw new Error(`Gemini empty response (${data.candidates?.[0]?.finishReason || ""})`);
+        if (!text) throw new Error(`Gemini empty response (${finishReason || ""})`);
+        if (finishReason === "MAX_TOKENS") {
+          // Surface as retryable error; caller (chunked pipeline) will reduce input size
+          throw new Error(`MAX_TOKENS truncation (got ${text.length} chars) — input too large`);
+        }
         return text;
       }, `text:${model}`);
     } catch (err) {
