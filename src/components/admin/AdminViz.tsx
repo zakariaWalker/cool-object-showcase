@@ -4,6 +4,9 @@ import { useMemo, useState, lazy, Suspense } from "react";
 import { Exercise, Pattern, Deconstruction } from "./useAdminKBStore";
 import { motion } from "framer-motion";
 import { KBNetworkGraph } from "./KBNetworkGraph";
+import { ruleBasedDeconstruct } from "./ruleBasedDeconstructor";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const KnowledgeGraph3D = lazy(() => import("./KnowledgeGraph3D"));
 
@@ -11,6 +14,9 @@ interface Props {
   exercises: Exercise[];
   patterns: Pattern[];
   deconstructions: Deconstruction[];
+  countryCode?: string;
+  onAdd?: (d: Deconstruction) => void;
+  reload?: () => void;
 }
 
 // Generic short labels — uses grade_code as fallback (e.g. "1AM" for DZ, "G7" for OM).
