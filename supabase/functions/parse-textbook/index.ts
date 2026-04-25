@@ -9,50 +9,87 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ── Gemini call (text only) ──
+// ── Retry helper with exponential backoff for transient Gemini errors ──
+async function withRetry<T>(fn: () => Promise<T>, label: string, maxAttempts = 4): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      const transient = /\b(429|500|502|503|504)\b|UNAVAILABLE|overload|high demand|timeout/i.test(msg);
+      if (!transient || attempt === maxAttempts) throw err;
+      const backoff = Math.min(30000, 1500 * Math.pow(2, attempt - 1)) + Math.floor(Math.random() * 500);
+      console.log(`[${label}] attempt ${attempt} failed (transient): ${msg.slice(0, 120)} — retrying in ${backoff}ms`);
+      await new Promise((r) => setTimeout(r, backoff));
+    }
+  }
+  throw lastErr;
+}
+
+// Models in fallback order (primary → faster/cheaper backup when overloaded)
+const TEXT_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+
+// ── Gemini call (text only) with retry + model fallback ──
 async function callGeminiText(prompt: string, systemPrompt: string): Promise<string> {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_API_KEY not set");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 8192, responseMimeType: "application/json" },
-    }),
-  });
-  if (!res.ok) throw new Error(`Gemini error ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const data = await res.json();
-  const text = (data.candidates?.[0]?.content?.parts ?? [])
-    .map((p: { text?: string }) => p.text ?? "").join("").trim();
-  if (!text) throw new Error(`Gemini empty response (${data.candidates?.[0]?.finishReason || ""})`);
-  return text;
+
+  let lastErr: unknown;
+  for (const model of TEXT_MODELS) {
+    try {
+      return await withRetry(async () => {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 8192, responseMimeType: "application/json" },
+          }),
+        });
+        if (!res.ok) throw new Error(`Gemini error ${res.status}: ${(await res.text()).slice(0, 300)}`);
+        const data = await res.json();
+        const text = (data.candidates?.[0]?.content?.parts ?? [])
+          .map((p: { text?: string }) => p.text ?? "").join("").trim();
+        if (!text) throw new Error(`Gemini empty response (${data.candidates?.[0]?.finishReason || ""})`);
+        return text;
+      }, `text:${model}`);
+    } catch (err) {
+      lastErr = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      console.log(`[text] model ${model} exhausted retries: ${msg.slice(0, 160)} — trying next model`);
+    }
+  }
+  throw lastErr;
 }
 
-// ── Gemini call (PDF multimodal) — extract raw text from a PDF ──
+// ── Gemini call (PDF multimodal) — extract raw text from a PDF, with retry ──
 async function extractTextFromPDF(base64Pdf: string): Promise<string> {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_API_KEY not set");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{
-        role: "user",
-        parts: [
-          { inlineData: { mimeType: "application/pdf", data: base64Pdf } },
-          { text: "استخرج كامل النص من هذا الكتاب المدرسي بالعربية والفرنسية مع الحفاظ على بنية الفصول والدروس والعناوين. اكتب الصيغ الرياضية بـ LaTeX بين $...$. لا تضف شرحاً، فقط النص المستخرج." },
-        ],
-      }],
-      generationConfig: { temperature: 0.1, maxOutputTokens: 16000 },
-    }),
-  });
-  if (!res.ok) throw new Error(`PDF text extraction failed ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const data = await res.json();
-  return (data.candidates?.[0]?.content?.parts ?? [])
-    .map((p: { text?: string }) => p.text ?? "").join("").trim();
+  return await withRetry(async () => {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          role: "user",
+          parts: [
+            { inlineData: { mimeType: "application/pdf", data: base64Pdf } },
+            { text: "استخرج كامل النص من هذا الكتاب المدرسي بالعربية والفرنسية مع الحفاظ على بنية الفصول والدروس والعناوين. اكتب الصيغ الرياضية بـ LaTeX بين $...$. لا تضف شرحاً، فقط النص المستخرج." },
+          ],
+        }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 16000 },
+      }),
+    });
+    if (!res.ok) throw new Error(`PDF text extraction failed ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    const data = await res.json();
+    return (data.candidates?.[0]?.content?.parts ?? [])
+      .map((p: { text?: string }) => p.text ?? "").join("").trim();
+  }, "pdf-extract");
 }
 
 // ── JSON helpers (unchanged) ──
