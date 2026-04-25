@@ -3,7 +3,7 @@ import { useUserCurriculum } from "@/hooks/useUserCurriculum"; // FIX: was useAu
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
-import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
+
 import { recordExerciseCompletion, XPEvent, Badge } from "@/engine/gamification";
 import { XPPopup, BadgeUnlockOverlay } from "@/components/GamificationDashboard";
 import { AnimatePresence } from "framer-motion";
