@@ -219,19 +219,90 @@ export default function GapDetector() {
     [availableExercises, deconstructions, patterns, usedExerciseIds],
   );
 
-  /** Local sanity check — rejects empty / too-short / pure-gibberish answers before calling AI. */
+  /** Normalize text for KB comparison: lowercase, strip diacritics/spaces/punctuation. */
+  function normalize(s: string): string {
+    return s
+      .toLowerCase()
+      .replace(/[\u064B-\u065F\u0670]/g, "") // Arabic diacritics
+      .replace(/\s+/g, "")
+      .replace(/[.,;:!?'"()\[\]{}]/g, "")
+      .trim();
+  }
+
+  /** Extract meaningful tokens (numbers, variables, math ops, Arabic/Latin words ≥3 chars). */
+  function tokenize(s: string): string[] {
+    const matches = s.match(/[\u0600-\u06FF]{3,}|[a-zA-Z]{3,}|\d+(?:[.,]\d+)?|[+\-*/=^√<>]|frac|sqrt/gi) || [];
+    return matches.map((m) => m.toLowerCase());
+  }
+
+  /** Local sanity check — rejects empty / too-short / pure-gibberish answers. */
   function validateAnswerInput(raw: string): string | null {
     const t = raw.trim();
     if (!t) return "اكتب إجابتك أولاً";
     if (t.length < 2) return "الإجابة قصيرة جداً";
-    // Reject when there's no math content AND no Arabic/Latin word characters
     const hasDigit = /\d/.test(t);
     const hasMathOp = /[+\-*/=^√()<>]|frac|sqrt/.test(t);
-    const hasWord = /[\u0600-\u06FFa-zA-Z]{2,}/.test(t);
+    const hasWord = /[\u0600-\u06FFa-zA-Z]{3,}/.test(t);
     if (!hasDigit && !hasMathOp && !hasWord) return "الإجابة غير مفهومة — استخدم أرقاماً أو رموزاً رياضية";
-    // Reject pure repeated character spam (e.g. "aaaaaa", "ييييي")
-    if (/^(.)\1{4,}$/.test(t.replace(/\s/g, ""))) return "الإجابة تبدو عشوائية — حاول مجدداً";
+    if (/^(.)\1{3,}$/.test(t.replace(/\s/g, ""))) return "الإجابة تبدو عشوائية — حاول مجدداً";
+    // Reject random keyboard mash: long string with no digits AND no real word
+    if (t.length >= 4 && !hasDigit && !hasMathOp && !hasWord) {
+      return "الإجابة تبدو عشوائية — حاول مجدداً";
+    }
     return null;
+  }
+
+  /**
+   * KB-based grading: compares student answer against the deconstruction steps + needs.
+   * Returns { correct, feedback } using token overlap — no AI call.
+   */
+  function gradeAgainstKB(answer: string, decon: Deconstruction, pattern?: Pattern): { correct: boolean; feedback: string } {
+    const normAnswer = normalize(answer);
+    const ansTokens = new Set(tokenize(answer));
+
+    // Build expected token bag from steps + needs + pattern steps/concepts
+    const expectedSources: string[] = [];
+    (decon.steps || []).forEach((s: any) => {
+      const txt = typeof s === "string" ? s : s?.action || s?.description || s?.expression || JSON.stringify(s);
+      if (txt) expectedSources.push(String(txt));
+    });
+    (decon.needs || []).forEach((n) => expectedSources.push(n));
+    if (pattern) {
+      (pattern.steps || []).forEach((s: any) => {
+        const txt = typeof s === "string" ? s : s?.action || s?.description || JSON.stringify(s);
+        if (txt) expectedSources.push(String(txt));
+      });
+      (pattern.concepts || []).forEach((c) => expectedSources.push(c));
+    }
+
+    const expectedTokens = new Set<string>();
+    expectedSources.forEach((src) => tokenize(src).forEach((t) => expectedTokens.add(t)));
+
+    // Direct match: answer normalized appears as substring of any expected source (or vice-versa)
+    const directMatch = expectedSources.some((src) => {
+      const n = normalize(src);
+      return n.length >= 2 && (n.includes(normAnswer) || normAnswer.includes(n));
+    });
+
+    // Token overlap ratio
+    let overlap = 0;
+    ansTokens.forEach((t) => {
+      if (expectedTokens.has(t)) overlap++;
+    });
+    const ratio = ansTokens.size === 0 ? 0 : overlap / ansTokens.size;
+    const expectedCoverage = expectedTokens.size === 0 ? 0 : overlap / Math.min(expectedTokens.size, 5);
+
+    const correct = directMatch || (overlap >= 2 && ratio >= 0.4) || expectedCoverage >= 0.6;
+
+    let feedback = "";
+    if (correct) {
+      feedback = "إجابتك تتطابق مع الحل المرجعي ✓";
+    } else if (overlap > 0) {
+      feedback = `إجابتك تحتوي على ${overlap} عنصر صحيح لكن الحل ينقصه. راجع الخطوات.`;
+    } else {
+      feedback = "إجابتك بعيدة عن الحل المرجعي. راجع المتطلبات والخطوات.";
+    }
+    return { correct, feedback };
   }
 
   const submitAnswer = async () => {
@@ -244,46 +315,8 @@ export default function GapDetector() {
     setGrading(true);
 
     const q = quizQuestions[currentQ];
-    let correct = false;
-    let feedback = "";
-
-    try {
-      const { data, error } = await supabase.functions.invoke("ai-correct-diagnostic", {
-        body: {
-          questions: [
-            {
-              id: q.exercise.id,
-              text: q.exercise.text,
-              type: q.exercise.type,
-              difficulty: "متوسط",
-              points: 1,
-              concepts: q.decon.needs || [],
-            },
-          ],
-          answers: [
-            {
-              questionId: q.exercise.id,
-              answer: answerText.trim(),
-              steps: [],
-              timeSpent: 0,
-              confidence: 50,
-            },
-          ],
-        },
-      });
-      if (error) throw error;
-      const c = data?.corrections?.[0];
-      // Pass threshold: at least half the points
-      const score = Number(c?.score ?? 0);
-      const max = Number(c?.maxScore ?? 1) || 1;
-      correct = score / max >= 0.5;
-      feedback = c?.feedback || "";
-    } catch (e) {
-      console.error("AI grading failed:", e);
-      // Conservative fallback: mark incorrect rather than falsely correct
-      correct = false;
-      feedback = "تعذّر التصحيح الآلي — سُجِّل كخطأ احتياطياً";
-    }
+    // KB-first grading (no AI call)
+    const { correct, feedback } = gradeAgainstKB(answerText, q.decon, q.pattern);
 
     const newAnswer: QuizAnswer = { questionIndex: currentQ, exerciseId: q.exercise.id, correct };
     setAnswers((prev) => [...prev, newAnswer]);
@@ -291,9 +324,15 @@ export default function GapDetector() {
     setShowSolution(true);
     setGrading(false);
 
-    const { events, newBadges } = await recordExerciseCompletion(correct, q.pattern?.id);
-    if (events.length > 0) setXpEvents(events);
-    if (newBadges.length > 0) setUnlockedBadge(newBadges[0]);
+    // Only award XP/badges for genuinely correct answers
+    if (correct) {
+      const { events, newBadges } = await recordExerciseCompletion(true, q.pattern?.id);
+      if (events.length > 0) setXpEvents(events);
+      if (newBadges.length > 0) setUnlockedBadge(newBadges[0]);
+    } else {
+      // Still log the wrong attempt for gap tracking, but no XP/badge popup
+      await recordExerciseCompletion(false, q.pattern?.id);
+    }
   };
 
   const nextQuestion = () => {
