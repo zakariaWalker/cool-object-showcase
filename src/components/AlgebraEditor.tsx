@@ -112,7 +112,11 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
   const [preview, setPreview] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showLevelSelect, setShowLevelSelect] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const inputRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
+
+  // Adaptive UI: hide power-features for younger students unless they opt in
+  const isSimple = level !== "secondary" && !showAdvanced;
 
   const updateStep = (index: number, value: string) => {
     const newSteps = [...steps];
