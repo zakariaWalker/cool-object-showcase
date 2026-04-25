@@ -178,7 +178,13 @@ export default function AlgebraStudio() {
               عند الضغط على "تحميل المسألة"، يحلّل النظام النص ويفعّل المحرر
               المناسب مع التصحيح التلقائي.
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setKbOpen(true)}
+                className="px-4 py-2 rounded-lg border border-primary/30 bg-primary/5 text-primary text-xs font-bold hover:bg-primary/10 transition-colors"
+              >
+                📚 اختر من المكتبة
+              </button>
               <button
                 onClick={() => {
                   setTask("");
