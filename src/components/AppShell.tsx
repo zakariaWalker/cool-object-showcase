@@ -44,6 +44,7 @@ const WORKFLOW_STEPS: Step[] = [
   { path: "/whatif", label: "ماذا لو؟", icon: FlaskConical, step: 8 },
   { path: "/geometry-studio", label: "استوديو الهندسة", icon: Compass, step: 8 },
   { path: "/algebra-studio", label: "استوديو الجبر", icon: Sigma, step: 8 },
+  { path: "/textbooks", label: "المكتبة", icon: BookOpen, step: 9 },
   { path: "/annales", label: "الأرشيف", icon: Archive, step: 9 },
   { path: "/exams", label: "الامتحانات", icon: FileEdit, step: 10, adminOnly: true },
   { path: "/exam-kb", label: "KB امتحانات", icon: Library, step: 11, adminOnly: true },
