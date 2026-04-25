@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LatexRenderer } from "@/components/LatexRenderer";
+import { RichContent } from "@/components/textbook/RichContent";
 import { toast } from "sonner";
 
 interface Textbook {
@@ -327,7 +328,12 @@ export default function TextbookBlog() {
             const isLast = i === chapters.length - 1;
             const isFirst = i === 0;
             return (
-              <section key={ch.id} id={`chapter-${ch.id}`} className="scroll-mt-24">
+              <section
+                key={ch.id}
+                id={`chapter-${ch.id}`}
+                className="scroll-mt-24 animate-fade-in"
+                style={{ animationDelay: `${Math.min(i * 60, 240)}ms` }}
+              >
                 <button
                   onClick={() => setOpenChapter(isOpen ? null : ch.id)}
                   className="w-full flex items-center justify-between gap-3 p-5 rounded-2xl border-2 border-border bg-card hover:border-primary/50 transition-all"
@@ -345,7 +351,7 @@ export default function TextbookBlog() {
                 </button>
 
                 {isOpen && (
-                  <div className="mt-4 space-y-6 pr-4 border-r-2 border-primary/10">
+                  <div className="mt-4 space-y-6 pr-4 border-r-2 border-primary/10 animate-fade-in">
                     {/* Lessons */}
                     {lessons.map(lesson => {
                       const acts = activitiesByLesson[lesson.id] || [];
@@ -510,15 +516,15 @@ function ActivityCard({ act, user, navigate }: { act: Activity; user: any; navig
   }
 
   return (
-    <Card className={`overflow-hidden border ${meta.bg}`}>
+    <Card className={`overflow-hidden border ${meta.bg} animate-slide-in-up hover:shadow-md transition-shadow`}>
       <CardContent className="p-4 space-y-2">
         <div className="flex items-center gap-2">
           <Icon className={`w-4 h-4 ${meta.color}`} />
           <span className={`text-[11px] font-black ${meta.color}`}>{meta.label}</span>
           {act.title_ar && <span className="text-sm font-bold text-foreground mr-1">{act.title_ar}</span>}
         </div>
-        <div className="text-sm text-foreground bg-card/70 rounded-lg p-3 border border-border/50">
-          <SmartContent text={act.content_text} />
+        <div className="bg-card/70 rounded-lg p-3 border border-border/50">
+          <RichContent text={act.content_text} />
         </div>
 
         {isExercise && (
@@ -562,8 +568,8 @@ function ActivityCard({ act, user, navigate }: { act: Activity; user: any; navig
               {showSolution ? "▲ إخفاء الحل" : "▼ عرض الحل المفصّل"}
             </button>
             {showSolution && (
-              <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded text-sm text-foreground">
-                <SmartContent text={act.solution_text} />
+              <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded animate-fade-in">
+                <RichContent text={act.solution_text} />
               </div>
             )}
           </div>
@@ -597,8 +603,8 @@ function ExerciseCard({ ex, user, navigate }: { ex: Exercise; user: any; navigat
   const questions = Array.isArray(ex.questions) ? ex.questions : [];
 
   return (
-    <Card className="overflow-hidden border-2 border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-950/20">
-      <div className="h-1 bg-rose-500" />
+    <Card className="overflow-hidden border-2 border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-950/20 animate-slide-in-up hover:shadow-lg transition-shadow">
+      <div className="h-1 bg-gradient-to-l from-rose-400 via-rose-500 to-rose-400" />
       <CardContent className="p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -611,13 +617,15 @@ function ExerciseCard({ ex, user, navigate }: { ex: Exercise; user: any; navigat
             </Badge>
           )}
         </div>
-        <div className="text-sm text-foreground bg-card/70 rounded-lg p-4 border border-border/50">
-          <SmartContent text={ex.statement} />
+        <div className="bg-card/70 rounded-lg p-4 border border-border/50">
+          <RichContent text={ex.statement} />
         </div>
         {questions.length > 0 && (
-          <ol className="text-sm text-foreground space-y-1.5 mr-2 list-decimal pr-4">
+          <ol className="text-sm text-foreground space-y-2 mr-2 list-decimal pr-4 marker:text-rose-500 marker:font-black">
             {questions.map((q: string, i: number) => (
-              <li key={i}><SmartContent text={q} /></li>
+              <li key={i} className="pl-2 animate-fade-in" style={{ animationDelay: `${i * 40}ms` }}>
+                <RichContent text={q} />
+              </li>
             ))}
           </ol>
         )}
@@ -660,8 +668,8 @@ function ExerciseCard({ ex, user, navigate }: { ex: Exercise; user: any; navigat
               {showSolution ? "▲ إخفاء الحل" : "▼ عرض الحل المفصّل"}
             </button>
             {showSolution && (
-              <div className="mt-2 p-4 bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-900 rounded text-sm text-foreground">
-                <SmartContent text={ex.solution} />
+              <div className="mt-2 p-4 bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-900 rounded animate-fade-in">
+                <RichContent text={ex.solution} />
               </div>
             )}
           </div>
