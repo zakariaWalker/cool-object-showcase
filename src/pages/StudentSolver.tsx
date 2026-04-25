@@ -124,7 +124,6 @@ export default function StudentSolver() {
   }
 
   const steps = deconstruction.steps;
-  const currentStepText = steps[currentStep];
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
