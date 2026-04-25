@@ -57,7 +57,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isGuest = !user;
 
   useEffect(() => {
-    const publicPaths = ["/", "/auth", "/onboarding", "/gaps", "/diagnostic", "/annales"];
+    const publicPaths = ["/", "/auth", "/onboarding", "/gaps", "/diagnostic", "/annales", "/geometry-studio"];
     const isPublic =
       publicPaths.includes(currentPath) ||
       currentPath.startsWith("/tma") ||
@@ -73,7 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 
   const visibleSteps = WORKFLOW_STEPS.filter((step) => {
-    if (isGuest) return step.path === "/gaps" || step.path === "/diagnostic";
+    if (isGuest) return step.path === "/gaps" || step.path === "/diagnostic" || step.path === "/geometry-studio";
     if (step.adminOnly && !isAdmin) return false;
     return true;
   });
