@@ -39,9 +39,11 @@ const TYPE_LABELS_AR: Record<string, string> = {
   unclassified: "غير مصنف", other: "أخرى",
 };
 
-export function AdminViz({ exercises, patterns, deconstructions }: Props) {
+export function AdminViz({ exercises, patterns, deconstructions, countryCode = "DZ", onAdd, reload }: Props) {
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [tab, setTab] = useState<"analytics" | "network" | "3d">("analytics");
+  const [linking, setLinking] = useState(false);
+  const [linkProgress, setLinkProgress] = useState({ done: 0, total: 0 });
 
   const insights = useMemo(() => {
     // 1. Coverage: exercises with vs without deconstruction
