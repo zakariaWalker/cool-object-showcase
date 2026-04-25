@@ -5,21 +5,11 @@ import { Upload, BookOpen, Loader2, CheckCircle, XCircle, FileText, Ban, Clipboa
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate } from "react-router-dom";
-
-const GRADES = [
-  { value: "1AM", label: "1ère Année Moyenne" },
-  { value: "2AM", label: "2ème Année Moyenne" },
-  { value: "3AM", label: "3ème Année Moyenne" },
-  { value: "4AM", label: "4ème Année Moyenne (BEM)" },
-  { value: "1AS", label: "1ère Année Secondaire" },
-  { value: "2AS", label: "2ème Année Secondaire" },
-  { value: "3AS", label: "3ème Année Secondaire (BAC)" },
-];
+import { useNavigate, Link } from "react-router-dom";
+import { CountryGradePicker } from "@/components/CountryGradePicker";
 
 interface TextbookRow {
   id: string;
