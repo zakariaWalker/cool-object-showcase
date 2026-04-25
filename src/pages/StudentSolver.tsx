@@ -75,6 +75,12 @@ export default function StudentSolver() {
     [exercise?.text, currentStepText],
   );
 
+  // Pull single-letter vertex labels (A..H) from the current step to highlight on the diagram
+  const highlightVertices = useMemo(() => {
+    const matches = (currentStepText || "").match(/\b[A-H]\b/g) || [];
+    return Array.from(new Set(matches));
+  }, [currentStepText]);
+
   const handleCheck = () => {
     if (!studentInput.trim()) return;
     const v = gradeAnswer(studentInput, schema);
