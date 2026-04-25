@@ -76,26 +76,30 @@ export function MathExerciseRenderer({
  * so students see proper formatted math instead of confusing plain text.
  */
 function autoWrapMath(text: string): string {
-  // Don't process if already contains $ delimiters
-  if (/\$/.test(text)) return text;
-  
-  // Wrap expressions containing ^, common algebraic patterns
-  // e.g. "3^2" → "$3^2$", "(x+3)^2" → "$(x+3)^2$"
   let result = text;
-  
-  // Wrap power expressions: number^number, (expr)^number, var^number
+
+  // 1) Wrap bare LaTeX commands like \frac{3}{8}, \sqrt{2}, \pi, \alpha, etc.
+  //    Only when NOT already inside $...$ delimiters.
+  if (!/\$[^$]*\\[a-zA-Z]/.test(result)) {
+    // \cmd{...}{...}  or  \cmd{...}  or  \cmd  (single token)
+    result = result.replace(
+      /\\(?:frac|dfrac|tfrac|sqrt|sum|int|lim|prod)\s*(?:\{[^{}]*\}){1,2}|\\(?:pi|alpha|beta|gamma|delta|theta|lambda|mu|sigma|phi|omega|infty|times|cdot|le|ge|ne|approx|pm|mp|in|notin|forall|exists|to|leftarrow|rightarrow|Leftrightarrow)\b/g,
+      (m) => ` $${m}$ `,
+    );
+  }
+
+  // 2) Don't add more wrappers if the text now/already has $ delimiters.
+  if (/\$/.test(result)) return result;
+
+  // 3) Wrap power expressions: number^number, (expr)^number, var^number
   result = result.replace(
     /(\([^)]+\)\s*\^\s*\{?[^}\s]+\}?|\b[a-zA-Z0-9]+\s*\^\s*\{?[^}\s]+\}?)/g,
-    ' $$$1$$ '
+    " $$$1$$ ",
   );
-  
-  // Wrap fraction-like patterns: a/b when surrounded by math context
-  // Wrap expressions with ×, ÷ 
-  result = result.replace(
-    /(\d+\s*[×÷]\s*\d+)/g,
-    ' $$$1$$ '
-  );
-  
+
+  // 4) Wrap expressions with ×, ÷
+  result = result.replace(/(\d+\s*[×÷]\s*\d+)/g, " $$$1$$ ");
+
   return result;
 }
 
