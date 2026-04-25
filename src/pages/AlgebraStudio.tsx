@@ -22,7 +22,7 @@ export default function AlgebraStudio() {
   const [verdict, setVerdict] = useState<Verdict | null>(null);
 
   const schema = useMemo(
-    () => (committed ? inferAnswerSchema(committed) : null),
+    () => (committed ? inferAnswerSchema(committed, committed) : null),
     [committed],
   );
 
