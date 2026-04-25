@@ -185,35 +185,54 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
             <Calculator size={18} />
           </div>
           <div>
-            <button 
-              onClick={() => setShowLevelSelect(!showLevelSelect)}
-              className="flex items-center gap-1.5 text-sm font-bold text-foreground hover:text-primary transition-colors"
-            >
-              محرر الجبر ({LEVEL_LABELS[level]})
-              <ChevronDown size={14} className={`transition-transform ${showLevelSelect ? "rotate-180" : ""}`} />
-            </button>
-            <p className="text-[10px] text-muted-foreground">صمم حلك بطريقة رياضية دقيقة</p>
+            {isSimple ? (
+              <span className="text-sm font-bold text-foreground">اكتب حلّك</span>
+            ) : (
+              <button 
+                onClick={() => setShowLevelSelect(!showLevelSelect)}
+                className="flex items-center gap-1.5 text-sm font-bold text-foreground hover:text-primary transition-colors"
+              >
+                محرر الجبر ({LEVEL_LABELS[level]})
+                <ChevronDown size={14} className={`transition-transform ${showLevelSelect ? "rotate-180" : ""}`} />
+              </button>
+            )}
+            <p className="text-[10px] text-muted-foreground">
+              {isSimple ? "خطوة بخطوة — اضغط Enter للسطر التالي" : "صمم حلك بطريقة رياضية دقيقة"}
+            </p>
           </div>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => setShowTemplates(!showTemplates)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all border ${
-              showTemplates 
-                ? "bg-primary text-primary-foreground border-primary" 
-                : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            <Layout size={12} />
-            قوالب جاهزة
-          </button>
-          <button
-            onClick={() => setPreview(!preview)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-all border border-transparent"
-          >
-            {preview ? <Edit3 size={12} /> : <Eye size={12} />}
-            {preview ? "تعديل" : "معاينة"}
-          </button>
+          {!isSimple && (
+            <>
+              <button
+                onClick={() => setShowTemplates(!showTemplates)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all border ${
+                  showTemplates 
+                    ? "bg-primary text-primary-foreground border-primary" 
+                    : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <Layout size={12} />
+                قوالب جاهزة
+              </button>
+              <button
+                onClick={() => setPreview(!preview)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-all border border-transparent"
+              >
+                {preview ? <Edit3 size={12} /> : <Eye size={12} />}
+                {preview ? "تعديل" : "معاينة"}
+              </button>
+            </>
+          )}
+          {level !== "secondary" && (
+            <button
+              onClick={() => setShowAdvanced(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-all border border-transparent"
+              title="إظهار/إخفاء الأدوات المتقدمة"
+            >
+              {showAdvanced ? "وضع بسيط" : "أدوات متقدمة"}
+            </button>
+          )}
         </div>
       </div>
 
