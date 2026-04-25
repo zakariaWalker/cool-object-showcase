@@ -111,7 +111,6 @@ export function ParallelepipedDiagram({ highlight = [], className = "" }: Props)
                 y={p.y + off.dy}
                 className={`${highlighted ? "fill-primary font-black" : "fill-foreground font-bold"}`}
                 style={{ fontSize: 16, fontFamily: "system-ui, sans-serif" }}
-                dir="ltr"
               >
                 {label}
               </text>
