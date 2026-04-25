@@ -303,6 +303,88 @@ export default function AlgebraStudio() {
           </div>
         )}
       </div>
+
+      {/* KB picker modal */}
+      {kbOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setKbOpen(false)}
+        >
+          <div
+            className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-black text-foreground">📚 مكتبة المسائل</h2>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  اختر مسألة من منهجك ({gradeCode || "—"} / {countryCode || "DZ"}) لتحميلها مباشرة في الاستوديو.
+                </p>
+              </div>
+              <button
+                onClick={() => setKbOpen(false)}
+                className="w-8 h-8 rounded-full hover:bg-muted text-muted-foreground"
+                aria-label="إغلاق"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="px-5 py-3 border-b border-border">
+              <input
+                value={kbQuery}
+                onChange={(e) => setKbQuery(e.target.value)}
+                placeholder="بحث في النص أو الفصل..."
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:border-primary outline-none"
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
+              {kbLoading && (
+                <div className="text-center py-10 text-sm text-muted-foreground">⏳ جاري تحميل المسائل...</div>
+              )}
+              {kbError && (
+                <div className="text-center py-10 text-sm text-destructive">⚠️ {kbError}</div>
+              )}
+              {!kbLoading && !kbError && groupedKb.length === 0 && (
+                <div className="text-center py-10 text-sm text-muted-foreground">
+                  لا توجد مسائل متاحة لهذا المستوى بعد.
+                </div>
+              )}
+              {!kbLoading && !kbError && groupedKb.map(([chapter, items]) => (
+                <div key={chapter} className="space-y-2">
+                  <div className="text-[10px] font-black uppercase tracking-wider text-primary border-b border-primary/20 pb-1">
+                    {chapter} <span className="text-muted-foreground/70 font-normal">({items.length})</span>
+                  </div>
+                  <div className="space-y-2">
+                    {items.map((it) => (
+                      <button
+                        key={it.id}
+                        onClick={() => loadProblem(it.text)}
+                        className="w-full text-right p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all group"
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <span className="text-[10px] font-bold text-muted-foreground">
+                            {it.source || "تمرين"}
+                          </span>
+                          <span className="text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                            تحميل ←
+                          </span>
+                        </div>
+                        <MathContent
+                          text={(it.text || "").slice(0, 220) + ((it.text || "").length > 220 ? "..." : "")}
+                          className="text-xs"
+                          autoHighlightNumbers={false}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
