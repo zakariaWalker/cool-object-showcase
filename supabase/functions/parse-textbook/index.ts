@@ -218,68 +218,96 @@ async function processTextbook(textbook_id: string, raw_text?: string) {
 أجب دائماً بـ JSON صالح 100% فقط، لا markdown ولا شرح خارج JSON.
 اكتب الصيغ الرياضية كلها بـ LaTeX بين $...$ (مثال: $x^2 + 3x = 0$، $\\frac{a}{b}$، $\\sqrt{x}$).`;
 
-    const structurePrompt = `حلل المحتوى التالي وأنشئ بنية كتاب مدرسي تربوية كاملة:
+    // ── Step 2a: Outline pass — get chapter list only (cheap, small) ──
+    const outlinePrompt = `حدد فصول الكتاب التالي فقط (بدون محتوى). أعد JSON: {"chapters":[{"order":1,"title":"...","title_ar":"...","domain":"algebra|geometry|statistics|probability|functions|numbers|trigonometry","content_excerpt":"أول 200 حرف من الفصل لتحديد موقعه"}]}
 
 العنوان: ${textbook.title}
 المستوى: ${textbook.grade}
 
---- محتوى الكتاب ---
-${workingText.substring(0, 18000)}
---- نهاية المحتوى ---
+--- محتوى ---
+${workingText.substring(0, 30000)}
+--- نهاية ---
 
-أنشئ بنية JSON بهذا الشكل بالضبط:
+استخرج 3-8 فصول حقيقية من المحتوى.`;
+
+    const outlineRaw = await callGeminiText(outlinePrompt, systemPrompt, 4096);
+    const outline = extractJSON(outlineRaw);
+    if (!outline.chapters || !Array.isArray(outline.chapters) || outline.chapters.length === 0) {
+      throw new Error("AI لم يُرجع بنية فصول صالحة");
+    }
+
+    await db.from("textbooks").update({ processing_progress: 45 }).eq("id", textbook_id);
+
+    // ── Step 2b: Process each chapter independently (avoids MAX_TOKENS) ──
+    const chapterTemplate = `أنشئ بنية تربوية كاملة لفصل واحد فقط. أعد JSON بهذا الشكل:
 
 {
-  "chapters": [
+  "order": <رقم>,
+  "title": "Titre français",
+  "title_ar": "العنوان بالعربية",
+  "domain": "<domain>",
+  "exercises": [
+    { "order": 1, "exercise_number": "1", "statement": "نص بـ $LaTeX$", "questions": ["..."], "solution": "حل خطوة بخطوة", "expected_answer": "...", "answer_type": "numeric|expression|text", "difficulty": 2, "bloom_level": 3, "hints": ["..."], "concepts": ["..."] }
+  ],
+  "lessons": [
     {
-      "order": 1,
-      "title": "Titre français",
-      "title_ar": "العنوان بالعربية",
-      "domain": "algebra|geometry|statistics|probability|functions|numbers|trigonometry",
-      "exercises": [
-        { "order": 1, "exercise_number": "1", "statement": "نص التمرين الكامل بـ $LaTeX$", "questions": ["السؤال 1", "السؤال 2"], "solution": "الحل المفصّل خطوة بخطوة بـ $LaTeX$", "expected_answer": "الإجابة النهائية", "answer_type": "numeric|expression|text", "difficulty": 2, "bloom_level": 3, "hints": ["تلميح 1", "تلميح 2"], "concepts": ["مفهوم 1", "مفهوم 2"] }
-      ],
-      "lessons": [
-        {
-          "order": 1,
-          "title": "Titre de la leçon",
-          "title_ar": "عنوان الدرس",
-          "objectives": ["هدف تعليمي 1", "هدف تعليمي 2", "هدف 3"],
-          "content_summary": "ملخص قصير للدرس (سطرين)",
-          "activities": [
-            { "order": 1, "type": "explanation", "title_ar": "مقدمة", "content": "نص تحفيزي يربط الدرس بالواقع، مع $LaTeX$ عند الحاجة" },
-            { "order": 2, "type": "definition", "title_ar": "تعريف 1", "content": "تعريف رياضي دقيق بـ $LaTeX$" },
-            { "order": 3, "type": "property", "title_ar": "خاصية", "content": "نص الخاصية + شرحها" },
-            { "order": 4, "type": "theorem", "title_ar": "مبرهنة", "content": "نص المبرهنة", "solution": "البرهان خطوة بخطوة" },
-            { "order": 5, "type": "example", "title_ar": "مثال محلول 1", "content": "نص المثال", "solution": "الحل المفصّل خطوة بخطوة بـ $LaTeX$" },
-            { "order": 6, "type": "exercise", "title_ar": "تمرين تطبيقي", "content": "نص التمرين", "solution": "الحل المفصّل", "difficulty": 1, "bloom_level": 2, "is_interactive": true, "expected_answer": "الإجابة النهائية", "answer_type": "numeric|expression|text", "hints": ["تلميح 1", "تلميح 2"] },
-            { "order": 7, "type": "exercise", "title_ar": "تمرين متوسط", "content": "...", "solution": "...", "difficulty": 2, "bloom_level": 3, "is_interactive": true, "expected_answer": "...", "answer_type": "expression", "hints": ["..."] },
-            { "order": 8, "type": "exercise", "title_ar": "تمرين تحدي", "content": "...", "solution": "...", "difficulty": 3, "bloom_level": 4, "is_interactive": true, "expected_answer": "...", "answer_type": "expression", "hints": ["..."] }
-          ]
-        }
+      "order": 1, "title": "...", "title_ar": "...",
+      "objectives": ["هدف 1", "هدف 2"],
+      "content_summary": "ملخص قصير",
+      "activities": [
+        { "order": 1, "type": "explanation", "title_ar": "مقدمة", "content": "..." },
+        { "order": 2, "type": "definition", "title_ar": "تعريف", "content": "..." },
+        { "order": 3, "type": "property", "title_ar": "خاصية", "content": "..." },
+        { "order": 4, "type": "example", "title_ar": "مثال محلول", "content": "...", "solution": "..." },
+        { "order": 5, "type": "exercise", "title_ar": "تمرين سهل", "content": "...", "solution": "...", "difficulty": 1, "bloom_level": 2, "is_interactive": true, "expected_answer": "...", "answer_type": "expression", "hints": ["..."] },
+        { "order": 6, "type": "exercise", "title_ar": "تمرين متوسط", "content": "...", "solution": "...", "difficulty": 2, "bloom_level": 3, "is_interactive": true, "expected_answer": "...", "answer_type": "expression", "hints": ["..."] },
+        { "order": 7, "type": "exercise", "title_ar": "تمرين تحدي", "content": "...", "solution": "...", "difficulty": 3, "bloom_level": 4, "is_interactive": true, "expected_answer": "...", "answer_type": "expression", "hints": ["..."] }
       ]
     }
   ]
 }
 
-⚠️ قواعد إلزامية:
-- كل درس يجب أن يحتوي على هذا التسلسل التربوي على الأقل: مقدمة (explanation) → تعريف (definition) → خاصية أو مبرهنة → مثال محلول (example) → 3 تمارين متدرجة (exercise: سهل، متوسط، صعب)
-- استخرج الفصول من المحتوى الفعلي فقط؛ لا تخترع
-- اكتب كل الصيغ الرياضية بـ LaTeX داخل $...$
-- title_ar إجباري بالعربية، title بالفرنسية
-- التمارين دائماً is_interactive: true مع expected_answer
-- ⭐ "exercises" على مستوى الفصل: استخرج كل التمارين الموجودة فعلياً في نهاية كل فصل (تمارين 1, 2, 3...) كاملةً مع نصوصها وحلولها — هذه منفصلة عن activities الدرسية
-- اجعل المحتوى تربوياً واضحاً، ليس مجرد نسخ خام
-- JSON صالح 100% فقط`;
+⚠️ JSON صالح 100% فقط، LaTeX داخل $...$، title_ar إجباري.`;
 
-    const rawResult = await callGeminiText(structurePrompt, systemPrompt);
-    const parsed = extractJSON(rawResult);
+    const chaptersBuilt: any[] = [];
+    const totalCh = outline.chapters.length;
+    for (let idx = 0; idx < totalCh; idx++) {
+      const chMeta = outline.chapters[idx];
+      // Slice the source text around the excerpt to give context for THIS chapter
+      const excerpt = String(chMeta.content_excerpt || "").slice(0, 100);
+      let sliceStart = excerpt ? workingText.indexOf(excerpt) : -1;
+      if (sliceStart < 0) sliceStart = Math.floor((idx / totalCh) * workingText.length);
+      const sliceEnd = idx + 1 < totalCh
+        ? (workingText.indexOf(String(outline.chapters[idx + 1].content_excerpt || "").slice(0, 100)) || sliceStart + 12000)
+        : sliceStart + 12000;
+      const chunkText = workingText.substring(sliceStart, Math.max(sliceEnd, sliceStart + 2000)).slice(0, 12000);
 
-    await db.from("textbooks").update({ processing_progress: 55 }).eq("id", textbook_id);
+      const chPrompt = `الفصل ${chMeta.order}: ${chMeta.title_ar || chMeta.title}
+المجال: ${chMeta.domain}
 
-    if (!parsed.chapters || !Array.isArray(parsed.chapters) || parsed.chapters.length === 0) {
-      throw new Error("AI لم يُرجع بنية فصول صالحة");
+--- محتوى الفصل ---
+${chunkText}
+--- نهاية ---
+
+${chapterTemplate}`;
+
+      try {
+        const chRaw = await callGeminiText(chPrompt, systemPrompt, 16384);
+        const chParsed = extractJSON(chRaw);
+        if (chParsed && (chParsed.lessons || chParsed.exercises)) {
+          chaptersBuilt.push({ ...chMeta, ...chParsed });
+        }
+      } catch (e) {
+        console.error(`Chapter ${idx + 1} failed:`, e instanceof Error ? e.message : e);
+        // Keep the outline entry so we still create a chapter row
+        chaptersBuilt.push({ ...chMeta, lessons: [], exercises: [] });
+      }
+      const pct = 45 + Math.round(((idx + 1) / totalCh) * 10);
+      await db.from("textbooks").update({ processing_progress: pct }).eq("id", textbook_id);
     }
+
+    const parsed = { chapters: chaptersBuilt };
+
 
     // ── Step 3: Insert structure ──
     let totalActivities = 0;
