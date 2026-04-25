@@ -164,12 +164,19 @@ export default function TextbookUpload() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       <div className="max-w-5xl mx-auto p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <BookOpen className="w-7 h-7 text-primary" />
-          <div>
-            <h1 className="text-2xl font-black text-foreground">📚 تحويل الكتاب المدرسي</h1>
-            <p className="text-sm text-muted-foreground">ارفع كتاب المنهاج كـ PDF أو الصق محتواه النصي وسيتم تحويله إلى نسخة ويب تفاعلية</p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <BookOpen className="w-7 h-7 text-primary" />
+            <div>
+              <h1 className="text-2xl font-black text-foreground">📚 تحويل الكتاب المدرسي</h1>
+              <p className="text-sm text-muted-foreground">ارفع كتاب المنهاج كـ PDF أو الصق محتواه النصي وسيتم تحويله إلى نسخة ويب تفاعلية</p>
+            </div>
           </div>
+          <Link to="/textbooks">
+            <Button variant="outline" className="gap-2">
+              <BookOpen className="w-4 h-4" /> المكتبة العامة
+            </Button>
+          </Link>
         </div>
 
         <Card>
