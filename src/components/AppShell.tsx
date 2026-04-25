@@ -23,6 +23,7 @@ import {
   ArrowLeftRight,
   Compass,
   Sigma,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 import { GamificationDashboard } from "./GamificationDashboard";
