@@ -143,12 +143,20 @@ export function inferAnswerSchema(exerciseText: string, stepText: string): Answe
     return { type: "comparison" };
   }
 
-  // ── Pattern C: explicit "احسب" / "أوجد" expecting one number
+  // ── Pattern C: geometric construction — "ارسم" / "أنشئ" / "أكمل رسم"
+  // The step asks the student to DRAW something on the figure, not to compute.
+  // We can't grade a drawing automatically, so we render a confirmation UI
+  // instead of a text editor.
+  if (/(?:^|\s)(?:ارسم|اِرسم|أنشئ|أنشِئ|أكمل\s+رسم|ارسموا|tracer?|dessiner?|construire?)\b/i.test(step)) {
+    return { type: "construction" };
+  }
+
+  // ── Pattern D: explicit "احسب" / "أوجد" expecting one number
   if (/(احسب|أوجد|جد|قيمة)/.test(combined) && !/قائمة|الأعداد/.test(combined)) {
     return { type: "number" };
   }
 
-  // ── Pattern D: "حدد الأعداد" → list
+  // ── Pattern E: "حدد الأعداد" → list
   if (/حدد\s+الأعداد|اذكر\s+الأعداد|اكتب\s+الأعداد/.test(combined)) {
     return { type: "number_list" };
   }
