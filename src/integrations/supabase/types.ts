@@ -1841,6 +1841,7 @@ export type Database = {
           order_index: number
           page_end: number | null
           page_start: number | null
+          slug: string | null
           textbook_id: string
           title: string
           title_ar: string | null
@@ -1853,6 +1854,7 @@ export type Database = {
           order_index?: number
           page_end?: number | null
           page_start?: number | null
+          slug?: string | null
           textbook_id: string
           title: string
           title_ar?: string | null
@@ -1865,6 +1867,7 @@ export type Database = {
           order_index?: number
           page_end?: number | null
           page_start?: number | null
+          slug?: string | null
           textbook_id?: string
           title?: string
           title_ar?: string | null
@@ -1872,6 +1875,97 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "textbook_chapters_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: false
+            referencedRelation: "textbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      textbook_exercises: {
+        Row: {
+          answer_type: string | null
+          bloom_level: number | null
+          chapter_id: string | null
+          concepts: string[] | null
+          created_at: string
+          difficulty: number | null
+          domain: string | null
+          exercise_number: string | null
+          expected_answer: string | null
+          hints: string[] | null
+          id: string
+          lesson_id: string | null
+          metadata: Json | null
+          order_index: number
+          questions: Json
+          solution: string | null
+          solution_latex: string | null
+          statement: string
+          statement_latex: string | null
+          textbook_id: string
+        }
+        Insert: {
+          answer_type?: string | null
+          bloom_level?: number | null
+          chapter_id?: string | null
+          concepts?: string[] | null
+          created_at?: string
+          difficulty?: number | null
+          domain?: string | null
+          exercise_number?: string | null
+          expected_answer?: string | null
+          hints?: string[] | null
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          order_index?: number
+          questions?: Json
+          solution?: string | null
+          solution_latex?: string | null
+          statement: string
+          statement_latex?: string | null
+          textbook_id: string
+        }
+        Update: {
+          answer_type?: string | null
+          bloom_level?: number | null
+          chapter_id?: string | null
+          concepts?: string[] | null
+          created_at?: string
+          difficulty?: number | null
+          domain?: string | null
+          exercise_number?: string | null
+          expected_answer?: string | null
+          hints?: string[] | null
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          order_index?: number
+          questions?: Json
+          solution?: string | null
+          solution_latex?: string | null
+          statement?: string
+          statement_latex?: string | null
+          textbook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "textbook_exercises_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "textbook_exercises_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "textbook_exercises_textbook_id_fkey"
             columns: ["textbook_id"]
             isOneToOne: false
             referencedRelation: "textbooks"
@@ -1891,6 +1985,7 @@ export type Database = {
           order_index: number
           page_end: number | null
           page_start: number | null
+          slug: string | null
           title: string
           title_ar: string | null
         }
@@ -1905,6 +2000,7 @@ export type Database = {
           order_index?: number
           page_end?: number | null
           page_start?: number | null
+          slug?: string | null
           title: string
           title_ar?: string | null
         }
@@ -1919,6 +2015,7 @@ export type Database = {
           order_index?: number
           page_end?: number | null
           page_start?: number | null
+          slug?: string | null
           title?: string
           title_ar?: string | null
         }
@@ -1973,14 +2070,18 @@ export type Database = {
       }
       textbooks: {
         Row: {
+          country_code: string | null
           cover_url: string | null
           created_at: string
+          description: string | null
           file_path: string | null
           grade: string
           id: string
+          is_public: boolean
           metadata: Json | null
           processing_log: Json | null
           processing_progress: number | null
+          slug: string | null
           status: string
           subject: string
           title: string
@@ -1990,14 +2091,18 @@ export type Database = {
           year: string | null
         }
         Insert: {
+          country_code?: string | null
           cover_url?: string | null
           created_at?: string
+          description?: string | null
           file_path?: string | null
           grade?: string
           id?: string
+          is_public?: boolean
           metadata?: Json | null
           processing_log?: Json | null
           processing_progress?: number | null
+          slug?: string | null
           status?: string
           subject?: string
           title: string
@@ -2007,14 +2112,18 @@ export type Database = {
           year?: string | null
         }
         Update: {
+          country_code?: string | null
           cover_url?: string | null
           created_at?: string
+          description?: string | null
           file_path?: string | null
           grade?: string
           id?: string
+          is_public?: boolean
           metadata?: Json | null
           processing_log?: Json | null
           processing_progress?: number | null
+          slug?: string | null
           status?: string
           subject?: string
           title?: string
@@ -2023,7 +2132,15 @@ export type Database = {
           user_id?: string
           year?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "textbooks_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       user_roles: {
         Row: {
