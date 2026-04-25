@@ -238,7 +238,7 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
 
       {/* Level Selector Modal/Panel */}
       <AnimatePresence>
-        {showLevelSelect && (
+        {showLevelSelect && !isSimple && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -265,9 +265,9 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
         )}
       </AnimatePresence>
 
-      {/* Templates Panel - Filtered by Level */}
+      {/* Templates Panel - Filtered by Level (hidden in simple mode) */}
       <AnimatePresence>
-        {showTemplates && (
+        {showTemplates && !isSimple && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -302,8 +302,8 @@ export function AlgebraEditor({ onSubmit, initialLevel = "middle", placeholder =
             <LatexRenderer latex={sym.label} />
           </button>
         ))}
-        {/* Fillers to keep basic symbols always available unless primary */}
-        {level !== "primary" && (
+        {/* Extra advanced symbols only for secondary or when user opts in */}
+        {level !== "primary" && !isSimple && (
           <>
             <div className="w-px h-6 bg-border mx-1" />
             {[{ label: "±", insert: "\\pm" }, { label: "≠", insert: "\\neq" }, { label: "×", insert: "\\times" }].map((sym, i) => (
