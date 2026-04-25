@@ -1,14 +1,18 @@
 // ===== Geometry Editor — SVG canvas for geometric answers =====
-import { useState, useRef, useCallback, useEffect } from "react";
+// Adaptive to:
+//  • Level (primary | middle | secondary): tool palette tuned to the curriculum
+//  • Domain detected from the exercise text (basic / transformations / functions / analytic)
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Plus, Trash2, Undo2, MousePointer2, 
-  Circle as CircleIcon, MoveRight, Settings2, 
-  Maximize2, Crosshair, Type, Compass, CheckCircle2,
-  GraduationCap, Activity, Box, ChevronDown
+import {
+  Plus, Trash2, Undo2, MousePointer2,
+  Circle as CircleIcon, MoveRight,
+  Maximize2, Crosshair, Compass, CheckCircle2,
+  GraduationCap, Activity, ChevronDown, Triangle, Square, RotateCw, FlipHorizontal
 } from "lucide-react";
 
 type Level = "primary" | "middle" | "secondary";
+type Domain = "basic" | "transformations" | "functions" | "analytic";
 
 interface Point { x: number; y: number; label: string; isIntersection?: boolean; }
 interface Segment { from: string; to: string; type: "segment" | "vector" | "ray" | "line"; }
@@ -19,14 +23,19 @@ interface Func { formula: string; color: string; }
 interface GeometryEditorProps {
   onSubmit: (data: any) => void;
   initialLevel?: Level;
+  exerciseText?: string;        // used to auto-detect the geometric domain
+  lockLevel?: boolean;          // when true, disables manual level switching
   className?: string;
 }
 
+// Tools available per level — extended with shape shortcuts and transformations
 const TOOLS_BY_LEVEL: Record<Level, any[]> = {
   primary: [
     { id: "point", icon: <Plus size={16} />, label: "نقطة", hint: "انقر لإضافة نقطة" },
     { id: "segment", icon: <div className="w-4 h-0.5 bg-current" />, label: "خط", hint: "صل بين نقطتين" },
-    { id: "rect", icon: <Box size={16} />, label: "مستطيل", hint: "أضف مستطيل" },
+    { id: "triangle", icon: <Triangle size={16} />, label: "مثلث", hint: "أنشئ مثلثاً (3 نقرات)" },
+    { id: "rect", icon: <Square size={16} />, label: "مستطيل", hint: "أنشئ مستطيلاً (نقرتان)" },
+    { id: "circle", icon: <CircleIcon size={16} />, label: "دائرة", hint: "مركز ثم نقطة على المحيط" },
     { id: "move", icon: <MousePointer2 size={16} />, label: "تحريك", hint: "اسحب لتحريك العناصر" },
   ],
   middle: [
@@ -35,6 +44,8 @@ const TOOLS_BY_LEVEL: Record<Level, any[]> = {
     { id: "circle", icon: <CircleIcon size={16} />, label: "دائرة", hint: "رسم دائرة" },
     { id: "angle", icon: <Compass size={16} />, label: "زاوية", hint: "قياس/رسم زاوية" },
     { id: "vector", icon: <MoveRight size={16} />, label: "شعاع", hint: "رسم شعاع (انسحاب)" },
+    { id: "rotate", icon: <RotateCw size={16} />, label: "دوران", hint: "تحويل بالدوران" },
+    { id: "reflect", icon: <FlipHorizontal size={16} />, label: "تماثل", hint: "تماثل محوري" },
     { id: "move", icon: <MousePointer2 size={16} />, label: "تحريك", hint: "تحريك العناصر" },
   ],
   secondary: [
@@ -42,6 +53,7 @@ const TOOLS_BY_LEVEL: Record<Level, any[]> = {
     { id: "line", icon: <div className="w-full h-px bg-current" />, label: "مستقيم", hint: "مستقيم (معادلة)" },
     { id: "function", icon: <Activity size={16} />, label: "دالة", hint: "رسم منحنى دالة f(x)" },
     { id: "vector", icon: <MoveRight size={16} />, label: "شعاع", hint: "أشعة في المستوي" },
+    { id: "circle", icon: <CircleIcon size={16} />, label: "دائرة", hint: "دائرة" },
     { id: "move", icon: <MousePointer2 size={16} />, label: "تحريك", hint: "تحريك العناصر" },
   ]
 };
@@ -52,20 +64,52 @@ const LEVEL_LABELS: Record<Level, string> = {
   secondary: "ثانوي (BAC)"
 };
 
-export function GeometryEditor({ onSubmit, initialLevel = "middle", className = "" }: GeometryEditorProps) {
+const DOMAIN_LABELS: Record<Domain, string> = {
+  basic: "أشكال أساسية",
+  transformations: "تحويلات",
+  functions: "دوال ومنحنيات",
+  analytic: "هندسة تحليلية",
+};
+
+// Detect geometric subdomain from exercise text → pre-selects the most useful tool.
+function detectDomain(text?: string): Domain {
+  const t = (text || "").toLowerCase();
+  if (/دالة|منحنى|f\s*\(|y\s*=|courbe|function|graph/.test(t)) return "functions";
+  if (/انسحاب|دوران|تماثل|تحويل|translation|rotation|symét|reflection/.test(t)) return "transformations";
+  if (/إحداث|معلم|repère|vecteur|coord|axe/.test(t)) return "analytic";
+  return "basic";
+}
+
+function defaultToolForDomain(level: Level, domain: Domain): string {
+  if (domain === "functions") return level === "secondary" ? "function" : "segment";
+  if (domain === "transformations") return level === "middle" ? "vector" : "segment";
+  if (domain === "analytic") return "point";
+  if (level === "primary") return "triangle";
+  return "point";
+}
+
+export function GeometryEditor({ onSubmit, initialLevel = "middle", exerciseText, lockLevel = false, className = "" }: GeometryEditorProps) {
   const [level, setLevel] = useState<Level>(initialLevel);
+  const domain = useMemo(() => detectDomain(exerciseText), [exerciseText]);
   const [points, setPoints] = useState<Point[]>([]);
   const [segments, setSegments] = useState<Segment[]>([]);
   const [circles, setCircles] = useState<Circle[]>([]);
   const [angles, setAngles] = useState<Angle[]>([]);
   const [functions, setFunctions] = useState<Func[]>([]);
   const [notes, setNotes] = useState("");
-  const [tool, setTool] = useState<string>("point");
+  const [tool, setTool] = useState<string>(() => defaultToolForDomain(initialLevel, detectDomain(exerciseText)));
   const [selection, setSelection] = useState<string[]>([]);
   const [dragging, setDragging] = useState<string | null>(null);
   const [showGrid, setShowGrid] = useState(true);
-  const [showAxes, setShowAxes] = useState(level !== "primary");
+  const [showAxes, setShowAxes] = useState(initialLevel !== "primary" || ["analytic", "functions"].includes(detectDomain(exerciseText)));
   const [showLevelSelect, setShowLevelSelect] = useState(false);
+
+  // When parent updates initialLevel (e.g. profile loads after mount), respect it.
+  useEffect(() => {
+    setLevel(initialLevel);
+    setTool(defaultToolForDomain(initialLevel, domain));
+    setShowAxes(initialLevel !== "primary" || domain === "analytic" || domain === "functions");
+  }, [initialLevel, domain]);
   
   const svgRef = useRef<SVGSVGElement>(null);
   const nextLabel = useRef(65);
