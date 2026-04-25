@@ -78,7 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 
   const visibleSteps = WORKFLOW_STEPS.filter((step) => {
-    if (isGuest) return step.path === "/gaps" || step.path === "/diagnostic" || step.path === "/geometry-studio" || step.path === "/algebra-studio";
+    if (isGuest) return ["/gaps", "/diagnostic", "/geometry-studio", "/algebra-studio", "/textbooks"].includes(step.path);
     if (step.adminOnly && !isAdmin) return false;
     return true;
   });
