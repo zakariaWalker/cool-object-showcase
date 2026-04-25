@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
 import { LatexRenderer } from "@/components/LatexRenderer";
+import { AlgebraSolvingGuide } from "@/components/AlgebraSolvingGuide";
 import { inferAnswerSchema, gradeAnswer, type Verdict } from "@/engine/answer-schema";
 
 // Mirror of detectEditorType from StudentAnswerEditor — used only to show
