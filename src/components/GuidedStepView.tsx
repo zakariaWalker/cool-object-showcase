@@ -49,6 +49,12 @@ export function GuidedStepView({
   const totalSteps = steps.length;
   const isComplete = revealedSteps.size === totalSteps;
 
+  // Auto-detect a figure for geometry exercises so the canvas can seed itself.
+  const figureSpec = useMemo(
+    () => buildAutoFigureSpec({ text: exerciseText, type: patternType }),
+    [exerciseText, patternType],
+  );
+
   const handleRevealStep = (idx: number) => {
     setRevealedSteps(prev => new Set([...prev, idx]));
     setCurrentStep(idx);
