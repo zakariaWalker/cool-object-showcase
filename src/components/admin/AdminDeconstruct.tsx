@@ -245,6 +245,33 @@ export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, 
         ))}
       </div>
 
+      {/* Rule-based instant deconstruction (no AI) */}
+      <div className="glass-card rounded-lg p-4 border border-primary/40">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-bold text-foreground">⚡ تفكيك فوريّ (بدون ذكاء اصطناعي)</h4>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-bold">
+            موصى به
+          </span>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed">
+          يطابق نوع كلّ تمرين مع نمط جاهز من المكتبة وينسخ خطواته فوراً — مجاني، سريع (~10ث للـ335 تمرين)، وقابل للتحسين لاحقاً بالذكاء الاصطناعي.
+        </p>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => handleRuleDeconstruct("page")} disabled={aiLoading}
+            className="px-4 py-2 rounded-lg text-xs font-bold border border-border bg-card text-foreground hover:bg-accent transition-all disabled:opacity-50">
+            ⚡ الصفحة الحالية
+          </button>
+          <button onClick={() => handleRuleDeconstruct("filtered")} disabled={aiLoading}
+            className="px-4 py-2 rounded-lg text-xs font-bold border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-all disabled:opacity-50">
+            ⚡ المفلترة ({filtered.filter(e => !deconIds.has(e.id)).length})
+          </button>
+          <button onClick={() => handleRuleDeconstruct("all_remaining")} disabled={aiLoading}
+            className="px-4 py-2 rounded-lg text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
+            🚀 الكلّ فوراً ({stats.notDeconstructed})
+          </button>
+        </div>
+      </div>
+
       {/* AI Controls */}
       <div className="glass-card rounded-lg p-4 border border-accent/30">
         <div className="flex items-center justify-between mb-3">
