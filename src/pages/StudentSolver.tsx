@@ -12,6 +12,8 @@ import {
   type Verdict,
   type AnswerSchema,
 } from "@/engine/answer-schema";
+import { GeometryCanvas, type VerifyResult } from "@/components/geometry/GeometryCanvas";
+import { inferConstraints } from "@/engine/figures/construction-checks";
 
 export default function StudentSolver() {
   const { id } = useParams();
@@ -276,75 +278,75 @@ export default function StudentSolver() {
               </div>
             </div>
 
-            {/* Construction step — checklist UI instead of text editor */}
+            {/* Construction step — interactive geometry canvas */}
             {schema.type === "construction" ? (
               <div className="pl-14 space-y-4">
-                <div className="p-5 rounded-xl border-2 border-primary/30 bg-primary/5 space-y-4">
+                <div className="p-4 rounded-xl border-2 border-primary/30 bg-primary/5 space-y-2">
                   <div className="flex gap-3 items-start">
                     <span className="text-2xl shrink-0">📐</span>
-                    <div className="flex-1 space-y-2">
-                      <h4 className="font-bold text-foreground text-sm">خطوة إنشاء هندسي</h4>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-foreground text-sm mb-1">خطوة إنشاء هندسي تفاعلي</h4>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        نفّذ الإنشاء على دفترك أو على الشكل أعلاه باستعمال أدواتك الهندسية (مسطرة، كوس، فرجار)،
-                        ثم تأكّد من إكماله بدقة قبل الانتقال للخطوة التالية.
+                        استعمل الأدوات أدناه لبناء الإنشاء المطلوب على اللوحة، ثم اضغط
+                        <strong className="mx-1">"تحقق من الإنشاء"</strong>
+                        ليتم التحقق التلقائي من صحته.
                       </p>
                     </div>
                   </div>
-
-                  {stepStatus !== "correct" ? (
-                    <div className="flex justify-between items-center pt-2">
-                      <button
-                        onClick={() => setStepStatus("hint_shown")}
-                        className="text-xs text-muted-foreground hover:text-primary transition-colors flex gap-1 items-center"
-                      >
-                        <span>💡</span> أحتاج تلميحاً
-                      </button>
-                      <button
-                        onClick={() => {
-                          setStudentInput("done");
-                          const v = gradeAnswer("done", schema);
-                          setVerdict(v);
-                          setStepStatus("correct");
-                        }}
-                        className="px-6 py-2.5 bg-primary text-primary-foreground font-bold rounded-lg shadow-lg shadow-primary/20 hover:opacity-90 transition-all"
-                      >
-                        ✓ أكملت الإنشاء
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-between">
-                      <div className="text-primary font-bold text-sm flex items-center gap-2">
-                        <span>✓</span> تم تأكيد الإنشاء
-                      </div>
-                      <button
-                        onClick={nextStep}
-                        className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg transition-all shadow-md text-sm"
-                      >
-                        الخطوة التالية ←
-                      </button>
-                    </div>
-                  )}
                 </div>
 
-                {stepStatus === "hint_shown" && (
-                  <div className="p-4 rounded-lg bg-accent/10 border border-accent/30 text-accent-foreground text-sm">
-                    <div className="flex gap-3">
-                      <span className="text-xl">💡</span>
-                      <div className="flex-1">
-                        <strong>تلميح:</strong>
-                        {deconstruction.needs && deconstruction.needs.length > 0 ? (
-                          <p className="mt-1">تذكر المفاهيم التالية: {deconstruction.needs.join("، ")}</p>
-                        ) : (
-                          <p className="mt-1">اقرأ نص الخطوة بعناية وحدد العناصر المطلوب رسمها على الشكل.</p>
-                        )}
-                      </div>
+                <GeometryCanvas
+                  seedSpec={figureSpec}
+                  constraints={inferConstraints(currentStepText)}
+                  onSubmit={(r: VerifyResult) => {
+                    if (r.total === 0) {
+                      // No constraints inferred → trust the student
+                      setStudentInput("done");
+                      setVerdict({ status: "correct", message: "تم استلام الإنشاء." });
+                      setStepStatus("correct");
+                      return;
+                    }
+                    if (r.passed === r.total) {
+                      setStudentInput("done");
+                      setVerdict({ status: "correct", message: "إنشاء صحيح ودقيق ✓" });
+                      setStepStatus("correct");
+                    } else if (r.passed > 0) {
+                      setVerdict({
+                        status: "partial",
+                        message: `أنجزت ${r.passed} من ${r.total} من المتطلبات. راجع العناصر الناقصة.`,
+                      });
+                      setStepStatus("partial");
+                    } else {
+                      setVerdict({
+                        status: "incorrect",
+                        message: "لم يتم تحقيق المتطلبات بعد. تابع البناء.",
+                      });
+                      setStepStatus("incorrect");
+                    }
+                  }}
+                />
+
+                {stepStatus === "correct" && (
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-between">
+                    <div className="text-primary font-bold text-sm flex items-center gap-2">
+                      <span>✓</span> {verdict?.message || "تم تأكيد الإنشاء"}
                     </div>
                     <button
-                      onClick={() => setStepStatus("typing")}
-                      className="text-xs underline font-bold mt-2"
+                      onClick={nextStep}
+                      className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg transition-all shadow-md text-sm"
                     >
-                      إخفاء التلميح
+                      الخطوة التالية ←
                     </button>
+                  </div>
+                )}
+                {stepStatus === "partial" && verdict && (
+                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 text-sm font-bold">
+                    ~ {verdict.message}
+                  </div>
+                )}
+                {stepStatus === "incorrect" && verdict && (
+                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm font-bold">
+                    ✗ {verdict.message}
                   </div>
                 )}
               </div>
