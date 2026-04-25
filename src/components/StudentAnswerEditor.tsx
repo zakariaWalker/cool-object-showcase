@@ -1,17 +1,18 @@
 // ===== Student Answer Editor — Auto-selects Algebra or Geometry editor and Level =====
-// Level is resolved with this priority:
-//   1. The student's REGISTERED grade (from profile via useUserCurriculum) — primary source of truth
-//   2. The exercise's declared level (e.g. for archived BAC exam in middle student profile)
-//   3. Heuristic detection from the exercise text
+// Geometry exercises now open the JSXGraph-powered GeometryCanvas (GeoGebra-style)
+// seeded from the exercise text and verified against inferred constraints.
+import { useMemo } from "react";
 import { AlgebraEditor } from "./AlgebraEditor";
-import { GeometryEditor } from "./GeometryEditor";
+import { GeometryCanvas } from "./geometry/GeometryCanvas";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
+import { buildAutoFigureSpec } from "@/engine/figures/factory";
+import { inferConstraints } from "@/engine/figures/construction-checks";
 
 type Level = "primary" | "middle" | "secondary";
 
 interface StudentAnswerEditorProps {
   exerciseType?: string;
-  exerciseLevel?: string; // Optional override (e.g. when solving an exam from a different level)
+  exerciseLevel?: string;
   exerciseText?: string;
   onSubmitAlgebra: (steps: string[]) => void;
   onSubmitGeometry: (data: any) => void;
@@ -29,14 +30,11 @@ function detectEditorType(type?: string, text?: string): "algebra" | "geometry" 
   return "algebra";
 }
 
-// Map a registered grade_code (e.g. "1AM", "2AS", "G7") to an editor Level
 function gradeCodeToLevel(code?: string): Level | null {
   if (!code) return null;
   const c = code.toUpperCase();
-  // Algerian middle (1AM..4AM) and secondary (1AS..3AS)
   if (/^[1-4]AM$/.test(c)) return "middle";
   if (/^[1-3]AS$/.test(c)) return "secondary";
-  // Generic grade levels (G1..G12)
   const m = c.match(/^G(\d{1,2})$/);
   if (m) {
     const g = parseInt(m[1], 10);
@@ -44,7 +42,6 @@ function gradeCodeToLevel(code?: string): Level | null {
     if (g <= 9) return "middle";
     return "secondary";
   }
-  // Primary cycle
   if (/(PRIM|ابتدائ|ELEMENTARY)/i.test(code)) return "primary";
   if (/(MIDDLE|MOYEN|متوسط|COLLEGE)/i.test(code)) return "middle";
   if (/(SEC|LYC|ثانوي|HIGH|BAC)/i.test(code)) return "secondary";
@@ -61,20 +58,43 @@ function detectLevelFromText(level?: string, text?: string): Level {
   return "middle";
 }
 
-export function StudentAnswerEditor({ exerciseType, exerciseLevel, exerciseText, onSubmitAlgebra, onSubmitGeometry, className = "" }: StudentAnswerEditorProps) {
+export function StudentAnswerEditor({
+  exerciseType,
+  exerciseLevel,
+  exerciseText,
+  onSubmitAlgebra,
+  onSubmitGeometry,
+  className = "",
+}: StudentAnswerEditorProps) {
   const { gradeCode } = useUserCurriculum();
   const editorType = detectEditorType(exerciseType, exerciseText);
 
-  // Priority: registered grade → explicit exerciseLevel prop → text heuristic
   const resolvedLevel: Level =
     gradeCodeToLevel(gradeCode) ||
-    (exerciseLevel ? detectLevelFromText(exerciseLevel, exerciseText) : detectLevelFromText(undefined, exerciseText));
+    (exerciseLevel
+      ? detectLevelFromText(exerciseLevel, exerciseText)
+      : detectLevelFromText(undefined, exerciseText));
 
-  // Lock the level whenever it derives from the registered profile (so students can't accidentally change it).
-  const lockLevel = !!gradeCodeToLevel(gradeCode);
+  // Seed figure + constraints from the exercise text (memoised).
+  const figureSpec = useMemo(
+    () => buildAutoFigureSpec({ text: exerciseText || "", type: exerciseType }),
+    [exerciseText, exerciseType],
+  );
+  const constraints = useMemo(() => inferConstraints(exerciseText || ""), [exerciseText]);
 
   if (editorType === "geometry") {
-    return <GeometryEditor onSubmit={onSubmitGeometry} initialLevel={resolvedLevel} exerciseText={exerciseText} lockLevel={lockLevel} className={className} />;
+    return (
+      <div className={className}>
+        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+          <span>📐</span> لوحة الإنشاء التفاعلية
+        </div>
+        <GeometryCanvas
+          seedSpec={figureSpec}
+          constraints={constraints}
+          onSubmit={(r) => onSubmitGeometry(r)}
+        />
+      </div>
+    );
   }
 
   return <AlgebraEditor onSubmit={onSubmitAlgebra} initialLevel={resolvedLevel} className={className} />;
