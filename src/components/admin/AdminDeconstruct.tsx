@@ -3,6 +3,7 @@ import { Exercise, Pattern, Deconstruction } from "./useAdminKBStore";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
+import { DeconstructionImporter } from "./DeconstructionImporter";
 
 interface Props {
   exercises: Exercise[];
@@ -12,6 +13,7 @@ interface Props {
   onUpdateDeconstruction: (id: string, updates: Partial<Deconstruction>) => void;
   onDeleteDeconstruction: (id: string) => void;
   reload: () => void;
+  countryCode: string;
 }
 
 const PAGE_SIZE = 20;
@@ -23,7 +25,7 @@ const GRADE_LABELS: Record<string, string> = {
   secondary_1: "1AS", secondary_2: "2AS", secondary_3: "3AS",
 };
 
-export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, onUpdateDeconstruction, onDeleteDeconstruction, reload }: Props) {
+export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, onUpdateDeconstruction, onDeleteDeconstruction, reload, countryCode }: Props) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [gradeFilter, setGradeFilter] = useState("");
@@ -230,7 +232,16 @@ export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, 
         )}
       </div>
 
+      {/* JSON Bulk Importer */}
+      <DeconstructionImporter
+        exercises={exercises}
+        patterns={patterns}
+        countryCode={countryCode}
+        onAdd={onAdd}
+      />
+
       <div className="flex gap-4" style={{ height: "calc(100vh - 420px)" }}>
+
         {/* Exercise list */}
         <div className="w-[380px] flex-shrink-0 flex flex-col gap-3 overflow-hidden">
           <div className="flex gap-2 flex-wrap">

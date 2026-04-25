@@ -255,6 +255,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               onUpdateDeconstruction={store.updateDeconstruction}
               onDeleteDeconstruction={store.deleteDeconstruction}
               reload={store.reload}
+              countryCode={store.countryFilter}
             />
           )}
           {store.view === "kb" && (
