@@ -481,6 +481,8 @@ export default function StudentSolver() {
                 </div>
               )}
             </div>
+              </>
+            )}
           </div>
         )}
       </div>
