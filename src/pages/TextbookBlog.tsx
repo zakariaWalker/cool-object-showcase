@@ -516,15 +516,15 @@ function ActivityCard({ act, user, navigate }: { act: Activity; user: any; navig
   }
 
   return (
-    <Card className={`overflow-hidden border ${meta.bg}`}>
+    <Card className={`overflow-hidden border ${meta.bg} animate-slide-in-up hover:shadow-md transition-shadow`}>
       <CardContent className="p-4 space-y-2">
         <div className="flex items-center gap-2">
           <Icon className={`w-4 h-4 ${meta.color}`} />
           <span className={`text-[11px] font-black ${meta.color}`}>{meta.label}</span>
           {act.title_ar && <span className="text-sm font-bold text-foreground mr-1">{act.title_ar}</span>}
         </div>
-        <div className="text-sm text-foreground bg-card/70 rounded-lg p-3 border border-border/50">
-          <SmartContent text={act.content_text} />
+        <div className="bg-card/70 rounded-lg p-3 border border-border/50">
+          <RichContent text={act.content_text} />
         </div>
 
         {isExercise && (
