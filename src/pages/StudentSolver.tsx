@@ -180,6 +180,18 @@ export default function StudentSolver() {
               </h2>
             </div>
 
+            {/* Schema hint — tell student what format we expect */}
+            <div className="pl-14">
+              <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full">
+                <span>📋</span>
+                {schema.type === "range_filter" && "أدخل الأعداد مفصولة بمسافة"}
+                {schema.type === "number_list" && "أدخل قائمة أعداد مفصولة بمسافة"}
+                {schema.type === "number" && "أدخل عدداً واحداً (الفاصلة للعشرية، مثل 7,3)"}
+                {schema.type === "comparison" && "اختر/اكتب الإجابة"}
+                {(schema.type === "text" || schema.type === "expression") && "اكتب حلك"}
+              </div>
+            </div>
+
             {/* Input Area */}
             <div className="pl-14 space-y-4">
               <div className="relative">
@@ -187,31 +199,76 @@ export default function StudentSolver() {
                   value={studentInput}
                   onChange={(e) => {
                     setStudentInput(e.target.value);
-                    if (stepStatus !== "typing") setStepStatus("typing");
+                    if (stepStatus !== "typing") {
+                      setStepStatus("typing");
+                      setVerdict(null);
+                    }
                   }}
                   disabled={stepStatus === "correct"}
-                  placeholder="اكتب حلك لهذه الخطوة هنا..."
-                  className="w-full min-h-[120px] p-4 rounded-xl border-2 border-border bg-card text-foreground focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all resize-none text-lg"
+                  placeholder={
+                    schema.type === "range_filter" || schema.type === "number_list"
+                      ? "مثال: 7,32   7,34"
+                      : schema.type === "number"
+                        ? "مثال: 7,3"
+                        : "اكتب حلك لهذه الخطوة هنا..."
+                  }
+                  className={`w-full min-h-[120px] p-4 rounded-xl border-2 bg-card text-foreground focus:ring-4 transition-all resize-none text-lg ${
+                    stepStatus === "correct"
+                      ? "border-primary/50 focus:border-primary focus:ring-primary/10"
+                      : stepStatus === "incorrect"
+                        ? "border-destructive/60 focus:border-destructive focus:ring-destructive/10"
+                        : stepStatus === "partial"
+                          ? "border-amber-500/60 focus:border-amber-500 focus:ring-amber-500/10"
+                          : "border-border focus:border-primary focus:ring-primary/10"
+                  }`}
                   dir="ltr"
                 />
-                
+
                 {stepStatus === "correct" && (
                   <div className="absolute top-4 right-4 text-primary text-xl font-bold">✓</div>
                 )}
+                {stepStatus === "incorrect" && (
+                  <div className="absolute top-4 right-4 text-destructive text-xl font-bold">✗</div>
+                )}
+                {stepStatus === "partial" && (
+                  <div className="absolute top-4 right-4 text-amber-500 text-xl font-bold">~</div>
+                )}
               </div>
 
-              {stepStatus === "typing" && (
+              {(stepStatus === "typing" || stepStatus === "incorrect" || stepStatus === "partial") && (
                 <div className="flex justify-between items-center">
                   <button onClick={() => setStepStatus("hint_shown")} className="text-xs text-muted-foreground hover:text-primary transition-colors flex gap-1 items-center">
                     <span>💡</span> أحتاج تلميحاً
                   </button>
-                  <button 
+                  <button
                     onClick={handleCheck}
                     disabled={!studentInput.trim()}
                     className="px-6 py-2.5 bg-primary text-primary-foreground font-bold rounded-lg shadow-lg shadow-primary/20 hover:opacity-90 transition-all disabled:opacity-50"
                   >
-                    تحقق من الإجابة
+                    {stepStatus === "incorrect" || stepStatus === "partial" ? "أعد المحاولة" : "تحقق من الإجابة"}
                   </button>
+                </div>
+              )}
+
+              {stepStatus === "incorrect" && verdict && (
+                <div className="p-4 rounded-xl bg-destructive/5 border border-destructive/30 space-y-1 animate-in slide-in-from-bottom-2">
+                  <div className="text-destructive font-bold text-sm flex items-center gap-2">
+                    <span>✗</span> {verdict.message}
+                  </div>
+                  {verdict.expected && (
+                    <div className="text-xs text-muted-foreground">
+                      الصيغة المتوقعة: <span className="font-mono font-bold text-foreground" dir="ltr">{verdict.expected}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {stepStatus === "partial" && verdict && (
+                <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/30 space-y-1 animate-in slide-in-from-bottom-2">
+                  <div className="text-amber-700 font-bold text-sm flex items-center gap-2">
+                    <span>~</span> {verdict.message}
+                  </div>
+                  <div className="text-xs text-muted-foreground">أكمل القائمة قبل المتابعة.</div>
                 </div>
               )}
 
@@ -219,7 +276,7 @@ export default function StudentSolver() {
                 <div className="p-4 rounded-lg bg-accent/10 border border-accent/30 text-accent-foreground text-sm flex gap-3">
                   <span className="text-xl">💡</span>
                   <div>
-                    <strong>تلميح:</strong> 
+                    <strong>تلميح:</strong>
                     {deconstruction.needs && deconstruction.needs.length > 0 ? (
                       <p className="mt-1">تذكر المفاهيم التالية: {deconstruction.needs.join("، ")}</p>
                     ) : (
@@ -232,7 +289,11 @@ export default function StudentSolver() {
 
               {stepStatus === "correct" && (
                 <div className="p-4 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-between animate-in slide-in-from-bottom-2">
-                  <div className="text-primary font-bold text-sm">ممتاز! إجابتك تبدو متوافقة مع المطلوب.</div>
+                  <div className="text-primary font-bold text-sm">
+                    {verdict?.status === "unknown"
+                      ? "تم استلام إجابتك. تابع للخطوة التالية."
+                      : verdict?.message || "إجابة صحيحة!"}
+                  </div>
                   <button onClick={nextStep} className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg transition-all shadow-md">
                     الخطوة التالية ←
                   </button>
