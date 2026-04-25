@@ -175,13 +175,14 @@ export default function GapDetector() {
     setLoading(false);
   }
 
-  /** Detect exercises that reference visuals/tables but have no usable data → unsolvable in quiz */
+  /** Detect exercises that reference a figure we can't auto-draw (no shape keyword + no table). */
   function isUnrenderable(text: string): boolean {
     if (!text) return true;
-    // Reference to missing image/figure with no data
-    if (/\[(رسم|شكل|صورة|مخطط)[^\]]*\]/.test(text) && !/\|.*---/.test(text)) return true;
-    // "انظر إلى الشكل/الرسم" without any markdown table/figure
-    if (/(انظر|لاحظ).{0,20}(الشكل|الرسم|المخطط|الصورة)/.test(text) && !/\|.*---/.test(text)) return true;
+    const hasTable = /\|.*---/.test(text);
+    const hasShapeKeyword = /(مثلث|مستطيل|مربع|دائرة|متوازي|شبه\s*منحرف|زاوية|triangle|rectangle|circle|carré|parallélogramme|ABC|ABCD)/i.test(text);
+    const refsFigure = /\[(رسم|شكل|صورة|مخطط)[^\]]*\]/.test(text) || /(انظر|لاحظ).{0,20}(الشكل|الرسم|المخطط|الصورة)/.test(text);
+    // Drop only when a figure is referenced AND we have neither a shape we can sketch nor an embedded table.
+    if (refsFigure && !hasShapeKeyword && !hasTable) return true;
     return false;
   }
 
@@ -203,6 +204,15 @@ export default function GapDetector() {
     const r1 = "| " + row1.join(" | ") + " |";
     const r2 = "| " + row2.join(" | ") + " |";
     return text.replace(m[0], `الجدول التالي:\n\n${header}\n${sep}\n${r1}\n${r2}\n`);
+  }
+
+  /** Strip dangling figure-reference markers when we can auto-render the shape. */
+  function stripFigureRefs(text: string): string {
+    return text
+      .replace(/\[(رسم|شكل|صورة|مخطط)[^\]]*\]/g, "")
+      .replace(/(انظر|لاحظ)\s+(إلى\s+)?(الشكل|الرسم|المخطط|الصورة)\s*(المقابل|التالي|أدناه)?\s*[:\.،]?/g, "")
+      .replace(/[ \t]{2,}/g, " ")
+      .trim();
   }
 
   const availableExercises = useMemo(() => {
