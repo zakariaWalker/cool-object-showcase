@@ -150,16 +150,19 @@ export default function LearningPath() {
   const [loading, setLoading] = useState(true);
   const { gradeCode } = useUserCurriculum();
 
-  const defaultGradeKey = resolveGrade(gradeCode) || "middle_4";
-  const [selectedGrade, setSelectedGrade] = useState(defaultGradeKey);
+  // Lock to the student's registered grade. If no profile yet, fall back to 4AM.
+  const userGradeKey = resolveGrade(gradeCode);
+  const [selectedGrade, setSelectedGrade] = useState(userGradeKey || "middle_4");
   const [selectedType, setSelectedType] = useState("");
   const [completedExIds, setCompletedExIds] = useState<Set<string>>(new Set());
 
+  // Always sync to the registered grade when it loads/changes — no manual switching allowed.
   useEffect(() => {
-    if (gradeCode && !selectedGrade) {
-      setSelectedGrade(resolveGrade(gradeCode));
+    if (userGradeKey && userGradeKey !== selectedGrade) {
+      setSelectedGrade(userGradeKey);
+      setSelectedType("");
     }
-  }, [gradeCode, selectedGrade]);
+  }, [userGradeKey]);
 
   useEffect(() => {
     loadData();
