@@ -66,9 +66,13 @@ export default function TextbookBlog() {
   const [activitiesByLesson, setActivitiesByLesson] = useState<Record<string, Activity[]>>({});
   const [exercisesByChapter, setExercisesByChapter] = useState<Record<string, Exercise[]>>({});
   const [openChapter, setOpenChapter] = useState<string | null>(null);
+  const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
+  const [readProgress, setReadProgress] = useState(0);
+  const [tocOpen, setTocOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const articleRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
