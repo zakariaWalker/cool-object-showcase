@@ -266,15 +266,90 @@ export default function StudentSolver() {
             {/* Schema hint — tell student what format we expect */}
             <div className="pl-14">
               <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full">
-                <span>📋</span>
+                <span>{schema.type === "construction" ? "📐" : "📋"}</span>
                 {schema.type === "range_filter" && "أدخل الأعداد مفصولة بمسافة"}
                 {schema.type === "number_list" && "أدخل قائمة أعداد مفصولة بمسافة"}
                 {schema.type === "number" && "أدخل عدداً واحداً (الفاصلة للعشرية، مثل 7,3)"}
                 {schema.type === "comparison" && "اختر/اكتب الإجابة"}
+                {schema.type === "construction" && "خطوة إنشاء هندسي — استعن بالشكل أعلاه"}
                 {(schema.type === "text" || schema.type === "expression") && "اكتب حلك"}
               </div>
             </div>
 
+            {/* Construction step — checklist UI instead of text editor */}
+            {schema.type === "construction" ? (
+              <div className="pl-14 space-y-4">
+                <div className="p-5 rounded-xl border-2 border-primary/30 bg-primary/5 space-y-4">
+                  <div className="flex gap-3 items-start">
+                    <span className="text-2xl shrink-0">📐</span>
+                    <div className="flex-1 space-y-2">
+                      <h4 className="font-bold text-foreground text-sm">خطوة إنشاء هندسي</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        نفّذ الإنشاء على دفترك أو على الشكل أعلاه باستعمال أدواتك الهندسية (مسطرة، كوس، فرجار)،
+                        ثم تأكّد من إكماله بدقة قبل الانتقال للخطوة التالية.
+                      </p>
+                    </div>
+                  </div>
+
+                  {stepStatus !== "correct" ? (
+                    <div className="flex justify-between items-center pt-2">
+                      <button
+                        onClick={() => setStepStatus("hint_shown")}
+                        className="text-xs text-muted-foreground hover:text-primary transition-colors flex gap-1 items-center"
+                      >
+                        <span>💡</span> أحتاج تلميحاً
+                      </button>
+                      <button
+                        onClick={() => {
+                          setStudentInput("done");
+                          const v = gradeAnswer("done", schema);
+                          setVerdict(v);
+                          setStepStatus("correct");
+                        }}
+                        className="px-6 py-2.5 bg-primary text-primary-foreground font-bold rounded-lg shadow-lg shadow-primary/20 hover:opacity-90 transition-all"
+                      >
+                        ✓ أكملت الإنشاء
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-between">
+                      <div className="text-primary font-bold text-sm flex items-center gap-2">
+                        <span>✓</span> تم تأكيد الإنشاء
+                      </div>
+                      <button
+                        onClick={nextStep}
+                        className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg transition-all shadow-md text-sm"
+                      >
+                        الخطوة التالية ←
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {stepStatus === "hint_shown" && (
+                  <div className="p-4 rounded-lg bg-accent/10 border border-accent/30 text-accent-foreground text-sm">
+                    <div className="flex gap-3">
+                      <span className="text-xl">💡</span>
+                      <div className="flex-1">
+                        <strong>تلميح:</strong>
+                        {deconstruction.needs && deconstruction.needs.length > 0 ? (
+                          <p className="mt-1">تذكر المفاهيم التالية: {deconstruction.needs.join("، ")}</p>
+                        ) : (
+                          <p className="mt-1">اقرأ نص الخطوة بعناية وحدد العناصر المطلوب رسمها على الشكل.</p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setStepStatus("typing")}
+                      className="text-xs underline font-bold mt-2"
+                    >
+                      إخفاء التلميح
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
             {/* Input Area */}
             <div className="pl-14 space-y-4">
               <div className="relative">
