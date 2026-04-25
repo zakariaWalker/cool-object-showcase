@@ -170,6 +170,24 @@ export default function StudentSolver() {
           <div className="text-sm">
             <MathExerciseRenderer text={exercise.text} />
           </div>
+
+          {figureMissing && (
+            <div className="mt-4 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 flex gap-3 items-start">
+              <span className="text-xl shrink-0">⚠️</span>
+              <div className="flex-1 text-xs leading-relaxed">
+                <div className="font-bold text-amber-700 mb-1">الشكل المرفق غير متوفّر</div>
+                <p className="text-muted-foreground">
+                  هذا التمرين يشير إلى شكل أو مجسّم لم يُرفق مع النص. حاول الاعتماد على وصف التمرين، أو اختر تمريناً آخر يحتوي على كل المعطيات اللازمة.
+                </p>
+                <button
+                  onClick={() => navigate("/exercises")}
+                  className="mt-2 text-xs font-bold text-primary hover:underline"
+                >
+                  اختيار تمرين آخر ←
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Solver Area */}
