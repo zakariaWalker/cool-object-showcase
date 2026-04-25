@@ -186,23 +186,23 @@ export default function GapDetector() {
   }
 
   /**
-   * Convert flattened inline table data into a markdown table.
-   * Example: "الجدول التالي: 9 7 5 3 27 21 15 9" → 2-row markdown table.
+   * Convert flattened inline table data into a markdown table that MathExerciseRenderer
+   * renders as an actual HTML table.
    */
   function normalizeFlatTable(text: string): string {
-    const m = text.match(/الجدول\s+التالي\s*:?\s*((?:[\d٠-٩]+[\s,،]+){4,}[\d٠-٩]+)/);
+    const m = text.match(/الجدول\s+التالي\s*:?\s*((?:[\d٠-٩]+[\s,،|]+){4,}[\d٠-٩]+)/);
     if (!m) return text;
-    const numStr = m[1].trim().replace(/،/g, " ");
+    const numStr = m[1].trim().replace(/[،|]/g, " ");
     const nums = numStr.split(/[\s,]+/).filter(Boolean);
     if (nums.length < 4 || nums.length % 2 !== 0) return text;
     const half = nums.length / 2;
     const row1 = nums.slice(0, half);
     const row2 = nums.slice(half);
-    const header = "| " + row1.map(() => " ").join(" | ") + " |";
+    const header = "| " + row1.map((_, index) => `x${index + 1}`).join(" | ") + " |";
     const sep = "| " + row1.map(() => "---").join(" | ") + " |";
     const r1 = "| " + row1.join(" | ") + " |";
     const r2 = "| " + row2.join(" | ") + " |";
-    return text.replace(m[0], `\n\n${header}\n${sep}\n${r1}\n${r2}\n\n`);
+    return text.replace(m[0], `الجدول التالي:\n\n${header}\n${sep}\n${r1}\n${r2}\n`);
   }
 
   const availableExercises = useMemo(() => {
