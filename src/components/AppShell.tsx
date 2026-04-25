@@ -65,6 +65,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       publicPaths.includes(currentPath) ||
       currentPath.startsWith("/tma") ||
       currentPath.startsWith("/archive-solve") ||
+      currentPath.startsWith("/textbooks/") ||
       currentPath.startsWith("/solve/");
     if (isGuest && !isPublic) {
       navigate("/auth");
