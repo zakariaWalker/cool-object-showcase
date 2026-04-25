@@ -207,51 +207,65 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
 
   const skillById = new Map<string, any>(skills.map((s: any) => [s.id as string, s]));
 
-  // Pull documented misconceptions for these skills (highest-frequency first)
-  const { data: errors } = await db
-    .from("kb_skill_errors")
-    .select("skill_id, error_description, fix_hint, severity, error_type")
-    .in("skill_id", skills.map((s: any) => s.id))
-    .order("frequency", { ascending: false })
-    .limit(count * 3);
+  // ── Fetch a LARGE pool of exercises for this grade
+  // Strategy: prefer skill-linked exercises, but fall back to grade-matched exercises
+  // (most KB exercises are NOT yet linked to skills, so this dramatically increases variety).
+  const skillIdList = skills.map((s: any) => s.id);
 
-  // Try to find real exercises that target these skills via kb_skill_exercise_links
-  const { data: links } = await db
-    .from("kb_skill_exercise_links")
-    .select("skill_id, exercise_id")
-    .in("skill_id", skills.map((s: any) => s.id))
-    .limit(count * 4);
-
-  const exerciseIds = [...new Set((links || []).map((l: any) => l.exercise_id))];
-  let realExercises: any[] = [];
-  if (exerciseIds.length) {
-    const { data: exs } = await db
+  const [{ data: linkedRows }, { data: gradeExs }] = await Promise.all([
+    db.from("kb_skill_exercise_links").select("skill_id, exercise_id").in("skill_id", skillIdList).limit(200),
+    db
       .from("kb_exercises")
-      .select("id, text, type, difficulty, bloom_level")
-      .in("id", exerciseIds.slice(0, count * 2))
-      .eq("country_code", countryCode);
-    realExercises = exs || [];
-  }
+      .select("id, text, type, difficulty, bloom_level, chapter")
+      .eq("country_code", countryCode)
+      .eq("grade", level)
+      .limit(Math.max(count * 4, 80)),
+  ]);
+
+  // Map exercise → skill (for linked ones)
   const skillByExercise = new Map<string, any>();
-  for (const l of links || []) {
+  for (const l of linkedRows || []) {
     if (!skillByExercise.has(l.exercise_id)) {
       skillByExercise.set(l.exercise_id, skillById.get(l.skill_id));
     }
   }
 
+  // Combine: linked first (better signal), then grade-matched fillers
+  const linkedIds = new Set(skillByExercise.keys());
+  const allExercises = [
+    ...(gradeExs || []).filter((e: any) => linkedIds.has(e.id)),
+    ...(gradeExs || []).filter((e: any) => !linkedIds.has(e.id)),
+  ];
+
+  // Shuffle once before sampling so different cache builds yield different orderings
+  for (let i = allExercises.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allExercises[i], allExercises[j]] = [allExercises[j], allExercises[i]];
+  }
+
+  // Pull documented misconceptions for these skills (highest-frequency first)
+  const { data: errors } = await db
+    .from("kb_skill_errors")
+    .select("skill_id, error_description, fix_hint, severity, error_type")
+    .in("skill_id", skillIdList)
+    .order("frequency", { ascending: false })
+    .limit(Math.max(count * 2, 20));
+
   const out: any[] = [];
 
-  // (a) From real KB exercises — wrap as "standard" diagnostic items
-  for (const ex of realExercises.slice(0, Math.ceil(count / 2))) {
+  // (a) From real KB exercises — favor variety in length/difficulty
+  for (const ex of allExercises) {
+    const text = (ex.text || "").trim();
+    if (!text || text.length < 12 || text.length > 600) continue; // skip degenerate items
     const skill = skillByExercise.get(ex.id);
-    const badge = badgeFor(skill?.domain);
+    const badge = badgeFor(skill?.domain || ex.chapter);
     out.push({
       id: `kb-ex-${ex.id}`,
       type: "standard",
       typeName: "تمرين منهجي",
-      question: ex.text,
-      answer: "", // open answer; scored via explanation + confidence
-      hint: `يستهدف مهارة: ${skill?.name_ar || skill?.name || "—"}`,
+      question: text,
+      answer: "",
+      hint: skill ? `يستهدف مهارة: ${skill.name_ar || skill.name}` : `الفصل: ${ex.chapter || "—"}`,
       kind: "text",
       icon: badge.icon,
       misconception: skill?.name_ar || skill?.name || "مهارة من المنهج",
@@ -260,11 +274,12 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
       badgeBg: badge.bg,
       placeholder: "اكتب حلك أو استراتيجيتك...",
     });
-    if (out.length >= count) return out;
+    if (out.length >= count) break;
   }
 
   // (b) From documented errors — wrap as "trap" QCM items
   for (const err of errors || []) {
+    if (out.length >= count) break;
     const skill = skillById.get(err.skill_id);
     const badge = badgeFor(skill?.domain);
     out.push({
@@ -282,7 +297,6 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
       badgeColor: badge.color,
       badgeBg: badge.bg,
     });
-    if (out.length >= count) return out;
   }
 
   return out;
