@@ -3,6 +3,7 @@ import { Exercise, Pattern, Deconstruction } from "./useAdminKBStore";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
+import { DeconstructionImporter } from "./DeconstructionImporter";
 
 interface Props {
   exercises: Exercise[];
@@ -12,6 +13,7 @@ interface Props {
   onUpdateDeconstruction: (id: string, updates: Partial<Deconstruction>) => void;
   onDeleteDeconstruction: (id: string) => void;
   reload: () => void;
+  countryCode: string;
 }
 
 const PAGE_SIZE = 20;
@@ -23,7 +25,7 @@ const GRADE_LABELS: Record<string, string> = {
   secondary_1: "1AS", secondary_2: "2AS", secondary_3: "3AS",
 };
 
-export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, onUpdateDeconstruction, onDeleteDeconstruction, reload }: Props) {
+export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, onUpdateDeconstruction, onDeleteDeconstruction, reload, countryCode }: Props) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [gradeFilter, setGradeFilter] = useState("");
