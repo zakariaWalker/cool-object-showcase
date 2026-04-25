@@ -91,10 +91,9 @@ export default function StudentSolver() {
   const figureSpec: FigureSpec | null = useMemo(() => {
     if (manualFigureSpec) return manualFigureSpec;
     if (!exercise) return null;
-    const kind = detectFigureKind({
+    return buildAutoFigureSpec({
       type: exercise.type, chapter: exercise.chapter, text: exercise.text,
     });
-    return kind ? defaultFigureSpec(kind) : null;
   }, [exercise, manualFigureSpec]);
 
   // Smart per-step focus on the figure
