@@ -41,7 +41,7 @@ export function MathExerciseRenderer({
       {/* Statement / Énoncé */}
       {statement && (
         <div className={`exercise-statement ${examMode ? "text-[13px] leading-[2]" : "text-sm leading-[1.9]"}`}>
-          <MixedMathLine text={statement} mathFont={mathFont} />
+          <MathTextBlock text={statement} mathFont={mathFont} />
         </div>
       )}
 
@@ -56,7 +56,7 @@ export function MathExerciseRenderer({
                 {q.label || `${i + 1})`}
               </span>
               <div className={`flex-1 ${examMode ? "text-[13px] leading-[2]" : "text-sm leading-[1.9]"}`}>
-                <MixedMathLine text={q.text} mathFont={mathFont} />
+                <MathTextBlock text={q.text} mathFont={mathFont} />
               </div>
             </li>
           ))}
@@ -116,6 +116,126 @@ function MixedMathLine({ text, mathFont = "serif" }: { text: string; mathFont?: 
         </Fragment>
       ))}
     </span>
+  );
+}
+
+type ParsedTextBlock =
+  | { type: "text"; content: string }
+  | { type: "table"; header?: string[]; rows: string[][] };
+
+function MathTextBlock({ text, mathFont = "serif" }: { text: string; mathFont?: string }) {
+  const blocks = splitMarkdownTables(text);
+
+  return (
+    <div className="space-y-3">
+      {blocks.map((block, blockIndex) => {
+        if (block.type === "table") {
+          return <RenderedExerciseTable key={blockIndex} header={block.header} rows={block.rows} mathFont={mathFont} />;
+        }
+
+        return (
+          <div key={blockIndex} className="space-y-1">
+            {block.content.split(/\n+/).filter(Boolean).map((line, lineIndex) => (
+              <div key={lineIndex}>
+                <MixedMathLine text={line.trim()} mathFont={mathFont} />
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function splitMarkdownTables(text: string): ParsedTextBlock[] {
+  const lines = text.split(/\n/);
+  const blocks: ParsedTextBlock[] = [];
+  const textBuffer: string[] = [];
+
+  const flushText = () => {
+    const content = textBuffer.join("\n").trim();
+    if (content) blocks.push({ type: "text", content });
+    textBuffer.length = 0;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].includes("|")) {
+      textBuffer.push(lines[i]);
+      continue;
+    }
+
+    const tableLines: string[] = [];
+    while (i < lines.length && lines[i].includes("|")) {
+      tableLines.push(lines[i]);
+      i++;
+    }
+    i--;
+
+    const table = parseMarkdownTable(tableLines);
+    if (table) {
+      flushText();
+      blocks.push(table);
+    } else {
+      textBuffer.push(...tableLines);
+    }
+  }
+
+  flushText();
+  return blocks;
+}
+
+function parseMarkdownTable(lines: string[]): ParsedTextBlock | null {
+  const compactLines = lines.map((line) => line.trim()).filter(Boolean);
+  const separatorIndex = compactLines.findIndex((line) => splitTableRow(line).every((cell) => /^:?-{3,}:?$/.test(cell)));
+  if (separatorIndex < 1) return null;
+
+  const headerCells = splitTableRow(compactLines[separatorIndex - 1]);
+  const rows = compactLines.slice(separatorIndex + 1).map(splitTableRow).filter((row) => row.length > 0);
+  if (rows.length === 0) return null;
+
+  const columnCount = Math.max(headerCells.length, ...rows.map((row) => row.length));
+  const normalizedRows = rows.map((row) => normalizeTableRow(row, columnCount));
+  const header = headerCells.some((cell) => cell.trim()) ? normalizeTableRow(headerCells, columnCount) : undefined;
+
+  return { type: "table", header, rows: normalizedRows };
+}
+
+function splitTableRow(line: string): string[] {
+  return line.replace(/^\|/, "").replace(/\|$/, "").split("|").map((cell) => cell.trim());
+}
+
+function normalizeTableRow(row: string[], columnCount: number): string[] {
+  return Array.from({ length: columnCount }, (_, index) => row[index] || "");
+}
+
+function RenderedExerciseTable({ header, rows, mathFont }: { header?: string[]; rows: string[][]; mathFont?: string }) {
+  return (
+    <div className="my-3 overflow-x-auto rounded-lg border border-border bg-card" dir="ltr">
+      <table className="w-full min-w-[280px] border-collapse text-center text-sm">
+        {header && (
+          <thead className="bg-muted/70 text-muted-foreground">
+            <tr>
+              {header.map((cell, index) => (
+                <th key={index} className="border-b border-border px-4 py-2 font-bold">
+                  <MixedMathLine text={cell} mathFont={mathFont} />
+                </th>
+              ))}
+            </tr>
+          </thead>
+        )}
+        <tbody>
+          {rows.map((row, rowIndex) => (
+            <tr key={rowIndex} className="odd:bg-background even:bg-muted/30">
+              {row.map((cell, cellIndex) => (
+                <td key={cellIndex} className="border-border px-4 py-2 font-semibold text-foreground [&:not(:last-child)]:border-r">
+                  <MixedMathLine text={cell} mathFont={mathFont} />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
