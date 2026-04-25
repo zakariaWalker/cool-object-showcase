@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 import { FigureRenderer } from "@/engine/figures/FigureRenderer";
-import { detectFigureKind, defaultFigureSpec } from "@/engine/figures/factory";
+import { buildAutoFigureSpec } from "@/engine/figures/factory";
 import { analyzeStep } from "@/engine/figures/step-focus";
 import type { FigureSpec } from "@/engine/figures/types";
 import {
