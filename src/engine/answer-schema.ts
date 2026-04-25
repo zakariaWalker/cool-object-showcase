@@ -189,8 +189,18 @@ export function gradeAnswer(input: string, schema: AnswerSchema): Verdict {
           expected: prettyList(expected),
         };
       }
-      // Check each entry is actually in the valid range
       const r = schema.range!;
+      // 1) Reject any number that wasn't in the original pool — students must
+      //    PICK from the given list, not invent new numbers.
+      const foreign = got.filter((n) => !r.pool.some((p) => eq(p, n)));
+      if (foreign.length > 0) {
+        return {
+          status: "incorrect",
+          message: `العدد ${String(foreign[0]).replace(".", ",")} غير موجود في القائمة المعطاة. اختر فقط من الأعداد المذكورة في التمرين.`,
+          expected: prettyList(expected),
+        };
+      }
+      // 2) Reject any pool number that is outside the valid range
       const invalid = got.filter((n) => n < r.min || n > r.max);
       if (invalid.length > 0) {
         return {
@@ -199,7 +209,7 @@ export function gradeAnswer(input: string, schema: AnswerSchema): Verdict {
           expected: prettyList(expected),
         };
       }
-      // Check completeness
+      // 3) Completeness check
       if (setEqual(got, expected)) {
         return { status: "correct", message: "إجابة كاملة وصحيحة." };
       }
