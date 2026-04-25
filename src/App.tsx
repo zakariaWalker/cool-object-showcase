@@ -53,7 +53,8 @@ const App = () => (
       <BrowserRouter>
         <AppShell>
           <Routes>
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/landing" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/home" element={<Home />} />
