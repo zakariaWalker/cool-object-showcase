@@ -13,6 +13,7 @@ import {
   type AnswerSchema,
 } from "@/engine/answer-schema";
 import { GeometryCanvas, type VerifyResult } from "@/components/geometry/GeometryCanvas";
+import { AlgebraEditor } from "@/components/AlgebraEditor";
 import { inferConstraints } from "@/engine/figures/construction-checks";
 
 export default function StudentSolver() {
@@ -354,46 +355,60 @@ export default function StudentSolver() {
               <>
             {/* Input Area */}
             <div className="pl-14 space-y-4">
-              <div className="relative">
-                <textarea
-                  value={studentInput}
-                  onChange={(e) => {
-                    setStudentInput(e.target.value);
-                    if (stepStatus !== "typing") {
-                      setStepStatus("typing");
-                      setVerdict(null);
-                    }
+              {schema.type === "algebra" || schema.type === "expression" || schema.type === "text" ? (
+                <AlgebraEditor
+                  initialLevel={exercise.grade?.includes("secondary") || exercise.grade?.includes("3AS") ? "secondary" : "middle"}
+                  placeholder="اكتب خطوة الحل هنا..."
+                  onSubmit={(steps) => {
+                    const answer = steps.join("\n");
+                    setStudentInput(answer);
+                    const v = gradeAnswer(answer, schema);
+                    setVerdict(v);
+                    setStepStatus(v.status === "correct" ? "correct" : v.status === "partial" ? "partial" : "hint_shown");
                   }}
-                  disabled={stepStatus === "correct"}
-                  placeholder={
-                    schema.type === "range_filter" || schema.type === "number_list"
-                      ? "مثال: 7,32   7,34"
-                      : schema.type === "number"
-                        ? "مثال: 7,3"
-                        : "اكتب حلك لهذه الخطوة هنا..."
-                  }
-                  className={`w-full min-h-[120px] p-4 rounded-xl border-2 bg-card text-foreground focus:ring-4 transition-all resize-none text-lg ${
-                    stepStatus === "correct"
-                      ? "border-primary/50 focus:border-primary focus:ring-primary/10"
-                      : stepStatus === "incorrect"
-                        ? "border-destructive/60 focus:border-destructive focus:ring-destructive/10"
-                        : stepStatus === "partial"
-                          ? "border-amber-500/60 focus:border-amber-500 focus:ring-amber-500/10"
-                          : "border-border focus:border-primary focus:ring-primary/10"
-                  }`}
-                  dir="ltr"
                 />
+              ) : (
+                <div className="relative">
+                  <textarea
+                    value={studentInput}
+                    onChange={(e) => {
+                      setStudentInput(e.target.value);
+                      if (stepStatus !== "typing") {
+                        setStepStatus("typing");
+                        setVerdict(null);
+                      }
+                    }}
+                    disabled={stepStatus === "correct"}
+                    placeholder={
+                      schema.type === "range_filter" || schema.type === "number_list"
+                        ? "مثال: 7,32   7,34"
+                        : schema.type === "number"
+                          ? "مثال: 7,3"
+                          : "اكتب حلك لهذه الخطوة هنا..."
+                    }
+                    className={`w-full min-h-[120px] p-4 rounded-xl border-2 bg-card text-foreground focus:ring-4 transition-all resize-none text-lg ${
+                      stepStatus === "correct"
+                        ? "border-primary/50 focus:border-primary focus:ring-primary/10"
+                        : stepStatus === "incorrect"
+                          ? "border-destructive/60 focus:border-destructive focus:ring-destructive/10"
+                          : stepStatus === "partial"
+                            ? "border-amber-500/60 focus:border-amber-500 focus:ring-amber-500/10"
+                            : "border-border focus:border-primary focus:ring-primary/10"
+                    }`}
+                    dir="ltr"
+                  />
 
-                {stepStatus === "correct" && (
-                  <div className="absolute top-4 right-4 text-primary text-xl font-bold">✓</div>
-                )}
-                {stepStatus === "incorrect" && (
-                  <div className="absolute top-4 right-4 text-destructive text-xl font-bold">✗</div>
-                )}
-                {stepStatus === "partial" && (
-                  <div className="absolute top-4 right-4 text-amber-500 text-xl font-bold">~</div>
-                )}
-              </div>
+                  {stepStatus === "correct" && (
+                    <div className="absolute top-4 right-4 text-primary text-xl font-bold">✓</div>
+                  )}
+                  {stepStatus === "incorrect" && (
+                    <div className="absolute top-4 right-4 text-destructive text-xl font-bold">✗</div>
+                  )}
+                  {stepStatus === "partial" && (
+                    <div className="absolute top-4 right-4 text-amber-500 text-xl font-bold">~</div>
+                  )}
+                </div>
+              )}
 
               {(stepStatus === "typing" || stepStatus === "incorrect" || stepStatus === "partial") && (
                 <div className="flex justify-between items-center">

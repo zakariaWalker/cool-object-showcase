@@ -3,7 +3,7 @@ import { useUserCurriculum } from "@/hooks/useUserCurriculum"; // FIX: was useAu
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
-
+import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
 import { recordExerciseCompletion, XPEvent, Badge } from "@/engine/gamification";
 import { XPPopup, BadgeUnlockOverlay } from "@/components/GamificationDashboard";
 import { AnimatePresence } from "framer-motion";
@@ -579,19 +579,20 @@ export default function GapDetector() {
             {!showSolution && (
               <div className="space-y-3">
                 <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wide">
-                  اكتب إجابتك (نص أو معادلة)
+                  اكتب إجابتك باستعمال محرّر الرياضيات
                 </label>
-                <textarea
-                  value={answerText}
-                  onChange={(e) => {
-                    setAnswerText(e.target.value);
+                <StudentAnswerEditor
+                  exerciseType={q.exercise.type || q.pattern?.type}
+                  exerciseLevel={q.exercise.grade}
+                  exerciseText={stripFigureRefs(normalizeFlatTable(q.exercise.text))}
+                  onSubmitAlgebra={(steps) => {
+                    setAnswerText(steps.join("\n"));
                     if (inputError) setInputError("");
                   }}
-                  placeholder="مثال: x = 5  أو  المساحة = 12 cm²"
-                  rows={3}
-                  disabled={grading}
-                  className="w-full p-4 rounded-xl border-2 border-border bg-card text-sm font-mono focus:border-primary outline-none transition-all resize-none disabled:opacity-60"
-                  dir="auto"
+                  onSubmitGeometry={(data) => {
+                    setAnswerText(JSON.stringify(data));
+                    if (inputError) setInputError("");
+                  }}
                 />
                 {inputError && (
                   <p className="text-xs text-destructive font-bold">⚠ {inputError}</p>
