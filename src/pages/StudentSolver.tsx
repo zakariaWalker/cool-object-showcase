@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 import { FigureRenderer } from "@/engine/figures/FigureRenderer";
-import { detectFigureKind, defaultFigureSpec } from "@/engine/figures/factory";
+import { buildAutoFigureSpec } from "@/engine/figures/factory";
 import { analyzeStep } from "@/engine/figures/step-focus";
 import type { FigureSpec } from "@/engine/figures/types";
 import {
@@ -91,10 +91,9 @@ export default function StudentSolver() {
   const figureSpec: FigureSpec | null = useMemo(() => {
     if (manualFigureSpec) return manualFigureSpec;
     if (!exercise) return null;
-    const kind = detectFigureKind({
+    return buildAutoFigureSpec({
       type: exercise.type, chapter: exercise.chapter, text: exercise.text,
     });
-    return kind ? defaultFigureSpec(kind) : null;
   }, [exercise, manualFigureSpec]);
 
   // Smart per-step focus on the figure

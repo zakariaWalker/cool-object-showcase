@@ -10,7 +10,12 @@ interface ExerciseLike {
   text?: string | null;
 }
 
+// Order matters: most-specific compound keywords FIRST, generic ones LAST.
+// Each pattern is matched against exercise TEXT (the actual question), not the
+// chapter — chapters often list every topic in a unit ("triangles - quadrilaterals
+// - lines") which would otherwise hijack the detector.
 const KIND_KEYWORDS: Array<{ kind: FigureKind; patterns: RegExp }> = [
+  // 3D solids (compound first)
   { kind: "parallelepiped", patterns: /متوازي\s*المستطيل|parallelepip|parallélépip|cuboid|rectangular box/i },
   { kind: "cube",           patterns: /\bمكعّ?ب\b|\bcube\b/i },
   { kind: "prism",          patterns: /موشور|prism|prisme/i },
@@ -18,26 +23,54 @@ const KIND_KEYWORDS: Array<{ kind: FigureKind; patterns: RegExp }> = [
   { kind: "cone",           patterns: /مخروط|\bcone\b|\bcône\b/i },
   { kind: "cylinder",       patterns: /أسطوان|cylinder|cylindre/i },
   { kind: "sphere",         patterns: /\bكرة\b|sphere|sphère/i },
-  { kind: "right_triangle", patterns: /مثلث\s*قائم|right\s*triangle|triangle\s*rectangle/i },
-  { kind: "triangle",       patterns: /مثلث|triangle/i },
+  // 2D quadrilaterals — must come BEFORE circle/triangle so "متوازي أضلاع"
+  // and "معيّن" (rhombus) win over generic words
+  { kind: "parallelogram",  patterns: /متوازي\s*أضلاع|parallelogram|parallélogramme/i },
+  { kind: "rhombus",        patterns: /معيّن|rhombus|losange/i },
+  { kind: "trapezoid",      patterns: /شبه\s*منحرف|trapezoid|trapèze/i },
   { kind: "rectangle",      patterns: /مستطيل|rectangle/i },
   { kind: "square",         patterns: /\bمربّ?ع\b|\bsquare\b|\bcarré\b/i },
-  { kind: "rhombus",        patterns: /معيّن|rhombus|losange/i },
-  { kind: "parallelogram",  patterns: /متوازي\s*أضلاع|parallelogram|parallélogramme/i },
-  { kind: "trapezoid",      patterns: /شبه\s*منحرف|trapezoid|trapèze/i },
+  // Conics
   { kind: "circle",         patterns: /دائرة|circle|cercle/i },
+  // Triangles (specific → general)
+  { kind: "right_triangle", patterns: /مثلث\s*قائم|right\s*triangle|triangle\s*rectangle/i },
+  { kind: "triangle",       patterns: /مثلث(?!ات)|triangle(?!s)/i }, // avoid "مثلثات" (plural in chapter titles)
+  // Coordinate
   { kind: "function_plot",  patterns: /دالة|منحنى|function|courbe/i },
 ];
 
+/**
+ * Detect figure kind from exercise content.
+ *
+ * Strategy:
+ *  1. Inspect the exercise TEXT first (the actual question wording).
+ *  2. If nothing matches, try the explicit `type` column.
+ *  3. NEVER infer from `chapter` alone — chapter labels are usually a list of
+ *     topics covered by the unit (e.g. "lines - triangles - quadrilaterals")
+ *     which would otherwise force every exercise to render a triangle.
+ */
 export function detectFigureKind(ex: ExerciseLike): FigureKind | null {
-  const blob = `${ex.type || ""} ${ex.chapter || ""} ${ex.text || ""}`;
+  const text = ex.text || "";
+  const type = ex.type || "";
+
+  // 1. Try the question text — strongest signal
   for (const { kind, patterns } of KIND_KEYWORDS) {
-    if (patterns.test(blob)) return kind;
+    if (patterns.test(text)) return kind;
   }
-  // The KB sometimes mis-labels solids as "parallelogram" (the seeded data does)
-  if ((ex.type || "").toLowerCase() === "parallelogram" && /مجسّ?م|أوجه|أحرف|رؤوس/.test(ex.text || "")) {
+
+  // 2. Try the explicit type column (single-shape labels only)
+  for (const { kind, patterns } of KIND_KEYWORDS) {
+    if (patterns.test(type)) return kind;
+  }
+
+  // 3. Mis-labelled solids edge case
+  if (type.toLowerCase() === "parallelogram" && /مجسّ?م|أوجه|أحرف|رؤوس/.test(text)) {
     return "parallelepiped";
   }
+
+  // 4. Compound types like "triangle_circle" mean the exercise mixes shapes —
+  //    we cannot pick one safely without more context. Return null so the
+  //    renderer shows nothing rather than the wrong shape.
   return null;
 }
 
@@ -188,3 +221,73 @@ export function defaultFigureSpec(kind: FigureKind): FigureSpec {
       return { kind: "axes" };
   }
 }
+
+// =====================================================================
+// Label extraction & remapping
+// =====================================================================
+
+/** Expected vertex count per shape, used to extract labels from text. */
+const EXPECTED_LABEL_COUNT: Partial<Record<FigureKind, number>> = {
+  triangle: 3,
+  right_triangle: 3,
+  rectangle: 4,
+  square: 4,
+  rhombus: 4,
+  parallelogram: 4,
+  trapezoid: 4,
+  quadrilateral: 4,
+  parallelepiped: 8,
+  cube: 8,
+  prism: 6,
+  pyramid: 5,
+};
+
+/**
+ * Try to extract the actual vertex labels from the question text,
+ * e.g. "المعيّن KLMN" → ["K","L","M","N"]. Returns null if no run of
+ * exactly the right length is found.
+ */
+export function extractLabelsFromText(text: string, kind: FigureKind): string[] | null {
+  const expected = EXPECTED_LABEL_COUNT[kind];
+  if (!expected || !text) return null;
+  const re = new RegExp(`\\b([A-Z]{${expected}})\\b`);
+  const m = text.match(re);
+  if (!m) return null;
+  const letters = m[1].split("");
+  if (new Set(letters).size !== letters.length) return null; // avoid duplicates
+  return letters;
+}
+
+/** Return a clone of the spec with vertex labels remapped to `newLabels`. */
+export function relabelSpec(spec: FigureSpec, newLabels: string[]): FigureSpec {
+  if (!spec.vertices) return spec;
+  const oldLabels = Object.keys(spec.vertices);
+  if (oldLabels.length !== newLabels.length) return spec;
+
+  const map: Record<string, string> = {};
+  oldLabels.forEach((old, i) => { map[old] = newLabels[i]; });
+
+  const newVertices: Record<string, [number, number, number?]> = {};
+  for (const [old, p] of Object.entries(spec.vertices)) newVertices[map[old]] = p;
+
+  const newEdges = spec.edges?.map(([a, b]) => [map[a] || a, map[b] || b] as [string, string]);
+  const newFaces = spec.faces?.map((f) => f.map((l) => map[l] || l));
+
+  return {
+    ...spec,
+    label: newLabels.join(""),
+    vertices: newVertices,
+    edges: newEdges,
+    faces: newFaces,
+  };
+}
+
+/** Detect kind, build default spec, then relabel using exercise text. */
+export function buildAutoFigureSpec(ex: ExerciseLike): FigureSpec | null {
+  const kind = detectFigureKind(ex);
+  if (!kind) return null;
+  const base = defaultFigureSpec(kind);
+  const labels = extractLabelsFromText(ex.text || "", kind);
+  return labels ? relabelSpec(base, labels) : base;
+}
+
