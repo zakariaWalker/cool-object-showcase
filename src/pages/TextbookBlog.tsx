@@ -668,8 +668,8 @@ function ExerciseCard({ ex, user, navigate }: { ex: Exercise; user: any; navigat
               {showSolution ? "▲ إخفاء الحل" : "▼ عرض الحل المفصّل"}
             </button>
             {showSolution && (
-              <div className="mt-2 p-4 bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-900 rounded text-sm text-foreground">
-                <SmartContent text={ex.solution} />
+              <div className="mt-2 p-4 bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-900 rounded animate-fade-in">
+                <RichContent text={ex.solution} />
               </div>
             )}
           </div>
