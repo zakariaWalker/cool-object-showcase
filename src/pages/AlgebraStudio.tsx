@@ -37,6 +37,7 @@ function detectEditorKind(text: string): "algebra" | "geometry" {
 export default function AlgebraStudio() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const { gradeCode, countryCode } = useUserCurriculum();
 
   const seedText = params.get("text") || "";
 
@@ -44,6 +45,68 @@ export default function AlgebraStudio() {
   const [committed, setCommitted] = useState(seedText);
   const [steps, setSteps] = useState<string[]>([]);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
+
+  // KB browser state
+  const [kbOpen, setKbOpen] = useState(false);
+  const [kbLoading, setKbLoading] = useState(false);
+  const [kbError, setKbError] = useState<string | null>(null);
+  const [kbItems, setKbItems] = useState<KBExerciseLite[]>([]);
+  const [kbQuery, setKbQuery] = useState("");
+
+  useEffect(() => {
+    if (!kbOpen) return;
+    let cancelled = false;
+    (async () => {
+      setKbLoading(true);
+      setKbError(null);
+      try {
+        const code = gradeCode || "4AM";
+        const candidates = Array.from(new Set([code, GRADE_CODE_TO_KEY[code] || code]));
+        const { data, error } = await (supabase as any)
+          .from("kb_exercises")
+          .select("id, text, chapter, source")
+          .eq("country_code", countryCode || "DZ")
+          .in("grade", candidates)
+          .order("chapter")
+          .limit(200);
+        if (error) throw error;
+        if (cancelled) return;
+        setKbItems((data || []) as KBExerciseLite[]);
+      } catch (e: any) {
+        if (!cancelled) setKbError(e.message || "تعذّر تحميل المسائل");
+      } finally {
+        if (!cancelled) setKbLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [kbOpen, gradeCode, countryCode]);
+
+  const filteredKb = useMemo(() => {
+    const q = kbQuery.trim().toLowerCase();
+    if (!q) return kbItems;
+    return kbItems.filter(it =>
+      (it.text || "").toLowerCase().includes(q) ||
+      (it.chapter || "").toLowerCase().includes(q),
+    );
+  }, [kbItems, kbQuery]);
+
+  const groupedKb = useMemo(() => {
+    const map = new Map<string, KBExerciseLite[]>();
+    for (const it of filteredKb) {
+      const key = (it.chapter || "بدون فصل").trim();
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(it);
+    }
+    return Array.from(map.entries());
+  }, [filteredKb]);
+
+  const loadProblem = (text: string) => {
+    setTask(text);
+    setCommitted(text.trim());
+    setSteps([]);
+    setVerdict(null);
+    setKbOpen(false);
+  };
 
   const schema = useMemo(
     () => (committed ? inferAnswerSchema(committed, committed) : null),
