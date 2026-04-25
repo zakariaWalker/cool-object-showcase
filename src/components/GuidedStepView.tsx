@@ -7,6 +7,7 @@ import katex from "katex";
 import "katex/dist/katex.min.css";
 import { MathExerciseRenderer } from "./MathExerciseRenderer";
 import { GeometryCanvas } from "./geometry/GeometryCanvas";
+import { AlgebraEditor } from "./AlgebraEditor";
 import { inferAnswerSchema } from "@/engine/answer-schema";
 import { inferConstraints } from "@/engine/figures/construction-checks";
 import { buildAutoFigureSpec } from "@/engine/figures/factory";
@@ -234,20 +235,32 @@ export function GuidedStepView({
                       </div>
                     )}
 
-                    {/* Geometry canvas — appears when the revealed step is a
-                        construction / observation on a figure. */}
+                    {/* Interactive workspaces — appear when the revealed step
+                        needs a figure (geometry) or symbolic manipulation (algebra). */}
                     {isRevealed && (() => {
                       const schema = inferAnswerSchema(exerciseText, step);
-                      if (schema.type !== "construction") return null;
-                      const constraints = inferConstraints(step);
-                      return (
-                        <div className="px-4 pb-3 space-y-2">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                            <span>📐</span> لوحة الإنشاء التفاعلية
+                      if (schema.type === "construction") {
+                        const constraints = inferConstraints(step);
+                        return (
+                          <div className="px-4 pb-3 space-y-2">
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                              <span>📐</span> لوحة الإنشاء التفاعلية
+                            </div>
+                            <GeometryCanvas seedSpec={figureSpec} constraints={constraints} />
                           </div>
-                          <GeometryCanvas seedSpec={figureSpec} constraints={constraints} />
-                        </div>
-                      );
+                        );
+                      }
+                      if (schema.type === "algebra") {
+                        return (
+                          <div className="px-4 pb-3 space-y-2">
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                              <span>🧮</span> محرّر الجبر — اكتب خطوات الحلّ
+                            </div>
+                            <AlgebraEditor onSubmit={() => {}} placeholder="اكتب خطوة الحل هنا..." />
+                          </div>
+                        );
+                      }
+                      return null;
                     })()}
 
                     {/* Interactive choice for current unrevealed step */}

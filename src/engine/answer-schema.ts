@@ -18,6 +18,7 @@ export type AnswerType =
   | "comparison" // which of two quantities is bigger (a|b|equal)
   | "expression" // free-form algebraic — fall back to soft check
   | "construction" // geometric construction ("ارسم", "أنشئ"): student confirms drawing
+  | "algebra" // algebraic calculation: student should write step-by-step solution
   | "text"; // open-ended
 
 export interface AnswerSchema {
@@ -157,7 +158,16 @@ export function inferAnswerSchema(exerciseText: string, stepText: string): Answe
 
   // ── Pattern D: explicit "احسب" / "أوجد" expecting one number
   if (/(احسب|أوجد|جد|قيمة)/.test(combined) && !/قائمة|الأعداد/.test(combined)) {
+    // If the step contains algebraic verbs (factor, expand, develop, simplify,
+    // solve equation, ...) it's a multi-step algebra task → use the algebra editor.
+    const algebraVerb = /(?:حلّ?|حل\s+المعادلة|عامل|فكّ?ك|طوّ?ر|بسّ?ط|اختزل|اختصر|développer?|factoriser?|résoudre|simplifier?)/i.test(step);
+    if (algebraVerb) return { type: "algebra" };
     return { type: "number" };
+  }
+
+  // ── Pattern D-bis: pure algebraic manipulation verbs without "احسب"
+  if (/(?:^|\s)(?:حلّ?\s+المعادلة|حلّ?\s+المتراجحة|عامل|فكّ?ك|طوّ?ر|بسّ?ط|اختزل|اختصر|اشتق|أوجد\s+المشتقة|résoudre|développer?|factoriser?|simplifier?|dériver?)\b/i.test(step)) {
+    return { type: "algebra" };
   }
 
   // ── Pattern E: "حدد الأعداد" → list
