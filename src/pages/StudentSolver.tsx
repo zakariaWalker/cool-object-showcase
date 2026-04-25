@@ -78,8 +78,17 @@ export default function StudentSolver() {
     if (!studentInput.trim()) return;
     const v = gradeAnswer(studentInput, schema);
     setVerdict(v);
+    // "unknown" means we couldn't auto-grade — do NOT mark it as correct.
+    // Treat it as a soft "needs review" state visually closer to incorrect/partial,
+    // never as a green check.
     setStepStatus(
-      v.status === "correct" ? "correct" : v.status === "partial" ? "partial" : v.status === "unknown" ? "correct" : "incorrect",
+      v.status === "correct"
+        ? "correct"
+        : v.status === "partial"
+          ? "partial"
+          : v.status === "unknown"
+            ? "hint_shown"
+            : "incorrect",
     );
   };
 
