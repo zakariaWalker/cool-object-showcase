@@ -78,8 +78,17 @@ export default function StudentSolver() {
     if (!studentInput.trim()) return;
     const v = gradeAnswer(studentInput, schema);
     setVerdict(v);
+    // "unknown" means we couldn't auto-grade — do NOT mark it as correct.
+    // Treat it as a soft "needs review" state visually closer to incorrect/partial,
+    // never as a green check.
     setStepStatus(
-      v.status === "correct" ? "correct" : v.status === "partial" ? "partial" : v.status === "unknown" ? "correct" : "incorrect",
+      v.status === "correct"
+        ? "correct"
+        : v.status === "partial"
+          ? "partial"
+          : v.status === "unknown"
+            ? "hint_shown"
+            : "incorrect",
     );
   };
 
@@ -273,16 +282,39 @@ export default function StudentSolver() {
               )}
 
               {stepStatus === "hint_shown" && (
-                <div className="p-4 rounded-lg bg-accent/10 border border-accent/30 text-accent-foreground text-sm flex gap-3">
-                  <span className="text-xl">💡</span>
-                  <div>
-                    <strong>تلميح:</strong>
-                    {deconstruction.needs && deconstruction.needs.length > 0 ? (
-                      <p className="mt-1">تذكر المفاهيم التالية: {deconstruction.needs.join("، ")}</p>
-                    ) : (
-                      <p className="mt-1">ركّز على تنفيذ ما يُطلب في نص الخطوة حرفياً.</p>
+                <div className="p-4 rounded-lg bg-accent/10 border border-accent/30 text-accent-foreground text-sm space-y-3">
+                  <div className="flex gap-3">
+                    <span className="text-xl">{verdict?.status === "unknown" ? "📝" : "💡"}</span>
+                    <div className="flex-1">
+                      {verdict?.status === "unknown" ? (
+                        <>
+                          <strong>تم استلام إجابتك.</strong>
+                          <p className="mt-1">{verdict.message}</p>
+                        </>
+                      ) : (
+                        <>
+                          <strong>تلميح:</strong>
+                          {deconstruction.needs && deconstruction.needs.length > 0 ? (
+                            <p className="mt-1">تذكر المفاهيم التالية: {deconstruction.needs.join("، ")}</p>
+                          ) : (
+                            <p className="mt-1">ركّز على تنفيذ ما يُطلب في نص الخطوة حرفياً.</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center pt-1">
+                    <button onClick={() => setStepStatus("typing")} className="text-xs underline font-bold">
+                      تعديل الإجابة
+                    </button>
+                    {verdict?.status === "unknown" && (
+                      <button
+                        onClick={nextStep}
+                        className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg transition-all shadow-md"
+                      >
+                        متابعة ←
+                      </button>
                     )}
-                    <button onClick={() => setStepStatus("typing")} className="mt-3 text-xs underline font-bold">العودة للحل</button>
                   </div>
                 </div>
               )}
