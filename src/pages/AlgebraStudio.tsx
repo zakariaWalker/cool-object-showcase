@@ -1,14 +1,21 @@
-// ===== Algebra Studio — Standalone step-by-step algebra workspace =====
-// Mirrors GeometryStudio: optional task description with auto-inferred
-// answer schema, the AlgebraEditor for step-by-step solutions, and live
-// verification of the final answer.
+// ===== Algebra Studio — Smart workspace that auto-picks the right editor =====
+// Describe a problem; the studio infers the answer schema AND auto-switches
+// between the AlgebraEditor and the GeometryCanvas (via StudentAnswerEditor).
 
 import { useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { AlgebraEditor } from "@/components/AlgebraEditor";
+import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
 import { LatexRenderer } from "@/components/LatexRenderer";
-import { inferAnswerSchema } from "@/engine/answer-schema";
-import { gradeAnswer, type Verdict } from "@/engine/answer-schema";
+import { inferAnswerSchema, gradeAnswer, type Verdict } from "@/engine/answer-schema";
+
+// Mirror of detectEditorType from StudentAnswerEditor — used only to show
+// the user which editor will appear after committing the task.
+function detectEditorKind(text: string): "algebra" | "geometry" {
+  const txt = (text || "").toLowerCase();
+  if (/ارسم|أنشئ|المثلث|الدائرة|المستقيم|قطعة|مستقيم|تحويل|دوران|انسحاب|تماثل|زاوية|منحنى/.test(txt)) return "geometry";
+  if (/triangle|circle|rectangle|parallelo|trapèze|losange|plot|curve/.test(txt)) return "geometry";
+  return "algebra";
+}
 
 export default function AlgebraStudio() {
   const navigate = useNavigate();
@@ -26,15 +33,26 @@ export default function AlgebraStudio() {
     [committed],
   );
 
-  const handleSubmit = (newSteps: string[]) => {
+  const editorKind = useMemo(() => detectEditorKind(committed), [committed]);
+
+  const handleAlgebraSubmit = (newSteps: string[]) => {
     setSteps(newSteps);
     if (schema) {
-      // Grade the LAST non-empty step as the final answer.
       const finalLine = [...newSteps].reverse().find((s) => s.trim().length > 0) || "";
       setVerdict(gradeAnswer(finalLine, schema));
     } else {
       setVerdict(null);
     }
+  };
+
+  const handleGeometrySubmit = (data: any) => {
+    setVerdict({
+      status: data?.passed === data?.total && data?.total > 0 ? "correct" : "partial",
+      message:
+        data?.total > 0
+          ? `${data.passed} / ${data.total} من القيود محقّقة`
+          : "تم استلام إنشائك.",
+    });
   };
 
   return (
@@ -52,17 +70,18 @@ export default function AlgebraStudio() {
           <div>
             <h1 className="text-lg font-bold text-foreground">استوديو الجبر</h1>
             <p className="text-[11px] text-muted-foreground">
-              مساحة عمل تفاعلية لكتابة الحلول الجبرية خطوة بخطوة مع التحقّق التلقائي.
+              صف المسألة، وسيختار الاستوديو تلقائياً المحرر الجبري أو الهندسي
+              المناسب.
             </p>
           </div>
         </div>
         <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary font-bold">
-          LaTeX
+          محرر ذكي
         </span>
       </div>
 
       <div className="max-w-5xl mx-auto p-6 space-y-5 pb-24">
-        {/* Optional task description — drives auto-inferred grading schema */}
+        {/* Task description */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
           <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
             صف المسألة (اختياري)
@@ -70,14 +89,14 @@ export default function AlgebraStudio() {
           <textarea
             value={task}
             onChange={(e) => setTask(e.target.value)}
-            placeholder="مثال: حل المعادلة 2x + 3 = 7، أو احسب قيمة (3 + 5) × 2."
+            placeholder="مثال: حل المعادلة 2x + 3 = 7، أو ارسم مثلثاً ABC قائماً في A."
             rows={2}
             className="w-full p-3 rounded-lg border border-border bg-background text-sm focus:border-primary outline-none transition-all resize-none"
           />
           <div className="flex items-center justify-between gap-3">
             <p className="text-[11px] text-muted-foreground">
-              عند الضغط على "تحميل المسألة"، يستخرج النظام نوع الإجابة المتوقعة
-              تلقائياً ويفعّل التصحيح الآلي.
+              عند الضغط على "تحميل المسألة"، يحلّل النظام النص ويفعّل المحرر
+              المناسب مع التصحيح التلقائي.
             </p>
             <div className="flex gap-2">
               <button
@@ -95,6 +114,7 @@ export default function AlgebraStudio() {
                 onClick={() => {
                   setCommitted(task.trim());
                   setVerdict(null);
+                  setSteps([]);
                 }}
                 className="px-5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-md hover:opacity-90 transition-opacity"
               >
@@ -103,19 +123,35 @@ export default function AlgebraStudio() {
             </div>
           </div>
 
-          {committed && schema && (
-            <div className="text-[11px] text-muted-foreground border-t border-border/50 pt-3">
-              نوع الإجابة المتوقع:{" "}
-              <span className="font-bold text-foreground">{schema.type}</span>
-              {schema.expected !== undefined && (
-                <span className="opacity-70"> — جاهز للتصحيح التلقائي</span>
+          {committed && (
+            <div className="text-[11px] text-muted-foreground border-t border-border/50 pt-3 flex items-center gap-3 flex-wrap">
+              <span>
+                المحرر النشط:{" "}
+                <span className="font-bold text-foreground">
+                  {editorKind === "geometry" ? "هندسي 📐" : "جبري 🧮"}
+                </span>
+              </span>
+              {schema && (
+                <>
+                  <span className="opacity-40">•</span>
+                  <span>
+                    نوع الإجابة:{" "}
+                    <span className="font-bold text-foreground">
+                      {schema.type}
+                    </span>
+                  </span>
+                </>
               )}
             </div>
           )}
         </div>
 
-        {/* Editor */}
-        <AlgebraEditor onSubmit={handleSubmit} />
+        {/* Smart editor — auto-routes algebra ↔ geometry */}
+        <StudentAnswerEditor
+          exerciseText={committed || ""}
+          onSubmitAlgebra={handleAlgebraSubmit}
+          onSubmitGeometry={handleGeometrySubmit}
+        />
 
         {/* Verdict */}
         {verdict && (
@@ -149,8 +185,8 @@ export default function AlgebraStudio() {
           </div>
         )}
 
-        {/* Submitted steps recap */}
-        {steps.length > 0 && (
+        {/* Submitted algebra steps recap */}
+        {editorKind === "algebra" && steps.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-4 space-y-2">
             <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
               خطوات الحل المُرسلة
