@@ -57,9 +57,11 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const db = createClient(supabaseUrl, supabaseKey);
 
-    const cacheKey = `diag:${countryCode}:${level}:${count}`;
+    // Cache the LARGE pool, not the served set. Slice + shuffle on every request.
+    const POOL_SIZE = Math.max(count * 6, 30); // build a big varied pool
+    const cacheKey = `diag:pool:${countryCode}:${level}`;
 
-    // ── 1) Cache lookup (24h) ────────────────────────────────────────────
+    // ── 1) Cache lookup (pool of items, 6h TTL) ─────────────────────────
     if (!forceRefresh) {
       const { data: cached } = await db
         .from("diagnostic_cache")
@@ -69,42 +71,44 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (cached?.exercises && Array.isArray(cached.exercises) && cached.exercises.length >= count) {
-        // Return a randomized slice so users don't see the same order twice
-        const shuffled = [...cached.exercises].sort(() => Math.random() - 0.5).slice(0, count);
+        const picked = pickFromPool(cached.exercises, count, seed);
         return new Response(
-          JSON.stringify({ exercises: shuffled, source: cached.source, cached: true }),
+          JSON.stringify({ exercises: picked, source: cached.source, cached: true, poolSize: cached.exercises.length }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
     }
 
-    // ── 2) KB-first: try to build from real skills + errors ─────────────
-    const kbExercises = await buildFromKB(db, level, countryCode, count);
-    if (kbExercises.length >= count) {
-      await writeCache(db, cacheKey, level, countryCode, kbExercises, "kb");
+    // ── 2) KB-first: build a LARGE varied pool ──────────────────────────
+    const kbPool = await buildFromKB(db, level, countryCode, POOL_SIZE);
+    if (kbPool.length >= count * 3) {
+      // Enough variety from KB alone
+      await writeCache(db, cacheKey, level, countryCode, kbPool, "kb");
+      const picked = pickFromPool(kbPool, count, seed);
       return new Response(
-        JSON.stringify({ exercises: kbExercises.slice(0, count), source: "kb" }),
+        JSON.stringify({ exercises: picked, source: "kb", poolSize: kbPool.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     // ── 3) AI augment / fallback ────────────────────────────────────────
     try {
-      const aiExercises = await generateWithAI(db, level, countryCode, count, seed);
-      const merged = [...kbExercises, ...aiExercises].slice(0, count);
-      await writeCache(db, cacheKey, level, countryCode, merged, kbExercises.length ? "hybrid" : "ai");
+      const aiExercises = await generateWithAI(db, level, countryCode, Math.max(count * 2, 10), seed);
+      const merged = dedupePool([...kbPool, ...aiExercises]);
+      await writeCache(db, cacheKey, level, countryCode, merged, kbPool.length ? "hybrid" : "ai");
+      const picked = pickFromPool(merged, count, seed);
       return new Response(
-        JSON.stringify({ exercises: merged, source: kbExercises.length ? "hybrid" : "ai" }),
+        JSON.stringify({ exercises: picked, source: kbPool.length ? "hybrid" : "ai", poolSize: merged.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     } catch (aiErr) {
       console.warn("[diagnostic] AI failed, using KB+static fallback:", aiErr);
       const staticPool = getStaticFallbackPool();
-      const merged = [...kbExercises, ...staticPool].slice(0, count);
-      // Still cache, but shorter implicit TTL is OK (24h default)
+      const merged = dedupePool([...kbPool, ...staticPool]);
       await writeCache(db, cacheKey, level, countryCode, merged, "fallback");
+      const picked = pickFromPool(merged, count, seed);
       return new Response(
-        JSON.stringify({ exercises: merged, source: "fallback", reason: (aiErr as any)?.code }),
+        JSON.stringify({ exercises: picked, source: "fallback", reason: (aiErr as any)?.code, poolSize: merged.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -115,6 +119,62 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// Picking: seeded shuffle ensures different students get different sets,
+// while same seed reproduces (useful for retries).
+// ─────────────────────────────────────────────────────────────────────────
+function mulberry32(a: number) {
+  return function () {
+    let t = (a += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function pickFromPool(pool: any[], count: number, seed: number): any[] {
+  const rng = mulberry32(Math.floor((seed || Math.random()) * 1e9));
+  const arr = [...pool];
+  // Fisher-Yates with seeded RNG
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  // Diversify by type: try to pick at most ceil(count/3) per type
+  const byType: Record<string, any[]> = {};
+  for (const it of arr) {
+    const t = it.type || "standard";
+    (byType[t] ||= []).push(it);
+  }
+  const types = Object.keys(byType);
+  const out: any[] = [];
+  let i = 0;
+  while (out.length < count && types.some((t) => byType[t].length > 0)) {
+    const t = types[i % types.length];
+    const next = byType[t].shift();
+    if (next) out.push(next);
+    i++;
+  }
+  // Fill any remainder
+  for (const it of arr) {
+    if (out.length >= count) break;
+    if (!out.includes(it)) out.push(it);
+  }
+  return out.slice(0, count);
+}
+
+function dedupePool(items: any[]): any[] {
+  const seen = new Set<string>();
+  const out: any[] = [];
+  for (const it of items) {
+    const key = (it.question || "").trim().slice(0, 120);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(it);
+  }
+  return out;
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 // KB-first builder: synthesizes diagnostic items from kb_skills + kb_skill_errors
@@ -137,61 +197,76 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
   } catch (e) {
     console.warn("KB skill lookup failed:", e);
   }
-  if (skillIds.length === 0) return [];
-
-  const { data: skills } = await db
-    .from("kb_skills")
-    .select("id, name_ar, name, domain, subdomain")
-    .in("id", skillIds.slice(0, 40));
-  if (!skills?.length) return [];
-
-  const skillById = new Map<string, any>(skills.map((s: any) => [s.id as string, s]));
-
-  // Pull documented misconceptions for these skills (highest-frequency first)
-  const { data: errors } = await db
-    .from("kb_skill_errors")
-    .select("skill_id, error_description, fix_hint, severity, error_type")
-    .in("skill_id", skills.map((s: any) => s.id))
-    .order("frequency", { ascending: false })
-    .limit(count * 3);
-
-  // Try to find real exercises that target these skills via kb_skill_exercise_links
-  const { data: links } = await db
-    .from("kb_skill_exercise_links")
-    .select("skill_id, exercise_id")
-    .in("skill_id", skills.map((s: any) => s.id))
-    .limit(count * 4);
-
-  const exerciseIds = [...new Set((links || []).map((l: any) => l.exercise_id))];
-  let realExercises: any[] = [];
-  if (exerciseIds.length) {
-    const { data: exs } = await db
-      .from("kb_exercises")
-      .select("id, text, type, difficulty, bloom_level")
-      .in("id", exerciseIds.slice(0, count * 2))
-      .eq("country_code", countryCode);
-    realExercises = exs || [];
+  // If no skills found, still try to serve raw exercises from KB by grade — better than nothing
+  let skills: any[] = [];
+  if (skillIds.length > 0) {
+    const { data } = await db
+      .from("kb_skills")
+      .select("id, name_ar, name, domain, subdomain")
+      .in("id", skillIds.slice(0, 40));
+    skills = data || [];
   }
+  const skillById = new Map<string, any>((skills || []).map((s: any) => [s.id as string, s]));
+
+  // ── Fetch a LARGE pool of exercises for this grade
+  // Strategy: prefer skill-linked exercises, but fall back to grade-matched exercises
+  // (most KB exercises are NOT yet linked to skills, so this dramatically increases variety).
+  const skillIdList = skills.map((s: any) => s.id);
+
+  const [{ data: linkedRows }, { data: gradeExs }] = await Promise.all([
+    db.from("kb_skill_exercise_links").select("skill_id, exercise_id").in("skill_id", skillIdList).limit(200),
+    db
+      .from("kb_exercises")
+      .select("id, text, type, difficulty, bloom_level, chapter")
+      .eq("country_code", countryCode)
+      .eq("grade", level)
+      .limit(Math.max(count * 4, 80)),
+  ]);
+
+  // Map exercise → skill (for linked ones)
   const skillByExercise = new Map<string, any>();
-  for (const l of links || []) {
+  for (const l of linkedRows || []) {
     if (!skillByExercise.has(l.exercise_id)) {
       skillByExercise.set(l.exercise_id, skillById.get(l.skill_id));
     }
   }
 
+  // Combine: linked first (better signal), then grade-matched fillers
+  const linkedIds = new Set(skillByExercise.keys());
+  const allExercises = [
+    ...(gradeExs || []).filter((e: any) => linkedIds.has(e.id)),
+    ...(gradeExs || []).filter((e: any) => !linkedIds.has(e.id)),
+  ];
+
+  // Shuffle once before sampling so different cache builds yield different orderings
+  for (let i = allExercises.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allExercises[i], allExercises[j]] = [allExercises[j], allExercises[i]];
+  }
+
+  // Pull documented misconceptions for these skills (highest-frequency first)
+  const { data: errors } = await db
+    .from("kb_skill_errors")
+    .select("skill_id, error_description, fix_hint, severity, error_type")
+    .in("skill_id", skillIdList)
+    .order("frequency", { ascending: false })
+    .limit(Math.max(count * 2, 20));
+
   const out: any[] = [];
 
-  // (a) From real KB exercises — wrap as "standard" diagnostic items
-  for (const ex of realExercises.slice(0, Math.ceil(count / 2))) {
+  // (a) From real KB exercises — favor variety in length/difficulty
+  for (const ex of allExercises) {
+    const text = (ex.text || "").trim();
+    if (!text || text.length < 12 || text.length > 600) continue; // skip degenerate items
     const skill = skillByExercise.get(ex.id);
-    const badge = badgeFor(skill?.domain);
+    const badge = badgeFor(skill?.domain || ex.chapter);
     out.push({
       id: `kb-ex-${ex.id}`,
       type: "standard",
       typeName: "تمرين منهجي",
-      question: ex.text,
-      answer: "", // open answer; scored via explanation + confidence
-      hint: `يستهدف مهارة: ${skill?.name_ar || skill?.name || "—"}`,
+      question: text,
+      answer: "",
+      hint: skill ? `يستهدف مهارة: ${skill.name_ar || skill.name}` : `الفصل: ${ex.chapter || "—"}`,
       kind: "text",
       icon: badge.icon,
       misconception: skill?.name_ar || skill?.name || "مهارة من المنهج",
@@ -200,11 +275,12 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
       badgeBg: badge.bg,
       placeholder: "اكتب حلك أو استراتيجيتك...",
     });
-    if (out.length >= count) return out;
+    if (out.length >= count) break;
   }
 
   // (b) From documented errors — wrap as "trap" QCM items
   for (const err of errors || []) {
+    if (out.length >= count) break;
     const skill = skillById.get(err.skill_id);
     const badge = badgeFor(skill?.domain);
     out.push({
@@ -222,7 +298,6 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
       badgeColor: badge.color,
       badgeBg: badge.bg,
     });
-    if (out.length >= count) return out;
   }
 
   return out;
