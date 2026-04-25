@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
+import { ParallelepipedDiagram } from "@/components/geometry/ParallelepipedDiagram";
 import {
   inferAnswerSchema,
   gradeAnswer,
