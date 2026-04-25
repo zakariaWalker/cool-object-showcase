@@ -145,10 +145,25 @@
   }
 
   .inline-math-isolate {
-    display: inline-flex !important;
-    align-items: center;
+    display: inline-block !important;
     white-space: nowrap !important;
     vertical-align: middle;
+  }
+
+  /* KaTeX renders BOTH an accessible MathML node AND the visual HTML node.
+     Certain flex/inline-flex parents make the MathML node escape its
+     default clipping and appear as a duplicate of the math content.
+     Force-hide it everywhere. */
+  .katex .katex-mathml {
+    position: absolute !important;
+    clip: rect(1px, 1px, 1px, 1px) !important;
+    clip-path: inset(50%) !important;
+    padding: 0 !important;
+    border: 0 !important;
+    height: 1px !important;
+    width: 1px !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
   }
 }
 
