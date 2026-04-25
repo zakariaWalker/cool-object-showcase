@@ -60,7 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isGuest = !user;
 
   useEffect(() => {
-    const publicPaths = ["/", "/auth", "/onboarding", "/gaps", "/diagnostic", "/annales", "/geometry-studio", "/algebra-studio"];
+    const publicPaths = ["/", "/auth", "/onboarding", "/gaps", "/diagnostic", "/annales", "/geometry-studio", "/algebra-studio", "/textbooks"];
     const isPublic =
       publicPaths.includes(currentPath) ||
       currentPath.startsWith("/tma") ||
