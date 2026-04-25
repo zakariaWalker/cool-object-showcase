@@ -1107,6 +1107,36 @@ export type Database = {
         }
         Relationships: []
       }
+      kb_figures: {
+        Row: {
+          created_at: string
+          description: string | null
+          exercise_id: string
+          figure_type: string
+          id: string
+          spec: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          exercise_id: string
+          figure_type: string
+          id?: string
+          spec?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          exercise_id?: string
+          figure_type?: string
+          id?: string
+          spec?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kb_patterns: {
         Row: {
           concepts: Json | null
