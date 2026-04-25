@@ -19,7 +19,8 @@ export default function StudentSolver() {
   
   const [currentStep, setCurrentStep] = useState(0);
   const [studentInput, setStudentInput] = useState("");
-  const [stepStatus, setStepStatus] = useState<"typing" | "correct" | "incorrect" | "hint_shown">("typing");
+  const [stepStatus, setStepStatus] = useState<"typing" | "correct" | "partial" | "incorrect" | "hint_shown">("typing");
+  const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
@@ -66,12 +67,20 @@ export default function StudentSolver() {
     }
   }
 
+  // Build a real schema for the current step from the exercise text
+  const currentStepText: string = deconstruction?.steps?.[currentStep] ?? "";
+  const schema: AnswerSchema = useMemo(
+    () => inferAnswerSchema(exercise?.text || "", currentStepText),
+    [exercise?.text, currentStepText],
+  );
+
   const handleCheck = () => {
-    // V1 Simple Self-Grade logic.
-    // We allow the student to type their answer, and then we "Reveal" the ideal state
-    // or simulate an AI check finding it correct if they type something.
     if (!studentInput.trim()) return;
-    setStepStatus("correct");
+    const v = gradeAnswer(studentInput, schema);
+    setVerdict(v);
+    setStepStatus(
+      v.status === "correct" ? "correct" : v.status === "partial" ? "partial" : v.status === "unknown" ? "correct" : "incorrect",
+    );
   };
 
   const nextStep = () => {
@@ -80,6 +89,7 @@ export default function StudentSolver() {
       setCurrentStep(s => s + 1);
       setStudentInput("");
       setStepStatus("typing");
+      setVerdict(null);
     } else {
       setCompleted(true);
     }
