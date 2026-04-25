@@ -88,6 +88,12 @@ export default function GapDetector() {
   const [showSolution, setShowSolution] = useState(false);
   const [roundHistory, setRoundHistory] = useState<QuizAnswer[][]>([]);
 
+  // Answer input + grading state
+  const [answerText, setAnswerText] = useState("");
+  const [grading, setGrading] = useState(false);
+  const [gradeFeedback, setGradeFeedback] = useState<string>("");
+  const [inputError, setInputError] = useState<string>("");
+
   const [usedExerciseIds, setUsedExerciseIds] = useState<Set<string>>(new Set());
 
   // Gamification state
