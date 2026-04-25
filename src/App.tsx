@@ -160,6 +160,8 @@ const App = () => (
             <Route path="/unified-kb" element={<UnifiedKBPage />} />
             <Route path="/textbook-upload" element={<TextbookUpload />} />
             <Route path="/textbook/:id" element={<TextbookViewer />} />
+            <Route path="/textbooks" element={<TextbooksIndex />} />
+            <Route path="/textbooks/:slugOrId" element={<TextbookBlog />} />
             <Route path="/geometry-studio" element={<GeometryStudio />} />
             <Route path="/algebra-studio" element={<AlgebraStudio />} />
             <Route path="*" element={<NotFound />} />
