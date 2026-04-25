@@ -232,7 +232,16 @@ export function AdminDeconstruct({ exercises, patterns, deconstructions, onAdd, 
         )}
       </div>
 
+      {/* JSON Bulk Importer */}
+      <DeconstructionImporter
+        exercises={exercises}
+        patterns={patterns}
+        countryCode={countryCode}
+        onAdd={onAdd}
+      />
+
       <div className="flex gap-4" style={{ height: "calc(100vh - 420px)" }}>
+
         {/* Exercise list */}
         <div className="w-[380px] flex-shrink-0 flex flex-col gap-3 overflow-hidden">
           <div className="flex gap-2 flex-wrap">
