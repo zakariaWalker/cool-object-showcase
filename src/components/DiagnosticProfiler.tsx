@@ -365,7 +365,7 @@ export function DiagnosticProfiler({
         {revealStep >= 3 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
             <button
-              onClick={() => navigate("/learning-path")}
+              onClick={() => navigate("/learn")}
               className="w-full bg-gradient-to-r from-primary to-accent text-white py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
               <TrendingUp className="w-5 h-5" />
