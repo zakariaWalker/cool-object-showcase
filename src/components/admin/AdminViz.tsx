@@ -4,6 +4,9 @@ import { useMemo, useState, lazy, Suspense } from "react";
 import { Exercise, Pattern, Deconstruction } from "./useAdminKBStore";
 import { motion } from "framer-motion";
 import { KBNetworkGraph } from "./KBNetworkGraph";
+import { ruleBasedDeconstruct } from "./ruleBasedDeconstructor";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const KnowledgeGraph3D = lazy(() => import("./KnowledgeGraph3D"));
 
@@ -11,6 +14,9 @@ interface Props {
   exercises: Exercise[];
   patterns: Pattern[];
   deconstructions: Deconstruction[];
+  countryCode?: string;
+  onAdd?: (d: Deconstruction) => void;
+  reload?: () => void;
 }
 
 // Generic short labels — uses grade_code as fallback (e.g. "1AM" for DZ, "G7" for OM).
@@ -33,9 +39,11 @@ const TYPE_LABELS_AR: Record<string, string> = {
   unclassified: "غير مصنف", other: "أخرى",
 };
 
-export function AdminViz({ exercises, patterns, deconstructions }: Props) {
+export function AdminViz({ exercises, patterns, deconstructions, countryCode = "DZ", onAdd, reload }: Props) {
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [tab, setTab] = useState<"analytics" | "network" | "3d">("analytics");
+  const [linking, setLinking] = useState(false);
+  const [linkProgress, setLinkProgress] = useState({ done: 0, total: 0 });
 
   const insights = useMemo(() => {
     // 1. Coverage: exercises with vs without deconstruction
@@ -106,14 +114,106 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
     const exerciseTypes = new Set(exercises.map(e => e.type));
     const orphanPatterns = patterns.filter(p => p.type && !exerciseTypes.has(p.type));
 
+    // 9. Linkable: uncovered exercises that COULD receive a pattern (their type has at least one pattern)
+    const patternTypes = new Set(patterns.map(p => (p.type || "").toLowerCase()).filter(Boolean));
+    const uncoveredExercises = exercises.filter(e => !deconExIds.has(e.id));
+    const linkableUncovered = uncoveredExercises.filter(e => {
+      const t = (e.type || "").toLowerCase();
+      return t && t !== "unclassified" && (patternTypes.has(t) || patterns.some(p => (p.type || "").toLowerCase() === t));
+    });
+
+    // 10. Weak coverage cells: (grade × type) combos that exist in curriculum but have <3 exercises
+    type Weak = { grade: string; type: string; total: number; covered: number };
+    const weakCells: Weak[] = [];
+    allGrades.forEach(g => {
+      allTypes.forEach(t => {
+        const c = heatmap[g]?.[t];
+        if (c && c.total > 0 && c.total < 3) {
+          weakCells.push({ grade: g, type: t, total: c.total, covered: c.covered });
+        }
+      });
+    });
+    weakCells.sort((a, b) => a.total - b.total);
+
     return {
       covered, uncovered, coveragePct, gradeStats, typeStats,
       topPatterns, unusedPatterns, aiCount, manualCount,
       heatmap, allGrades, allTypes, typesWithNoPatterns, orphanPatterns,
+      linkableUncovered, weakCells,
     };
   }, [exercises, patterns, deconstructions]);
 
   const coverageColor = insights.coveragePct >= 70 ? "hsl(var(--geometry))" : insights.coveragePct >= 40 ? "hsl(var(--statistics))" : "hsl(var(--functions))";
+
+  // ── Action: rule-based bulk linking of unused patterns to uncovered exercises ──
+  async function handleLinkPatterns() {
+    if (!onAdd || linking) return;
+    const targets = insights.linkableUncovered;
+    if (targets.length === 0) {
+      toast.info("لا توجد تمارين غير مفكّكة قابلة للربط");
+      return;
+    }
+    setLinking(true);
+    setLinkProgress({ done: 0, total: targets.length });
+
+    try {
+      const existingIds = new Set(deconstructions.map(d => d.exerciseId));
+      const results = ruleBasedDeconstruct(targets, patterns, existingIds);
+      const created = results.filter(r => r.deconstruction).map(r => r.deconstruction!);
+
+      // Persist in batches of 200 directly to Supabase to avoid 500+ sequential inserts
+      const BATCH = 200;
+      const isUUID = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+      let inserted = 0;
+      for (let i = 0; i < created.length; i += BATCH) {
+        const batch = created.slice(i, i + BATCH)
+          .filter(d => isUUID(d.exerciseId) && (!d.patternId || isUUID(d.patternId)))
+          .map(d => ({
+            exercise_id: d.exerciseId,
+            pattern_id: d.patternId,
+            steps: d.steps || [],
+            needs: d.needs,
+            notes: d.notes,
+            country_code: d.countryCode || countryCode,
+            ai_generated: false,
+          }));
+        if (batch.length === 0) continue;
+        const { error } = await (supabase as any).from("kb_deconstructions").insert(batch);
+        if (error) throw error;
+        inserted += batch.length;
+        setLinkProgress({ done: Math.min(i + BATCH, created.length), total: created.length });
+      }
+
+      toast.success(`✅ تم ربط ${inserted} تمرين بنمط (${created.length - inserted} متجاوَز)`);
+      reload?.();
+    } catch (err: any) {
+      console.error("[link patterns]", err);
+      toast.error(`فشل الربط: ${err.message || err}`);
+    } finally {
+      setLinking(false);
+    }
+  }
+
+  // ── Action: export weak-domain plan as JSON for AI generation ──
+  function handleExportWeakDomains() {
+    const plan = insights.weakCells.map(w => ({
+      grade: w.grade,
+      type: w.type,
+      type_ar: TYPE_LABELS_AR[w.type] || w.type,
+      current_count: w.total,
+      target_count: 5,
+      need: 5 - w.total,
+    }));
+    const blob = new Blob([JSON.stringify({ countryCode, weakDomains: plan }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `weak-domains-${countryCode}-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`📥 تم تصدير ${plan.length} مجال ضعيف`);
+  }
+
 
   return (
     <div className="space-y-5" dir="rtl">
@@ -362,14 +462,81 @@ export function AdminViz({ exercises, patterns, deconstructions }: Props) {
               />
             )}
 
-            {/* Unused patterns */}
+            {/* Unused patterns + linking action */}
             {insights.unusedPatterns.length > 0 && (
-              <AlertItem
-                severity="medium"
-                title={`${insights.unusedPatterns.length} أنماط غير مستخدمة`}
-                detail={insights.unusedPatterns.slice(0, 5).map(p => p.name).join("، ")}
-              />
+              <div className="p-3 rounded-lg space-y-2" style={{ background: "hsl(var(--statistics) / 0.08)" }}>
+                <div className="flex items-start gap-2">
+                  <span className="text-sm flex-shrink-0">🟡</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-bold" style={{ color: "hsl(var(--statistics))" }}>
+                      {insights.unusedPatterns.length} نمط بدون تفكيكات
+                    </div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5 leading-relaxed">
+                      {insights.linkableUncovered.length > 0
+                        ? `${insights.linkableUncovered.length} تمرين قابل للربط الآلي بهذه الأنماط`
+                        : "لا توجد تمارين غير مفكّكة بأنواع متطابقة"}
+                    </div>
+                  </div>
+                </div>
+                {onAdd && insights.linkableUncovered.length > 0 && (
+                  <button
+                    onClick={handleLinkPatterns}
+                    disabled={linking}
+                    className="w-full text-[11px] font-bold py-2 rounded-lg transition-all disabled:opacity-50"
+                    style={{
+                      background: linking ? "hsl(var(--muted))" : "hsl(var(--statistics))",
+                      color: linking ? "hsl(var(--muted-foreground))" : "#fff",
+                    }}
+                  >
+                    {linking
+                      ? `⏳ جاري الربط… ${linkProgress.done}/${linkProgress.total}`
+                      : `⚡ اربط الأنماط بـ ${insights.linkableUncovered.length} تمرين`}
+                  </button>
+                )}
+              </div>
             )}
+
+            {/* Weak coverage cells (grade × type with <3 exercises) */}
+            {insights.weakCells.length > 0 && (
+              <div className="p-3 rounded-lg space-y-2" style={{ background: "hsl(var(--functions) / 0.08)" }}>
+                <div className="flex items-start gap-2">
+                  <span className="text-sm flex-shrink-0">🟡</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-bold" style={{ color: "hsl(var(--functions))" }}>
+                      {insights.weakCells.length} مجال بتغطية ضعيفة جداً
+                    </div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5 leading-relaxed">
+                      مستويات × أنواع بأقلّ من 3 تمارين — تحتاج لإضافة محتوى للتوازن
+                    </div>
+                  </div>
+                </div>
+                <details className="text-[10px]">
+                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+                    عرض القائمة ({insights.weakCells.slice(0, 8).length} من {insights.weakCells.length})
+                  </summary>
+                  <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                    {insights.weakCells.slice(0, 20).map((w, i) => (
+                      <div key={`${w.grade}-${w.type}-${i}`} className="flex items-center justify-between gap-2 py-1 px-2 rounded bg-card/60">
+                        <span className="font-bold text-foreground">
+                          {labelForGrade(w.grade)} · {TYPE_LABELS_AR[w.type] || w.type}
+                        </span>
+                        <span className="text-muted-foreground font-mono">
+                          {w.total} تمرين
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+                <button
+                  onClick={handleExportWeakDomains}
+                  className="w-full text-[11px] font-bold py-2 rounded-lg transition-all"
+                  style={{ background: "hsl(var(--functions))", color: "#fff" }}
+                >
+                  📥 صدّر خطّة المجالات الضعيفة (JSON)
+                </button>
+              </div>
+            )}
+
 
             {/* Low coverage grades */}
             {Object.entries(insights.gradeStats)

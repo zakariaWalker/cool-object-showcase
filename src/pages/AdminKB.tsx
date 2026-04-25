@@ -270,6 +270,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               exercises={store.exercises}
               patterns={store.patterns}
               deconstructions={store.deconstructions}
+              countryCode={store.countryFilter}
+              onAdd={store.addDeconstruction}
+              reload={store.reload}
             />
           )}
         </div>
