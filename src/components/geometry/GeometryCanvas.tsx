@@ -70,7 +70,7 @@ export function GeometryCanvas({ seedSpec, constraints, onSubmit }: Props) {
       keepAspectRatio: true,
       grid: true,
       pan: { enabled: true, needTwoFingers: false, needShift: false },
-      zoom: { enabled: true, wheel: true, needShift: false, factorX: 1.1, factorY: 1.1 },
+      zoom: { wheel: true, needShift: false, factorX: 1.1, factorY: 1.1 } as any,
       showFullscreen: false,
       defaultAxes: undefined,
     });
