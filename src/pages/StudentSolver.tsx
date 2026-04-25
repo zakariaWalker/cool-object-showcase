@@ -87,11 +87,21 @@ export default function StudentSolver() {
     [exercise?.text, currentStepText],
   );
 
-  // Pull single-letter vertex labels (A..H) from the current step to highlight on the diagram
-  const highlightVertices = useMemo(() => {
-    const matches = (currentStepText || "").match(/\b[A-H]\b/g) || [];
-    return Array.from(new Set(matches));
-  }, [currentStepText]);
+  // Resolve which figure to render: manual override → auto-detected default → none
+  const figureSpec: FigureSpec | null = useMemo(() => {
+    if (manualFigureSpec) return manualFigureSpec;
+    if (!exercise) return null;
+    const kind = detectFigureKind({
+      type: exercise.type, chapter: exercise.chapter, text: exercise.text,
+    });
+    return kind ? defaultFigureSpec(kind) : null;
+  }, [exercise, manualFigureSpec]);
+
+  // Smart per-step focus on the figure
+  const figureHighlights = useMemo(
+    () => (figureSpec ? analyzeStep(currentStepText, figureSpec) : {}),
+    [figureSpec, currentStepText],
+  );
 
   const handleCheck = () => {
     if (!studentInput.trim()) return;
