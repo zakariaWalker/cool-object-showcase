@@ -1,10 +1,10 @@
 // ===== Public textbook reader — interactive blog-style with collapsible chapters =====
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  BookOpen, ChevronDown, ChevronLeft, Lightbulb, Target, PenTool, Award, Star, Brain,
-  Lock, ArrowRight, Sparkles, CheckCircle, ListOrdered,
+  BookOpen, ChevronDown, ChevronLeft, ChevronRight, Lightbulb, Target, PenTool, Award, Star, Brain,
+  Lock, ArrowRight, Sparkles, CheckCircle, ListOrdered, Menu, X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -66,9 +66,13 @@ export default function TextbookBlog() {
   const [activitiesByLesson, setActivitiesByLesson] = useState<Record<string, Activity[]>>({});
   const [exercisesByChapter, setExercisesByChapter] = useState<Record<string, Exercise[]>>({});
   const [openChapter, setOpenChapter] = useState<string | null>(null);
+  const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
+  const [readProgress, setReadProgress] = useState(0);
+  const [tocOpen, setTocOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const articleRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -158,6 +162,46 @@ export default function TextbookBlog() {
     })();
   }, [slugOrId]);
 
+  // Scroll-spy: track active chapter + reading progress
+  useEffect(() => {
+    if (chapters.length === 0) return;
+    const onScroll = () => {
+      const doc = document.documentElement;
+      const scrollTop = window.scrollY;
+      const max = doc.scrollHeight - window.innerHeight;
+      setReadProgress(max > 0 ? Math.min(100, Math.max(0, (scrollTop / max) * 100)) : 0);
+
+      // active section = first one whose top is below the offset (e.g. nav 120px)
+      const offset = 140;
+      let current: string | null = chapters[0]?.id || null;
+      for (const ch of chapters) {
+        const el = document.getElementById(`chapter-${ch.id}`);
+        if (!el) continue;
+        const top = el.getBoundingClientRect().top;
+        if (top - offset <= 0) current = ch.id;
+        else break;
+      }
+      setActiveChapterId(current);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [chapters]);
+
+  const goToChapter = (id: string) => {
+    setOpenChapter(id);
+    setTocOpen(false);
+    // wait a tick so the chapter expands before scrolling
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`chapter-${id}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  const currentIndex = activeChapterId ? chapters.findIndex(c => c.id === activeChapterId) : -1;
+  const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
+  const nextChapter = currentIndex >= 0 && currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -178,12 +222,41 @@ export default function TextbookBlog() {
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      {/* Hero */}
-      <header className="border-b border-border bg-gradient-to-br from-primary/10 via-background to-accent/10">
-        <div className="max-w-4xl mx-auto px-4 py-10">
-          <Link to="/textbooks" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary mb-4">
+      {/* Sticky progress bar + mobile TOC trigger */}
+      <div className="sticky top-0 z-40 bg-background/85 backdrop-blur border-b border-border">
+        <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
+          <Link to="/textbooks" className="inline-flex items-center gap-1 text-[11px] font-bold text-muted-foreground hover:text-primary">
             <ChevronLeft className="w-3 h-3" /> كل الكتب
           </Link>
+          <div className="flex-1 mx-2 hidden sm:flex items-center gap-2 min-w-0">
+            <span className="text-[11px] font-bold text-muted-foreground truncate">{textbook.title}</span>
+            {currentIndex >= 0 && (
+              <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                · فصل {currentIndex + 1}/{chapters.length}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black text-primary tabular-nums">{Math.round(readProgress)}%</span>
+            <button
+              onClick={() => setTocOpen(true)}
+              className="lg:hidden inline-flex items-center gap-1 text-[11px] font-bold text-primary border border-primary/30 rounded-lg px-2 py-1 hover:bg-primary/10"
+            >
+              <Menu className="w-3 h-3" /> الفهرس
+            </button>
+          </div>
+        </div>
+        <div className="h-1 bg-muted/50">
+          <div
+            className="h-full bg-gradient-to-l from-primary via-accent to-primary transition-[width] duration-150"
+            style={{ width: `${readProgress}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Hero */}
+      <header className="border-b border-border bg-gradient-to-br from-primary/10 via-background to-accent/10">
+        <div className="max-w-6xl mx-auto px-4 py-10">
           <div className="flex items-start gap-4">
             <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20">
               <BookOpen className="w-8 h-8 text-primary" />
@@ -206,106 +279,209 @@ export default function TextbookBlog() {
         </div>
       </header>
 
-      <article className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-        {/* TOC */}
-        <Card className="border-2 border-primary/20 bg-primary/5">
-          <CardContent className="p-5">
-            <h2 className="flex items-center gap-2 text-sm font-black text-foreground mb-3">
-              <ListOrdered className="w-4 h-4 text-primary" /> فهرس الكتاب
-            </h2>
-            <div className="space-y-1">
-              {chapters.map((ch, i) => (
-                <a
-                  key={ch.id}
-                  href={`#chapter-${ch.id}`}
-                  onClick={() => setOpenChapter(ch.id)}
-                  className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg hover:bg-card transition-colors text-xs text-foreground"
-                >
-                  <span className="flex items-center gap-2 font-bold">
-                    <span className="text-primary">{i + 1}.</span>
-                    {ch.title_ar || ch.title}
-                  </span>
-                  <ArrowRight className="w-3 h-3 text-muted-foreground" />
-                </a>
-              ))}
+      <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+        {/* Sidebar TOC (desktop) */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-20">
+            <TocPanel
+              chapters={chapters}
+              activeId={activeChapterId}
+              onPick={goToChapter}
+            />
+          </div>
+        </aside>
+
+        {/* Mobile TOC drawer */}
+        {tocOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setTocOpen(false)}>
+            <div className="absolute inset-0 bg-black/40" />
+            <div
+              dir="rtl"
+              className="absolute top-0 right-0 bottom-0 w-[85%] max-w-sm bg-card border-l border-border p-4 overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-black flex items-center gap-2">
+                  <ListOrdered className="w-4 h-4 text-primary" /> فهرس الكتاب
+                </h3>
+                <button onClick={() => setTocOpen(false)} className="p-1 rounded hover:bg-muted">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <TocPanel
+                chapters={chapters}
+                activeId={activeChapterId}
+                onPick={goToChapter}
+                bare
+              />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        )}
 
-        {/* Chapters */}
-        {chapters.map((ch, i) => {
-          const isOpen = openChapter === ch.id;
-          const lessons = lessonsByChapter[ch.id] || [];
-          const exercises = exercisesByChapter[ch.id] || [];
-          return (
-            <section key={ch.id} id={`chapter-${ch.id}`} className="scroll-mt-4">
-              <button
-                onClick={() => setOpenChapter(isOpen ? null : ch.id)}
-                className="w-full flex items-center justify-between gap-3 p-5 rounded-2xl border-2 border-border bg-card hover:border-primary/50 transition-all"
-              >
-                <div className="flex items-center gap-3 text-right">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center font-black text-primary">{i + 1}</div>
-                  <div>
-                    <h2 className="text-lg font-black text-foreground">{ch.title_ar || ch.title}</h2>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {lessons.length} درس · {exercises.length} تمرين
-                    </p>
+        <article className="min-w-0 space-y-6">
+          {/* Chapters */}
+          {chapters.map((ch, i) => {
+            const isOpen = openChapter === ch.id;
+            const lessons = lessonsByChapter[ch.id] || [];
+            const exercises = exercisesByChapter[ch.id] || [];
+            const isLast = i === chapters.length - 1;
+            const isFirst = i === 0;
+            return (
+              <section key={ch.id} id={`chapter-${ch.id}`} className="scroll-mt-24">
+                <button
+                  onClick={() => setOpenChapter(isOpen ? null : ch.id)}
+                  className="w-full flex items-center justify-between gap-3 p-5 rounded-2xl border-2 border-border bg-card hover:border-primary/50 transition-all"
+                >
+                  <div className="flex items-center gap-3 text-right">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center font-black text-primary">{i + 1}</div>
+                    <div>
+                      <h2 className="text-lg font-black text-foreground">{ch.title_ar || ch.title}</h2>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {lessons.length} درس · {exercises.length} تمرين
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
-              </button>
+                  <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                </button>
 
-              {isOpen && (
-                <div className="mt-4 space-y-6 pr-4 border-r-2 border-primary/10">
-                  {/* Lessons */}
-                  {lessons.map(lesson => {
-                    const acts = activitiesByLesson[lesson.id] || [];
-                    return (
-                      <div key={lesson.id} className="space-y-3">
-                        <h3 className="text-base font-black text-foreground border-b border-border pb-2">
-                          📘 {lesson.title_ar || lesson.title}
+                {isOpen && (
+                  <div className="mt-4 space-y-6 pr-4 border-r-2 border-primary/10">
+                    {/* Lessons */}
+                    {lessons.map(lesson => {
+                      const acts = activitiesByLesson[lesson.id] || [];
+                      return (
+                        <div key={lesson.id} className="space-y-3">
+                          <h3 className="text-base font-black text-foreground border-b border-border pb-2">
+                            📘 {lesson.title_ar || lesson.title}
+                          </h3>
+                          {lesson.objectives && lesson.objectives.length > 0 && (
+                            <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
+                              <p className="text-[11px] font-black text-primary mb-1.5 flex items-center gap-1">
+                                <Target className="w-3 h-3" /> الأهداف التعلمية
+                              </p>
+                              <ul className="text-xs text-foreground space-y-1">
+                                {lesson.objectives.map((o, k) => (
+                                  <li key={k} className="flex gap-1.5"><span className="text-primary">◆</span>{o}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {acts.map(act => (
+                            <ActivityCard key={act.id} act={act} user={user} navigate={navigate} />
+                          ))}
+                        </div>
+                      );
+                    })}
+
+                    {/* Chapter exercises */}
+                    {exercises.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="flex items-center gap-2 text-base font-black text-rose-700 dark:text-rose-300 border-b-2 border-rose-200 dark:border-rose-900 pb-2">
+                          <PenTool className="w-4 h-4" /> تمارين الفصل ({exercises.length})
                         </h3>
-                        {lesson.objectives && lesson.objectives.length > 0 && (
-                          <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
-                            <p className="text-[11px] font-black text-primary mb-1.5 flex items-center gap-1">
-                              <Target className="w-3 h-3" /> الأهداف التعلمية
-                            </p>
-                            <ul className="text-xs text-foreground space-y-1">
-                              {lesson.objectives.map((o, k) => (
-                                <li key={k} className="flex gap-1.5"><span className="text-primary">◆</span>{o}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {acts.map(act => (
-                          <ActivityCard key={act.id} act={act} user={user} navigate={navigate} />
+                        {exercises.map(ex => (
+                          <ExerciseCard key={ex.id} ex={ex} user={user} navigate={navigate} />
                         ))}
                       </div>
-                    );
-                  })}
+                    )}
 
-                  {/* Chapter exercises */}
-                  {exercises.length > 0 && (
-                    <div className="space-y-3">
-                      <h3 className="flex items-center gap-2 text-base font-black text-rose-700 dark:text-rose-300 border-b-2 border-rose-200 dark:border-rose-900 pb-2">
-                        <PenTool className="w-4 h-4" /> تمارين الفصل ({exercises.length})
-                      </h3>
-                      {exercises.map(ex => (
-                        <ExerciseCard key={ex.id} ex={ex} user={user} navigate={navigate} />
-                      ))}
+                    {lessons.length === 0 && exercises.length === 0 && (
+                      <p className="text-xs text-muted-foreground py-6 text-center">لا توجد دروس أو تمارين في هذا الفصل بعد</p>
+                    )}
+
+                    {/* Prev / Next chapter nav */}
+                    <div className="flex items-stretch gap-3 pt-4 mt-4 border-t border-border">
+                      {!isFirst ? (
+                        <button
+                          onClick={() => goToChapter(chapters[i - 1].id)}
+                          className="flex-1 group flex items-center gap-2 p-3 rounded-xl border border-border bg-card hover:border-primary/50 hover:bg-primary/5 transition-all text-right"
+                        >
+                          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary flex-shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-[10px] font-bold text-muted-foreground">الفصل السابق</div>
+                            <div className="text-xs font-black text-foreground truncate">
+                              {i}. {chapters[i - 1].title_ar || chapters[i - 1].title}
+                            </div>
+                          </div>
+                        </button>
+                      ) : <div className="flex-1" />}
+                      {!isLast ? (
+                        <button
+                          onClick={() => goToChapter(chapters[i + 1].id)}
+                          className="flex-1 group flex items-center justify-end gap-2 p-3 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all text-left"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-[10px] font-bold text-primary">الفصل التالي</div>
+                            <div className="text-xs font-black text-foreground truncate">
+                              {i + 2}. {chapters[i + 1].title_ar || chapters[i + 1].title}
+                            </div>
+                          </div>
+                          <ChevronLeft className="w-4 h-4 text-primary flex-shrink-0" />
+                        </button>
+                      ) : (
+                        <div className="flex-1 flex items-center justify-center p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
+                          <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" /> أكملتَ الكتاب!
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </article>
+      </div>
+    </div>
+  );
+}
 
-                  {lessons.length === 0 && exercises.length === 0 && (
-                    <p className="text-xs text-muted-foreground py-6 text-center">لا توجد دروس أو تمارين في هذا الفصل بعد</p>
-                  )}
-                </div>
-              )}
-            </section>
+// ─── Sidebar TOC panel ───
+function TocPanel({
+  chapters, activeId, onPick, bare = false,
+}: {
+  chapters: Chapter[];
+  activeId: string | null;
+  onPick: (id: string) => void;
+  bare?: boolean;
+}) {
+  const inner = (
+    <div className="space-y-1">
+      {!bare && (
+        <h2 className="flex items-center gap-2 text-xs font-black text-foreground mb-2 px-1">
+          <ListOrdered className="w-3.5 h-3.5 text-primary" /> فهرس الكتاب
+        </h2>
+      )}
+      <div className="space-y-0.5 max-h-[70vh] overflow-y-auto pr-1">
+        {chapters.map((ch, i) => {
+          const active = ch.id === activeId;
+          return (
+            <button
+              key={ch.id}
+              onClick={() => onPick(ch.id)}
+              className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg transition-all text-right ${
+                active
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-foreground hover:bg-muted/60"
+              }`}
+            >
+              <span className={`flex items-center gap-2 text-[11px] font-bold min-w-0 ${active ? "" : ""}`}>
+                <span className={`text-[10px] flex-shrink-0 ${active ? "opacity-90" : "text-primary"}`}>{i + 1}.</span>
+                <span className="truncate">{ch.title_ar || ch.title}</span>
+              </span>
+              {active && <ArrowRight className="w-3 h-3 flex-shrink-0" />}
+            </button>
           );
         })}
-      </article>
+      </div>
     </div>
+  );
+  if (bare) return inner;
+  return (
+    <Card className="border-2 border-primary/15 bg-card">
+      <CardContent className="p-3">{inner}</CardContent>
+    </Card>
   );
 }
 
