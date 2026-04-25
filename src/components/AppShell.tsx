@@ -23,6 +23,7 @@ import {
   ArrowLeftRight,
   Compass,
   Sigma,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 import { GamificationDashboard } from "./GamificationDashboard";
@@ -179,6 +180,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   `}
                 >
                   <ArrowLeftRight className="w-4 h-4" /> <span className="hidden lg:inline">مقارنة الامتحانات</span>
+                </Link>
+                <Link
+                  to="/admin/analytics"
+                  className={`
+                    flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12px] font-black transition-all border-2
+                    ${
+                      currentPath === "/admin/analytics"
+                        ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20"
+                        : "border-border/40 text-muted-foreground hover:border-primary/40 hover:text-primary"
+                    }
+                  `}
+                >
+                  <BarChart3 className="w-4 h-4" /> <span className="hidden lg:inline">التحليلات</span>
                 </Link>
                 <Link
                   to="/admin/reports"
