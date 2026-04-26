@@ -178,27 +178,25 @@ export default function Landing() {
       `}</style>
 
       <div className="qed-landing relative bg-background min-h-screen overflow-x-hidden" dir="rtl">
-        {/* ── NAV ── */}
-        <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur-2xl bg-background/75 border-b border-border/40">
+        {/* ── NAV — academic, hairline, no flashy chrome ── */}
+        <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur-xl bg-background/85 border-b border-border">
           <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
             <QEDLogo size="md" />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <a
                 href="#textbooks"
-                className="hidden md:inline-flex items-center h-9 px-4 rounded-xl text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+                className="hidden md:inline-flex items-center h-9 px-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 الدروس
               </a>
               <a
                 href="#how"
-                className="hidden md:inline-flex items-center h-9 px-4 rounded-xl text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+                className="hidden md:inline-flex items-center h-9 px-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 كيف يخدم
               </a>
-              <Link
-                to="/auth"
-                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-black text-white qed-brand-gradient hover:opacity-90 transition-all shadow-lg shadow-[hsl(var(--algebra)/0.25)]"
-              >
+              <span className="hidden md:block w-px h-4 bg-border mx-2" />
+              <Link to="/auth" className="btn-ink h-9 px-4 text-sm">
                 دخول
                 <ChevronLeft className="w-3.5 h-3.5" />
               </Link>
