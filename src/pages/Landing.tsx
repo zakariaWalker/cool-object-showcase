@@ -567,7 +567,7 @@ export default function Landing() {
                     <ShieldCheck className="w-3.5 h-3.5" />
                     لولي الأمر
                   </div>
-                  <h2 className="qed-serif text-2xl md:text-3xl font-bold text-foreground leading-tight">
+                  <h2 className="text-2xl md:text-3xl font-black text-foreground leading-tight tracking-tight">
                     لست مضطراً لاختيار بين تكلفة باهظة أو ترك ابنك بلا متابعة
                   </h2>
                   <div className="grid sm:grid-cols-2 gap-6">
