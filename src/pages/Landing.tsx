@@ -441,18 +441,21 @@ export default function Landing() {
         </section>
 
         {/* ── HOW IT WORKS — timeline style ── */}
-        <section id="how" className="border-y border-border bg-muted/20 py-24 px-6">
-          <div className="max-w-5xl mx-auto space-y-14">
+        <section id="how" className="relative bg-foreground text-background py-20 px-6 overflow-hidden">
+          <div className="absolute inset-0 qed-hero-grid opacity-[0.04] pointer-events-none" />
+          <div className="absolute top-0 right-1/3 w-96 h-96 bg-primary/30 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-accent/20 rounded-full blur-[120px] pointer-events-none" />
+          <div className="relative max-w-5xl mx-auto space-y-12">
             <div className="text-center space-y-3">
-              <span className="qed-mono text-xs font-bold text-primary uppercase tracking-widest">كيف يخدم</span>
-              <h2 className="qed-serif text-3xl md:text-5xl font-bold text-foreground">4 خطوات بسيطة، نتيجة واضحة</h2>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              <span className="qed-mono text-xs font-bold text-accent uppercase tracking-widest">كيف يخدم</span>
+              <h2 className="qed-serif text-3xl md:text-5xl font-bold text-background">4 خطوات بسيطة، نتيجة واضحة</h2>
+              <p className="text-sm text-background/60 max-w-md mx-auto">
                 نفس الطريقة اللي يستعملها أحسن الأساتذة — لكن مهيكَلة ومتاحة 24/7.
               </p>
             </div>
 
             {/* Timeline grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
               {STEPS.map((s, i) => (
                 <motion.div
                   key={i}
@@ -462,14 +465,13 @@ export default function Landing() {
                   transition={{ delay: i * 0.1 }}
                   className="relative"
                 >
-                  {/* Connector line (hidden on last item and mobile) */}
                   {i < STEPS.length - 1 && (
-                    <div className="absolute top-6 left-0 hidden md:block w-full h-px bg-gradient-to-l from-transparent via-border to-border pointer-events-none -z-10" />
+                    <div className="absolute top-6 left-0 hidden md:block w-full h-px bg-gradient-to-l from-transparent via-background/20 to-background/20 pointer-events-none -z-10" />
                   )}
-                  <div className="bg-card border border-border rounded-2xl p-6 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                    <div className="qed-mono text-2xl font-bold text-primary/30 mb-4 leading-none">{s.n}</div>
-                    <h3 className="text-sm font-black text-foreground mb-2">{s.t}</h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{s.d}</p>
+                  <div className="bg-background/5 border border-background/15 backdrop-blur-sm rounded-2xl p-6 hover:bg-background/10 hover:border-accent/40 transition-all">
+                    <div className="qed-mono text-2xl font-bold text-accent mb-4 leading-none">{s.n}</div>
+                    <h3 className="text-sm font-black text-background mb-2">{s.t}</h3>
+                    <p className="text-xs text-background/60 leading-relaxed">{s.d}</p>
                   </div>
                 </motion.div>
               ))}
