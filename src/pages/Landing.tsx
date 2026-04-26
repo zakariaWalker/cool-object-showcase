@@ -121,8 +121,8 @@ export default function Landing() {
         .eq("status", "completed")
         .eq("is_public", true)
         .order("created_at", { ascending: false })
-        .limit(30);
-      setBooks(data || []);
+        .limit(60);
+      setBooks((data || []).filter(isRealTextbook));
     })();
   }, []);
 
