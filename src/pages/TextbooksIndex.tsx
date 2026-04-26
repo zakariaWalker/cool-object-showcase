@@ -69,7 +69,13 @@ export default function TextbooksIndex() {
           .limit(200),
         supabase.from("countries").select("code, name_ar, flag_emoji").eq("is_active", true),
       ]);
-      setBooks((tbRes.data as any) || []);
+      // Hide seed / smoke-test entries from public feed.
+      const TEST_RE = [/smoke/i, /\btest\b/i, /^vfre$/i, /placeholder/i, /demo/i, /sample/i];
+      const isReal = (b: any) => {
+        const t = String(b?.title || "").trim();
+        return t.length >= 4 && !TEST_RE.some((re) => re.test(t));
+      };
+      setBooks(((tbRes.data as any) || []).filter(isReal));
       setCountries((cRes.data as any) || []);
       setLoading(false);
     })();
