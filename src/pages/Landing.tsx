@@ -68,17 +68,33 @@ const PARENT_BENEFITS = [
 ];
 
 const STEPS = [
-  { n: "01", t: "تشخيص قصير", d: "تقييم 15 دقيقة يحدّد مستواك بدقة" },
+  { n: "01", t: "تشخيص قصير", d: "اختبار 5 دقائق يحدّد مستواك بدقة" },
   { n: "02", t: "خطة مخصّصة", d: "قائمة تمارين مرتّبة على حسب ثغراتك" },
   { n: "03", t: "تمارين موجّهة", d: "تحلّ خطوة بخطوة مع شرح عند الخطأ" },
   { n: "04", t: "تتبّع التقدّم", d: "تقرير واضح يُظهر تحسّنك أسبوعياً" },
 ];
 
 const TRUST_POINTS = [
-  { v: "١٥د", l: "تشخيص أوّلي" },
+  { v: "٥د", l: "تشخيص أوّلي" },
   { v: "١٠٠٪", l: "متوافق مع برنامج الباك" },
   { v: "٢٤/٧", l: "متاح في أي وقت" },
 ];
+
+// Filter out seed/test/demo entries that shouldn't be visible publicly.
+const TEST_TITLE_PATTERNS = [
+  /smoke/i,
+  /\btest\b/i,
+  /^vfre$/i,
+  /placeholder/i,
+  /demo/i,
+  /sample/i,
+];
+const isRealTextbook = (b: { title?: string | null; description?: string | null }) => {
+  const t = (b.title || "").trim();
+  if (!t) return false;
+  if (t.length < 4) return false;
+  return !TEST_TITLE_PATTERNS.some((re) => re.test(t));
+};
 
 interface BookCard {
   id: string;
