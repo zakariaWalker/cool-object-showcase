@@ -407,19 +407,19 @@ export default function Landing() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-destructive/8 border border-destructive/20 rounded-xl p-3">
                   <div className="text-[10px] font-bold text-destructive/80 mb-1">قبل</div>
-                  <div className="qed-mono text-3xl font-black text-destructive">٩٫٥</div>
-                  <div className="text-[10px] text-muted-foreground mt-1">/ ٢٠</div>
+                  <div className="qed-mono text-3xl font-black text-destructive">9.5</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">/ 20</div>
                 </div>
                 <div className="bg-[hsl(var(--geometry)/0.1)] border border-[hsl(var(--geometry)/0.3)] rounded-xl p-3">
                   <div className="text-[10px] font-bold text-[hsl(var(--geometry))] mb-1">بعد شهر</div>
-                  <div className="qed-mono text-3xl font-black text-[hsl(var(--geometry))]">١٣</div>
-                  <div className="text-[10px] text-muted-foreground mt-1">/ ٢٠</div>
+                  <div className="qed-mono text-3xl font-black text-[hsl(var(--geometry))]">13</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">/ 20</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/60">
-                <Brain className="w-4 h-4 text-primary shrink-0" />
+                <Brain className="w-4 h-4 text-[hsl(var(--algebra))] shrink-0" />
                 <p className="text-[11px] text-muted-foreground leading-snug">
-                  ٢٤ ثغرة مكتشفة، ٣ منها تمثّل ٧٠٪ من الأخطاء — تمّ علاجها بـ ١٢ تمريناً موجَّهاً.
+                  24 ثغرة مكتشفة، 3 منها تمثّل 70% من الأخطاء — تمّ علاجها بـ 12 تمريناً موجَّهاً.
                 </p>
               </div>
             </motion.div>
