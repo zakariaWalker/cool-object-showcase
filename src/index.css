@@ -1,137 +1,207 @@
-/* ── Fonts ───────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Nunito:wght@400;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap');
+/* ═══════════════════════════════════════════════════════════════
+   QED — Design System
+   Personality: Serious & Academic
+   Inspired by BAC reference books, French manuels scolaires,
+   and academic journals (Annals of Mathematics).
+   Motto: rigor, restraint, respect for the subject.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Fonts ───────────────────────────────────────────
+   • Fraunces  — display serif for headlines + numerals
+   • Inter     — UI / body
+   • Tajawal   — Arabic body (paired weight to Inter)
+   • Amiri     — Arabic display (paired to Fraunces)
+   • JetBrains Mono — code / tabular data
+─────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&family=Amiri:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── DESIGN TOKENS ───────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN TOKENS
+   Palette: Parchment background, Ink navy, Burgundy accent,
+   Manuscript sage for progress. No gradients in the brand.
+═══════════════════════════════════════════════════════════════ */
 @layer base {
 
   :root {
-    --background: 40 25% 97%;
-    --foreground: 220 30% 15%;
+    /* Surfaces — parchment / paper */
+    --background: 38 30% 96%;          /* #F7F3EA — warm off-white, like book paper */
+    --foreground: 222 35% 12%;         /* #131B2C — deep ink */
 
-    /* 🔥 FIXED CONTRAST */
     --card: 0 0% 100%;
-    --card-foreground: 220 30% 15%;
+    --card-foreground: 222 35% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 30% 15%;
+    --popover-foreground: 222 35% 12%;
 
-    --primary: 215 65% 38%;
-    --primary-foreground: 0 0% 100%;
+    /* Brand — Navy Ink */
+    --primary: 222 55% 18%;            /* #14223F — academic navy */
+    --primary-foreground: 38 30% 96%;
 
-    --secondary: 38 18% 89%;
-    --secondary-foreground: 220 25% 20%;
+    /* Secondary surfaces — warmer parchment */
+    --secondary: 38 22% 90%;
+    --secondary-foreground: 222 40% 16%;
 
-    --muted: 38 15% 90%;
-    --muted-foreground: 220 14% 36%;
+    --muted: 38 18% 92%;
+    --muted-foreground: 222 12% 38%;
 
-    --accent: 26 75% 48%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent — Burgundy (used SPARINGLY for emphasis) */
+    --accent: 352 58% 32%;             /* #821F2F — burgundy */
+    --accent-foreground: 38 30% 96%;
 
-    --destructive: 4 62% 50%;
-    --destructive-foreground: 0 0% 100%;
+    /* States */
+    --destructive: 0 60% 38%;
+    --destructive-foreground: 38 30% 96%;
+    --success: 162 32% 28%;            /* #314F44 — manuscript sage */
+    --success-foreground: 38 30% 96%;
+    --warning: 35 55% 38%;             /* aged amber */
+    --warning-foreground: 38 30% 96%;
 
-    /* 🔥 STRONGER BORDERS */
-    --border: 220 12% 78%;
-    --input: 220 12% 78%;
+    /* Hairlines — 1px borders, classical */
+    --border: 222 18% 82%;
+    --input: 222 18% 78%;
+    --ring: 222 55% 18%;
 
-    --ring: 215 65% 38%;
-    --radius: 0.75rem;
+    /* Geometry — restrained, not playful */
+    --radius: 0.375rem;                /* 6px — academic */
+    --radius-sm: 0.25rem;
+    --radius-lg: 0.5rem;
 
-    /* glow tuned */
-    --glow-primary: 0 0 25px hsl(215 65% 38% / 0.25);
-    --glow-accent: 0 0 25px hsl(26 75% 48% / 0.25);
+    /* Shadows — like ink on paper, not floating cards */
+    --shadow-hairline: 0 1px 0 hsl(222 35% 12% / 0.06);
+    --shadow-paper:    0 1px 2px hsl(222 35% 12% / 0.06), 0 1px 1px hsl(222 35% 12% / 0.04);
+    --shadow-elevated: 0 8px 24px -8px hsl(222 35% 12% / 0.18), 0 2px 6px hsl(222 35% 12% / 0.06);
+    --shadow-deep:     0 24px 48px -12px hsl(222 35% 12% / 0.28);
 
-    /* domain colors — high contrast */
-    --algebra: 228 55% 50%;
-    --geometry: 162 45% 38%;
-    --statistics: 34 60% 45%;
-    --probability: 272 40% 48%;
-    --functions: 344 48% 48%;
+    /* Domain colors — kept for engine pages, harmonized to the academic palette */
+    --algebra:     222 55% 18%;        /* navy — same as primary, the spine */
+    --geometry:    162 32% 28%;        /* sage */
+    --statistics:  35 55% 38%;         /* aged amber */
+    --probability: 280 35% 32%;        /* aubergine */
+    --functions:   352 58% 32%;        /* burgundy — same as accent */
 
-    --sidebar-background: 38 22% 94%;
-    --sidebar-foreground: 215 28% 18%;
-    --sidebar-primary: 210 62% 40%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 38 18% 88%;
-    --sidebar-accent-foreground: 215 28% 18%;
-    --sidebar-border: 38 18% 80%;
-    --sidebar-ring: 210 62% 40%;
+    /* Sidebar — slightly cooler than card */
+    --sidebar-background: 38 25% 93%;
+    --sidebar-foreground: 222 35% 12%;
+    --sidebar-primary: 222 55% 18%;
+    --sidebar-primary-foreground: 38 30% 96%;
+    --sidebar-accent: 38 20% 88%;
+    --sidebar-accent-foreground: 222 35% 12%;
+    --sidebar-border: 222 15% 80%;
+    --sidebar-ring: 222 55% 18%;
   }
 
-  /* ── DARK MODE (FIXED) ── */
+  /* ── DARK MODE — "evening study lamp" ── */
   .dark,
   [data-theme="dark"] {
-    --background: 220 20% 10%;
-    --foreground: 40 15% 92%;
+    --background: 222 35% 8%;
+    --foreground: 38 25% 92%;
 
-    --card: 220 16% 16%;
-    --card-foreground: 40 15% 92%;
+    --card: 222 30% 12%;
+    --card-foreground: 38 25% 92%;
 
-    --popover: 220 16% 16%;
-    --popover-foreground: 40 15% 92%;
+    --popover: 222 30% 12%;
+    --popover-foreground: 38 25% 92%;
 
-    --primary: 210 70% 60%;
-    --primary-foreground: 220 20% 8%;
+    --primary: 38 35% 88%;             /* invert: light parchment as primary on dark */
+    --primary-foreground: 222 35% 8%;
 
-    --secondary: 220 14% 22%;
-    --secondary-foreground: 40 12% 82%;
+    --secondary: 222 25% 16%;
+    --secondary-foreground: 38 25% 92%;
 
-    --muted: 220 12% 22%;
-    --muted-foreground: 220 10% 62%;
+    --muted: 222 22% 18%;
+    --muted-foreground: 222 10% 65%;
 
-    --accent: 34 70% 58%;
-    --accent-foreground: 220 20% 8%;
+    --accent: 352 65% 55%;             /* brighter burgundy on dark */
+    --accent-foreground: 222 35% 8%;
 
-    --destructive: 4 58% 52%;
-    --destructive-foreground: 40 15% 96%;
+    --destructive: 0 62% 55%;
+    --destructive-foreground: 38 25% 92%;
+    --success: 162 38% 50%;
+    --success-foreground: 222 35% 8%;
+    --warning: 35 65% 60%;
+    --warning-foreground: 222 35% 8%;
 
-    --border: 220 12% 28%;
-    --input: 220 12% 28%;
+    --border: 222 18% 22%;
+    --input: 222 18% 22%;
+    --ring: 38 35% 88%;
 
-    --ring: 210 70% 60%;
+    --shadow-hairline: 0 1px 0 hsl(0 0% 0% / 0.4);
+    --shadow-paper:    0 1px 2px hsl(0 0% 0% / 0.4);
+    --shadow-elevated: 0 8px 24px -8px hsl(0 0% 0% / 0.6);
+    --shadow-deep:     0 24px 48px -12px hsl(0 0% 0% / 0.7);
 
-    --glow-primary: 0 0 35px hsl(210 70% 60% / 0.30);
-    --glow-accent: 0 0 35px hsl(34 70% 58% / 0.30);
+    --algebra:     38 35% 88%;
+    --geometry:    162 38% 50%;
+    --statistics:  35 65% 60%;
+    --probability: 280 45% 65%;
+    --functions:   352 65% 55%;
 
-    --sidebar-background: 220 20% 8%;
-    --sidebar-foreground: 40 15% 92%;
-    --sidebar-primary: 210 70% 60%;
-    --sidebar-primary-foreground: 220 20% 8%;
-    --sidebar-accent: 220 14% 20%;
-    --sidebar-accent-foreground: 40 15% 92%;
-    --sidebar-border: 220 12% 26%;
-    --sidebar-ring: 210 70% 60%;
+    --sidebar-background: 222 35% 6%;
+    --sidebar-foreground: 38 25% 92%;
+    --sidebar-primary: 38 35% 88%;
+    --sidebar-primary-foreground: 222 35% 8%;
+    --sidebar-accent: 222 22% 14%;
+    --sidebar-accent-foreground: 38 25% 92%;
+    --sidebar-border: 222 18% 20%;
+    --sidebar-ring: 38 35% 88%;
   }
 }
 
-/* ── BASE ───────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   BASE — typography is the brand
+═══════════════════════════════════════════════════════════════ */
 @layer base {
 
   * {
     @apply border-border box-border;
   }
 
+  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
   body {
     @apply bg-background text-foreground;
-    font-family: 'Tajawal', 'Nunito', 'Space Grotesk', system-ui, sans-serif;
+    font-family: 'Inter', 'Tajawal', system-ui, sans-serif;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';  /* Inter stylistic sets */
     font-size: 15px;
-    line-height: 1.7;
+    line-height: 1.6;
     direction: rtl;
+    /* Subtle paper texture — barely visible, lifts the page off pure flat */
+    background-image:
+      radial-gradient(hsl(var(--foreground) / 0.018) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: 'Tajawal', 'Syne', sans-serif;
-    font-weight: 800;
+  /* Display headings — Fraunces (Latin) + Amiri (Arabic) */
+  h1, h2, h3, h4, h5, h6,
+  .font-display {
+    font-family: 'Fraunces', 'Amiri', Georgia, serif;
+    font-weight: 600;
+    font-variation-settings: "opsz" 96, "SOFT" 50;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  /* Tabular figures everywhere numbers matter */
+  .num,
+  .tabular {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: 'tnum', 'lnum';
+  }
+
+  /* Mono — JetBrains Mono for labels, codes, mono numerals */
+  .font-mono,
+  code, kbd, samp {
+    font-family: 'JetBrains Mono', 'Geist Mono', ui-monospace, monospace;
+  }
+
+  /* Selection — burgundy ink */
+  ::selection {
+    background: hsl(var(--accent) / 0.18);
+    color: hsl(var(--foreground));
   }
 
   .katex {
@@ -150,10 +220,6 @@
     vertical-align: middle;
   }
 
-  /* KaTeX renders BOTH an accessible MathML node AND the visual HTML node.
-     Certain flex/inline-flex parents make the MathML node escape its
-     default clipping and appear as a duplicate of the math content.
-     Force-hide it everywhere. */
   .katex .katex-mathml {
     position: absolute !important;
     clip: rect(1px, 1px, 1px, 1px) !important;
@@ -166,6 +232,121 @@
     white-space: nowrap !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   BRAND COMPONENTS — reusable academic primitives
+═══════════════════════════════════════════════════════════════ */
+@layer components {
+
+  /* Eyebrow — the small uppercase label above headings */
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Display — big editorial headlines */
+  .display-1 {
+    font-family: 'Fraunces', 'Amiri', serif;
+    font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+  }
+  .display-2 {
+    font-family: 'Fraunces', 'Amiri', serif;
+    font-weight: 500;
+    font-variation-settings: "opsz" 96;
+    font-size: clamp(2rem, 4vw, 3.25rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  /* Rule — academic horizontal divider with small ornament */
+  .rule {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: hsl(var(--border));
+  }
+  .rule::before, .rule::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid currentColor;
+  }
+
+  /* Paper card — the default surface in the app */
+  .paper {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-paper);
+  }
+
+  /* Paper with hairline only — for dense lists */
+  .paper-hairline {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+  }
+
+  /* Brand button — solid ink */
+  .btn-ink {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-radius: var(--radius);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    letter-spacing: -0.005em;
+    box-shadow: var(--shadow-elevated);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+  .btn-ink:hover {
+    background: hsl(var(--primary) / 0.92);
+    box-shadow: var(--shadow-deep);
+    transform: translateY(-1px);
+  }
+  .btn-ink:active { transform: translateY(0); }
+
+  /* Outline button — paper with ink border */
+  .btn-outline-ink {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.6875rem 1.4375rem;
+    background: transparent;
+    color: hsl(var(--primary));
+    border: 1px solid hsl(var(--primary));
+    border-radius: var(--radius);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .btn-outline-ink:hover {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  /* Marginalia — like book margin notes */
+  .marginalia {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    line-height: 1.5;
+  }
+}
+
 
 /* ── UTILITIES ───────────────────────────────────── */
 @layer utilities {

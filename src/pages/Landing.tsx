@@ -144,34 +144,17 @@ export default function Landing() {
 
   return (
     <>
-      {/* ── Injected design tokens & custom styles ── */}
+      {/* ── Page-specific styles only — brand tokens come from the design system ── */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=IBM+Plex+Mono:wght@400;700&display=swap');
-
-        /* Unified typography for the entire landing page */
-        .qed-landing, .qed-landing * {
-          font-family: 'Tajawal', 'Inter', system-ui, sans-serif;
-        }
-        .qed-landing .qed-mono { font-family: 'IBM Plex Mono', monospace; }
-
-        /* Brand gradient — matches the QED logo (algebra → probability) */
-        .qed-brand-gradient {
-          background-image: linear-gradient(135deg, hsl(var(--algebra)), hsl(var(--probability)));
-        }
-        .qed-brand-text {
-          background-image: linear-gradient(135deg, hsl(var(--algebra)), hsl(var(--probability)));
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-        }
-
+        /* Subtle academic grid for hero — paper ledger feel */
         .qed-hero-grid {
           background-image:
-            linear-gradient(hsl(var(--algebra) / 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, hsl(var(--algebra) / 0.05) 1px, transparent 1px);
-          background-size: 48px 48px;
+            linear-gradient(hsl(var(--foreground) / 0.04) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(var(--foreground) / 0.04) 1px, transparent 1px);
+          background-size: 56px 56px;
         }
 
+        /* Soft paper noise for atmosphere */
         .qed-noise::after {
           content: '';
           position: absolute;
@@ -181,51 +164,39 @@ export default function Landing() {
           z-index: 0;
         }
 
-        .benefit-card:hover .benefit-icon {
-          transform: scale(1.1) rotate(-6deg);
-        }
+        .benefit-card:hover .benefit-icon { transform: scale(1.05); }
         .benefit-icon { transition: transform 0.3s cubic-bezier(.34,1.56,.64,1); }
 
         @keyframes qed-float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-12px) rotate(3deg); }
+          50% { transform: translateY(-10px) rotate(2deg); }
         }
-        .qed-deco { animation: qed-float 8s ease-in-out infinite; }
-
-        @keyframes qed-pulse-ring {
-          0% { transform: scale(1); opacity: 0.6; }
-          100% { transform: scale(1.6); opacity: 0; }
-        }
-        .qed-pulse-ring {
-          animation: qed-pulse-ring 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
+        .qed-deco { animation: qed-float 9s ease-in-out infinite; }
 
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
       <div className="qed-landing relative bg-background min-h-screen overflow-x-hidden" dir="rtl">
-        {/* ── NAV ── */}
-        <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur-2xl bg-background/75 border-b border-border/40">
+        {/* ── NAV — academic, hairline, no flashy chrome ── */}
+        <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur-xl bg-background/85 border-b border-border">
           <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
             <QEDLogo size="md" />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <a
                 href="#textbooks"
-                className="hidden md:inline-flex items-center h-9 px-4 rounded-xl text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+                className="hidden md:inline-flex items-center h-9 px-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 الدروس
               </a>
               <a
                 href="#how"
-                className="hidden md:inline-flex items-center h-9 px-4 rounded-xl text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+                className="hidden md:inline-flex items-center h-9 px-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 كيف يخدم
               </a>
-              <Link
-                to="/auth"
-                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-black text-white qed-brand-gradient hover:opacity-90 transition-all shadow-lg shadow-[hsl(var(--algebra)/0.25)]"
-              >
+              <span className="hidden md:block w-px h-4 bg-border mx-2" />
+              <Link to="/auth" className="btn-ink h-9 px-4 text-sm">
                 دخول
                 <ChevronLeft className="w-3.5 h-3.5" />
               </Link>
@@ -233,41 +204,43 @@ export default function Landing() {
           </div>
         </nav>
 
-        {/* ── HERO — single dominant CTA, minimal above the fold ── */}
-        <section className="relative qed-hero-grid qed-noise min-h-[92vh] flex flex-col justify-center items-center px-6 pt-24 pb-10 overflow-hidden bg-gradient-to-b from-secondary/40 via-background to-background">
-          {/* Ambient blobs */}
-          <div className="absolute top-1/4 right-1/4 w-[28rem] h-[28rem] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-accent/20 rounded-full blur-[110px] pointer-events-none" />
-
-          {/* Floating decorative math symbols */}
+        {/* ── HERO — academic editorial: serif headline, ink CTA, paper backdrop ── */}
+        <section className="relative qed-hero-grid qed-noise min-h-[92vh] flex flex-col justify-center items-center px-6 pt-24 pb-10 overflow-hidden">
+          {/* Floating manuscript glyphs — subtle, ink */}
           <div
-            className="absolute top-32 left-12 qed-deco opacity-[0.07] select-none pointer-events-none qed-mono text-[8rem] font-bold text-foreground leading-none"
+            className="absolute top-32 left-12 qed-deco opacity-[0.05] select-none pointer-events-none font-display text-[10rem] text-foreground leading-none"
             style={{ animationDelay: "0s" }}
           >
             ∑
           </div>
           <div
-            className="absolute bottom-24 right-16 qed-deco opacity-[0.05] select-none pointer-events-none qed-mono text-[6rem] font-bold text-foreground leading-none"
+            className="absolute bottom-28 right-16 qed-deco opacity-[0.04] select-none pointer-events-none font-display text-[8rem] text-foreground leading-none"
             style={{ animationDelay: "3s" }}
           >
             ∫
           </div>
+          {/* Burgundy proof-tick decoration in the corner */}
+          <div
+            className="absolute top-28 right-1/4 hidden md:block pointer-events-none"
+            style={{ width: 8, height: 8, background: "hsl(var(--accent))", borderRadius: 1, opacity: 0.6 }}
+          />
 
-          <div className="relative z-10 w-full max-w-3xl mx-auto space-y-8 text-center">
-            {/* Single proof badge — combined */}
+          <div className="relative z-10 w-full max-w-3xl mx-auto space-y-10 text-center">
+            {/* Eyebrow — academic label */}
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
+              initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               className="flex justify-center"
             >
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[hsl(var(--algebra)/0.1)] border border-[hsl(var(--algebra)/0.25)] text-[hsl(var(--algebra))] text-[11px] font-black">
-                <Sparkles className="w-3 h-3" />
-                مبني على برنامج BAC + BEM الجزائري
+              <span className="eyebrow inline-flex items-center gap-2.5">
+                <span className="w-6 h-px bg-current opacity-50" />
+                مرجع رياضيات · BAC + BEM
+                <span className="w-6 h-px bg-current opacity-50" />
               </span>
             </motion.div>
 
-            {/* Headline — concrete promise (single, audience-aware) */}
+            {/* Headline — Fraunces serif, ink, with burgundy accent word */}
             <div className="relative">
               <AnimatePresence mode="wait">
                 {audience === "student" ? (
@@ -277,15 +250,15 @@ export default function Landing() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -12 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="space-y-5"
+                    className="space-y-6"
                   >
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-foreground leading-[1.1] tracking-tight">
+                    <h1 className="display-1 text-foreground">
                       نقاطك في الرياضيات
                       <br />
-                      تستحق <span className="qed-brand-text">أحسن</span>
+                      تستحق <em className="not-italic text-accent">أحسن</em>
                     </h1>
                     <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                      اختبار قصير يكشف <span className="font-black text-foreground">وين تغلط بالضبط</span>،
+                      اختبار قصير يكشف <span className="font-semibold text-foreground">وين تغلط بالضبط</span>،
                       ثم تمارين موجَّهة بشرح خطوة بخطوة.
                     </p>
                   </motion.div>
@@ -296,12 +269,12 @@ export default function Landing() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -12 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="space-y-5"
+                    className="space-y-6"
                   >
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-foreground leading-[1.1] tracking-tight">
+                    <h1 className="display-1 text-foreground">
                       اعرف مستوى ابنك
                       <br />
-                      <span className="qed-brand-text">في 5 دقائق</span>
+                      <em className="not-italic text-accent">في 5 دقائق</em>
                     </h1>
                     <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
                       تقرير واضح بنقاط الضعف ومتابعة أسبوعية للتقدّم.
@@ -311,12 +284,12 @@ export default function Landing() {
               </AnimatePresence>
             </div>
 
-            {/* SINGLE dominant CTA */}
+            {/* SINGLE dominant CTA — ink button, system-defined */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="flex flex-col items-center gap-4 pt-2"
+              className="flex flex-col items-center gap-5 pt-2"
             >
               <AnimatePresence mode="wait">
                 <motion.div
@@ -325,35 +298,32 @@ export default function Landing() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.97 }}
                   transition={{ duration: 0.2 }}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
                 >
                   <Link
                     to={audience === "student" ? "/diagnostic" : "/auth"}
-                    className="relative group inline-flex flex-col items-center gap-1 px-12 py-5 rounded-2xl font-black text-white qed-brand-gradient shadow-2xl shadow-[hsl(var(--algebra)/0.4)] ring-2 ring-[hsl(var(--algebra)/0.25)] hover:ring-[hsl(var(--probability)/0.5)] hover:shadow-[hsl(var(--probability)/0.4)] transition-all"
+                    className="btn-ink group flex-col gap-1.5 px-10 py-4"
                   >
-                    <span className="absolute inset-0 rounded-2xl qed-pulse-ring border-2 border-[hsl(var(--probability))] opacity-60 group-hover:opacity-100" />
-                    <span className="relative flex items-center gap-3 text-lg">
+                    <span className="flex items-center gap-3 text-base">
                       {audience === "student" ? "ابدأ التشخيص — مجاناً" : "ابدأ تشخيص ابنك — مجاناً"}
-                      <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+                      <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
                     </span>
-                    <span className="relative text-[11px] font-medium text-white/85">
-                      5 دقائق · 10 أسئلة · بدون تسجيل
+                    <span className="font-mono text-[10px] tracking-wider uppercase text-primary-foreground/70">
+                      5 min · 10 questions · sans inscription
                     </span>
                   </Link>
                 </motion.div>
               </AnimatePresence>
 
-              {/* Audience switcher — small, BELOW the CTA, text-link style */}
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              {/* Audience switcher — sober, text-link */}
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 {audience === "student" ? (
                   <>
                     <span>ولي أمر؟</span>
                     <button
                       onClick={() => setAudience("parent")}
-                      className="font-black text-foreground hover:text-primary underline-offset-4 hover:underline transition-colors"
+                      className="font-semibold text-foreground hover:text-accent underline underline-offset-4 decoration-border hover:decoration-accent transition-colors"
                     >
-                      اضغط هنا
+                      هذا التشخيص لك
                     </button>
                   </>
                 ) : (
@@ -361,9 +331,9 @@ export default function Landing() {
                     <span>تلميذ؟</span>
                     <button
                       onClick={() => setAudience("student")}
-                      className="font-black text-foreground hover:text-primary underline-offset-4 hover:underline transition-colors"
+                      className="font-semibold text-foreground hover:text-accent underline underline-offset-4 decoration-border hover:decoration-accent transition-colors"
                     >
-                      اضغط هنا
+                      جرّب التشخيص بنفسك
                     </button>
                   </>
                 )}
@@ -371,16 +341,16 @@ export default function Landing() {
             </motion.div>
           </div>
 
-          {/* Scroll cue — invites the user to discover more below */}
+          {/* Scroll cue — sober eyebrow style */}
           <motion.a
             href="#how"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 0.6 }}
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 hover:text-foreground transition-colors"
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 eyebrow hover:text-foreground transition-colors"
           >
-            <span>كيف يخدم</span>
-            <span className="w-px h-8 bg-gradient-to-b from-muted-foreground/40 to-transparent" />
+            <span>المنهجية</span>
+            <span className="w-px h-8 bg-gradient-to-b from-current to-transparent opacity-40" />
           </motion.a>
         </section>
 
@@ -396,7 +366,7 @@ export default function Landing() {
               className="bg-card border border-border rounded-2xl p-5 shadow-xl shadow-primary/10 text-right max-w-md mx-auto md:mx-0 w-full"
             >
               <div className="flex items-center justify-between mb-4">
-                <span className="qed-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                <span className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   تقدّم تلميذ حقيقي
                 </span>
                 <span className="inline-flex items-center gap-1 text-[10px] font-black text-[hsl(var(--geometry))] bg-[hsl(var(--geometry)/0.12)] px-2 py-0.5 rounded-full">
@@ -407,12 +377,12 @@ export default function Landing() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-destructive/8 border border-destructive/20 rounded-xl p-3">
                   <div className="text-[10px] font-bold text-destructive/80 mb-1">قبل</div>
-                  <div className="qed-mono text-3xl font-black text-destructive">9.5</div>
+                  <div className="font-mono text-3xl font-black text-destructive">9.5</div>
                   <div className="text-[10px] text-muted-foreground mt-1">/ 20</div>
                 </div>
                 <div className="bg-[hsl(var(--geometry)/0.1)] border border-[hsl(var(--geometry)/0.3)] rounded-xl p-3">
                   <div className="text-[10px] font-bold text-[hsl(var(--geometry))] mb-1">بعد شهر</div>
-                  <div className="qed-mono text-3xl font-black text-[hsl(var(--geometry))]">13</div>
+                  <div className="font-mono text-3xl font-black text-[hsl(var(--geometry))]">13</div>
                   <div className="text-[10px] text-muted-foreground mt-1">/ 20</div>
                 </div>
               </div>
@@ -437,7 +407,7 @@ export default function Landing() {
                   key={i}
                   className="bg-card border border-border rounded-xl px-4 py-3 text-center md:text-right"
                 >
-                  <div className="qed-mono text-xl md:text-2xl font-bold qed-brand-text">
+                  <div className="font-mono text-xl md:text-2xl font-bold text-accent">
                     {s.v}
                   </div>
                   <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">{s.l}</div>
@@ -452,7 +422,7 @@ export default function Landing() {
         <section className="relative bg-secondary/40 border-y border-border/60">
           <div className="max-w-6xl mx-auto px-6 py-14 space-y-10">
             <div className="text-center space-y-2 max-w-2xl mx-auto">
-              <span className="qed-mono text-xs font-bold text-[hsl(var(--algebra))] uppercase tracking-widest">3 خطوات · نتيجة واحدة</span>
+              <span className="font-mono text-xs font-bold text-[hsl(var(--algebra))] uppercase tracking-widest">3 خطوات · نتيجة واحدة</span>
               <h2 className="text-2xl md:text-4xl font-black text-foreground leading-tight tracking-tight">
                 طريق واضح من <span className="text-destructive">الثغرات</span> إلى <span className="text-[hsl(var(--geometry))]">الإتقان</span>
               </h2>
@@ -493,7 +463,7 @@ export default function Landing() {
                         <div
                           className={`benefit-card group bg-card border border-border rounded-2xl p-6 ${tone.border} hover:shadow-xl hover:shadow-primary/5 transition-all cursor-default h-full relative overflow-hidden`}
                         >
-                          <span className={`qed-mono absolute top-3 left-4 text-3xl font-black leading-none ${tone.num}`}>
+                          <span className={`font-mono absolute top-3 left-4 text-3xl font-black leading-none ${tone.num}`}>
                             {b.step || `0${i + 1}`}
                           </span>
                           <div className={`benefit-icon w-12 h-12 rounded-2xl ${tone.bg} ${tone.text} flex items-center justify-center mb-5 transition-colors`}>
@@ -518,7 +488,7 @@ export default function Landing() {
           <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-accent/20 rounded-full blur-[120px] pointer-events-none" />
           <div className="relative max-w-5xl mx-auto space-y-12">
             <div className="text-center space-y-3">
-              <span className="qed-mono text-xs font-bold text-[hsl(var(--probability))] uppercase tracking-widest">كيف يخدم</span>
+              <span className="font-mono text-xs font-bold text-[hsl(var(--probability))] uppercase tracking-widest">كيف يخدم</span>
               <h2 className="text-3xl md:text-5xl font-black text-background leading-tight tracking-tight">4 خطوات بسيطة، نتيجة واضحة</h2>
               <p className="text-sm text-background/60 max-w-md mx-auto">
                 نفس الطريقة اللي يستعملها أحسن الأساتذة — لكن مهيكَلة ومتاحة 24/7.
@@ -540,7 +510,7 @@ export default function Landing() {
                     <div className="absolute top-6 left-0 hidden md:block w-full h-px bg-gradient-to-l from-transparent via-background/20 to-background/20 pointer-events-none -z-10" />
                   )}
                   <div className="bg-background/5 border border-background/15 backdrop-blur-sm rounded-2xl p-6 hover:bg-background/10 hover:border-[hsl(var(--probability)/0.5)] transition-all">
-                    <div className="qed-mono text-2xl font-bold text-[hsl(var(--probability))] mb-4 leading-none">{s.n}</div>
+                    <div className="font-mono text-2xl font-bold text-[hsl(var(--probability))] mb-4 leading-none">{s.n}</div>
                     <h3 className="text-sm font-black text-background mb-2">{s.t}</h3>
                     <p className="text-xs text-background/60 leading-relaxed">{s.d}</p>
                   </div>
@@ -607,7 +577,7 @@ export default function Landing() {
         {/* ── TEXTBOOKS FEED ── */}
         <section id="textbooks" className="max-w-5xl mx-auto px-6 py-16 space-y-8">
           <div className="space-y-3">
-            <span className="qed-mono text-xs font-bold text-[hsl(var(--algebra))] uppercase tracking-widest">المكتبة</span>
+            <span className="font-mono text-xs font-bold text-[hsl(var(--algebra))] uppercase tracking-widest">المكتبة</span>
             <h2 className="text-3xl md:text-5xl font-black text-foreground leading-tight tracking-tight">
               دروس مبسّطة، تمارين باك،
               <br />
@@ -683,7 +653,7 @@ export default function Landing() {
                     <div className="flex-1 min-w-0 space-y-1.5">
                       <div className="flex items-center gap-2 flex-wrap">
                         {b.grade && (
-                          <span className="qed-mono text-[10px] font-bold text-[hsl(var(--algebra))] bg-[hsl(var(--algebra)/0.1)] px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          <span className="font-mono text-[10px] font-bold text-[hsl(var(--algebra))] bg-[hsl(var(--algebra)/0.1)] px-2 py-0.5 rounded-full uppercase tracking-wider">
                             {b.grade}
                           </span>
                         )}
@@ -763,7 +733,7 @@ export default function Landing() {
             <h2 className="text-4xl md:text-6xl font-black text-foreground leading-tight tracking-tight">
               جاهز تعرف مستواك
               <br />
-              <span className="qed-brand-text">بالضبط؟</span>
+              <span className="text-accent">بالضبط؟</span>
             </h2>
 
             <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
@@ -773,7 +743,7 @@ export default function Landing() {
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
               <Link
                 to="/diagnostic"
-                className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-white qed-brand-gradient shadow-2xl shadow-[hsl(var(--algebra)/0.35)] hover:shadow-[hsl(var(--probability)/0.4)] transition-all"
+                className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-primary-foreground bg-primary shadow-2xl shadow-[hsl(var(--algebra)/0.35)] hover:shadow-[hsl(var(--probability)/0.4)] transition-all"
               >
                 ابدأ التشخيص المجاني
                 <ArrowLeft className="w-5 h-5" />

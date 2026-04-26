@@ -15,10 +15,11 @@ export default {
     },
     extend: {
       fontFamily: {
-        mono: ["'Geist Mono'", "monospace"],
-        display: ["Syne", "sans-serif"],
-        body: ["Space Grotesk", "sans-serif"],
-
+        sans: ["Inter", "Tajawal", "system-ui", "sans-serif"],
+        display: ["Fraunces", "Amiri", "Georgia", "serif"],
+        serif: ["Fraunces", "Amiri", "Georgia", "serif"],
+        mono: ["'JetBrains Mono'", "'Geist Mono'", "monospace"],
+        body: ["Inter", "Tajawal", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
