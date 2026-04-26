@@ -722,7 +722,7 @@ export default function Landing() {
                     setQuery("");
                     setGradeFilter("all");
                   }}
-                  className="text-xs font-black text-primary hover:underline"
+                  className="text-xs font-black text-[hsl(var(--algebra))] hover:underline"
                 >
                   مسح التصفية
                 </button>
