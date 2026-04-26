@@ -229,12 +229,11 @@ export default function Landing() {
           </div>
         </nav>
 
-        {/* ── HERO ── */}
-        <section className="relative qed-hero-grid qed-noise min-h-[88vh] flex flex-col justify-center items-center px-6 pt-24 pb-12 overflow-hidden bg-gradient-to-b from-secondary/40 via-background to-background">
-          {/* Ambient blobs — stronger */}
+        {/* ── HERO — single dominant CTA, minimal above the fold ── */}
+        <section className="relative qed-hero-grid qed-noise min-h-[92vh] flex flex-col justify-center items-center px-6 pt-24 pb-10 overflow-hidden bg-gradient-to-b from-secondary/40 via-background to-background">
+          {/* Ambient blobs */}
           <div className="absolute top-1/4 right-1/4 w-[28rem] h-[28rem] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
           <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-accent/20 rounded-full blur-[110px] pointer-events-none" />
-          <div className="absolute top-1/2 right-1/2 w-72 h-72 bg-primary/10 rounded-full blur-[140px] pointer-events-none" />
 
           {/* Floating decorative math symbols */}
           <div
@@ -249,75 +248,32 @@ export default function Landing() {
           >
             ∫
           </div>
-          <div
-            className="absolute top-1/2 left-1/4 qed-deco opacity-[0.04] select-none pointer-events-none qed-serif text-[10rem] font-bold text-foreground leading-none hidden lg:block"
-            style={{ animationDelay: "5s" }}
-          >
-            π
-          </div>
 
-          <div className="relative z-10 w-full max-w-3xl mx-auto space-y-7 text-center">
-            {/* Proof Badges row */}
+          <div className="relative z-10 w-full max-w-3xl mx-auto space-y-8 text-center">
+            {/* Single proof badge — combined */}
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="flex flex-wrap items-center justify-center gap-2"
+              className="flex justify-center"
             >
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-[11px] font-black">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-[11px] font-black">
                 <Sparkles className="w-3 h-3" />
-                برنامج BAC + BEM الجزائري
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 border border-accent/30 text-accent text-[11px] font-black">
-                <Zap className="w-3 h-3" />
-                تشخيص في 5 دقائق
+                مبني على برنامج BAC + BEM الجزائري
               </span>
             </motion.div>
 
-            {/* Audience switcher — pill style */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="inline-flex items-center gap-1 p-1 rounded-2xl bg-muted/70 border border-border/60 backdrop-blur-sm"
-            >
-              {[
-                { id: "student" as const, label: "أنا تلميذ", Icon: GraduationCap },
-                { id: "parent" as const, label: "ولي الأمر", Icon: Users },
-              ].map(({ id, label, Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setAudience(id)}
-                  className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black transition-colors ${
-                    audience === id ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {audience === id && (
-                    <motion.div
-                      layoutId="audience-pill"
-                      className="absolute inset-0 rounded-xl bg-foreground shadow-lg"
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </span>
-                </button>
-              ))}
-            </motion.div>
-
-            {/* Headline — concrete promise with number */}
-            <div className="relative min-h-[200px] md:min-h-[240px] flex items-center justify-center">
+            {/* Headline — concrete promise (single, audience-aware) */}
+            <div className="relative">
               <AnimatePresence mode="wait">
                 {audience === "student" ? (
                   <motion.div
                     key="student-hero"
-                    initial={{ opacity: 0, y: 16 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -16 }}
-                    transition={{ duration: 0.35, ease: "easeInOut" }}
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-5"
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="space-y-5"
                   >
                     <h1 className="qed-serif text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.1]">
                       ارفع معدّلك بـ
@@ -326,37 +282,38 @@ export default function Landing() {
                       في الرياضيات خلال شهر
                     </h1>
                     <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                      اختبار قصير يكشف <span className="font-black text-foreground">وين تغلط بالضبط</span>، ثم تمارين موجَّهة بشرح خطوة بخطوة — مش حفظ، فهم بصح.
+                      اختبار قصير يكشف <span className="font-black text-foreground">وين تغلط بالضبط</span>،
+                      ثم تمارين موجَّهة بشرح خطوة بخطوة.
                     </p>
                   </motion.div>
                 ) : (
                   <motion.div
                     key="parent-hero"
-                    initial={{ opacity: 0, y: 16 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -16 }}
-                    transition={{ duration: 0.35, ease: "easeInOut" }}
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-5"
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="space-y-5"
                   >
                     <h1 className="qed-serif text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.1]">
                       اعرف مستوى ابنك الحقيقي
                       <br />
-                      <span className="bg-gradient-to-l from-primary via-primary to-accent bg-clip-text text-transparent">في 15 دقيقة</span>
+                      <span className="bg-gradient-to-l from-primary via-primary to-accent bg-clip-text text-transparent">في 5 دقائق</span>
                     </h1>
                     <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                      تقرير واضح بنقاط الضعف، متابعة أسبوعية للتقدّم، وبديل ذكي عن الدروس الخصوصية الباهظة.
+                      تقرير واضح بنقاط الضعف ومتابعة أسبوعية للتقدّم.
                     </p>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* CTAs — stronger, with microcopy */}
+            {/* SINGLE dominant CTA */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2"
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex flex-col items-center gap-4 pt-2"
             >
               <AnimatePresence mode="wait">
                 <motion.div
@@ -370,46 +327,122 @@ export default function Landing() {
                 >
                   <Link
                     to={audience === "student" ? "/diagnostic" : "/auth"}
-                    className="relative group inline-flex flex-col items-center gap-0.5 px-10 py-4 rounded-2xl font-black text-primary-foreground bg-gradient-to-l from-primary via-primary to-primary/90 hover:from-primary hover:to-accent shadow-2xl shadow-primary/40 ring-2 ring-primary/20 hover:ring-accent/40 transition-all"
+                    className="relative group inline-flex flex-col items-center gap-1 px-12 py-5 rounded-2xl font-black text-primary-foreground bg-gradient-to-l from-primary via-primary to-primary/90 hover:from-primary hover:to-accent shadow-2xl shadow-primary/40 ring-2 ring-primary/20 hover:ring-accent/40 transition-all"
                   >
                     <span className="absolute inset-0 rounded-2xl qed-pulse-ring border-2 border-accent opacity-60 group-hover:opacity-100" />
-                    <span className="relative flex items-center gap-3 text-base">
-                      {audience === "student" ? "ابدأ الآن — مجاناً" : "سجّل لمتابعة ابنك"}
+                    <span className="relative flex items-center gap-3 text-lg">
+                      {audience === "student" ? "ابدأ التشخيص — مجاناً" : "ابدأ تشخيص ابنك — مجاناً"}
                       <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
                     </span>
                     <span className="relative text-[11px] font-medium text-primary-foreground/80">
-                      {audience === "student" ? "5 دقائق فقط · 10 أسئلة · بدون تسجيل" : "تقرير فوري · بدون بطاقة بنكية"}
+                      5 دقائق · 10 أسئلة · بدون تسجيل
                     </span>
                   </Link>
                 </motion.div>
               </AnimatePresence>
-              <a
-                href="#how"
-                className="inline-flex items-center gap-2 px-6 py-4 rounded-2xl font-bold text-sm text-foreground border-2 border-border hover:border-primary/40 hover:bg-muted/40 transition-all"
-              >
-                <BookOpen className="w-4 h-4" />
-                كيف يخدم؟
-              </a>
+
+              {/* Audience switcher — small, BELOW the CTA, text-link style */}
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                {audience === "student" ? (
+                  <>
+                    <span>ولي أمر؟</span>
+                    <button
+                      onClick={() => setAudience("parent")}
+                      className="font-black text-foreground hover:text-primary underline-offset-4 hover:underline transition-colors"
+                    >
+                      اضغط هنا
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span>تلميذ؟</span>
+                    <button
+                      onClick={() => setAudience("student")}
+                      className="font-black text-foreground hover:text-primary underline-offset-4 hover:underline transition-colors"
+                    >
+                      اضغط هنا
+                    </button>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Scroll cue — invites the user to discover more below */}
+          <motion.a
+            href="#how"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1, duration: 0.6 }}
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 hover:text-foreground transition-colors"
+          >
+            <span>كيف يخدم</span>
+            <span className="w-px h-8 bg-gradient-to-b from-muted-foreground/40 to-transparent" />
+          </motion.a>
+        </section>
+
+        {/* ── PROOF STRIP — revealed on scroll, below the fold ── */}
+        <section className="relative bg-background border-b border-border/40 py-12 px-6">
+          <div className="max-w-5xl mx-auto grid md:grid-cols-[1fr_auto] gap-8 items-center">
+            {/* Before/after proof card */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="bg-card border border-border rounded-2xl p-5 shadow-xl shadow-primary/10 text-right max-w-md mx-auto md:mx-0 w-full"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <span className="qed-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  تقدّم تلميذ حقيقي
+                </span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-black text-[hsl(var(--geometry))] bg-[hsl(var(--geometry)/0.12)] px-2 py-0.5 rounded-full">
+                  <TrendingUp className="w-3 h-3" />
+                  +3.5 نقطة
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-destructive/8 border border-destructive/20 rounded-xl p-3">
+                  <div className="text-[10px] font-bold text-destructive/80 mb-1">قبل</div>
+                  <div className="qed-mono text-3xl font-black text-destructive">٩٫٥</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">/ ٢٠</div>
+                </div>
+                <div className="bg-[hsl(var(--geometry)/0.1)] border border-[hsl(var(--geometry)/0.3)] rounded-xl p-3">
+                  <div className="text-[10px] font-bold text-[hsl(var(--geometry))] mb-1">بعد شهر</div>
+                  <div className="qed-mono text-3xl font-black text-[hsl(var(--geometry))]">١٣</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">/ ٢٠</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/60">
+                <Brain className="w-4 h-4 text-primary shrink-0" />
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  ٢٤ ثغرة مكتشفة، ٣ منها تمثّل ٧٠٪ من الأخطاء — تمّ علاجها بـ ١٢ تمريناً موجَّهاً.
+                </p>
+              </div>
             </motion.div>
 
-            {/* Trust micro-copy with semantic colors */}
+            {/* Trust stats — vertical on desktop */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="grid grid-cols-3 md:grid-cols-1 gap-3 md:gap-2 md:min-w-[180px]"
             >
-              {[
-                { t: "بدون تسجيل معقّد", c: "text-primary" },
-                { t: "بدون بطاقة بنكية", c: "text-accent" },
-                { t: "نتيجة فورية", c: "text-[hsl(var(--geometry))]" },
-              ].map(({ t, c }) => (
-                <span key={t} className="flex items-center gap-1.5 font-medium">
-                  <CheckCircle2 className={`w-3.5 h-3.5 ${c}`} />
-                  {t}
-                </span>
+              {TRUST_POINTS.map((s, i) => (
+                <div
+                  key={i}
+                  className="bg-card border border-border rounded-xl px-4 py-3 text-center md:text-right"
+                >
+                  <div className="qed-mono text-xl md:text-2xl font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
+                    {s.v}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">{s.l}</div>
+                </div>
               ))}
             </motion.div>
+          </div>
+        </section>
 
             {/* Visual proof card — before/after */}
             <motion.div
