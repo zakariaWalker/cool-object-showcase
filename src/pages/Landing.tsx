@@ -539,8 +539,8 @@ export default function Landing() {
                   {i < STEPS.length - 1 && (
                     <div className="absolute top-6 left-0 hidden md:block w-full h-px bg-gradient-to-l from-transparent via-background/20 to-background/20 pointer-events-none -z-10" />
                   )}
-                  <div className="bg-background/5 border border-background/15 backdrop-blur-sm rounded-2xl p-6 hover:bg-background/10 hover:border-accent/40 transition-all">
-                    <div className="qed-mono text-2xl font-bold text-accent mb-4 leading-none">{s.n}</div>
+                  <div className="bg-background/5 border border-background/15 backdrop-blur-sm rounded-2xl p-6 hover:bg-background/10 hover:border-[hsl(var(--probability)/0.5)] transition-all">
+                    <div className="qed-mono text-2xl font-bold text-[hsl(var(--probability))] mb-4 leading-none">{s.n}</div>
                     <h3 className="text-sm font-black text-background mb-2">{s.t}</h3>
                     <p className="text-xs text-background/60 leading-relaxed">{s.d}</p>
                   </div>
