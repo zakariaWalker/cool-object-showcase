@@ -1,8 +1,31 @@
 // ===== What-If Scenario — Change parameters and see results in real-time =====
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { KBExerciseSidekick } from "@/components/KBExerciseSidekick";
 
 type ScenarioTab = "algebra" | "geometry" | "probability" | "projectile" | "grades" | "perimeter" | "balance" | "scientific" | "pgcd";
+
+const GRADE_TO_KB: Record<string, string> = {
+  "1am": "1AM",
+  "2am": "2AM",
+  "3am": "3AM",
+  "bem": "4AM",
+  "1as": "1AS",
+  "2as": "2AS",
+  "bac": "3AS",
+};
+
+const TAB_TO_KEYWORDS: Record<ScenarioTab, { keywords: string[]; label: string; accent: any }> = {
+  perimeter:  { keywords: ["مساحة", "محيط", "مستطيل"], label: "المساحة والمحيط", accent: "geometry" },
+  balance:    { keywords: ["معادلة", "حل المعادلات", "الميزان"], label: "المعادلات", accent: "algebra" },
+  scientific: { keywords: ["كتابة علمية", "قوى", "أسس"], label: "الكتابة العلمية", accent: "statistics" },
+  pgcd:       { keywords: ["القاسم المشترك", "PGCD", "قاسم"], label: "PGCD والقواسم", accent: "algebra" },
+  geometry:   { keywords: ["فيثاغورس", "مثلث قائم", "النسب المثلثية"], label: "فيثاغورس", accent: "geometry" },
+  algebra:    { keywords: ["الدرجة الثانية", "ثلاثي الحدود", "كثيرة الحدود"], label: "معادلات الدرجة الثانية", accent: "algebra" },
+  probability:{ keywords: ["احتمال", "احتمالات", "إحصاء"], label: "الاحتمالات", accent: "probability" },
+  projectile: { keywords: ["دالة", "قطع مكافئ", "الدرجة الثانية"], label: "حركة القذائف", accent: "functions" },
+  grades:     { keywords: ["معدل", "متوسط", "وسط"], label: "حساب المعدل", accent: "statistics" },
+};
 
 const GRADES = [
   { id: "1am", label: "1AM" },
