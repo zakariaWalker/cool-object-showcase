@@ -20,6 +20,9 @@ import {
   Clock,
   ArrowUpRight,
   ChevronLeft,
+  Brain,
+  Zap,
+  LineChart,
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────
