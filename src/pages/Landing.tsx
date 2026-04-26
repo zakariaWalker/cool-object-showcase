@@ -204,7 +204,7 @@ export default function Landing() {
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      <div className="relative bg-background min-h-screen overflow-x-hidden" dir="rtl">
+      <div className="qed-landing relative bg-background min-h-screen overflow-x-hidden" dir="rtl">
         {/* ── NAV ── */}
         <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur-2xl bg-background/75 border-b border-border/40">
           <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
