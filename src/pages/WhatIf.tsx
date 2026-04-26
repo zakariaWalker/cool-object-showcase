@@ -2,6 +2,8 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { KBExerciseSidekick } from "@/components/KBExerciseSidekick";
+import { ConceptContextCard } from "@/components/ConceptContextCard";
+import { WHATIF_CONTEXT } from "@/components/conceptContexts";
 
 type ScenarioTab = "algebra" | "geometry" | "probability" | "projectile" | "grades" | "perimeter" | "balance" | "scientific" | "pgcd";
 
@@ -92,6 +94,9 @@ export default function WhatIf() {
       <div className="flex-1 overflow-auto p-4">
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4 max-w-[1600px] mx-auto">
           <div className="min-w-0">
+            {WHATIF_CONTEXT[tab] && (
+              <ConceptContextCard context={WHATIF_CONTEXT[tab]} />
+            )}
             <AnimatePresence mode="wait">
               {tab === "algebra" && <AlgebraWhatIf key="alg" />}
               {tab === "geometry" && <GeometryWhatIf key="geo" />}

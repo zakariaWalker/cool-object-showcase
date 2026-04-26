@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { SkillTreeMap } from "@/components/SkillTreeMap";
 import { KBExerciseSidekick } from "@/components/KBExerciseSidekick";
+import { ConceptContextCard } from "@/components/ConceptContextCard";
+import { EXPLORE_CONTEXT } from "@/components/conceptContexts";
 
 type ExplorerTab = "functions" | "geometry" | "concepts" | "fractions" | "symmetry" | "thales" | "trigonometry" | "absolute";
 
@@ -99,6 +101,9 @@ export default function VisualExplorer() {
       <div className="flex-1 overflow-auto p-4">
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4 max-w-[1600px] mx-auto">
           <div className="min-w-0">
+            {EXPLORE_CONTEXT[tab] && (
+              <ConceptContextCard context={EXPLORE_CONTEXT[tab]} />
+            )}
             <AnimatePresence mode="wait">
               {tab === "functions" && <FunctionPlotter key="fn" />}
               {tab === "geometry" && <GeometryPlayground key="geo" />}
