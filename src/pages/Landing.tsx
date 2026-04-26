@@ -673,9 +673,9 @@ export default function Landing() {
         </section>
 
         {/* ── FINAL CTA ── */}
-        <section className="relative py-28 px-6 overflow-hidden">
-          <div className="absolute inset-0 qed-hero-grid opacity-50 pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/4 to-transparent pointer-events-none" />
+        <section className="relative py-20 px-6 overflow-hidden bg-gradient-to-br from-primary/8 via-secondary/40 to-accent/8 border-t border-border/60">
+          <div className="absolute inset-0 qed-hero-grid opacity-40 pointer-events-none" />
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/15 rounded-full blur-[120px] pointer-events-none" />
 
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
