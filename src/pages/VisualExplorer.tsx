@@ -97,16 +97,32 @@ export default function VisualExplorer() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
-        <AnimatePresence mode="wait">
-          {tab === "functions" && <FunctionPlotter key="fn" />}
-          {tab === "geometry" && <GeometryPlayground key="geo" />}
-          {tab === "concepts" && <ConceptMapExplorer key="cm" />}
-          {tab === "fractions" && <FractionsVisualizer key="frac" />}
-          {tab === "symmetry" && <SymmetryPlayground key="sym" />}
-          {tab === "thales" && <ThalesExplorer key="tha" />}
-          {tab === "trigonometry" && <TrigonometryVisualizer key="trig" />}
-          {tab === "absolute" && <AbsoluteValueExplorer key="abs" />}
-        </AnimatePresence>
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4 max-w-[1600px] mx-auto">
+          <div className="min-w-0">
+            <AnimatePresence mode="wait">
+              {tab === "functions" && <FunctionPlotter key="fn" />}
+              {tab === "geometry" && <GeometryPlayground key="geo" />}
+              {tab === "concepts" && <ConceptMapExplorer key="cm" />}
+              {tab === "fractions" && <FractionsVisualizer key="frac" />}
+              {tab === "symmetry" && <SymmetryPlayground key="sym" />}
+              {tab === "thales" && <ThalesExplorer key="tha" />}
+              {tab === "trigonometry" && <TrigonometryVisualizer key="trig" />}
+              {tab === "absolute" && <AbsoluteValueExplorer key="abs" />}
+            </AnimatePresence>
+          </div>
+
+          {/* KB sidekick — real exercises matching the active concept */}
+          {tab !== "concepts" && TAB_TO_KEYWORDS[tab].keywords.length > 0 && (
+            <aside className="xl:sticky xl:top-4 xl:self-start">
+              <KBExerciseSidekick
+                grade={GRADE_TO_KB[grade] || "4AM"}
+                chapterKeywords={TAB_TO_KEYWORDS[tab].keywords}
+                conceptLabel={TAB_TO_KEYWORDS[tab].label}
+                accent={TAB_TO_KEYWORDS[tab].accent}
+              />
+            </aside>
+          )}
+        </div>
       </div>
     </div>
   );
