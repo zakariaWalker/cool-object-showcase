@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Home as HomeIcon } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { QEDLogo } from "@/components/QEDLogo";
 import { Button } from "@/components/ui/button";
@@ -80,20 +80,13 @@ export default function Auth() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4" dir="rtl">
       <div className="w-full max-w-md">
         {/* Back to landing nav */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-center mb-6">
           <Link
             to="/"
             className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors"
           >
             <ArrowRight className="w-4 h-4" />
             رجوع للرئيسية
-          </Link>
-          <Link
-            to="/home"
-            className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors"
-          >
-            <HomeIcon className="w-4 h-4" />
-            تصفح بدون حساب
           </Link>
         </div>
 
