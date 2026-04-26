@@ -2,8 +2,32 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { SkillTreeMap } from "@/components/SkillTreeMap";
+import { KBExerciseSidekick } from "@/components/KBExerciseSidekick";
 
 type ExplorerTab = "functions" | "geometry" | "concepts" | "fractions" | "symmetry" | "thales" | "trigonometry" | "absolute";
+
+/** Map our local lowercase grade ids → kb_exercises.grade keys. */
+const GRADE_TO_KB: Record<string, string> = {
+  "1am": "1AM",
+  "2am": "2AM",
+  "3am": "3AM",
+  "bem": "4AM",
+  "1as": "1AS",
+  "2as": "2AS",
+  "bac": "3AS",
+};
+
+/** Per-tab chapter keywords used to query the KB. */
+const TAB_TO_KEYWORDS: Record<ExplorerTab, { keywords: string[]; label: string; accent: any }> = {
+  fractions:    { keywords: ["كسور", "العمليات على الكسور"], label: "الكسور", accent: "statistics" },
+  geometry:     { keywords: ["هندس", "مثلث", "رباعي", "مستقيم"], label: "الأشكال الهندسية", accent: "geometry" },
+  symmetry:     { keywords: ["تناظر", "انسحاب", "دوران"], label: "التناظر والتحويلات", accent: "geometry" },
+  thales:       { keywords: ["طالس"], label: "نظرية طالس", accent: "geometry" },
+  trigonometry: { keywords: ["مثلثي", "مثلثات", "النسب المثلثية"], label: "النسب المثلثية", accent: "geometry" },
+  absolute:     { keywords: ["القيمة المطلقة", "مطلق"], label: "القيمة المطلقة", accent: "algebra" },
+  functions:    { keywords: ["دالة", "دوال", "النهايات", "الاشتقاق"], label: "الدوال", accent: "functions" },
+  concepts:     { keywords: [], label: "خريطة المفاهيم", accent: "primary" },
+};
 
 const GRADES = [
   { id: "1am", label: "1AM" },
