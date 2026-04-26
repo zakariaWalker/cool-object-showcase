@@ -238,15 +238,21 @@ export default function Landing() {
           </div>
 
           <div className="relative z-10 w-full max-w-3xl mx-auto space-y-7 text-center">
-            {/* Badge */}
+            {/* Proof Badges row */}
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-black"
+              className="flex flex-wrap items-center justify-center gap-2"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              مصمَّم خصّيصاً للبرنامج الجزائري — باك وبيام
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-[11px] font-black">
+                <Sparkles className="w-3 h-3" />
+                برنامج BAC + BEM الجزائري
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 border border-accent/30 text-accent text-[11px] font-black">
+                <Zap className="w-3 h-3" />
+                تشخيص في 5 دقائق
+              </span>
             </motion.div>
 
             {/* Audience switcher — pill style */}
@@ -282,8 +288,8 @@ export default function Landing() {
               ))}
             </motion.div>
 
-            {/* Headline — AnimatePresence prevents layout shift */}
-            <div className="relative min-h-[160px] md:min-h-[200px] flex items-center justify-center">
+            {/* Headline — concrete promise with number */}
+            <div className="relative min-h-[200px] md:min-h-[240px] flex items-center justify-center">
               <AnimatePresence mode="wait">
                 {audience === "student" ? (
                   <motion.div
@@ -294,15 +300,14 @@ export default function Landing() {
                     transition={{ duration: 0.35, ease: "easeInOut" }}
                     className="absolute inset-0 flex flex-col items-center justify-center gap-5"
                   >
-                    <h1 className="qed-serif text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.2]">
-                      ارفع معدّلك في الرياضيات
+                    <h1 className="qed-serif text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.1]">
+                      ارفع معدّلك بـ
+                      <span className="bg-gradient-to-l from-primary via-primary to-accent bg-clip-text text-transparent"> +3 نقاط </span>
                       <br />
-                      <span className="bg-gradient-to-l from-primary via-primary to-accent bg-clip-text text-transparent">
-                        للباك والبيام
-                      </span>
+                      في الرياضيات خلال شهر
                     </h1>
-                    <p className="text-base md:text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed">
-                      نكتشفولك وين راك تغلط، نمدّولك تمارين على قد مستواك، ونشرحولك حتى تفهم بصح — مش حفظ.
+                    <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+                      اختبار قصير يكشف <span className="font-black text-foreground">وين تغلط بالضبط</span>، ثم تمارين موجَّهة بشرح خطوة بخطوة — مش حفظ، فهم بصح.
                     </p>
                   </motion.div>
                 ) : (
@@ -314,22 +319,20 @@ export default function Landing() {
                     transition={{ duration: 0.35, ease: "easeInOut" }}
                     className="absolute inset-0 flex flex-col items-center justify-center gap-5"
                   >
-                    <h1 className="qed-serif text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.2]">
-                      مرافقة ابنك في الرياضيات
+                    <h1 className="qed-serif text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.1]">
+                      اعرف مستوى ابنك الحقيقي
                       <br />
-                      <span className="bg-gradient-to-l from-primary via-primary to-accent bg-clip-text text-transparent">
-                        بدون قلق
-                      </span>
+                      <span className="bg-gradient-to-l from-primary via-primary to-accent bg-clip-text text-transparent">في 15 دقيقة</span>
                     </h1>
-                    <p className="text-base md:text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed">
-                      تعرف مستوى ابنك الحقيقي، تتابع تقدّمه أسبوعياً، وتوفّر على نفسك تكلفة الدروس الخصوصية.
+                    <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+                      تقرير واضح بنقاط الضعف، متابعة أسبوعية للتقدّم، وبديل ذكي عن الدروس الخصوصية الباهظة.
                     </p>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* CTAs */}
+            {/* CTAs — stronger, with microcopy */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -343,41 +346,88 @@ export default function Landing() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.97 }}
                   transition={{ duration: 0.2 }}
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                 >
                   <Link
                     to={audience === "student" ? "/diagnostic" : "/auth"}
-                    className="relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-base text-primary-foreground bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/30 transition-all"
+                    className="relative group inline-flex flex-col items-center gap-0.5 px-10 py-4 rounded-2xl font-black text-primary-foreground bg-gradient-to-l from-primary via-primary to-primary/90 hover:from-primary hover:to-accent shadow-2xl shadow-primary/40 ring-2 ring-primary/20 hover:ring-accent/40 transition-all"
                   >
-                    <span className="absolute inset-0 rounded-2xl qed-pulse-ring border-2 border-primary opacity-0 hover:opacity-100" />
-                    {audience === "student" ? "ابدأ التشخيص — مجاناً" : "سجّل لمتابعة ابنك"}
-                    <ArrowLeft className="w-5 h-5" />
+                    <span className="absolute inset-0 rounded-2xl qed-pulse-ring border-2 border-accent opacity-60 group-hover:opacity-100" />
+                    <span className="relative flex items-center gap-3 text-base">
+                      {audience === "student" ? "ابدأ الآن — مجاناً" : "سجّل لمتابعة ابنك"}
+                      <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+                    </span>
+                    <span className="relative text-[11px] font-medium text-primary-foreground/80">
+                      {audience === "student" ? "5 دقائق فقط · 10 أسئلة · بدون تسجيل" : "تقرير فوري · بدون بطاقة بنكية"}
+                    </span>
                   </Link>
                 </motion.div>
               </AnimatePresence>
               <a
-                href="#textbooks"
+                href="#how"
                 className="inline-flex items-center gap-2 px-6 py-4 rounded-2xl font-bold text-sm text-foreground border-2 border-border hover:border-primary/40 hover:bg-muted/40 transition-all"
               >
                 <BookOpen className="w-4 h-4" />
-                {audience === "student" ? "شوف الدروس" : "تصفّح المحتوى"}
+                كيف يخدم؟
               </a>
             </motion.div>
 
-            {/* Trust micro-copy */}
+            {/* Trust micro-copy with semantic colors */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.5 }}
               className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground"
             >
-              {["بدون تسجيل معقّد", "بدون بطاقة بنكية", "النتيجة فورية"].map((t) => (
-                <span key={t} className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-primary/70" />
+              {[
+                { t: "بدون تسجيل معقّد", c: "text-primary" },
+                { t: "بدون بطاقة بنكية", c: "text-accent" },
+                { t: "نتيجة فورية", c: "text-[hsl(var(--geometry))]" },
+              ].map(({ t, c }) => (
+                <span key={t} className="flex items-center gap-1.5 font-medium">
+                  <CheckCircle2 className={`w-3.5 h-3.5 ${c}`} />
                   {t}
                 </span>
               ))}
+            </motion.div>
+
+            {/* Visual proof card — before/after */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7, duration: 0.6 }}
+              className="pt-6 max-w-md mx-auto"
+            >
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-2xl shadow-primary/10 text-right">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="qed-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    تقدّم تلميذ حقيقي
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-black text-[hsl(var(--geometry))] bg-[hsl(var(--geometry)/0.12)] px-2 py-0.5 rounded-full">
+                    <TrendingUp className="w-3 h-3" />
+                    +3.5 نقطة
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-destructive/8 border border-destructive/20 rounded-xl p-3">
+                    <div className="text-[10px] font-bold text-destructive/80 mb-1">قبل</div>
+                    <div className="qed-mono text-3xl font-black text-destructive">٩٫٥</div>
+                    <div className="text-[10px] text-muted-foreground mt-1">/ ٢٠</div>
+                  </div>
+                  <div className="bg-[hsl(var(--geometry)/0.1)] border border-[hsl(var(--geometry)/0.3)] rounded-xl p-3">
+                    <div className="text-[10px] font-bold text-[hsl(var(--geometry))] mb-1">بعد شهر</div>
+                    <div className="qed-mono text-3xl font-black text-[hsl(var(--geometry))]">١٣</div>
+                    <div className="text-[10px] text-muted-foreground mt-1">/ ٢٠</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/60">
+                  <Brain className="w-4 h-4 text-primary shrink-0" />
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    ٢٤ ثغرة مكتشفة، ٣ منها تمثّل ٧٠٪ من الأخطاء — تمّ علاجها بـ ١٢ تمريناً موجَّهاً.
+                  </p>
+                </div>
+              </div>
             </motion.div>
           </div>
 
