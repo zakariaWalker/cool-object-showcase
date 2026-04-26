@@ -399,35 +399,44 @@ export default function Landing() {
         </section>
 
         {/* ── BENEFITS — audience-aware, no layout shift ── */}
-        <section className="max-w-6xl mx-auto px-6 py-20">
-          {/* Pre-render both, show/hide with opacity to avoid layout shift */}
-          <div className="relative">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={audience + "-benefits"}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4 }}
-                className="grid md:grid-cols-3 gap-5"
-              >
-                {(audience === "student" ? STUDENT_BENEFITS : PARENT_BENEFITS).map((b, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.08 }}
-                    className="benefit-card group bg-card border border-border rounded-2xl p-7 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-default"
-                  >
-                    <div className="benefit-icon w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-5 group-hover:bg-primary/15 transition-colors">
-                      {b.icon}
-                    </div>
-                    <h3 className="text-base font-black text-foreground mb-2.5 leading-snug">{b.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </AnimatePresence>
+        <section className="relative bg-secondary/40 border-y border-border/60">
+          <div className="max-w-6xl mx-auto px-6 py-16">
+            <div className="relative">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={audience + "-benefits"}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.4 }}
+                  className="grid md:grid-cols-3 gap-5"
+                >
+                  {(audience === "student" ? STUDENT_BENEFITS : PARENT_BENEFITS).map((b, i) => {
+                    const tones = [
+                      { bg: "bg-primary/10", text: "text-primary", border: "hover:border-primary/40" },
+                      { bg: "bg-accent/15", text: "text-accent", border: "hover:border-accent/40" },
+                      { bg: "bg-[hsl(var(--geometry)/0.15)]", text: "text-[hsl(var(--geometry))]", border: "hover:border-[hsl(var(--geometry)/0.4)]" },
+                    ];
+                    const tone = tones[i % tones.length];
+                    return (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.08 }}
+                        className={`benefit-card group bg-card border border-border rounded-2xl p-7 ${tone.border} hover:shadow-xl hover:shadow-primary/5 transition-all cursor-default`}
+                      >
+                        <div className={`benefit-icon w-12 h-12 rounded-2xl ${tone.bg} ${tone.text} flex items-center justify-center mb-5 transition-colors`}>
+                          {b.icon}
+                        </div>
+                        <h3 className="text-base font-black text-foreground mb-2.5 leading-snug">{b.title}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
         </section>
 
