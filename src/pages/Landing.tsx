@@ -383,9 +383,9 @@ export default function Landing() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.6 }}
-            className="relative z-10 mt-20 w-full max-w-lg mx-auto"
+            className="relative z-10 mt-14 w-full max-w-lg mx-auto"
           >
-            <div className="grid grid-cols-3 divide-x divide-x-reverse divide-border/50 bg-muted/40 border border-border/50 rounded-2xl overflow-hidden backdrop-blur-sm">
+            <div className="grid grid-cols-3 divide-x divide-x-reverse divide-border/50 bg-card border border-border rounded-2xl overflow-hidden shadow-xl shadow-primary/5">
               {TRUST_POINTS.map((s, i) => (
                 <div key={i} className="text-center py-5 px-4">
                   <div className="qed-mono text-2xl md:text-3xl font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
