@@ -39,14 +39,14 @@ const TYPE_META: Record<string, { icon: any; label: string; tone: string }> = {
 };
 
 const DOMAIN_TONE: Record<string, { dot: string; chip: string; cover: string }> = {
-  algebra:     { dot: "bg-blue-500",   chip: "bg-blue-50 text-blue-700 border-blue-200",       cover: "from-sky-200 via-indigo-200 to-violet-300" },
-  geometry:    { dot: "bg-emerald-500",chip: "bg-emerald-50 text-emerald-700 border-emerald-200", cover: "from-emerald-200 via-teal-200 to-cyan-300" },
-  statistics:  { dot: "bg-orange-500", chip: "bg-orange-50 text-orange-700 border-orange-200", cover: "from-orange-200 via-amber-200 to-yellow-300" },
-  probability: { dot: "bg-purple-500", chip: "bg-purple-50 text-purple-700 border-purple-200", cover: "from-violet-200 via-purple-200 to-fuchsia-300" },
-  functions:   { dot: "bg-cyan-500",   chip: "bg-cyan-50 text-cyan-700 border-cyan-200",       cover: "from-cyan-200 via-sky-200 to-blue-300" },
-  numbers:     { dot: "bg-pink-500",   chip: "bg-pink-50 text-pink-700 border-pink-200",       cover: "from-pink-200 via-rose-200 to-red-300" },
+  algebra:     { dot: "bg-algebra",     chip: "bg-algebra/10 text-algebra border-algebra/30",         cover: "from-algebra/30 via-algebra/15 to-background" },
+  geometry:    { dot: "bg-geometry",    chip: "bg-geometry/10 text-geometry border-geometry/30",     cover: "from-geometry/30 via-geometry/15 to-background" },
+  statistics:  { dot: "bg-statistics",  chip: "bg-statistics/10 text-statistics border-statistics/30", cover: "from-statistics/30 via-statistics/15 to-background" },
+  probability: { dot: "bg-probability", chip: "bg-probability/10 text-probability border-probability/30", cover: "from-probability/30 via-probability/15 to-background" },
+  functions:   { dot: "bg-functions",   chip: "bg-functions/10 text-functions border-functions/30",   cover: "from-functions/30 via-functions/15 to-background" },
+  numbers:     { dot: "bg-accent",      chip: "bg-accent/10 text-accent border-accent/30",           cover: "from-accent/30 via-accent/15 to-background" },
 };
-const toneOf = (d?: string) => (d && DOMAIN_TONE[d]) || { dot: "bg-muted-foreground", chip: "bg-muted text-foreground border-border", cover: "from-amber-200 via-rose-200 to-fuchsia-300" };
+const toneOf = (d?: string) => (d && DOMAIN_TONE[d]) || { dot: "bg-muted-foreground", chip: "bg-muted text-foreground border-border", cover: "from-primary/20 via-accent/15 to-background" };
 
 const readingMinutes = (acts: Activity[]) => {
   const n = acts.length;
