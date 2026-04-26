@@ -444,64 +444,6 @@ export default function Landing() {
           </div>
         </section>
 
-            {/* Visual proof card — before/after */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7, duration: 0.6 }}
-              className="pt-6 max-w-md mx-auto"
-            >
-              <div className="bg-card border border-border rounded-2xl p-5 shadow-2xl shadow-primary/10 text-right">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="qed-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                    تقدّم تلميذ حقيقي
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-black text-[hsl(var(--geometry))] bg-[hsl(var(--geometry)/0.12)] px-2 py-0.5 rounded-full">
-                    <TrendingUp className="w-3 h-3" />
-                    +3.5 نقطة
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-destructive/8 border border-destructive/20 rounded-xl p-3">
-                    <div className="text-[10px] font-bold text-destructive/80 mb-1">قبل</div>
-                    <div className="qed-mono text-3xl font-black text-destructive">٩٫٥</div>
-                    <div className="text-[10px] text-muted-foreground mt-1">/ ٢٠</div>
-                  </div>
-                  <div className="bg-[hsl(var(--geometry)/0.1)] border border-[hsl(var(--geometry)/0.3)] rounded-xl p-3">
-                    <div className="text-[10px] font-bold text-[hsl(var(--geometry))] mb-1">بعد شهر</div>
-                    <div className="qed-mono text-3xl font-black text-[hsl(var(--geometry))]">١٣</div>
-                    <div className="text-[10px] text-muted-foreground mt-1">/ ٢٠</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/60">
-                  <Brain className="w-4 h-4 text-primary shrink-0" />
-                  <p className="text-[11px] text-muted-foreground leading-snug">
-                    ٢٤ ثغرة مكتشفة، ٣ منها تمثّل ٧٠٪ من الأخطاء — تمّ علاجها بـ ١٢ تمريناً موجَّهاً.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Stats strip */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.6 }}
-            className="relative z-10 mt-14 w-full max-w-lg mx-auto"
-          >
-            <div className="grid grid-cols-3 divide-x divide-x-reverse divide-border/50 bg-card border border-border rounded-2xl overflow-hidden shadow-xl shadow-primary/5">
-              {TRUST_POINTS.map((s, i) => (
-                <div key={i} className="text-center py-5 px-4">
-                  <div className="qed-mono text-2xl md:text-3xl font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
-                    {s.v}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground mt-1 font-medium">{s.l}</div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </section>
 
         {/* ── BENEFITS — flow: diagnose → detect → fix ── */}
         <section className="relative bg-secondary/40 border-y border-border/60">
