@@ -330,14 +330,14 @@ export default function Landing() {
                 >
                   <Link
                     to={audience === "student" ? "/diagnostic" : "/auth"}
-                    className="relative group inline-flex flex-col items-center gap-1 px-12 py-5 rounded-2xl font-black text-primary-foreground bg-gradient-to-l from-primary via-primary to-primary/90 hover:from-primary hover:to-accent shadow-2xl shadow-primary/40 ring-2 ring-primary/20 hover:ring-accent/40 transition-all"
+                    className="relative group inline-flex flex-col items-center gap-1 px-12 py-5 rounded-2xl font-black text-white qed-brand-gradient shadow-2xl shadow-[hsl(var(--algebra)/0.4)] ring-2 ring-[hsl(var(--algebra)/0.25)] hover:ring-[hsl(var(--probability)/0.5)] hover:shadow-[hsl(var(--probability)/0.4)] transition-all"
                   >
-                    <span className="absolute inset-0 rounded-2xl qed-pulse-ring border-2 border-accent opacity-60 group-hover:opacity-100" />
+                    <span className="absolute inset-0 rounded-2xl qed-pulse-ring border-2 border-[hsl(var(--probability))] opacity-60 group-hover:opacity-100" />
                     <span className="relative flex items-center gap-3 text-lg">
                       {audience === "student" ? "ابدأ التشخيص — مجاناً" : "ابدأ تشخيص ابنك — مجاناً"}
                       <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
                     </span>
-                    <span className="relative text-[11px] font-medium text-primary-foreground/80">
+                    <span className="relative text-[11px] font-medium text-white/85">
                       5 دقائق · 10 أسئلة · بدون تسجيل
                     </span>
                   </Link>
