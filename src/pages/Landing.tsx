@@ -208,10 +208,11 @@ export default function Landing() {
         </nav>
 
         {/* ── HERO ── */}
-        <section className="relative qed-hero-grid qed-noise min-h-[95vh] flex flex-col justify-center items-center px-6 pt-24 pb-16 overflow-hidden">
-          {/* Ambient blobs */}
-          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/8 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-accent/8 rounded-full blur-[100px] pointer-events-none" />
+        <section className="relative qed-hero-grid qed-noise min-h-[88vh] flex flex-col justify-center items-center px-6 pt-24 pb-12 overflow-hidden bg-gradient-to-b from-secondary/40 via-background to-background">
+          {/* Ambient blobs — stronger */}
+          <div className="absolute top-1/4 right-1/4 w-[28rem] h-[28rem] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-accent/20 rounded-full blur-[110px] pointer-events-none" />
+          <div className="absolute top-1/2 right-1/2 w-72 h-72 bg-primary/10 rounded-full blur-[140px] pointer-events-none" />
 
           {/* Floating decorative math symbols */}
           <div
