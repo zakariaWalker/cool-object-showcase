@@ -744,9 +744,9 @@ export default function Landing() {
         </section>
 
         {/* ── FINAL CTA ── */}
-        <section className="relative py-20 px-6 overflow-hidden bg-gradient-to-br from-primary/8 via-secondary/40 to-accent/8 border-t border-border/60">
+        <section className="relative py-20 px-6 overflow-hidden bg-gradient-to-br from-[hsl(var(--algebra)/0.08)] via-secondary/40 to-[hsl(var(--probability)/0.08)] border-t border-border/60">
           <div className="absolute inset-0 qed-hero-grid opacity-40 pointer-events-none" />
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/15 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-[hsl(var(--algebra)/0.15)] rounded-full blur-[120px] pointer-events-none" />
 
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
@@ -755,15 +755,15 @@ export default function Landing() {
             transition={{ duration: 0.6 }}
             className="relative z-10 max-w-2xl mx-auto text-center space-y-8"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(var(--algebra)/0.1)] border border-[hsl(var(--algebra)/0.2)] text-[hsl(var(--algebra))] text-xs font-black">
               <TrendingUp className="w-3.5 h-3.5" />
-              ابدأ التشخيص — تشوف نتيجتك في 15 دقيقة
+              تشخيص مجاني · 5 دقائق
             </div>
 
-            <h2 className="qed-serif text-4xl md:text-6xl font-bold text-foreground leading-tight">
-              وقّاش تعرف مستواك
+            <h2 className="text-4xl md:text-6xl font-black text-foreground leading-tight tracking-tight">
+              جاهز تعرف مستواك
               <br />
-              <span className="bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">بالضبط؟</span>
+              <span className="qed-brand-text">بالضبط؟</span>
             </h2>
 
             <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
@@ -773,7 +773,7 @@ export default function Landing() {
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
               <Link
                 to="/diagnostic"
-                className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-primary-foreground bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/30 transition-all"
+                className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-white qed-brand-gradient shadow-2xl shadow-[hsl(var(--algebra)/0.35)] hover:shadow-[hsl(var(--probability)/0.4)] transition-all"
               >
                 ابدأ التشخيص المجاني
                 <ArrowLeft className="w-5 h-5" />
