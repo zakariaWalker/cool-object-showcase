@@ -1,51 +1,103 @@
-// ═══ QED Logo — consistent brand mark across the app ═══
-export function QEDLogo({ size = "md", className = "" }: { size?: "sm" | "md" | "lg" | "xl"; className?: string }) {
-  const dims = { sm: { box: 28, font: 11, dot: 3 }, md: { box: 36, font: 14, dot: 4 }, lg: { box: 48, font: 19, dot: 5 }, xl: { box: 64, font: 26, dot: 7 } }[size];
+// ═══════════════════════════════════════════════════════════════
+// QED Logo — Academic identity
+// A serif wordmark with a small burgundy "Q.E.D." square mark,
+// inspired by classical mathematics journal frontispieces.
+// ═══════════════════════════════════════════════════════════════
+
+interface QEDLogoProps {
+  size?: "sm" | "md" | "lg" | "xl";
+  className?: string;
+  /** Hide the Arabic tagline below the wordmark */
+  compact?: boolean;
+  /** Force inverted colors (for dark surfaces) */
+  inverted?: boolean;
+}
+
+const SIZES = {
+  sm: { mark: 22, wordmark: 18, tagline: 9, gap: 8 },
+  md: { mark: 28, wordmark: 22, tagline: 10, gap: 10 },
+  lg: { mark: 36, wordmark: 28, tagline: 11, gap: 12 },
+  xl: { mark: 48, wordmark: 38, tagline: 13, gap: 14 },
+} as const;
+
+export function QEDLogo({ size = "md", className = "", compact = false, inverted = false }: QEDLogoProps) {
+  const dims = SIZES[size];
+  const ink = inverted ? "hsl(var(--background))" : "hsl(var(--primary))";
+  const accent = "hsl(var(--accent))";
+  const muted = inverted ? "hsl(var(--background) / 0.65)" : "hsl(var(--muted-foreground))";
+
   return (
-    <div className={`inline-flex items-center gap-2 ${className}`}>
+    <div
+      className={`inline-flex items-center ${className}`}
+      style={{ gap: dims.gap, direction: "ltr" }}
+      aria-label="QED — منصة الرياضيات الأكاديمية"
+    >
+      {/* Mark — bordered square with serif Q and a small burgundy proof tick */}
       <div
-        className="relative flex items-center justify-center rounded-lg"
+        className="relative flex items-center justify-center"
         style={{
-          width: dims.box, height: dims.box,
-          background: "linear-gradient(135deg, hsl(var(--algebra)), hsl(var(--probability)))",
-          boxShadow: "0 2px 12px hsl(var(--algebra) / 0.35)",
+          width: dims.mark,
+          height: dims.mark,
+          border: `1.5px solid ${ink}`,
+          borderRadius: 3,
         }}
       >
         <span
-          className="font-black text-white tracking-tight"
-          style={{ fontSize: dims.font, fontFamily: "'Nunito', sans-serif", lineHeight: 1 }}
+          style={{
+            fontFamily: "'Fraunces', 'Amiri', Georgia, serif",
+            fontWeight: 600,
+            fontSize: dims.mark * 0.62,
+            lineHeight: 1,
+            color: ink,
+            fontVariationSettings: '"opsz" 144',
+            letterSpacing: "-0.04em",
+          }}
         >
           Q
         </span>
+        {/* Burgundy proof-tick — the "∎" end-of-proof symbol */}
         <span
-          className="absolute rounded-full"
           style={{
-            width: dims.dot, height: dims.dot,
-            bottom: dims.dot, right: dims.dot,
-            background: "hsl(var(--accent))",
-            boxShadow: "0 0 6px hsl(var(--accent) / 0.6)",
+            position: "absolute",
+            bottom: -2,
+            right: -2,
+            width: Math.max(5, dims.mark * 0.18),
+            height: Math.max(5, dims.mark * 0.18),
+            background: accent,
+            borderRadius: 1,
           }}
         />
       </div>
-      <div className="flex flex-col leading-none">
+
+      {/* Wordmark */}
+      <div className="flex flex-col" style={{ lineHeight: 1, direction: "ltr" }}>
         <span
-          className="font-black tracking-tight"
           style={{
-            fontSize: dims.font,
-            fontFamily: "'Nunito', sans-serif",
-            background: "linear-gradient(to left, hsl(var(--algebra)), hsl(var(--probability)))",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
+            fontFamily: "'Fraunces', Georgia, serif",
+            fontWeight: 600,
+            fontSize: dims.wordmark,
+            color: ink,
+            letterSpacing: "-0.025em",
+            fontVariationSettings: '"opsz" 144',
           }}
         >
           QED
         </span>
-        <span
-          className="text-muted-foreground font-bold"
-          style={{ fontSize: Math.max(8, dims.font * 0.55) }}
-        >
-          المحرّك الرياضي
-        </span>
+        {!compact && (
+          <span
+            style={{
+              fontFamily: "'Tajawal', sans-serif",
+              fontWeight: 500,
+              fontSize: dims.tagline,
+              color: muted,
+              marginTop: 2,
+              direction: "rtl",
+              letterSpacing: 0,
+            }}
+          >
+            المحرّك الرياضي
+          </span>
+        )}
       </div>
     </div>
   );
