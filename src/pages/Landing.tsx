@@ -454,9 +454,16 @@ export default function Landing() {
           </motion.div>
         </section>
 
-        {/* ── BENEFITS — audience-aware, no layout shift ── */}
+        {/* ── BENEFITS — flow: diagnose → detect → fix ── */}
         <section className="relative bg-secondary/40 border-y border-border/60">
-          <div className="max-w-6xl mx-auto px-6 py-16">
+          <div className="max-w-6xl mx-auto px-6 py-14 space-y-10">
+            <div className="text-center space-y-2 max-w-2xl mx-auto">
+              <span className="qed-mono text-xs font-bold text-primary uppercase tracking-widest">٣ خطوات · نتيجة واحدة</span>
+              <h2 className="qed-serif text-2xl md:text-4xl font-bold text-foreground leading-tight">
+                من <span className="text-destructive">الضياع</span> إلى <span className="text-[hsl(var(--geometry))]">+3 نقاط</span>
+              </h2>
+            </div>
+
             <div className="relative">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -465,13 +472,14 @@ export default function Landing() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.4 }}
-                  className="grid md:grid-cols-3 gap-5"
+                  className="grid md:grid-cols-3 gap-5 relative"
                 >
-                  {(audience === "student" ? STUDENT_BENEFITS : PARENT_BENEFITS).map((b, i) => {
+                  {(audience === "student" ? STUDENT_BENEFITS : PARENT_BENEFITS).map((b: any, i) => {
+                    // Semantic flow colors: red (problem) → amber (insight) → green (progress)
                     const tones = [
-                      { bg: "bg-primary/10", text: "text-primary", border: "hover:border-primary/40" },
-                      { bg: "bg-accent/15", text: "text-accent", border: "hover:border-accent/40" },
-                      { bg: "bg-[hsl(var(--geometry)/0.15)]", text: "text-[hsl(var(--geometry))]", border: "hover:border-[hsl(var(--geometry)/0.4)]" },
+                      { bg: "bg-destructive/10", text: "text-destructive", border: "hover:border-destructive/50", num: "text-destructive/30" },
+                      { bg: "bg-accent/15", text: "text-accent", border: "hover:border-accent/50", num: "text-accent/40" },
+                      { bg: "bg-[hsl(var(--geometry)/0.12)]", text: "text-[hsl(var(--geometry))]", border: "hover:border-[hsl(var(--geometry)/0.5)]", num: "text-[hsl(var(--geometry)/0.4)]" },
                     ];
                     const tone = tones[i % tones.length];
                     return (
@@ -479,14 +487,27 @@ export default function Landing() {
                         key={i}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.08 }}
-                        className={`benefit-card group bg-card border border-border rounded-2xl p-7 ${tone.border} hover:shadow-xl hover:shadow-primary/5 transition-all cursor-default`}
+                        transition={{ delay: i * 0.1 }}
+                        className="relative"
                       >
-                        <div className={`benefit-icon w-12 h-12 rounded-2xl ${tone.bg} ${tone.text} flex items-center justify-center mb-5 transition-colors`}>
-                          {b.icon}
+                        {/* Flow arrow connector — desktop only */}
+                        {i < 2 && (
+                          <div className="absolute top-1/2 -left-3 -translate-y-1/2 hidden md:flex w-6 h-6 items-center justify-center z-10 pointer-events-none">
+                            <ArrowLeft className="w-5 h-5 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        <div
+                          className={`benefit-card group bg-card border border-border rounded-2xl p-6 ${tone.border} hover:shadow-xl hover:shadow-primary/5 transition-all cursor-default h-full relative overflow-hidden`}
+                        >
+                          <span className={`qed-mono absolute top-3 left-4 text-3xl font-black leading-none ${tone.num}`}>
+                            {b.step || `0${i + 1}`}
+                          </span>
+                          <div className={`benefit-icon w-12 h-12 rounded-2xl ${tone.bg} ${tone.text} flex items-center justify-center mb-5 transition-colors`}>
+                            {b.icon}
+                          </div>
+                          <h3 className="text-base font-black text-foreground mb-2.5 leading-snug">{b.title}</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
                         </div>
-                        <h3 className="text-base font-black text-foreground mb-2.5 leading-snug">{b.title}</h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
                       </motion.div>
                     );
                   })}
