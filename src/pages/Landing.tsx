@@ -241,13 +241,13 @@ export default function Landing() {
 
           {/* Floating decorative math symbols */}
           <div
-            className="absolute top-32 left-12 qed-deco opacity-[0.07] select-none pointer-events-none qed-serif text-[8rem] font-bold text-foreground leading-none"
+            className="absolute top-32 left-12 qed-deco opacity-[0.07] select-none pointer-events-none qed-mono text-[8rem] font-bold text-foreground leading-none"
             style={{ animationDelay: "0s" }}
           >
             ∑
           </div>
           <div
-            className="absolute bottom-24 right-16 qed-deco opacity-[0.05] select-none pointer-events-none qed-serif text-[6rem] font-bold text-foreground leading-none"
+            className="absolute bottom-24 right-16 qed-deco opacity-[0.05] select-none pointer-events-none qed-mono text-[6rem] font-bold text-foreground leading-none"
             style={{ animationDelay: "3s" }}
           >
             ∫
@@ -261,7 +261,7 @@ export default function Landing() {
               transition={{ duration: 0.5 }}
               className="flex justify-center"
             >
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-[11px] font-black">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[hsl(var(--algebra)/0.1)] border border-[hsl(var(--algebra)/0.25)] text-[hsl(var(--algebra))] text-[11px] font-black">
                 <Sparkles className="w-3 h-3" />
                 مبني على برنامج BAC + BEM الجزائري
               </span>
@@ -279,11 +279,10 @@ export default function Landing() {
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                     className="space-y-5"
                   >
-                    <h1 className="qed-serif text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.1]">
-                      ارفع معدّلك بـ
-                      <span className="bg-gradient-to-l from-primary via-primary to-accent bg-clip-text text-transparent"> +3 نقاط </span>
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-foreground leading-[1.1] tracking-tight">
+                      نقاطك في الرياضيات
                       <br />
-                      في الرياضيات خلال شهر
+                      تستحق <span className="qed-brand-text">أحسن</span>
                     </h1>
                     <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
                       اختبار قصير يكشف <span className="font-black text-foreground">وين تغلط بالضبط</span>،
@@ -299,10 +298,10 @@ export default function Landing() {
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                     className="space-y-5"
                   >
-                    <h1 className="qed-serif text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.1]">
-                      اعرف مستوى ابنك الحقيقي
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-foreground leading-[1.1] tracking-tight">
+                      اعرف مستوى ابنك
                       <br />
-                      <span className="bg-gradient-to-l from-primary via-primary to-accent bg-clip-text text-transparent">في 5 دقائق</span>
+                      <span className="qed-brand-text">في 5 دقائق</span>
                     </h1>
                     <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
                       تقرير واضح بنقاط الضعف ومتابعة أسبوعية للتقدّم.
