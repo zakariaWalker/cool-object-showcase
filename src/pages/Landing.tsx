@@ -437,7 +437,7 @@ export default function Landing() {
                   key={i}
                   className="bg-card border border-border rounded-xl px-4 py-3 text-center md:text-right"
                 >
-                  <div className="qed-mono text-xl md:text-2xl font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
+                  <div className="qed-mono text-xl md:text-2xl font-bold qed-brand-text">
                     {s.v}
                   </div>
                   <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">{s.l}</div>
