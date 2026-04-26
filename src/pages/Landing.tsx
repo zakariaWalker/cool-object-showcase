@@ -204,41 +204,43 @@ export default function Landing() {
           </div>
         </nav>
 
-        {/* ── HERO — single dominant CTA, minimal above the fold ── */}
-        <section className="relative qed-hero-grid qed-noise min-h-[92vh] flex flex-col justify-center items-center px-6 pt-24 pb-10 overflow-hidden bg-gradient-to-b from-secondary/40 via-background to-background">
-          {/* Ambient blobs */}
-          <div className="absolute top-1/4 right-1/4 w-[28rem] h-[28rem] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-accent/20 rounded-full blur-[110px] pointer-events-none" />
-
-          {/* Floating decorative math symbols */}
+        {/* ── HERO — academic editorial: serif headline, ink CTA, paper backdrop ── */}
+        <section className="relative qed-hero-grid qed-noise min-h-[92vh] flex flex-col justify-center items-center px-6 pt-24 pb-10 overflow-hidden">
+          {/* Floating manuscript glyphs — subtle, ink */}
           <div
-            className="absolute top-32 left-12 qed-deco opacity-[0.07] select-none pointer-events-none qed-mono text-[8rem] font-bold text-foreground leading-none"
+            className="absolute top-32 left-12 qed-deco opacity-[0.05] select-none pointer-events-none font-display text-[10rem] text-foreground leading-none"
             style={{ animationDelay: "0s" }}
           >
             ∑
           </div>
           <div
-            className="absolute bottom-24 right-16 qed-deco opacity-[0.05] select-none pointer-events-none qed-mono text-[6rem] font-bold text-foreground leading-none"
+            className="absolute bottom-28 right-16 qed-deco opacity-[0.04] select-none pointer-events-none font-display text-[8rem] text-foreground leading-none"
             style={{ animationDelay: "3s" }}
           >
             ∫
           </div>
+          {/* Burgundy proof-tick decoration in the corner */}
+          <div
+            className="absolute top-28 right-1/4 hidden md:block pointer-events-none"
+            style={{ width: 8, height: 8, background: "hsl(var(--accent))", borderRadius: 1, opacity: 0.6 }}
+          />
 
-          <div className="relative z-10 w-full max-w-3xl mx-auto space-y-8 text-center">
-            {/* Single proof badge — combined */}
+          <div className="relative z-10 w-full max-w-3xl mx-auto space-y-10 text-center">
+            {/* Eyebrow — academic label */}
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
+              initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               className="flex justify-center"
             >
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[hsl(var(--algebra)/0.1)] border border-[hsl(var(--algebra)/0.25)] text-[hsl(var(--algebra))] text-[11px] font-black">
-                <Sparkles className="w-3 h-3" />
-                مبني على برنامج BAC + BEM الجزائري
+              <span className="eyebrow inline-flex items-center gap-2.5">
+                <span className="w-6 h-px bg-current opacity-50" />
+                مرجع رياضيات · BAC + BEM
+                <span className="w-6 h-px bg-current opacity-50" />
               </span>
             </motion.div>
 
-            {/* Headline — concrete promise (single, audience-aware) */}
+            {/* Headline — Fraunces serif, ink, with burgundy accent word */}
             <div className="relative">
               <AnimatePresence mode="wait">
                 {audience === "student" ? (
@@ -248,15 +250,15 @@ export default function Landing() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -12 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="space-y-5"
+                    className="space-y-6"
                   >
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-foreground leading-[1.1] tracking-tight">
+                    <h1 className="display-1 text-foreground">
                       نقاطك في الرياضيات
                       <br />
-                      تستحق <span className="qed-brand-text">أحسن</span>
+                      تستحق <em className="not-italic text-accent">أحسن</em>
                     </h1>
                     <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                      اختبار قصير يكشف <span className="font-black text-foreground">وين تغلط بالضبط</span>،
+                      اختبار قصير يكشف <span className="font-semibold text-foreground">وين تغلط بالضبط</span>،
                       ثم تمارين موجَّهة بشرح خطوة بخطوة.
                     </p>
                   </motion.div>
@@ -267,12 +269,12 @@ export default function Landing() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -12 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="space-y-5"
+                    className="space-y-6"
                   >
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-foreground leading-[1.1] tracking-tight">
+                    <h1 className="display-1 text-foreground">
                       اعرف مستوى ابنك
                       <br />
-                      <span className="qed-brand-text">في 5 دقائق</span>
+                      <em className="not-italic text-accent">في 5 دقائق</em>
                     </h1>
                     <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
                       تقرير واضح بنقاط الضعف ومتابعة أسبوعية للتقدّم.
@@ -282,12 +284,12 @@ export default function Landing() {
               </AnimatePresence>
             </div>
 
-            {/* SINGLE dominant CTA */}
+            {/* SINGLE dominant CTA — ink button, system-defined */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="flex flex-col items-center gap-4 pt-2"
+              className="flex flex-col items-center gap-5 pt-2"
             >
               <AnimatePresence mode="wait">
                 <motion.div
@@ -296,35 +298,32 @@ export default function Landing() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.97 }}
                   transition={{ duration: 0.2 }}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
                 >
                   <Link
                     to={audience === "student" ? "/diagnostic" : "/auth"}
-                    className="relative group inline-flex flex-col items-center gap-1 px-12 py-5 rounded-2xl font-black text-white qed-brand-gradient shadow-2xl shadow-[hsl(var(--algebra)/0.4)] ring-2 ring-[hsl(var(--algebra)/0.25)] hover:ring-[hsl(var(--probability)/0.5)] hover:shadow-[hsl(var(--probability)/0.4)] transition-all"
+                    className="btn-ink group flex-col gap-1.5 px-10 py-4"
                   >
-                    <span className="absolute inset-0 rounded-2xl qed-pulse-ring border-2 border-[hsl(var(--probability))] opacity-60 group-hover:opacity-100" />
-                    <span className="relative flex items-center gap-3 text-lg">
+                    <span className="flex items-center gap-3 text-base">
                       {audience === "student" ? "ابدأ التشخيص — مجاناً" : "ابدأ تشخيص ابنك — مجاناً"}
-                      <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+                      <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
                     </span>
-                    <span className="relative text-[11px] font-medium text-white/85">
-                      5 دقائق · 10 أسئلة · بدون تسجيل
+                    <span className="font-mono text-[10px] tracking-wider uppercase text-primary-foreground/70">
+                      5 min · 10 questions · sans inscription
                     </span>
                   </Link>
                 </motion.div>
               </AnimatePresence>
 
-              {/* Audience switcher — small, BELOW the CTA, text-link style */}
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              {/* Audience switcher — sober, text-link */}
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 {audience === "student" ? (
                   <>
                     <span>ولي أمر؟</span>
                     <button
                       onClick={() => setAudience("parent")}
-                      className="font-black text-foreground hover:text-primary underline-offset-4 hover:underline transition-colors"
+                      className="font-semibold text-foreground hover:text-accent underline underline-offset-4 decoration-border hover:decoration-accent transition-colors"
                     >
-                      اضغط هنا
+                      هذا التشخيص لك
                     </button>
                   </>
                 ) : (
@@ -332,9 +331,9 @@ export default function Landing() {
                     <span>تلميذ؟</span>
                     <button
                       onClick={() => setAudience("student")}
-                      className="font-black text-foreground hover:text-primary underline-offset-4 hover:underline transition-colors"
+                      className="font-semibold text-foreground hover:text-accent underline underline-offset-4 decoration-border hover:decoration-accent transition-colors"
                     >
-                      اضغط هنا
+                      جرّب التشخيص بنفسك
                     </button>
                   </>
                 )}
@@ -342,16 +341,16 @@ export default function Landing() {
             </motion.div>
           </div>
 
-          {/* Scroll cue — invites the user to discover more below */}
+          {/* Scroll cue — sober eyebrow style */}
           <motion.a
             href="#how"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 0.6 }}
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 hover:text-foreground transition-colors"
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 eyebrow hover:text-foreground transition-colors"
           >
-            <span>كيف يخدم</span>
-            <span className="w-px h-8 bg-gradient-to-b from-muted-foreground/40 to-transparent" />
+            <span>المنهجية</span>
+            <span className="w-px h-8 bg-gradient-to-b from-current to-transparent opacity-40" />
           </motion.a>
         </section>
 
