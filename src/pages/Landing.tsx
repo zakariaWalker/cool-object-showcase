@@ -452,9 +452,9 @@ export default function Landing() {
         <section className="relative bg-secondary/40 border-y border-border/60">
           <div className="max-w-6xl mx-auto px-6 py-14 space-y-10">
             <div className="text-center space-y-2 max-w-2xl mx-auto">
-              <span className="qed-mono text-xs font-bold text-primary uppercase tracking-widest">٣ خطوات · نتيجة واحدة</span>
-              <h2 className="qed-serif text-2xl md:text-4xl font-bold text-foreground leading-tight">
-                من <span className="text-destructive">الضياع</span> إلى <span className="text-[hsl(var(--geometry))]">+3 نقاط</span>
+              <span className="qed-mono text-xs font-bold text-[hsl(var(--algebra))] uppercase tracking-widest">3 خطوات · نتيجة واحدة</span>
+              <h2 className="text-2xl md:text-4xl font-black text-foreground leading-tight tracking-tight">
+                طريق واضح من <span className="text-destructive">الثغرات</span> إلى <span className="text-[hsl(var(--geometry))]">الإتقان</span>
               </h2>
             </div>
 
