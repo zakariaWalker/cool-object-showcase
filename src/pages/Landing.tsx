@@ -224,7 +224,7 @@ export default function Landing() {
               </a>
               <Link
                 to="/auth"
-                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-black text-primary-foreground bg-primary hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-black text-white qed-brand-gradient hover:opacity-90 transition-all shadow-lg shadow-[hsl(var(--algebra)/0.25)]"
               >
                 دخول
                 <ChevronLeft className="w-3.5 h-3.5" />
