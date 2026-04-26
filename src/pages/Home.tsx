@@ -231,7 +231,7 @@ export default function Home() {
 
           <CardGradient className="p-8 space-y-4">
             <h3 className="text-xl font-black flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-amber-500" /> هدفك القادم
+              <Sparkles className="w-5 h-5 text-accent" /> هدفك القادم
             </h3>
             <p className="text-sm text-muted-foreground">
               أكمل التقييم التشخيصي الأول لتحصل على 100 XP وتفتح مسار تعلمك المخصص.
@@ -299,7 +299,7 @@ export default function Home() {
                     `}
                   >
                     {isCompleted && (
-                      <div className="absolute top-6 left-6 text-emerald-500 animate-in zoom-in">
+                      <div className="absolute top-6 left-6 text-geometry animate-in zoom-in">
                         <CheckCircle2 className="w-8 h-8" />
                       </div>
                     )}
