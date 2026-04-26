@@ -146,12 +146,29 @@ export default function Landing() {
     <>
       {/* ── Injected design tokens & custom styles ── */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=IBM+Plex+Mono:wght@400;700&display=swap');
+
+        /* Unified typography for the entire landing page */
+        .qed-landing, .qed-landing * {
+          font-family: 'Tajawal', 'Inter', system-ui, sans-serif;
+        }
+        .qed-landing .qed-mono { font-family: 'IBM Plex Mono', monospace; }
+
+        /* Brand gradient — matches the QED logo (algebra → probability) */
+        .qed-brand-gradient {
+          background-image: linear-gradient(135deg, hsl(var(--algebra)), hsl(var(--probability)));
+        }
+        .qed-brand-text {
+          background-image: linear-gradient(135deg, hsl(var(--algebra)), hsl(var(--probability)));
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
 
         .qed-hero-grid {
           background-image:
-            linear-gradient(rgba(var(--primary-rgb, 99 102 241) / 0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(var(--primary-rgb, 99 102 241) / 0.04) 1px, transparent 1px);
+            linear-gradient(hsl(var(--algebra) / 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(var(--algebra) / 0.05) 1px, transparent 1px);
           background-size: 48px 48px;
         }
 
@@ -163,19 +180,6 @@ export default function Landing() {
           pointer-events: none;
           z-index: 0;
         }
-
-        .qed-step-line::before {
-          content: '';
-          position: absolute;
-          top: 24px;
-          right: -50%;
-          width: 100%;
-          height: 1px;
-          background: linear-gradient(to left, transparent, hsl(var(--primary) / 0.25));
-        }
-
-        .qed-mono { font-family: 'IBM Plex Mono', monospace; }
-        .qed-serif { font-family: 'Amiri', serif; }
 
         .benefit-card:hover .benefit-icon {
           transform: scale(1.1) rotate(-6deg);
