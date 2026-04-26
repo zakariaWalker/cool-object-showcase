@@ -208,10 +208,11 @@ export default function Landing() {
         </nav>
 
         {/* ── HERO ── */}
-        <section className="relative qed-hero-grid qed-noise min-h-[95vh] flex flex-col justify-center items-center px-6 pt-24 pb-16 overflow-hidden">
-          {/* Ambient blobs */}
-          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/8 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-accent/8 rounded-full blur-[100px] pointer-events-none" />
+        <section className="relative qed-hero-grid qed-noise min-h-[88vh] flex flex-col justify-center items-center px-6 pt-24 pb-12 overflow-hidden bg-gradient-to-b from-secondary/40 via-background to-background">
+          {/* Ambient blobs — stronger */}
+          <div className="absolute top-1/4 right-1/4 w-[28rem] h-[28rem] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-accent/20 rounded-full blur-[110px] pointer-events-none" />
+          <div className="absolute top-1/2 right-1/2 w-72 h-72 bg-primary/10 rounded-full blur-[140px] pointer-events-none" />
 
           {/* Floating decorative math symbols */}
           <div
@@ -382,9 +383,9 @@ export default function Landing() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.6 }}
-            className="relative z-10 mt-20 w-full max-w-lg mx-auto"
+            className="relative z-10 mt-14 w-full max-w-lg mx-auto"
           >
-            <div className="grid grid-cols-3 divide-x divide-x-reverse divide-border/50 bg-muted/40 border border-border/50 rounded-2xl overflow-hidden backdrop-blur-sm">
+            <div className="grid grid-cols-3 divide-x divide-x-reverse divide-border/50 bg-card border border-border rounded-2xl overflow-hidden shadow-xl shadow-primary/5">
               {TRUST_POINTS.map((s, i) => (
                 <div key={i} className="text-center py-5 px-4">
                   <div className="qed-mono text-2xl md:text-3xl font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
@@ -398,51 +399,63 @@ export default function Landing() {
         </section>
 
         {/* ── BENEFITS — audience-aware, no layout shift ── */}
-        <section className="max-w-6xl mx-auto px-6 py-20">
-          {/* Pre-render both, show/hide with opacity to avoid layout shift */}
-          <div className="relative">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={audience + "-benefits"}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4 }}
-                className="grid md:grid-cols-3 gap-5"
-              >
-                {(audience === "student" ? STUDENT_BENEFITS : PARENT_BENEFITS).map((b, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.08 }}
-                    className="benefit-card group bg-card border border-border rounded-2xl p-7 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-default"
-                  >
-                    <div className="benefit-icon w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-5 group-hover:bg-primary/15 transition-colors">
-                      {b.icon}
-                    </div>
-                    <h3 className="text-base font-black text-foreground mb-2.5 leading-snug">{b.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </AnimatePresence>
+        <section className="relative bg-secondary/40 border-y border-border/60">
+          <div className="max-w-6xl mx-auto px-6 py-16">
+            <div className="relative">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={audience + "-benefits"}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.4 }}
+                  className="grid md:grid-cols-3 gap-5"
+                >
+                  {(audience === "student" ? STUDENT_BENEFITS : PARENT_BENEFITS).map((b, i) => {
+                    const tones = [
+                      { bg: "bg-primary/10", text: "text-primary", border: "hover:border-primary/40" },
+                      { bg: "bg-accent/15", text: "text-accent", border: "hover:border-accent/40" },
+                      { bg: "bg-[hsl(var(--geometry)/0.15)]", text: "text-[hsl(var(--geometry))]", border: "hover:border-[hsl(var(--geometry)/0.4)]" },
+                    ];
+                    const tone = tones[i % tones.length];
+                    return (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.08 }}
+                        className={`benefit-card group bg-card border border-border rounded-2xl p-7 ${tone.border} hover:shadow-xl hover:shadow-primary/5 transition-all cursor-default`}
+                      >
+                        <div className={`benefit-icon w-12 h-12 rounded-2xl ${tone.bg} ${tone.text} flex items-center justify-center mb-5 transition-colors`}>
+                          {b.icon}
+                        </div>
+                        <h3 className="text-base font-black text-foreground mb-2.5 leading-snug">{b.title}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
         </section>
 
         {/* ── HOW IT WORKS — timeline style ── */}
-        <section id="how" className="border-y border-border bg-muted/20 py-24 px-6">
-          <div className="max-w-5xl mx-auto space-y-14">
+        <section id="how" className="relative bg-foreground text-background py-20 px-6 overflow-hidden">
+          <div className="absolute inset-0 qed-hero-grid opacity-[0.04] pointer-events-none" />
+          <div className="absolute top-0 right-1/3 w-96 h-96 bg-primary/30 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-accent/20 rounded-full blur-[120px] pointer-events-none" />
+          <div className="relative max-w-5xl mx-auto space-y-12">
             <div className="text-center space-y-3">
-              <span className="qed-mono text-xs font-bold text-primary uppercase tracking-widest">كيف يخدم</span>
-              <h2 className="qed-serif text-3xl md:text-5xl font-bold text-foreground">4 خطوات بسيطة، نتيجة واضحة</h2>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              <span className="qed-mono text-xs font-bold text-accent uppercase tracking-widest">كيف يخدم</span>
+              <h2 className="qed-serif text-3xl md:text-5xl font-bold text-background">4 خطوات بسيطة، نتيجة واضحة</h2>
+              <p className="text-sm text-background/60 max-w-md mx-auto">
                 نفس الطريقة اللي يستعملها أحسن الأساتذة — لكن مهيكَلة ومتاحة 24/7.
               </p>
             </div>
 
             {/* Timeline grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
               {STEPS.map((s, i) => (
                 <motion.div
                   key={i}
@@ -452,14 +465,13 @@ export default function Landing() {
                   transition={{ delay: i * 0.1 }}
                   className="relative"
                 >
-                  {/* Connector line (hidden on last item and mobile) */}
                   {i < STEPS.length - 1 && (
-                    <div className="absolute top-6 left-0 hidden md:block w-full h-px bg-gradient-to-l from-transparent via-border to-border pointer-events-none -z-10" />
+                    <div className="absolute top-6 left-0 hidden md:block w-full h-px bg-gradient-to-l from-transparent via-background/20 to-background/20 pointer-events-none -z-10" />
                   )}
-                  <div className="bg-card border border-border rounded-2xl p-6 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                    <div className="qed-mono text-2xl font-bold text-primary/30 mb-4 leading-none">{s.n}</div>
-                    <h3 className="text-sm font-black text-foreground mb-2">{s.t}</h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{s.d}</p>
+                  <div className="bg-background/5 border border-background/15 backdrop-blur-sm rounded-2xl p-6 hover:bg-background/10 hover:border-accent/40 transition-all">
+                    <div className="qed-mono text-2xl font-bold text-accent mb-4 leading-none">{s.n}</div>
+                    <h3 className="text-sm font-black text-background mb-2">{s.t}</h3>
+                    <p className="text-xs text-background/60 leading-relaxed">{s.d}</p>
                   </div>
                 </motion.div>
               ))}
@@ -522,7 +534,7 @@ export default function Landing() {
         </AnimatePresence>
 
         {/* ── TEXTBOOKS FEED ── */}
-        <section id="textbooks" className="max-w-5xl mx-auto px-6 py-24 space-y-10">
+        <section id="textbooks" className="max-w-5xl mx-auto px-6 py-16 space-y-8">
           <div className="space-y-3">
             <span className="qed-mono text-xs font-bold text-primary uppercase tracking-widest">المكتبة</span>
             <h2 className="qed-serif text-3xl md:text-5xl font-bold text-foreground leading-tight">
@@ -661,9 +673,9 @@ export default function Landing() {
         </section>
 
         {/* ── FINAL CTA ── */}
-        <section className="relative py-28 px-6 overflow-hidden">
-          <div className="absolute inset-0 qed-hero-grid opacity-50 pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/4 to-transparent pointer-events-none" />
+        <section className="relative py-20 px-6 overflow-hidden bg-gradient-to-br from-primary/8 via-secondary/40 to-accent/8 border-t border-border/60">
+          <div className="absolute inset-0 qed-hero-grid opacity-40 pointer-events-none" />
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/15 rounded-full blur-[120px] pointer-events-none" />
 
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
