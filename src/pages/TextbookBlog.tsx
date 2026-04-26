@@ -37,22 +37,22 @@ const TYPE_META: Record<string, { icon: any; label: string; tone: string }> = {
   explanation: { icon: BookOpen,  label: "مقدّمة",      tone: "text-indigo-700 dark:text-indigo-300" },
   definition:  { icon: Target,    label: "تعريف",       tone: "text-blue-700 dark:text-blue-300" },
   property:    { icon: Star,      label: "خاصية",       tone: "text-amber-700 dark:text-amber-300" },
-  theorem:     { icon: Award,     label: "مبرهنة",      tone: "text-purple-700 dark:text-purple-300" },
-  example:     { icon: Lightbulb, label: "مثال محلول",  tone: "text-emerald-700 dark:text-emerald-300" },
-  exercise:    { icon: PenTool,   label: "تمرين",       tone: "text-rose-700 dark:text-rose-300" },
-  activity:    { icon: Brain,     label: "نشاط",        tone: "text-cyan-700 dark:text-cyan-300" },
+  theorem:     { icon: Award,     label: "مبرهنة",      tone: "text-probability" },
+  example:     { icon: Lightbulb, label: "مثال محلول",  tone: "text-geometry" },
+  exercise:    { icon: PenTool,   label: "تمرين",       tone: "text-functions" },
+  activity:    { icon: Brain,     label: "نشاط",        tone: "text-primary" },
 };
 
 const DOMAIN_TONE: Record<string, { dot: string; cover: string }> = {
-  algebra:     { dot: "bg-blue-500",    cover: "from-sky-200 via-indigo-200 to-violet-300" },
-  geometry:    { dot: "bg-emerald-500", cover: "from-emerald-200 via-teal-200 to-cyan-300" },
-  statistics:  { dot: "bg-orange-500",  cover: "from-orange-200 via-amber-200 to-yellow-300" },
-  probability: { dot: "bg-purple-500",  cover: "from-violet-200 via-purple-200 to-fuchsia-300" },
-  functions:   { dot: "bg-cyan-500",    cover: "from-cyan-200 via-sky-200 to-blue-300" },
-  numbers:     { dot: "bg-pink-500",    cover: "from-pink-200 via-rose-200 to-red-300" },
+  algebra:     { dot: "bg-algebra",     cover: "from-algebra/30 via-algebra/15 to-background" },
+  geometry:    { dot: "bg-geometry",    cover: "from-geometry/30 via-geometry/15 to-background" },
+  statistics:  { dot: "bg-statistics",  cover: "from-statistics/30 via-statistics/15 to-background" },
+  probability: { dot: "bg-probability", cover: "from-probability/30 via-probability/15 to-background" },
+  functions:   { dot: "bg-functions",   cover: "from-functions/30 via-functions/15 to-background" },
+  numbers:     { dot: "bg-accent",      cover: "from-accent/30 via-accent/15 to-background" },
 };
 const toneOf = (d?: string | null) =>
-  (d && DOMAIN_TONE[d]) || { dot: "bg-muted-foreground", cover: "from-amber-200 via-rose-200 to-fuchsia-300" };
+  (d && DOMAIN_TONE[d]) || { dot: "bg-muted-foreground", cover: "from-primary/20 via-accent/15 to-background" };
 
 export default function TextbookBlog() {
   const { slugOrId } = useParams<{ slugOrId: string }>();

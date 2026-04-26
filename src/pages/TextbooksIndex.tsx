@@ -23,12 +23,12 @@ interface Country { code: string; name_ar: string; flag_emoji: string | null; }
 // Deterministic "cover" gradient per textbook id — keeps the feed visually
 // varied without needing real cover images.
 const COVERS = [
-  "from-amber-200 via-rose-200 to-fuchsia-300",
-  "from-sky-200 via-indigo-200 to-violet-300",
-  "from-emerald-200 via-teal-200 to-cyan-300",
-  "from-orange-200 via-red-200 to-pink-300",
-  "from-lime-200 via-emerald-200 to-teal-300",
-  "from-violet-200 via-purple-200 to-indigo-300",
+  "from-algebra/30 via-algebra/15 to-background",
+  "from-geometry/30 via-geometry/15 to-background",
+  "from-statistics/30 via-statistics/15 to-background",
+  "from-probability/30 via-probability/15 to-background",
+  "from-functions/30 via-functions/15 to-background",
+  "from-accent/30 via-accent/15 to-background",
 ];
 const coverFor = (id: string) => {
   let h = 0;

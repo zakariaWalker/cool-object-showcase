@@ -27,8 +27,8 @@ const WORKFLOW = [
     subtitle: "نكتشفو وين المشكلة",
     description: "تقييم سريع يكشف بالضبط وين تخسر النقاط — ليس فقط الإجابات، بل طريقة التفكير.",
     icon: <Search className="w-6 h-6" />,
-    color: "from-blue-500 to-cyan-400",
-    shadow: "shadow-blue-500/20",
+    color: "from-algebra to-functions",
+    shadow: "shadow-algebra/20",
   },
   {
     step: 2,
@@ -38,8 +38,8 @@ const WORKFLOW = [
     subtitle: "خطة مخصصة لك",
     description: "بناءً على نتائجك، تمارين مرتبة تسد كل ثغرة واحدة بواحدة.",
     icon: <Map className="w-6 h-6" />,
-    color: "from-emerald-500 to-teal-400",
-    shadow: "shadow-emerald-500/20",
+    color: "from-geometry to-geometry/70",
+    shadow: "shadow-geometry/20",
   },
   {
     step: 3,
@@ -49,8 +49,8 @@ const WORKFLOW = [
     subtitle: "تدرّب بذكاء",
     description: "تمارين تفاعلية مع محررات رياضية متطورة وشرح كل خطوة.",
     icon: <PenTool className="w-6 h-6" />,
-    color: "from-amber-500 to-orange-400",
-    shadow: "shadow-amber-500/20",
+    color: "from-statistics to-accent",
+    shadow: "shadow-statistics/20",
   },
   {
     step: 4,
@@ -60,8 +60,8 @@ const WORKFLOW = [
     subtitle: "مرافقة دائمة",
     description: "عندما تتعثر، شرح مفكّك يعيد بناء المفاهيم بوضوح.",
     icon: <Bot className="w-6 h-6" />,
-    color: "from-purple-500 to-pink-400",
-    shadow: "shadow-purple-500/20",
+    color: "from-probability to-probability/70",
+    shadow: "shadow-probability/20",
   },
   {
     step: 5,
@@ -71,8 +71,8 @@ const WORKFLOW = [
     subtitle: "تدريب نهائي",
     description: "حل امتحانات رسمية سابقة في بيئة تحاكي الواقع لكسر حاجز الرهبة.",
     icon: <FileText className="w-6 h-6" />,
-    color: "from-rose-500 to-red-400",
-    shadow: "shadow-rose-500/20",
+    color: "from-functions to-destructive",
+    shadow: "shadow-functions/20",
   },
 ];
 
@@ -231,7 +231,7 @@ export default function Home() {
 
           <CardGradient className="p-8 space-y-4">
             <h3 className="text-xl font-black flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-amber-500" /> هدفك القادم
+              <Sparkles className="w-5 h-5 text-accent" /> هدفك القادم
             </h3>
             <p className="text-sm text-muted-foreground">
               أكمل التقييم التشخيصي الأول لتحصل على 100 XP وتفتح مسار تعلمك المخصص.
@@ -299,7 +299,7 @@ export default function Home() {
                     `}
                   >
                     {isCompleted && (
-                      <div className="absolute top-6 left-6 text-emerald-500 animate-in zoom-in">
+                      <div className="absolute top-6 left-6 text-geometry animate-in zoom-in">
                         <CheckCircle2 className="w-8 h-8" />
                       </div>
                     )}
