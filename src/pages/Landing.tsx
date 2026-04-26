@@ -518,8 +518,8 @@ export default function Landing() {
           <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-accent/20 rounded-full blur-[120px] pointer-events-none" />
           <div className="relative max-w-5xl mx-auto space-y-12">
             <div className="text-center space-y-3">
-              <span className="qed-mono text-xs font-bold text-accent uppercase tracking-widest">كيف يخدم</span>
-              <h2 className="qed-serif text-3xl md:text-5xl font-bold text-background">4 خطوات بسيطة، نتيجة واضحة</h2>
+              <span className="qed-mono text-xs font-bold text-[hsl(var(--probability))] uppercase tracking-widest">كيف يخدم</span>
+              <h2 className="text-3xl md:text-5xl font-black text-background leading-tight tracking-tight">4 خطوات بسيطة، نتيجة واضحة</h2>
               <p className="text-sm text-background/60 max-w-md mx-auto">
                 نفس الطريقة اللي يستعملها أحسن الأساتذة — لكن مهيكَلة ومتاحة 24/7.
               </p>
