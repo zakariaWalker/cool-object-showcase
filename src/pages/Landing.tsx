@@ -607,8 +607,8 @@ export default function Landing() {
         {/* ── TEXTBOOKS FEED ── */}
         <section id="textbooks" className="max-w-5xl mx-auto px-6 py-16 space-y-8">
           <div className="space-y-3">
-            <span className="qed-mono text-xs font-bold text-primary uppercase tracking-widest">المكتبة</span>
-            <h2 className="qed-serif text-3xl md:text-5xl font-bold text-foreground leading-tight">
+            <span className="qed-mono text-xs font-bold text-[hsl(var(--algebra))] uppercase tracking-widest">المكتبة</span>
+            <h2 className="text-3xl md:text-5xl font-black text-foreground leading-tight tracking-tight">
               دروس مبسّطة، تمارين باك،
               <br />
               <span className="text-muted-foreground/60">حلول مفهومة.</span>
