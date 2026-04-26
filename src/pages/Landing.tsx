@@ -31,19 +31,19 @@ import {
 const STUDENT_BENEFITS = [
   {
     icon: <Brain className="w-5 h-5" />,
-    title: "١. تشخيص ذكي",
-    desc: "اختبار ٥ دقائق مبني على برنامج BAC + BEM يحدّد مستواك بدقة جراحية.",
+    title: "1. تشخيص ذكي",
+    desc: "اختبار 5 دقائق مبني على برنامج BAC + BEM يحدّد مستواك بدقة جراحية.",
     step: "01",
   },
   {
     icon: <Target className="w-5 h-5" />,
-    title: "٢. كشف الثغرات",
-    desc: "نبيّنلك ٢٠٪ من الأخطاء اللي تخسّرلك ٨٠٪ من النقاط — بالاسم والمثال.",
+    title: "2. كشف الثغرات",
+    desc: "نبيّنلك 20% من الأخطاء اللي تخسّرلك 80% من النقاط — بالاسم والمثال.",
     step: "02",
   },
   {
     icon: <LineChart className="w-5 h-5" />,
-    title: "٣. تمارين مخصّصة",
+    title: "3. تمارين مخصّصة",
     desc: "خطة تمارين موجَّهة بشرح خطوة بخطوة، حتى تصير تحلّ بصح — مش حفظ.",
     step: "03",
   },
@@ -75,9 +75,9 @@ const STEPS = [
 ];
 
 const TRUST_POINTS = [
-  { v: "٥د", l: "تشخيص أوّلي" },
-  { v: "١٠٠٪", l: "متوافق مع برنامج الباك" },
-  { v: "٢٤/٧", l: "متاح في أي وقت" },
+  { v: "5د", l: "تشخيص أوّلي" },
+  { v: "100%", l: "متوافق مع برنامج الباك" },
+  { v: "24/7", l: "متاح في أي وقت" },
 ];
 
 // Filter out seed/test/demo entries that shouldn't be visible publicly.
@@ -146,12 +146,29 @@ export default function Landing() {
     <>
       {/* ── Injected design tokens & custom styles ── */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=IBM+Plex+Mono:wght@400;700&display=swap');
+
+        /* Unified typography for the entire landing page */
+        .qed-landing, .qed-landing * {
+          font-family: 'Tajawal', 'Inter', system-ui, sans-serif;
+        }
+        .qed-landing .qed-mono { font-family: 'IBM Plex Mono', monospace; }
+
+        /* Brand gradient — matches the QED logo (algebra → probability) */
+        .qed-brand-gradient {
+          background-image: linear-gradient(135deg, hsl(var(--algebra)), hsl(var(--probability)));
+        }
+        .qed-brand-text {
+          background-image: linear-gradient(135deg, hsl(var(--algebra)), hsl(var(--probability)));
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
 
         .qed-hero-grid {
           background-image:
-            linear-gradient(rgba(var(--primary-rgb, 99 102 241) / 0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(var(--primary-rgb, 99 102 241) / 0.04) 1px, transparent 1px);
+            linear-gradient(hsl(var(--algebra) / 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(var(--algebra) / 0.05) 1px, transparent 1px);
           background-size: 48px 48px;
         }
 
@@ -163,19 +180,6 @@ export default function Landing() {
           pointer-events: none;
           z-index: 0;
         }
-
-        .qed-step-line::before {
-          content: '';
-          position: absolute;
-          top: 24px;
-          right: -50%;
-          width: 100%;
-          height: 1px;
-          background: linear-gradient(to left, transparent, hsl(var(--primary) / 0.25));
-        }
-
-        .qed-mono { font-family: 'IBM Plex Mono', monospace; }
-        .qed-serif { font-family: 'Amiri', serif; }
 
         .benefit-card:hover .benefit-icon {
           transform: scale(1.1) rotate(-6deg);
@@ -200,7 +204,7 @@ export default function Landing() {
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      <div className="relative bg-background min-h-screen overflow-x-hidden" dir="rtl">
+      <div className="qed-landing relative bg-background min-h-screen overflow-x-hidden" dir="rtl">
         {/* ── NAV ── */}
         <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur-2xl bg-background/75 border-b border-border/40">
           <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
@@ -220,7 +224,7 @@ export default function Landing() {
               </a>
               <Link
                 to="/auth"
-                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-black text-primary-foreground bg-primary hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-black text-white qed-brand-gradient hover:opacity-90 transition-all shadow-lg shadow-[hsl(var(--algebra)/0.25)]"
               >
                 دخول
                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -237,13 +241,13 @@ export default function Landing() {
 
           {/* Floating decorative math symbols */}
           <div
-            className="absolute top-32 left-12 qed-deco opacity-[0.07] select-none pointer-events-none qed-serif text-[8rem] font-bold text-foreground leading-none"
+            className="absolute top-32 left-12 qed-deco opacity-[0.07] select-none pointer-events-none qed-mono text-[8rem] font-bold text-foreground leading-none"
             style={{ animationDelay: "0s" }}
           >
             ∑
           </div>
           <div
-            className="absolute bottom-24 right-16 qed-deco opacity-[0.05] select-none pointer-events-none qed-serif text-[6rem] font-bold text-foreground leading-none"
+            className="absolute bottom-24 right-16 qed-deco opacity-[0.05] select-none pointer-events-none qed-mono text-[6rem] font-bold text-foreground leading-none"
             style={{ animationDelay: "3s" }}
           >
             ∫
@@ -257,7 +261,7 @@ export default function Landing() {
               transition={{ duration: 0.5 }}
               className="flex justify-center"
             >
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-[11px] font-black">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[hsl(var(--algebra)/0.1)] border border-[hsl(var(--algebra)/0.25)] text-[hsl(var(--algebra))] text-[11px] font-black">
                 <Sparkles className="w-3 h-3" />
                 مبني على برنامج BAC + BEM الجزائري
               </span>
@@ -275,11 +279,10 @@ export default function Landing() {
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                     className="space-y-5"
                   >
-                    <h1 className="qed-serif text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.1]">
-                      ارفع معدّلك بـ
-                      <span className="bg-gradient-to-l from-primary via-primary to-accent bg-clip-text text-transparent"> +3 نقاط </span>
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-foreground leading-[1.1] tracking-tight">
+                      نقاطك في الرياضيات
                       <br />
-                      في الرياضيات خلال شهر
+                      تستحق <span className="qed-brand-text">أحسن</span>
                     </h1>
                     <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
                       اختبار قصير يكشف <span className="font-black text-foreground">وين تغلط بالضبط</span>،
@@ -295,10 +298,10 @@ export default function Landing() {
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                     className="space-y-5"
                   >
-                    <h1 className="qed-serif text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.1]">
-                      اعرف مستوى ابنك الحقيقي
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-foreground leading-[1.1] tracking-tight">
+                      اعرف مستوى ابنك
                       <br />
-                      <span className="bg-gradient-to-l from-primary via-primary to-accent bg-clip-text text-transparent">في 5 دقائق</span>
+                      <span className="qed-brand-text">في 5 دقائق</span>
                     </h1>
                     <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
                       تقرير واضح بنقاط الضعف ومتابعة أسبوعية للتقدّم.
@@ -327,14 +330,14 @@ export default function Landing() {
                 >
                   <Link
                     to={audience === "student" ? "/diagnostic" : "/auth"}
-                    className="relative group inline-flex flex-col items-center gap-1 px-12 py-5 rounded-2xl font-black text-primary-foreground bg-gradient-to-l from-primary via-primary to-primary/90 hover:from-primary hover:to-accent shadow-2xl shadow-primary/40 ring-2 ring-primary/20 hover:ring-accent/40 transition-all"
+                    className="relative group inline-flex flex-col items-center gap-1 px-12 py-5 rounded-2xl font-black text-white qed-brand-gradient shadow-2xl shadow-[hsl(var(--algebra)/0.4)] ring-2 ring-[hsl(var(--algebra)/0.25)] hover:ring-[hsl(var(--probability)/0.5)] hover:shadow-[hsl(var(--probability)/0.4)] transition-all"
                   >
-                    <span className="absolute inset-0 rounded-2xl qed-pulse-ring border-2 border-accent opacity-60 group-hover:opacity-100" />
+                    <span className="absolute inset-0 rounded-2xl qed-pulse-ring border-2 border-[hsl(var(--probability))] opacity-60 group-hover:opacity-100" />
                     <span className="relative flex items-center gap-3 text-lg">
                       {audience === "student" ? "ابدأ التشخيص — مجاناً" : "ابدأ تشخيص ابنك — مجاناً"}
                       <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
                     </span>
-                    <span className="relative text-[11px] font-medium text-primary-foreground/80">
+                    <span className="relative text-[11px] font-medium text-white/85">
                       5 دقائق · 10 أسئلة · بدون تسجيل
                     </span>
                   </Link>
@@ -404,19 +407,19 @@ export default function Landing() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-destructive/8 border border-destructive/20 rounded-xl p-3">
                   <div className="text-[10px] font-bold text-destructive/80 mb-1">قبل</div>
-                  <div className="qed-mono text-3xl font-black text-destructive">٩٫٥</div>
-                  <div className="text-[10px] text-muted-foreground mt-1">/ ٢٠</div>
+                  <div className="qed-mono text-3xl font-black text-destructive">9.5</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">/ 20</div>
                 </div>
                 <div className="bg-[hsl(var(--geometry)/0.1)] border border-[hsl(var(--geometry)/0.3)] rounded-xl p-3">
                   <div className="text-[10px] font-bold text-[hsl(var(--geometry))] mb-1">بعد شهر</div>
-                  <div className="qed-mono text-3xl font-black text-[hsl(var(--geometry))]">١٣</div>
-                  <div className="text-[10px] text-muted-foreground mt-1">/ ٢٠</div>
+                  <div className="qed-mono text-3xl font-black text-[hsl(var(--geometry))]">13</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">/ 20</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/60">
-                <Brain className="w-4 h-4 text-primary shrink-0" />
+                <Brain className="w-4 h-4 text-[hsl(var(--algebra))] shrink-0" />
                 <p className="text-[11px] text-muted-foreground leading-snug">
-                  ٢٤ ثغرة مكتشفة، ٣ منها تمثّل ٧٠٪ من الأخطاء — تمّ علاجها بـ ١٢ تمريناً موجَّهاً.
+                  24 ثغرة مكتشفة، 3 منها تمثّل 70% من الأخطاء — تمّ علاجها بـ 12 تمريناً موجَّهاً.
                 </p>
               </div>
             </motion.div>
@@ -434,7 +437,7 @@ export default function Landing() {
                   key={i}
                   className="bg-card border border-border rounded-xl px-4 py-3 text-center md:text-right"
                 >
-                  <div className="qed-mono text-xl md:text-2xl font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
+                  <div className="qed-mono text-xl md:text-2xl font-bold qed-brand-text">
                     {s.v}
                   </div>
                   <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">{s.l}</div>
@@ -449,9 +452,9 @@ export default function Landing() {
         <section className="relative bg-secondary/40 border-y border-border/60">
           <div className="max-w-6xl mx-auto px-6 py-14 space-y-10">
             <div className="text-center space-y-2 max-w-2xl mx-auto">
-              <span className="qed-mono text-xs font-bold text-primary uppercase tracking-widest">٣ خطوات · نتيجة واحدة</span>
-              <h2 className="qed-serif text-2xl md:text-4xl font-bold text-foreground leading-tight">
-                من <span className="text-destructive">الضياع</span> إلى <span className="text-[hsl(var(--geometry))]">+3 نقاط</span>
+              <span className="qed-mono text-xs font-bold text-[hsl(var(--algebra))] uppercase tracking-widest">3 خطوات · نتيجة واحدة</span>
+              <h2 className="text-2xl md:text-4xl font-black text-foreground leading-tight tracking-tight">
+                طريق واضح من <span className="text-destructive">الثغرات</span> إلى <span className="text-[hsl(var(--geometry))]">الإتقان</span>
               </h2>
             </div>
 
@@ -515,8 +518,8 @@ export default function Landing() {
           <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-accent/20 rounded-full blur-[120px] pointer-events-none" />
           <div className="relative max-w-5xl mx-auto space-y-12">
             <div className="text-center space-y-3">
-              <span className="qed-mono text-xs font-bold text-accent uppercase tracking-widest">كيف يخدم</span>
-              <h2 className="qed-serif text-3xl md:text-5xl font-bold text-background">4 خطوات بسيطة، نتيجة واضحة</h2>
+              <span className="qed-mono text-xs font-bold text-[hsl(var(--probability))] uppercase tracking-widest">كيف يخدم</span>
+              <h2 className="text-3xl md:text-5xl font-black text-background leading-tight tracking-tight">4 خطوات بسيطة، نتيجة واضحة</h2>
               <p className="text-sm text-background/60 max-w-md mx-auto">
                 نفس الطريقة اللي يستعملها أحسن الأساتذة — لكن مهيكَلة ومتاحة 24/7.
               </p>
@@ -536,8 +539,8 @@ export default function Landing() {
                   {i < STEPS.length - 1 && (
                     <div className="absolute top-6 left-0 hidden md:block w-full h-px bg-gradient-to-l from-transparent via-background/20 to-background/20 pointer-events-none -z-10" />
                   )}
-                  <div className="bg-background/5 border border-background/15 backdrop-blur-sm rounded-2xl p-6 hover:bg-background/10 hover:border-accent/40 transition-all">
-                    <div className="qed-mono text-2xl font-bold text-accent mb-4 leading-none">{s.n}</div>
+                  <div className="bg-background/5 border border-background/15 backdrop-blur-sm rounded-2xl p-6 hover:bg-background/10 hover:border-[hsl(var(--probability)/0.5)] transition-all">
+                    <div className="qed-mono text-2xl font-bold text-[hsl(var(--probability))] mb-4 leading-none">{s.n}</div>
                     <h3 className="text-sm font-black text-background mb-2">{s.t}</h3>
                     <p className="text-xs text-background/60 leading-relaxed">{s.d}</p>
                   </div>
@@ -564,7 +567,7 @@ export default function Landing() {
                     <ShieldCheck className="w-3.5 h-3.5" />
                     لولي الأمر
                   </div>
-                  <h2 className="qed-serif text-2xl md:text-3xl font-bold text-foreground leading-tight">
+                  <h2 className="text-2xl md:text-3xl font-black text-foreground leading-tight tracking-tight">
                     لست مضطراً لاختيار بين تكلفة باهظة أو ترك ابنك بلا متابعة
                   </h2>
                   <div className="grid sm:grid-cols-2 gap-6">
@@ -604,8 +607,8 @@ export default function Landing() {
         {/* ── TEXTBOOKS FEED ── */}
         <section id="textbooks" className="max-w-5xl mx-auto px-6 py-16 space-y-8">
           <div className="space-y-3">
-            <span className="qed-mono text-xs font-bold text-primary uppercase tracking-widest">المكتبة</span>
-            <h2 className="qed-serif text-3xl md:text-5xl font-bold text-foreground leading-tight">
+            <span className="qed-mono text-xs font-bold text-[hsl(var(--algebra))] uppercase tracking-widest">المكتبة</span>
+            <h2 className="text-3xl md:text-5xl font-black text-foreground leading-tight tracking-tight">
               دروس مبسّطة، تمارين باك،
               <br />
               <span className="text-muted-foreground/60">حلول مفهومة.</span>
@@ -672,7 +675,7 @@ export default function Landing() {
                     className="group flex items-center gap-5 py-5 hover:bg-muted/25 -mx-3 px-3 rounded-2xl transition-all"
                   >
                     {/* Icon */}
-                    <div className="shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-primary/15 to-accent/10 text-primary flex items-center justify-center group-hover:scale-105 group-hover:from-primary/25 transition-all">
+                    <div className="shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-xl bg-[hsl(var(--algebra)/0.12)] text-[hsl(var(--algebra))] flex items-center justify-center group-hover:scale-105 group-hover:bg-[hsl(var(--algebra)/0.2)] transition-all">
                       <BookOpen className="w-5 h-5" />
                     </div>
 
@@ -680,7 +683,7 @@ export default function Landing() {
                     <div className="flex-1 min-w-0 space-y-1.5">
                       <div className="flex items-center gap-2 flex-wrap">
                         {b.grade && (
-                          <span className="qed-mono text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          <span className="qed-mono text-[10px] font-bold text-[hsl(var(--algebra))] bg-[hsl(var(--algebra)/0.1)] px-2 py-0.5 rounded-full uppercase tracking-wider">
                             {b.grade}
                           </span>
                         )}
@@ -689,7 +692,7 @@ export default function Landing() {
                           درس تفاعلي
                         </span>
                       </div>
-                      <h3 className="text-base md:text-lg font-black text-foreground leading-snug group-hover:text-primary transition-colors line-clamp-1">
+                      <h3 className="text-base md:text-lg font-black text-foreground leading-snug group-hover:text-[hsl(var(--algebra))] transition-colors line-clamp-1">
                         {b.title}
                       </h3>
                       {b.description && (
@@ -700,7 +703,7 @@ export default function Landing() {
                     </div>
 
                     {/* Arrow — RTL correct */}
-                    <div className="shrink-0 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-1 transition-all">
+                    <div className="shrink-0 text-muted-foreground/40 group-hover:text-[hsl(var(--algebra))] group-hover:translate-x-1 transition-all">
                       <ArrowUpRight className="w-5 h-5" />
                     </div>
                   </Link>
@@ -719,7 +722,7 @@ export default function Landing() {
                     setQuery("");
                     setGradeFilter("all");
                   }}
-                  className="text-xs font-black text-primary hover:underline"
+                  className="text-xs font-black text-[hsl(var(--algebra))] hover:underline"
                 >
                   مسح التصفية
                 </button>
@@ -741,9 +744,9 @@ export default function Landing() {
         </section>
 
         {/* ── FINAL CTA ── */}
-        <section className="relative py-20 px-6 overflow-hidden bg-gradient-to-br from-primary/8 via-secondary/40 to-accent/8 border-t border-border/60">
+        <section className="relative py-20 px-6 overflow-hidden bg-gradient-to-br from-[hsl(var(--algebra)/0.08)] via-secondary/40 to-[hsl(var(--probability)/0.08)] border-t border-border/60">
           <div className="absolute inset-0 qed-hero-grid opacity-40 pointer-events-none" />
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/15 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-[hsl(var(--algebra)/0.15)] rounded-full blur-[120px] pointer-events-none" />
 
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
@@ -752,15 +755,15 @@ export default function Landing() {
             transition={{ duration: 0.6 }}
             className="relative z-10 max-w-2xl mx-auto text-center space-y-8"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(var(--algebra)/0.1)] border border-[hsl(var(--algebra)/0.2)] text-[hsl(var(--algebra))] text-xs font-black">
               <TrendingUp className="w-3.5 h-3.5" />
-              ابدأ التشخيص — تشوف نتيجتك في 15 دقيقة
+              تشخيص مجاني · 5 دقائق
             </div>
 
-            <h2 className="qed-serif text-4xl md:text-6xl font-bold text-foreground leading-tight">
-              وقّاش تعرف مستواك
+            <h2 className="text-4xl md:text-6xl font-black text-foreground leading-tight tracking-tight">
+              جاهز تعرف مستواك
               <br />
-              <span className="bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">بالضبط؟</span>
+              <span className="qed-brand-text">بالضبط؟</span>
             </h2>
 
             <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
@@ -770,7 +773,7 @@ export default function Landing() {
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
               <Link
                 to="/diagnostic"
-                className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-primary-foreground bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/30 transition-all"
+                className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-white qed-brand-gradient shadow-2xl shadow-[hsl(var(--algebra)/0.35)] hover:shadow-[hsl(var(--probability)/0.4)] transition-all"
               >
                 ابدأ التشخيص المجاني
                 <ArrowLeft className="w-5 h-5" />
