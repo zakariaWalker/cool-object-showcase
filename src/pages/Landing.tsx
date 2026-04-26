@@ -366,7 +366,7 @@ export default function Landing() {
               className="bg-card border border-border rounded-2xl p-5 shadow-xl shadow-primary/10 text-right max-w-md mx-auto md:mx-0 w-full"
             >
               <div className="flex items-center justify-between mb-4">
-                <span className="qed-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                <span className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   تقدّم تلميذ حقيقي
                 </span>
                 <span className="inline-flex items-center gap-1 text-[10px] font-black text-[hsl(var(--geometry))] bg-[hsl(var(--geometry)/0.12)] px-2 py-0.5 rounded-full">
@@ -377,12 +377,12 @@ export default function Landing() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-destructive/8 border border-destructive/20 rounded-xl p-3">
                   <div className="text-[10px] font-bold text-destructive/80 mb-1">قبل</div>
-                  <div className="qed-mono text-3xl font-black text-destructive">9.5</div>
+                  <div className="font-mono text-3xl font-black text-destructive">9.5</div>
                   <div className="text-[10px] text-muted-foreground mt-1">/ 20</div>
                 </div>
                 <div className="bg-[hsl(var(--geometry)/0.1)] border border-[hsl(var(--geometry)/0.3)] rounded-xl p-3">
                   <div className="text-[10px] font-bold text-[hsl(var(--geometry))] mb-1">بعد شهر</div>
-                  <div className="qed-mono text-3xl font-black text-[hsl(var(--geometry))]">13</div>
+                  <div className="font-mono text-3xl font-black text-[hsl(var(--geometry))]">13</div>
                   <div className="text-[10px] text-muted-foreground mt-1">/ 20</div>
                 </div>
               </div>
@@ -407,7 +407,7 @@ export default function Landing() {
                   key={i}
                   className="bg-card border border-border rounded-xl px-4 py-3 text-center md:text-right"
                 >
-                  <div className="qed-mono text-xl md:text-2xl font-bold qed-brand-text">
+                  <div className="font-mono text-xl md:text-2xl font-bold text-accent">
                     {s.v}
                   </div>
                   <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">{s.l}</div>
@@ -422,7 +422,7 @@ export default function Landing() {
         <section className="relative bg-secondary/40 border-y border-border/60">
           <div className="max-w-6xl mx-auto px-6 py-14 space-y-10">
             <div className="text-center space-y-2 max-w-2xl mx-auto">
-              <span className="qed-mono text-xs font-bold text-[hsl(var(--algebra))] uppercase tracking-widest">3 خطوات · نتيجة واحدة</span>
+              <span className="font-mono text-xs font-bold text-[hsl(var(--algebra))] uppercase tracking-widest">3 خطوات · نتيجة واحدة</span>
               <h2 className="text-2xl md:text-4xl font-black text-foreground leading-tight tracking-tight">
                 طريق واضح من <span className="text-destructive">الثغرات</span> إلى <span className="text-[hsl(var(--geometry))]">الإتقان</span>
               </h2>
@@ -463,7 +463,7 @@ export default function Landing() {
                         <div
                           className={`benefit-card group bg-card border border-border rounded-2xl p-6 ${tone.border} hover:shadow-xl hover:shadow-primary/5 transition-all cursor-default h-full relative overflow-hidden`}
                         >
-                          <span className={`qed-mono absolute top-3 left-4 text-3xl font-black leading-none ${tone.num}`}>
+                          <span className={`font-mono absolute top-3 left-4 text-3xl font-black leading-none ${tone.num}`}>
                             {b.step || `0${i + 1}`}
                           </span>
                           <div className={`benefit-icon w-12 h-12 rounded-2xl ${tone.bg} ${tone.text} flex items-center justify-center mb-5 transition-colors`}>
@@ -488,7 +488,7 @@ export default function Landing() {
           <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-accent/20 rounded-full blur-[120px] pointer-events-none" />
           <div className="relative max-w-5xl mx-auto space-y-12">
             <div className="text-center space-y-3">
-              <span className="qed-mono text-xs font-bold text-[hsl(var(--probability))] uppercase tracking-widest">كيف يخدم</span>
+              <span className="font-mono text-xs font-bold text-[hsl(var(--probability))] uppercase tracking-widest">كيف يخدم</span>
               <h2 className="text-3xl md:text-5xl font-black text-background leading-tight tracking-tight">4 خطوات بسيطة، نتيجة واضحة</h2>
               <p className="text-sm text-background/60 max-w-md mx-auto">
                 نفس الطريقة اللي يستعملها أحسن الأساتذة — لكن مهيكَلة ومتاحة 24/7.
@@ -510,7 +510,7 @@ export default function Landing() {
                     <div className="absolute top-6 left-0 hidden md:block w-full h-px bg-gradient-to-l from-transparent via-background/20 to-background/20 pointer-events-none -z-10" />
                   )}
                   <div className="bg-background/5 border border-background/15 backdrop-blur-sm rounded-2xl p-6 hover:bg-background/10 hover:border-[hsl(var(--probability)/0.5)] transition-all">
-                    <div className="qed-mono text-2xl font-bold text-[hsl(var(--probability))] mb-4 leading-none">{s.n}</div>
+                    <div className="font-mono text-2xl font-bold text-[hsl(var(--probability))] mb-4 leading-none">{s.n}</div>
                     <h3 className="text-sm font-black text-background mb-2">{s.t}</h3>
                     <p className="text-xs text-background/60 leading-relaxed">{s.d}</p>
                   </div>
@@ -577,7 +577,7 @@ export default function Landing() {
         {/* ── TEXTBOOKS FEED ── */}
         <section id="textbooks" className="max-w-5xl mx-auto px-6 py-16 space-y-8">
           <div className="space-y-3">
-            <span className="qed-mono text-xs font-bold text-[hsl(var(--algebra))] uppercase tracking-widest">المكتبة</span>
+            <span className="font-mono text-xs font-bold text-[hsl(var(--algebra))] uppercase tracking-widest">المكتبة</span>
             <h2 className="text-3xl md:text-5xl font-black text-foreground leading-tight tracking-tight">
               دروس مبسّطة، تمارين باك،
               <br />
@@ -653,7 +653,7 @@ export default function Landing() {
                     <div className="flex-1 min-w-0 space-y-1.5">
                       <div className="flex items-center gap-2 flex-wrap">
                         {b.grade && (
-                          <span className="qed-mono text-[10px] font-bold text-[hsl(var(--algebra))] bg-[hsl(var(--algebra)/0.1)] px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          <span className="font-mono text-[10px] font-bold text-[hsl(var(--algebra))] bg-[hsl(var(--algebra)/0.1)] px-2 py-0.5 rounded-full uppercase tracking-wider">
                             {b.grade}
                           </span>
                         )}
@@ -733,7 +733,7 @@ export default function Landing() {
             <h2 className="text-4xl md:text-6xl font-black text-foreground leading-tight tracking-tight">
               جاهز تعرف مستواك
               <br />
-              <span className="qed-brand-text">بالضبط؟</span>
+              <span className="text-accent">بالضبط؟</span>
             </h2>
 
             <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
@@ -743,7 +743,7 @@ export default function Landing() {
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
               <Link
                 to="/diagnostic"
-                className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-white qed-brand-gradient shadow-2xl shadow-[hsl(var(--algebra)/0.35)] hover:shadow-[hsl(var(--probability)/0.4)] transition-all"
+                className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-primary-foreground bg-primary shadow-2xl shadow-[hsl(var(--algebra)/0.35)] hover:shadow-[hsl(var(--probability)/0.4)] transition-all"
               >
                 ابدأ التشخيص المجاني
                 <ArrowLeft className="w-5 h-5" />
