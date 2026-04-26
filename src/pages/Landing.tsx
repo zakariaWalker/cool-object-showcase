@@ -75,9 +75,9 @@ const STEPS = [
 ];
 
 const TRUST_POINTS = [
-  { v: "٥د", l: "تشخيص أوّلي" },
-  { v: "١٠٠٪", l: "متوافق مع برنامج الباك" },
-  { v: "٢٤/٧", l: "متاح في أي وقت" },
+  { v: "5د", l: "تشخيص أوّلي" },
+  { v: "100%", l: "متوافق مع برنامج الباك" },
+  { v: "24/7", l: "متاح في أي وقت" },
 ];
 
 // Filter out seed/test/demo entries that shouldn't be visible publicly.
