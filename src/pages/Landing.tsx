@@ -144,34 +144,17 @@ export default function Landing() {
 
   return (
     <>
-      {/* ── Injected design tokens & custom styles ── */}
+      {/* ── Page-specific styles only — brand tokens come from the design system ── */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=IBM+Plex+Mono:wght@400;700&display=swap');
-
-        /* Unified typography for the entire landing page */
-        .qed-landing, .qed-landing * {
-          font-family: 'Tajawal', 'Inter', system-ui, sans-serif;
-        }
-        .qed-landing .qed-mono { font-family: 'IBM Plex Mono', monospace; }
-
-        /* Brand gradient — matches the QED logo (algebra → probability) */
-        .qed-brand-gradient {
-          background-image: linear-gradient(135deg, hsl(var(--algebra)), hsl(var(--probability)));
-        }
-        .qed-brand-text {
-          background-image: linear-gradient(135deg, hsl(var(--algebra)), hsl(var(--probability)));
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-        }
-
+        /* Subtle academic grid for hero — paper ledger feel */
         .qed-hero-grid {
           background-image:
-            linear-gradient(hsl(var(--algebra) / 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, hsl(var(--algebra) / 0.05) 1px, transparent 1px);
-          background-size: 48px 48px;
+            linear-gradient(hsl(var(--foreground) / 0.04) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(var(--foreground) / 0.04) 1px, transparent 1px);
+          background-size: 56px 56px;
         }
 
+        /* Soft paper noise for atmosphere */
         .qed-noise::after {
           content: '';
           position: absolute;
@@ -181,24 +164,14 @@ export default function Landing() {
           z-index: 0;
         }
 
-        .benefit-card:hover .benefit-icon {
-          transform: scale(1.1) rotate(-6deg);
-        }
+        .benefit-card:hover .benefit-icon { transform: scale(1.05); }
         .benefit-icon { transition: transform 0.3s cubic-bezier(.34,1.56,.64,1); }
 
         @keyframes qed-float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-12px) rotate(3deg); }
+          50% { transform: translateY(-10px) rotate(2deg); }
         }
-        .qed-deco { animation: qed-float 8s ease-in-out infinite; }
-
-        @keyframes qed-pulse-ring {
-          0% { transform: scale(1); opacity: 0.6; }
-          100% { transform: scale(1.6); opacity: 0; }
-        }
-        .qed-pulse-ring {
-          animation: qed-pulse-ring 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
+        .qed-deco { animation: qed-float 9s ease-in-out infinite; }
 
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
