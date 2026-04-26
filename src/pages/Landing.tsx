@@ -675,7 +675,7 @@ export default function Landing() {
                     className="group flex items-center gap-5 py-5 hover:bg-muted/25 -mx-3 px-3 rounded-2xl transition-all"
                   >
                     {/* Icon */}
-                    <div className="shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-primary/15 to-accent/10 text-primary flex items-center justify-center group-hover:scale-105 group-hover:from-primary/25 transition-all">
+                    <div className="shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-xl bg-[hsl(var(--algebra)/0.12)] text-[hsl(var(--algebra))] flex items-center justify-center group-hover:scale-105 group-hover:bg-[hsl(var(--algebra)/0.2)] transition-all">
                       <BookOpen className="w-5 h-5" />
                     </div>
 
@@ -683,7 +683,7 @@ export default function Landing() {
                     <div className="flex-1 min-w-0 space-y-1.5">
                       <div className="flex items-center gap-2 flex-wrap">
                         {b.grade && (
-                          <span className="qed-mono text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          <span className="qed-mono text-[10px] font-bold text-[hsl(var(--algebra))] bg-[hsl(var(--algebra)/0.1)] px-2 py-0.5 rounded-full uppercase tracking-wider">
                             {b.grade}
                           </span>
                         )}
@@ -692,7 +692,7 @@ export default function Landing() {
                           درس تفاعلي
                         </span>
                       </div>
-                      <h3 className="text-base md:text-lg font-black text-foreground leading-snug group-hover:text-primary transition-colors line-clamp-1">
+                      <h3 className="text-base md:text-lg font-black text-foreground leading-snug group-hover:text-[hsl(var(--algebra))] transition-colors line-clamp-1">
                         {b.title}
                       </h3>
                       {b.description && (
@@ -703,7 +703,7 @@ export default function Landing() {
                     </div>
 
                     {/* Arrow — RTL correct */}
-                    <div className="shrink-0 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-1 transition-all">
+                    <div className="shrink-0 text-muted-foreground/40 group-hover:text-[hsl(var(--algebra))] group-hover:translate-x-1 transition-all">
                       <ArrowUpRight className="w-5 h-5" />
                     </div>
                   </Link>
