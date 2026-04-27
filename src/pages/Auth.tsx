@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { CountryGradePicker } from "@/components/CountryGradePicker";
+import { migrateAnonymousDataIfNeeded } from "@/lib/migrateAnonymousData";
 
 const ROLES = [
   { id: "student", label: "تلميذ", emoji: "🎓", desc: "أحل التمارين وأتعلم" },
@@ -38,11 +39,21 @@ export default function Auth() {
 
   const handleLogin = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
       toast({ title: "خطأ في الدخول", description: error.message, variant: "destructive" });
     } else {
+      // Claim the anonymous diagnostic/gap trail (if any) for this account
+      if (data.user) {
+        const result = await migrateAnonymousDataIfNeeded(data.user.id);
+        if (result?.ok && !result.skipped && (result.gaps_moved || result.attempts_moved)) {
+          toast({
+            title: "✅ تم استرجاع تقدّمك السابق",
+            description: `${result.attempts_moved || 0} محاولة و ${result.gaps_moved || 0} ثغرة محفوظة`,
+          });
+        }
+      }
       navigate(redirectPath);
     }
   };
@@ -72,6 +83,10 @@ export default function Auth() {
     if (error) {
       toast({ title: "خطأ في التسجيل", description: error.message, variant: "destructive" });
     } else {
+      // If email confirmation is off, we already have a session — claim anon trail now.
+      if (data.session && data.user) {
+        await migrateAnonymousDataIfNeeded(data.user.id);
+      }
       toast({ title: "تم التسجيل! تحقق من بريدك الإلكتروني لتفعيل حسابك.", description: "ستصلك رسالة تأكيد." });
     }
   };

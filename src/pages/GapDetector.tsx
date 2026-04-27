@@ -442,6 +442,15 @@ export default function GapDetector() {
   const canContinue = availableExercises.filter((e) => !usedExerciseIds.has(e.id)).length >= QUIZ_SIZE;
   const continueAdaptive = () => generateQuiz(weakConceptsFromHistory);
 
+  /** Focused re-test: builds a mini-quiz that drills only ONE selected gap. */
+  const retestSingleGap = useCallback(
+    (concept: string) => {
+      const focused = new Set<string>([concept]);
+      generateQuiz(focused);
+    },
+    [generateQuiz],
+  );
+
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center bg-background">
@@ -725,25 +734,40 @@ export default function GapDetector() {
 
           {analysis.gaps.length > 0 && (
             <div className="p-5 rounded-xl border border-destructive/20 bg-destructive/5">
-              <h3 className="text-sm font-bold text-destructive mb-3">🎯 المفاهيم الغائبة</h3>
+              <h3 className="text-sm font-bold text-destructive mb-1">🎯 المفاهيم الغائبة</h3>
+              <p className="text-[10px] text-muted-foreground mb-3">
+                مرتّبة حسب الأهمية. اضغط "إعادة الاختبار" لاختبار مفهوم واحد بعمق.
+              </p>
               <div className="space-y-2">
-                {analysis.gaps.slice(0, 8).map((gap, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-destructive/20 text-destructive flex items-center justify-center text-xs font-bold flex-shrink-0">
-                      {i + 1}
+                {analysis.gaps.slice(0, 8).map((gap, i) => {
+                  const enoughPool =
+                    availableExercises.filter((e) => !usedExerciseIds.has(e.id)).length >= 3;
+                  return (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-full bg-destructive/20 text-destructive flex items-center justify-center text-xs font-bold flex-shrink-0">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-foreground truncate">{gap.concept}</div>
+                        <div className="text-[10px] text-muted-foreground">ظهر في {gap.count} تمرين</div>
+                      </div>
+                      <div className="h-2 w-16 bg-muted rounded-full overflow-hidden flex-shrink-0">
+                        <div
+                          className="h-full bg-destructive rounded-full"
+                          style={{ width: `${Math.min(100, (gap.count / Math.max(1, analysis.failedCount)) * 100)}%` }}
+                        />
+                      </div>
+                      <button
+                        onClick={() => retestSingleGap(gap.concept)}
+                        disabled={!enoughPool}
+                        className="text-[10px] font-bold px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                        title="اختبار هذا المفهوم وحده"
+                      >
+                        🔁 إعادة الاختبار
+                      </button>
                     </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-bold text-foreground">{gap.concept}</div>
-                      <div className="text-[10px] text-muted-foreground">ظهر في {gap.count} تمرين</div>
-                    </div>
-                    <div className="h-2 w-20 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-destructive rounded-full"
-                        style={{ width: `${Math.min(100, (gap.count / Math.max(1, analysis.failedCount)) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
