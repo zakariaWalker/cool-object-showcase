@@ -844,6 +844,8 @@ export default function GapDetector() {
               🔁 تقييم جديد
             </button>
           </div>
+
+          {!canContinue && analysis.failedCount > 0 && isAuthed && (
             <div className="text-center text-xs text-muted-foreground p-3 rounded-lg bg-muted/30">
               لا توجد تمارين إضافية كافية لجولة تكيّفية — جرّب تقييم جديد
             </div>
