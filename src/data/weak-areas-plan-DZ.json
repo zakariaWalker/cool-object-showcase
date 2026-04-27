@@ -1,0 +1,1514 @@
+{
+  "country_code": "DZ",
+  "generated_at": "2026-04-27T12:00:44.083Z",
+  "target_per_cell": 5,
+  "total_cells": 215,
+  "total_exercises_needed": 1063,
+  "cells": [
+    {
+      "grade": "1AP",
+      "type": "advanced_algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "analytic_geometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "angles",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "arithmetic",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "bac_prep",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "calculus",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "equations",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "factor",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "fractions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "functions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "geometry_construction",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "number_sets",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "parallelogram",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "probability",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "proportionality",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "sequences",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "solids",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "solve_equation",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "statistics",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "systems",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "transformations",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "triangle_circle",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AP",
+      "type": "trigonometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "advanced_algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "analytic_geometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "angles",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "arithmetic",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "bac_prep",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "calculus",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "equations",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "factor",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "fractions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "functions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "geometry_construction",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "number_sets",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "parallelogram",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "probability",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "proportionality",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "sequences",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "solids",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "solve_equation",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "statistics",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "systems",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "transformations",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "triangle_circle",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AP",
+      "type": "trigonometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "advanced_algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "analytic_geometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "angles",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "arithmetic",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "bac_prep",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "calculus",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "equations",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "factor",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "fractions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "functions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "geometry_construction",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "number_sets",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "parallelogram",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "probability",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "proportionality",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "sequences",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "solids",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "solve_equation",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "statistics",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "systems",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "transformations",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "triangle_circle",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AP",
+      "type": "trigonometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "advanced_algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "analytic_geometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "angles",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "arithmetic",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "bac_prep",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "calculus",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "equations",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "factor",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "fractions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "functions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "geometry_construction",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "number_sets",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "parallelogram",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "probability",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "proportionality",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "sequences",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "solids",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "solve_equation",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "statistics",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "systems",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "transformations",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "triangle_circle",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AP",
+      "type": "trigonometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "advanced_algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "analytic_geometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "angles",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "arithmetic",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "bac_prep",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "calculus",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "equations",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "factor",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "fractions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "functions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "geometry_construction",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "number_sets",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "parallelogram",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "probability",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "proportionality",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "sequences",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "solids",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "solve_equation",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "statistics",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "systems",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "transformations",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "triangle_circle",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "5AP",
+      "type": "trigonometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AM",
+      "type": "advanced_algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AM",
+      "type": "angles",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AM",
+      "type": "bac_prep",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AM",
+      "type": "calculus",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AM",
+      "type": "functions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AM",
+      "type": "probability",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AM",
+      "type": "proportionality",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AM",
+      "type": "sequences",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AM",
+      "type": "solids",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AM",
+      "type": "systems",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AM",
+      "type": "transformations",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AM",
+      "type": "trigonometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AM",
+      "type": "advanced_algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AM",
+      "type": "algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AM",
+      "type": "analytic_geometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AM",
+      "type": "bac_prep",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AM",
+      "type": "calculus",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AM",
+      "type": "factor",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AM",
+      "type": "functions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AM",
+      "type": "probability",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AM",
+      "type": "sequences",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AM",
+      "type": "solve_equation",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AM",
+      "type": "systems",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AM",
+      "type": "trigonometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "advanced_algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "analytic_geometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "angles",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "arithmetic",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "bac_prep",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "calculus",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "factor",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "functions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "geometry_construction",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "parallelogram",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "probability",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "sequences",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "solve_equation",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "systems",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AM",
+      "type": "trigonometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AM",
+      "type": "advanced_algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AM",
+      "type": "analytic_geometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AM",
+      "type": "bac_prep",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AM",
+      "type": "calculus",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AM",
+      "type": "factor",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AM",
+      "type": "functions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AM",
+      "type": "geometry_construction",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AM",
+      "type": "parallelogram",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AM",
+      "type": "probability",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AM",
+      "type": "sequences",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AM",
+      "type": "solve_equation",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AM",
+      "type": "systems",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "4AM",
+      "type": "trigonometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AS",
+      "type": "algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AS",
+      "type": "analytic_geometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AS",
+      "type": "bac_prep",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AS",
+      "type": "calculus",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AS",
+      "type": "factor",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AS",
+      "type": "probability",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AS",
+      "type": "proportionality",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AS",
+      "type": "sequences",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AS",
+      "type": "solve_equation",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AS",
+      "type": "systems",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AS",
+      "type": "advanced_algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AS",
+      "type": "algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AS",
+      "type": "angles",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AS",
+      "type": "arithmetic",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AS",
+      "type": "bac_prep",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AS",
+      "type": "factor",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AS",
+      "type": "fractions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AS",
+      "type": "number_sets",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AS",
+      "type": "parallelogram",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AS",
+      "type": "solve_equation",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "2AS",
+      "type": "transformations",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AS",
+      "type": "algebra",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AS",
+      "type": "analytic_geometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AS",
+      "type": "angles",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AS",
+      "type": "equations",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AS",
+      "type": "factor",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AS",
+      "type": "fractions",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AS",
+      "type": "geometry_construction",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AS",
+      "type": "number_sets",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AS",
+      "type": "parallelogram",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AS",
+      "type": "proportionality",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AS",
+      "type": "solve_equation",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AS",
+      "type": "systems",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "3AS",
+      "type": "trigonometry",
+      "current_count": 0,
+      "target_count": 5,
+      "exercises_to_generate": 5
+    },
+    {
+      "grade": "1AM",
+      "type": "factor",
+      "current_count": 1,
+      "target_count": 5,
+      "exercises_to_generate": 4
+    },
+    {
+      "grade": "1AM",
+      "type": "solve_equation",
+      "current_count": 1,
+      "target_count": 5,
+      "exercises_to_generate": 4
+    },
+    {
+      "grade": "1AS",
+      "type": "angles",
+      "current_count": 1,
+      "target_count": 5,
+      "exercises_to_generate": 4
+    },
+    {
+      "grade": "1AS",
+      "type": "parallelogram",
+      "current_count": 1,
+      "target_count": 5,
+      "exercises_to_generate": 4
+    },
+    {
+      "grade": "1AS",
+      "type": "trigonometry",
+      "current_count": 1,
+      "target_count": 5,
+      "exercises_to_generate": 4
+    },
+    {
+      "grade": "3AS",
+      "type": "advanced_algebra",
+      "current_count": 1,
+      "target_count": 5,
+      "exercises_to_generate": 4
+    },
+    {
+      "grade": "1AS",
+      "type": "transformations",
+      "current_count": 2,
+      "target_count": 5,
+      "exercises_to_generate": 3
+    },
+    {
+      "grade": "2AS",
+      "type": "triangle_circle",
+      "current_count": 2,
+      "target_count": 5,
+      "exercises_to_generate": 3
+    },
+    {
+      "grade": "3AS",
+      "type": "transformations",
+      "current_count": 2,
+      "target_count": 5,
+      "exercises_to_generate": 3
+    }
+  ]
+}
