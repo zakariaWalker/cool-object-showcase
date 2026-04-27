@@ -55,6 +55,8 @@ export default function ExamArchiveSolver() {
   const [showFullPaper, setShowFullPaper] = useState(false);
   const [timeLeft, setTimeLeft] = useState(120 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (examId) loadExamData();
