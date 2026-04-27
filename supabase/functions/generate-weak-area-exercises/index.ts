@@ -1,5 +1,5 @@
-// Generate exercises for a single (country, grade, type) cell using Lovable AI,
-// then insert them into kb_exercises. Returns counts + any errors.
+// Generate exercises for a single (country, grade, type) cell using Google Gemini
+// (native API with GEMINI_API_KEY), then insert them into kb_exercises.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -8,7 +8,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
+const GEMINI_MODEL = "gemini-2.5-flash"; // closest publicly available to gemini-3-flash-preview
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
