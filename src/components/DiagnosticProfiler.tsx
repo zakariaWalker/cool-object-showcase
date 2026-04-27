@@ -65,7 +65,12 @@ export function DiagnosticProfiler({
     async function load() {
       setLoading(true);
       const data = await generateDiagnosticExercises(level, countryCode);
-      setExercises(data);
+      // Defensive: filter out any open-ended items that have no gradable answer.
+      // These would always be marked wrong by submitAnswer() and skew the diagnostic.
+      const gradable = (data || []).filter(
+        (ex) => ex.kind !== "text" && ex.answer && String(ex.answer).trim().length > 0,
+      );
+      setExercises(gradable.length >= 3 ? gradable : (data || []));
       setLoading(false);
     }
     load();
