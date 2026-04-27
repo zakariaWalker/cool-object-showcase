@@ -68,7 +68,9 @@ export default function GapDetector() {
 
   // FIX: useUserCurriculum for grade_code, useAuth only for admin/teacher role checks
   const { gradeCode } = useUserCurriculum();
-  const { isAdmin, isTeacher } = useAuth();
+  const { isAdmin, isTeacher, user } = useAuth();
+  const isAuthed = !!user;
+  const FREE_GAPS_VISIBLE = 2;
 
   // The DB stores grade as the short code ("2AS"); use it directly.
   const [gradeFilter, setGradeFilter] = useState(gradeCode || "");
