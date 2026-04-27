@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCountryGrades } from "@/hooks/useCountryGrades";
 import { ruleBasedDeconstruct } from "@/components/admin/ruleBasedDeconstructor";
 import type { Exercise, Pattern, Deconstruction } from "@/components/admin/useAdminKBStore";
-import { AlertTriangle, ChevronDown, ChevronUp, Download, Globe, Loader2, Sparkles, Target, Zap } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp, Download, Globe, Loader2, Sparkles, Target, Wand2, Zap } from "lucide-react";
 
 interface Country {
   code: string;
@@ -46,6 +46,12 @@ const PlatformAnalytics = () => {
   const [linkProgress, setLinkProgress] = useState({ done: 0, total: 0 });
   const [lastLinkResult, setLastLinkResult] = useState<string | null>(null);
   const [showWeakAreas, setShowWeakAreas] = useState(true);
+
+  // ── Weak-area generator state ───────────────────────────────────────────
+  const [genGrade, setGenGrade] = useState<string>("");
+  const [generating, setGenerating] = useState(false);
+  const [genProgress, setGenProgress] = useState({ done: 0, total: 0, inserted: 0 });
+  const [genLog, setGenLog] = useState<{ grade: string; type: string; status: "ok" | "err"; msg: string }[]>([]);
 
   // ── Load countries ───────────────────────────────────────────────────────
   useEffect(() => {
