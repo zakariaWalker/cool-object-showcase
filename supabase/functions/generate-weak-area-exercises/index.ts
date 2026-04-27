@@ -53,38 +53,34 @@ interface GeneratedExercise {
   label: string;
 }
 
-const tool = {
-  type: "function" as const,
-  function: {
-    name: "emit_exercises",
-    description: "Emit a list of math exercises tailored to the grade and type.",
-    parameters: {
-      type: "object",
-      properties: {
-        exercises: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              text: { type: "string", description: "Full exercise statement in Arabic. Use $...$ for inline LaTeX math." },
-              chapter: { type: "string", description: "Curriculum chapter in Arabic." },
-              label: { type: "string", description: "Short label like '4AM — الرياضيات'" },
-              difficulty: { type: "integer", minimum: 1, maximum: 5 },
-              base_score: { type: "number", minimum: 1, maximum: 10 },
-              step_count: { type: "integer", minimum: 1, maximum: 12 },
-              concept_count: { type: "integer", minimum: 1, maximum: 6 },
-              estimated_time_min: { type: "number", minimum: 1, maximum: 60 },
-              bloom_level: { type: "integer", minimum: 1, maximum: 6 },
-              cognitive_level: { type: "string", enum: ["remember", "understand", "apply", "analyze", "evaluate", "create"] },
-            },
-            required: ["text", "chapter", "label", "difficulty", "base_score", "step_count", "concept_count", "estimated_time_min", "bloom_level", "cognitive_level"],
-            additionalProperties: false,
+// Gemini native function-calling declaration (no top-level "function" wrapper, no additionalProperties)
+const geminiFunctionDecl = {
+  name: "emit_exercises",
+  description: "Emit a list of math exercises tailored to the grade and type.",
+  parameters: {
+    type: "object",
+    properties: {
+      exercises: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            text: { type: "string", description: "Full exercise statement in Arabic. Use $...$ for inline LaTeX math." },
+            chapter: { type: "string", description: "Curriculum chapter in Arabic." },
+            label: { type: "string", description: "Short label like '4AM — الرياضيات'" },
+            difficulty: { type: "integer" },
+            base_score: { type: "number" },
+            step_count: { type: "integer" },
+            concept_count: { type: "integer" },
+            estimated_time_min: { type: "number" },
+            bloom_level: { type: "integer" },
+            cognitive_level: { type: "string", enum: ["remember", "understand", "apply", "analyze", "evaluate", "create"] },
           },
+          required: ["text", "chapter", "label", "difficulty", "base_score", "step_count", "concept_count", "estimated_time_min", "bloom_level", "cognitive_level"],
         },
       },
-      required: ["exercises"],
-      additionalProperties: false,
     },
+    required: ["exercises"],
   },
 };
 
