@@ -147,14 +147,22 @@ export default function ExamArchiveSolver() {
       const items = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-item]"));
       if (!header || items.length === 0) throw new Error("Nothing to render");
 
-      // Group items into pages based on cumulative height
+      // Group items into pages based on cumulative measured height
       const headerH = header.offsetHeight;
       const pages: HTMLElement[][] = [];
       let current: HTMLElement[] = [];
       let used = headerH + 16; // first page reserves header
-      const GAP = 14;
+      const GAP = 10;
       for (const it of items) {
         const h = it.offsetHeight + GAP;
+        // If a single item is taller than a page, accept overflow on its own page (it will scale)
+        if (h > CONTENT_H_PX) {
+          if (current.length > 0) pages.push(current);
+          pages.push([it]);
+          current = [];
+          used = 0;
+          continue;
+        }
         if (used + h > CONTENT_H_PX && current.length > 0) {
           pages.push(current);
           current = [it];
@@ -174,10 +182,11 @@ export default function ExamArchiveSolver() {
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
 
       try {
+        // Track which group's header has already been printed on the current page
         for (let p = 0; p < pages.length; p++) {
           const pageEl = document.createElement("div");
           pageEl.setAttribute("dir", "rtl");
-          pageEl.style.cssText = `width:${CONTENT_W_PX}px;padding:0;background:#ffffff;color:#0a0a0a;font-family:'Tajawal',sans-serif;`;
+          pageEl.style.cssText = `width:${CONTENT_W_PX}px;padding:0;background:#ffffff;color:#000;font-family:'Amiri','Tajawal','Times New Roman',serif;font-size:14px;line-height:1.9;`;
 
           if (p === 0) {
             const headerClone = header.cloneNode(true) as HTMLElement;
@@ -186,9 +195,23 @@ export default function ExamArchiveSolver() {
             sp.style.height = "12px";
             pageEl.appendChild(sp);
           }
+
+          // Determine the first item's group on this page; if it's not a header itself,
+          // inject a "(تابع)" continuation header so the user knows which exercise it belongs to.
+          const firstItem = pages[p][0];
+          const firstGroupId = firstItem?.getAttribute("data-group-id");
+          const firstIsHeader = firstItem?.getAttribute("data-group-header") === "true";
+          if (firstGroupId && !firstIsHeader) {
+            const label = firstItem.getAttribute("data-group-label") || "";
+            const cont = document.createElement("div");
+            cont.style.cssText = "font-weight:800;font-size:15px;margin-bottom:8px;padding-bottom:4px;";
+            cont.textContent = `${label} — (تابع)`;
+            pageEl.appendChild(cont);
+          }
+
           for (const item of pages[p]) {
             const clone = item.cloneNode(true) as HTMLElement;
-            clone.style.marginBottom = "12px";
+            clone.style.marginBottom = "10px";
             pageEl.appendChild(clone);
           }
 
@@ -206,12 +229,10 @@ export default function ExamArchiveSolver() {
           });
           const imgData = canvas.toDataURL("image/jpeg", 0.92);
           const ratio = canvas.height / canvas.width;
-          let drawW = PAGE_W_MM - MARGIN_MM * 2;
-          let drawH = drawW * ratio;
-          if (drawH > PAGE_H_MM - MARGIN_MM * 2) {
-            drawH = PAGE_H_MM - MARGIN_MM * 2;
-            drawW = drawH / ratio;
-          }
+          const drawW = PAGE_W_MM - MARGIN_MM * 2;
+          const drawH = drawW * ratio;
+          // No silent shrink — pages are sized to fit; if overflow happens
+          // for a single oversized block, content will spill but still be visible.
           if (p > 0) pdf.addPage("a4", "portrait");
           const x = (PAGE_W_MM - drawW) / 2;
           pdf.addImage(imgData, "JPEG", x, MARGIN_MM, drawW, drawH);
@@ -526,41 +547,48 @@ export default function ExamArchiveSolver() {
               </div>
             </div>
 
-            {/* EXERCISES */}
+            {/* EXERCISES — each sub-question is its own page-breakable item; group header repeats per page when needed */}
             {groups.map((g, gi) => (
-              <div
-                key={g.label + gi}
-                data-pdf-item
-                style={{
-                  marginBottom: 18,
-                  pageBreakInside: "avoid",
-                  breakInside: "avoid",
-                }}
-              >
-                <div style={{ fontWeight: 800, fontSize: "15px", marginBottom: 6 }}>
+              <div key={g.label + gi} style={{ marginBottom: 18 }}>
+                {/* Group header is its own pdf-item so it can be paginated alongside its first questions */}
+                <div
+                  data-pdf-item
+                  data-group-id={`g${gi}`}
+                  data-group-header="true"
+                  data-group-label={`${g.label}: (${formatPoints(g.points)} نقاط)`}
+                  style={{
+                    fontWeight: 800,
+                    fontSize: "15px",
+                    marginBottom: 8,
+                    paddingBottom: 4,
+                  }}
+                >
                   {g.label}: ({formatPoints(g.points)} نقاط)
                 </div>
 
                 <div style={{ paddingRight: 8 }}>
                   {g.items.map((q, qi) => {
-                    // Heuristic: if there are multiple items in the group, treat each
-                    // as a numbered sub-question; if only one, render the text directly.
                     const isMulti = g.items.length > 1;
                     const number = q.question_number || qi + 1;
                     return (
                       <div
                         key={q.id}
+                        data-pdf-item
+                        data-group-id={`g${gi}`}
+                        data-group-label={`${g.label}: (${formatPoints(g.points)} نقاط)`}
                         style={{
                           display: "flex",
                           gap: 6,
                           alignItems: "flex-start",
-                          marginBottom: 6,
+                          marginBottom: 8,
                           fontSize: "14px",
                           lineHeight: 1.9,
+                          pageBreakInside: "avoid",
+                          breakInside: "avoid",
                         }}
                       >
                         {isMulti && (
-                          <span style={{ fontWeight: 800, minWidth: 20, flexShrink: 0 }}>
+                          <span style={{ fontWeight: 800, minWidth: 22, flexShrink: 0 }}>
                             {number})
                           </span>
                         )}
