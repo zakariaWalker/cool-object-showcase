@@ -217,7 +217,7 @@ export default function ExamArchiveSolver() {
           pdf.addImage(imgData, "JPEG", x, MARGIN_MM, drawW, drawH);
           pdf.setFontSize(9);
           pdf.setTextColor(120);
-          pdf.text(`${p + 1} / ${pages.length}`, PAGE_W_MM / 2, PAGE_H_MM - 6, { align: "center" });
+          pdf.text(`Page ${p + 1} / ${pages.length}`, PAGE_W_MM / 2, PAGE_H_MM - 6, { align: "center" });
         }
       } finally {
         document.body.removeChild(stage);
