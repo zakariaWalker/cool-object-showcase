@@ -526,41 +526,48 @@ export default function ExamArchiveSolver() {
               </div>
             </div>
 
-            {/* EXERCISES */}
+            {/* EXERCISES — each sub-question is its own page-breakable item; group header repeats per page when needed */}
             {groups.map((g, gi) => (
-              <div
-                key={g.label + gi}
-                data-pdf-item
-                style={{
-                  marginBottom: 18,
-                  pageBreakInside: "avoid",
-                  breakInside: "avoid",
-                }}
-              >
-                <div style={{ fontWeight: 800, fontSize: "15px", marginBottom: 6 }}>
+              <div key={g.label + gi} style={{ marginBottom: 18 }}>
+                {/* Group header is its own pdf-item so it can be paginated alongside its first questions */}
+                <div
+                  data-pdf-item
+                  data-group-id={`g${gi}`}
+                  data-group-header="true"
+                  data-group-label={`${g.label}: (${formatPoints(g.points)} نقاط)`}
+                  style={{
+                    fontWeight: 800,
+                    fontSize: "15px",
+                    marginBottom: 8,
+                    paddingBottom: 4,
+                  }}
+                >
                   {g.label}: ({formatPoints(g.points)} نقاط)
                 </div>
 
                 <div style={{ paddingRight: 8 }}>
                   {g.items.map((q, qi) => {
-                    // Heuristic: if there are multiple items in the group, treat each
-                    // as a numbered sub-question; if only one, render the text directly.
                     const isMulti = g.items.length > 1;
                     const number = q.question_number || qi + 1;
                     return (
                       <div
                         key={q.id}
+                        data-pdf-item
+                        data-group-id={`g${gi}`}
+                        data-group-label={`${g.label}: (${formatPoints(g.points)} نقاط)`}
                         style={{
                           display: "flex",
                           gap: 6,
                           alignItems: "flex-start",
-                          marginBottom: 6,
+                          marginBottom: 8,
                           fontSize: "14px",
                           lineHeight: 1.9,
+                          pageBreakInside: "avoid",
+                          breakInside: "avoid",
                         }}
                       >
                         {isMulti && (
-                          <span style={{ fontWeight: 800, minWidth: 20, flexShrink: 0 }}>
+                          <span style={{ fontWeight: 800, minWidth: 22, flexShrink: 0 }}>
                             {number})
                           </span>
                         )}
