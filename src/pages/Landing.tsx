@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { QEDLogo } from "@/components/QEDLogo";
+import { MathSymbolsBackground } from "@/components/MathSymbolsBackground";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft,
@@ -182,6 +183,11 @@ export default function Landing() {
       `}</style>
 
       <div className="qed-landing relative bg-background min-h-screen overflow-x-hidden" dir="rtl">
+        {/* ── Animated math symbols background ── */}
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <MathSymbolsBackground count={32} />
+        </div>
+
         {/* ── NAV — academic, hairline, no flashy chrome ── */}
         <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur-xl bg-background/85 border-b border-border">
           <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
