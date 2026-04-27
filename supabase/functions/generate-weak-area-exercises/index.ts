@@ -1,5 +1,5 @@
-// Generate exercises for a single (country, grade, type) cell using Lovable AI,
-// then insert them into kb_exercises. Returns counts + any errors.
+// Generate exercises for a single (country, grade, type) cell using Google Gemini
+// (native API with GEMINI_API_KEY), then insert them into kb_exercises.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -8,7 +8,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
+const GEMINI_MODEL = "gemini-2.5-flash"; // closest publicly available to gemini-3-flash-preview
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -52,38 +53,34 @@ interface GeneratedExercise {
   label: string;
 }
 
-const tool = {
-  type: "function" as const,
-  function: {
-    name: "emit_exercises",
-    description: "Emit a list of math exercises tailored to the grade and type.",
-    parameters: {
-      type: "object",
-      properties: {
-        exercises: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              text: { type: "string", description: "Full exercise statement in Arabic. Use $...$ for inline LaTeX math." },
-              chapter: { type: "string", description: "Curriculum chapter in Arabic." },
-              label: { type: "string", description: "Short label like '4AM — الرياضيات'" },
-              difficulty: { type: "integer", minimum: 1, maximum: 5 },
-              base_score: { type: "number", minimum: 1, maximum: 10 },
-              step_count: { type: "integer", minimum: 1, maximum: 12 },
-              concept_count: { type: "integer", minimum: 1, maximum: 6 },
-              estimated_time_min: { type: "number", minimum: 1, maximum: 60 },
-              bloom_level: { type: "integer", minimum: 1, maximum: 6 },
-              cognitive_level: { type: "string", enum: ["remember", "understand", "apply", "analyze", "evaluate", "create"] },
-            },
-            required: ["text", "chapter", "label", "difficulty", "base_score", "step_count", "concept_count", "estimated_time_min", "bloom_level", "cognitive_level"],
-            additionalProperties: false,
+// Gemini native function-calling declaration (no top-level "function" wrapper, no additionalProperties)
+const geminiFunctionDecl = {
+  name: "emit_exercises",
+  description: "Emit a list of math exercises tailored to the grade and type.",
+  parameters: {
+    type: "object",
+    properties: {
+      exercises: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            text: { type: "string", description: "Full exercise statement in Arabic. Use $...$ for inline LaTeX math." },
+            chapter: { type: "string", description: "Curriculum chapter in Arabic." },
+            label: { type: "string", description: "Short label like '4AM — الرياضيات'" },
+            difficulty: { type: "integer" },
+            base_score: { type: "number" },
+            step_count: { type: "integer" },
+            concept_count: { type: "integer" },
+            estimated_time_min: { type: "number" },
+            bloom_level: { type: "integer" },
+            cognitive_level: { type: "string", enum: ["remember", "understand", "apply", "analyze", "evaluate", "create"] },
           },
+          required: ["text", "chapter", "label", "difficulty", "base_score", "step_count", "concept_count", "estimated_time_min", "bloom_level", "cognitive_level"],
         },
       },
-      required: ["exercises"],
-      additionalProperties: false,
     },
+    required: ["exercises"],
   },
 };
 
@@ -120,33 +117,34 @@ Deno.serve(async (req) => {
       `- estimated_time_min between 3 and 15 typically.\n` +
       `- step_count = number of resolution steps a student must perform.`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+    // Direct call to Google Gemini API (native), using GEMINI_API_KEY.
+    const aiResp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+          tools: [{ functionDeclarations: [geminiFunctionDecl] }],
+          toolConfig: {
+            functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["emit_exercises"] },
+          },
+          generationConfig: { temperature: 0.4 },
+        }),
       },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [tool],
-        tool_choice: { type: "function", function: { name: "emit_exercises" } },
-      }),
-    });
+    );
 
     if (!aiResp.ok) {
       const t = await aiResp.text();
-      console.error("AI gateway error", aiResp.status, t);
+      console.error("Gemini API error", aiResp.status, t);
       if (aiResp.status === 429) {
         return new Response(JSON.stringify({ error: "rate_limited" }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (aiResp.status === 402) {
-        return new Response(JSON.stringify({ error: "credits_exhausted" }), {
+      if (aiResp.status === 402 || aiResp.status === 403) {
+        return new Response(JSON.stringify({ error: "quota_or_key_invalid", detail: t.slice(0, 300) }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -156,8 +154,8 @@ Deno.serve(async (req) => {
     }
 
     const aiJson = await aiResp.json();
-    const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall?.function?.arguments) {
+    const fnCall = aiJson?.candidates?.[0]?.content?.parts?.find((p: any) => p.functionCall)?.functionCall;
+    if (!fnCall?.args) {
       return new Response(JSON.stringify({ error: "no_tool_call", raw: aiJson }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -165,7 +163,8 @@ Deno.serve(async (req) => {
 
     let parsed: { exercises: GeneratedExercise[] };
     try {
-      parsed = JSON.parse(toolCall.function.arguments);
+      // Gemini returns args as already-parsed JSON object
+      parsed = typeof fnCall.args === "string" ? JSON.parse(fnCall.args) : fnCall.args;
     } catch (e) {
       return new Response(JSON.stringify({ error: "bad_json", detail: String(e) }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
