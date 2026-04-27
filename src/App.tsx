@@ -32,6 +32,7 @@ import StudentProfile from "@/pages/StudentProfile";
 import NotFound from "./pages/NotFound";
 import ExamArchive from "./pages/ExamArchive";
 import ExamArchiveSolver from "./pages/ExamArchiveSolver";
+import ExamSimulation from "./pages/ExamSimulation";
 import SkillsKBPage from "./pages/SkillsKB";
 import UnifiedKBPage from "./pages/UnifiedKB";
 import TextbookUpload from "./pages/TextbookUpload";
@@ -147,6 +148,7 @@ const App = () => (
             <Route path="/exams" element={<ExamBuilderPage />} />
             <Route path="/exam-kb" element={<ExamKBPage />} />
             <Route path="/annales" element={<ExamArchive />} />
+            <Route path="/exam-simulation" element={<ExamSimulation />} />
             <Route path="/archive-solve/:examId" element={<ExamArchiveSolver />} />
             <Route
               path="/diagnostic"
