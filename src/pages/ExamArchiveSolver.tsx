@@ -1,23 +1,27 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
 import { Button } from "@/components/ui/button";
-import { 
-  ChevronRight, 
-  ChevronLeft, 
-  Clock, 
-  CheckCircle2, 
-  HelpCircle, 
+import {
+  ChevronRight,
+  ChevronLeft,
+  Clock,
+  CheckCircle2,
+  HelpCircle,
   ArrowLeft,
   Timer,
   Layout,
   Maximize2,
   PenTool,
-  FileText
+  FileText,
+  Download,
+  Loader2
 } from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { GRADE_OPTIONS } from "@/engine/exam-types";
 
