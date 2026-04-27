@@ -117,38 +117,66 @@ Deno.serve(async (req) => {
       `- estimated_time_min between 3 and 15 typically.\n` +
       `- step_count = number of resolution steps a student must perform.`;
 
-    // Direct call to Google Gemini API (native), using GEMINI_API_KEY.
-    const aiResp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-          tools: [{ functionDeclarations: [geminiFunctionDecl] }],
-          toolConfig: {
-            functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["emit_exercises"] },
-          },
-          generationConfig: { temperature: 0.4 },
-        }),
-      },
-    );
+    // Direct call to Google Gemini API (native), with retry on 503/500 and model fallback.
+    const MODEL_CHAIN = [GEMINI_MODEL, "gemini-2.5-flash-lite", "gemini-2.0-flash"];
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-    if (!aiResp.ok) {
-      const t = await aiResp.text();
-      console.error("Gemini API error", aiResp.status, t);
-      if (aiResp.status === 429) {
+    const callGemini = (model: string) =>
+      fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+            tools: [{ functionDeclarations: [geminiFunctionDecl] }],
+            toolConfig: {
+              functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["emit_exercises"] },
+            },
+            generationConfig: { temperature: 0.4 },
+          }),
+        },
+      );
+
+    let aiResp: Response | null = null;
+    let lastStatus = 0;
+    let lastBody = "";
+    outer: for (const model of MODEL_CHAIN) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const r = await callGemini(model);
+        if (r.ok) { aiResp = r; break outer; }
+        lastStatus = r.status;
+        lastBody = await r.text();
+        // Hard-stop conditions: don't retry, don't try other models
+        if (r.status === 400 || r.status === 401 || r.status === 403 || r.status === 429) break outer;
+        // Transient (503/500/504): backoff then retry same model
+        if (r.status === 503 || r.status === 500 || r.status === 504) {
+          await sleep(700 * Math.pow(2, attempt)); // 700ms, 1.4s, 2.8s
+          continue;
+        }
+        break; // other → try next model
+      }
+    }
+
+    if (!aiResp) {
+      console.error("Gemini API failed after fallbacks", lastStatus, lastBody);
+      if (lastStatus === 429) {
         return new Response(JSON.stringify({ error: "rate_limited" }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (aiResp.status === 402 || aiResp.status === 403) {
-        return new Response(JSON.stringify({ error: "quota_or_key_invalid", detail: t.slice(0, 300) }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      if (lastStatus === 401 || lastStatus === 403) {
+        return new Response(JSON.stringify({ error: "key_invalid", detail: lastBody.slice(0, 300) }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ error: "ai_failed", detail: t.slice(0, 500) }), {
+      if (lastStatus === 503 || lastStatus === 500 || lastStatus === 504) {
+        return new Response(JSON.stringify({ error: "model_overloaded", detail: lastBody.slice(0, 300) }), {
+          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "ai_failed", detail: lastBody.slice(0, 500) }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
