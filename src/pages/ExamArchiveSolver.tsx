@@ -217,7 +217,7 @@ export default function ExamArchiveSolver() {
           pdf.addImage(imgData, "JPEG", x, MARGIN_MM, drawW, drawH);
           pdf.setFontSize(9);
           pdf.setTextColor(120);
-          pdf.text(`${p + 1} / ${pages.length}`, PAGE_W_MM / 2, PAGE_H_MM - 6, { align: "center" });
+          pdf.text(`Page ${p + 1} / ${pages.length}`, PAGE_W_MM / 2, PAGE_H_MM - 6, { align: "center" });
         }
       } finally {
         document.body.removeChild(stage);
@@ -421,65 +421,165 @@ export default function ExamArchiveSolver() {
         </main>
       </div>
 
-      {/* Hidden printable A4 source — measured & sliced into pages by handleDownloadPdf */}
-      <div
-        ref={printRef}
-        dir="rtl"
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          top: 0,
-          left: "-99999px",
-          width: "703px", // A4 content width @ ~96dpi minus margins
-          background: "#ffffff",
-          color: "#0a0a0a",
-          fontFamily: "'Tajawal', sans-serif",
-          padding: 0,
-          display: "block",
-        }}
-      >
-        <div data-pdf-header style={{ borderBottom: "2px solid #000", paddingBottom: 10, marginBottom: 12, textAlign: "center" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#333" }}>
-            الجمهورية الجزائرية الديمقراطية الشعبية — وزارة التربية الوطنية
-          </div>
-          <div style={{ fontSize: 18, fontWeight: 900, marginTop: 6 }}>
-            {exam.format.toUpperCase()} — {exam.year}
-          </div>
-          <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>
-            {gradeLabel} · المدة: {exam.format === "bac" ? "03 سا و 30 د" : exam.format === "bem" ? "02 سا" : "—"}
-            {exam.session ? ` · ${exam.session === "juin" ? "دورة جوان" : exam.session}` : ""}
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 900, marginTop: 8, paddingTop: 8, borderTop: "1px solid #ccc" }}>
-            اختبار في مادة: الرياضيات
-          </div>
-        </div>
+      {/* Hidden printable A4 source — official DZ exam style */}
+      {(() => {
+        // Group questions by section_label (التمرين الأول، الثاني، …) preserving DB order
+        const groups: { label: string; items: ExamQuestion[]; points: number }[] = [];
+        const indexByLabel = new Map<string, number>();
+        for (const q of questions) {
+          const key = q.section_label || "تمرين";
+          let idx = indexByLabel.get(key);
+          if (idx === undefined) {
+            idx = groups.length;
+            indexByLabel.set(key, idx);
+            groups.push({ label: key, items: [], points: 0 });
+          }
+          groups[idx].items.push(q);
+          groups[idx].points += Number(q.points || 0);
+        }
 
-        {questions.map((q) => (
+        const examTitleAr =
+          exam.format === "bac"
+            ? "امتحان بكالوريا التعليم الثانوي"
+            : exam.format === "bem"
+            ? "امتحان شهادة التعليم المتوسط"
+            : "اختبار في الرياضيات";
+        const durationAr =
+          exam.format === "bac" ? "03 سا و 30 د" : exam.format === "bem" ? "02 سا" : "—";
+        const sessionAr = exam.session === "juin" ? "جوان" : exam.session || "—";
+
+        // Arabic letters for sub-question lettering (أ، ب، ج، د، …)
+        const arabicLetters = ["أ", "ب", "ج", "د", "هـ", "و", "ز", "ح"];
+        const formatPoints = (p: number) => (p < 10 ? `0${p}` : `${p}`);
+
+        return (
           <div
-            key={q.id}
-            data-pdf-item
+            ref={printRef}
+            dir="rtl"
+            aria-hidden="true"
             style={{
-              border: "1px solid #d4d4d4",
-              borderRadius: 6,
-              padding: 12,
-              marginBottom: 12,
-              background: "#fff",
-              breakInside: "avoid",
-              pageBreakInside: "avoid",
+              position: "fixed",
+              top: 0,
+              left: "-99999px",
+              width: "703px", // A4 content width @ ~96dpi minus margins
+              background: "#ffffff",
+              color: "#000",
+              fontFamily: "'Amiri','Tajawal','Times New Roman',serif",
+              padding: 0,
+              display: "block",
+              fontSize: "14px",
+              lineHeight: 1.9,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, fontSize: 11 }}>
-              <span style={{ fontWeight: 900, background: "#111", color: "#fff", padding: "2px 8px", borderRadius: 4 }}>
-                {q.section_label} — س{q.question_number}
-              </span>
-              <span style={{ fontWeight: 700, color: "#444" }}>{q.points} ن</span>
+            {/* OFFICIAL HEADER */}
+            <div data-pdf-header style={{ marginBottom: 14 }}>
+              <div style={{ textAlign: "center", fontSize: "16px", fontWeight: 700, lineHeight: 1.6 }}>
+                <div>الجمهورية الجزائرية الديمقراطية الشعبية</div>
+                <div>وزارة التربية الوطنية</div>
+                <div>الديوان الوطني للامتحانات والمسابقات</div>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  marginTop: 14,
+                  fontSize: "14px",
+                  fontWeight: 700,
+                }}
+              >
+                <div>دورة: {exam.year}{sessionAr !== "—" ? ` (${sessionAr})` : ""}</div>
+                <div style={{ textAlign: "center" }}>{examTitleAr}</div>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginTop: 6,
+                  fontSize: "13px",
+                  fontWeight: 700,
+                }}
+              >
+                <div>الشعبة: {gradeLabel}</div>
+                <div></div>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginTop: 6,
+                  fontSize: "14px",
+                  fontWeight: 800,
+                  borderBottom: "1.5px solid #000",
+                  paddingBottom: 8,
+                }}
+              >
+                <div>المدة: {durationAr}</div>
+                <div>اختبار في مادة: الرياضيات</div>
+              </div>
+
+              <div style={{ textAlign: "center", marginTop: 10, fontSize: "13px", fontWeight: 700 }}>
+                على المترشح أن يجيب عن جميع الأسئلة
+              </div>
             </div>
-            <div style={{ fontSize: 13, lineHeight: 1.8 }}>
-              <MathExerciseRenderer text={q.text} />
+
+            {/* EXERCISES */}
+            {groups.map((g, gi) => (
+              <div
+                key={g.label + gi}
+                data-pdf-item
+                style={{
+                  marginBottom: 18,
+                  pageBreakInside: "avoid",
+                  breakInside: "avoid",
+                }}
+              >
+                <div style={{ fontWeight: 800, fontSize: "15px", marginBottom: 6 }}>
+                  {g.label}: ({formatPoints(g.points)} نقاط)
+                </div>
+
+                <div style={{ paddingRight: 8 }}>
+                  {g.items.map((q, qi) => {
+                    // Heuristic: if there are multiple items in the group, treat each
+                    // as a numbered sub-question; if only one, render the text directly.
+                    const isMulti = g.items.length > 1;
+                    const number = q.question_number || qi + 1;
+                    return (
+                      <div
+                        key={q.id}
+                        style={{
+                          display: "flex",
+                          gap: 6,
+                          alignItems: "flex-start",
+                          marginBottom: 6,
+                          fontSize: "14px",
+                          lineHeight: 1.9,
+                        }}
+                      >
+                        {isMulti && (
+                          <span style={{ fontWeight: 800, minWidth: 20, flexShrink: 0 }}>
+                            {number})
+                          </span>
+                        )}
+                        <div style={{ flex: 1 }}>
+                          <MathExerciseRenderer text={q.text} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            <div style={{ textAlign: "center", marginTop: 20, fontSize: "12px", fontWeight: 700 }}>
+              ― انتهى ― بالتوفيق والنجاح ―
             </div>
           </div>
-        ))}
-      </div>
+        );
+      })()}
     </div>
   );
 }
