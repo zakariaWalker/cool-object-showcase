@@ -230,7 +230,50 @@ const PlatformAnalytics = () => {
     URL.revokeObjectURL(url);
   };
 
-  // ── UI ───────────────────────────────────────────────────────────────────
+  // ── Action: AI-generate exercises for one grade's weak cells ─────────────
+  const generateForGrade = async () => {
+    if (generating) return;
+    const gradeToUse = genGrade || (grades[0]?.grade_code ?? "");
+    if (!gradeToUse) return;
+    const cells = weakAreas.filter(c => c.grade === gradeToUse && c.needed > 0);
+    if (cells.length === 0) {
+      setGenLog([{ grade: gradeToUse, type: "—", status: "ok", msg: "لا توجد ثغرات لهذا المستوى." }]);
+      return;
+    }
+
+    setGenerating(true);
+    setGenLog([]);
+    setGenProgress({ done: 0, total: cells.length, inserted: 0 });
+
+    let totalInserted = 0;
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i];
+      try {
+        const { data, error } = await (supabase as any).functions.invoke("generate-weak-area-exercises", {
+          body: {
+            country_code: country,
+            grade: cell.grade,
+            type: cell.type,
+            count: cell.needed,
+          },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        const inserted = data?.inserted ?? 0;
+        totalInserted += inserted;
+        setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "ok", msg: `+${inserted} تمرين` }]);
+      } catch (err: any) {
+        setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "err", msg: err?.message || "فشل" }]);
+      }
+      setGenProgress({ done: i + 1, total: cells.length, inserted: totalInserted });
+      // gentle delay to avoid rate limits
+      await new Promise(r => setTimeout(r, 800));
+    }
+
+    setGenerating(false);
+    await loadKB();
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with country selector */}
