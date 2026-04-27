@@ -122,6 +122,73 @@ export default function ExamArchiveSolver() {
     handleNext();
   };
 
+  const handleDownloadPdf = async () => {
+    if (!printRef.current || isExporting) return;
+    setIsExporting(true);
+    const node = printRef.current;
+    // Make node visible off-screen for capture
+    const prevStyle = node.getAttribute("style") || "";
+    node.style.cssText = `${prevStyle};position:fixed;top:0;left:-99999px;display:block;`;
+    try {
+      // A4 portrait dimensions in mm
+      const PAGE_W_MM = 210;
+      const PAGE_H_MM = 297;
+      const MARGIN_MM = 12;
+      const CONTENT_W_MM = PAGE_W_MM - MARGIN_MM * 2;
+      const CONTENT_H_MM = PAGE_H_MM - MARGIN_MM * 2;
+
+      // Capture each page block separately to avoid mid-element splits
+      const pageNodes = Array.from(node.querySelectorAll<HTMLElement>("[data-pdf-page]"));
+      if (pageNodes.length === 0) throw new Error("No pages to render");
+
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+
+      for (let i = 0; i < pageNodes.length; i++) {
+        const pageEl = pageNodes[i];
+        const canvas = await html2canvas(pageEl, {
+          scale: 2,
+          backgroundColor: "#ffffff",
+          useCORS: true,
+          logging: false,
+          windowWidth: pageEl.scrollWidth,
+        });
+        const imgData = canvas.toDataURL("image/jpeg", 0.92);
+        const ratio = canvas.height / canvas.width;
+        let drawW = CONTENT_W_MM;
+        let drawH = drawW * ratio;
+        // Safety clamp: if a single block is taller than a page, scale down to fit
+        if (drawH > CONTENT_H_MM) {
+          drawH = CONTENT_H_MM;
+          drawW = drawH / ratio;
+        }
+        if (i > 0) pdf.addPage("a4", "portrait");
+        const x = (PAGE_W_MM - drawW) / 2;
+        const y = MARGIN_MM;
+        pdf.addImage(imgData, "JPEG", x, y, drawW, drawH);
+        // Footer page number
+        pdf.setFontSize(9);
+        pdf.setTextColor(120);
+        pdf.text(
+          `${i + 1} / ${pageNodes.length}`,
+          PAGE_W_MM / 2,
+          PAGE_H_MM - 6,
+          { align: "center" }
+        );
+      }
+
+      const filename = `${exam?.format?.toUpperCase() || "EXAM"}_${exam?.year || ""}_${exam?.session || ""}.pdf`
+        .replace(/\s+/g, "_");
+      pdf.save(filename);
+      toast.success("تم تنزيل ملف PDF");
+    } catch (e) {
+      console.error("PDF export failed", e);
+      toast.error("فشل توليد ملف PDF");
+    } finally {
+      node.style.cssText = prevStyle;
+      setIsExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center space-y-4">
