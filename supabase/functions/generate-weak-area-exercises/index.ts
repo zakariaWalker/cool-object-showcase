@@ -117,33 +117,34 @@ Deno.serve(async (req) => {
       `- estimated_time_min between 3 and 15 typically.\n` +
       `- step_count = number of resolution steps a student must perform.`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+    // Direct call to Google Gemini API (native), using GEMINI_API_KEY.
+    const aiResp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+          tools: [{ functionDeclarations: [geminiFunctionDecl] }],
+          toolConfig: {
+            functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["emit_exercises"] },
+          },
+          generationConfig: { temperature: 0.4 },
+        }),
       },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [tool],
-        tool_choice: { type: "function", function: { name: "emit_exercises" } },
-      }),
-    });
+    );
 
     if (!aiResp.ok) {
       const t = await aiResp.text();
-      console.error("AI gateway error", aiResp.status, t);
+      console.error("Gemini API error", aiResp.status, t);
       if (aiResp.status === 429) {
         return new Response(JSON.stringify({ error: "rate_limited" }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (aiResp.status === 402) {
-        return new Response(JSON.stringify({ error: "credits_exhausted" }), {
+      if (aiResp.status === 402 || aiResp.status === 403) {
+        return new Response(JSON.stringify({ error: "quota_or_key_invalid", detail: t.slice(0, 300) }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -153,8 +154,8 @@ Deno.serve(async (req) => {
     }
 
     const aiJson = await aiResp.json();
-    const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall?.function?.arguments) {
+    const fnCall = aiJson?.candidates?.[0]?.content?.parts?.find((p: any) => p.functionCall)?.functionCall;
+    if (!fnCall?.args) {
       return new Response(JSON.stringify({ error: "no_tool_call", raw: aiJson }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -162,7 +163,8 @@ Deno.serve(async (req) => {
 
     let parsed: { exercises: GeneratedExercise[] };
     try {
-      parsed = JSON.parse(toolCall.function.arguments);
+      // Gemini returns args as already-parsed JSON object
+      parsed = typeof fnCall.args === "string" ? JSON.parse(fnCall.args) : fnCall.args;
     } catch (e) {
       return new Response(JSON.stringify({ error: "bad_json", detail: String(e) }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
