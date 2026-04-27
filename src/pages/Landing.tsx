@@ -23,6 +23,10 @@ import {
   Brain,
   Zap,
   LineChart,
+  Trophy,
+  Timer,
+  Award,
+  PlayCircle,
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────
