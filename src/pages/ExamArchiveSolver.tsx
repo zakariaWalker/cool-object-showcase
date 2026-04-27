@@ -125,55 +125,102 @@ export default function ExamArchiveSolver() {
   const handleDownloadPdf = async () => {
     if (!printRef.current || isExporting) return;
     setIsExporting(true);
-    const node = printRef.current;
-    // Make node visible off-screen for capture
-    const prevStyle = node.getAttribute("style") || "";
-    node.style.cssText = `${prevStyle};position:fixed;top:0;left:-99999px;display:block;`;
+    const root = printRef.current;
+    // Make node visible off-screen for measurement & capture
+    const prevStyle = root.getAttribute("style") || "";
+    root.style.cssText = `${prevStyle};position:fixed;top:0;left:-99999px;display:block;`;
+    // wait one frame so KaTeX/layout settle
+    await new Promise(r => requestAnimationFrame(() => r(null)));
+    await new Promise(r => setTimeout(r, 50));
+
     try {
-      // A4 portrait dimensions in mm
+      // A4 portrait — use a fixed pixel canvas matching A4 ratio
       const PAGE_W_MM = 210;
       const PAGE_H_MM = 297;
       const MARGIN_MM = 12;
-      const CONTENT_W_MM = PAGE_W_MM - MARGIN_MM * 2;
-      const CONTENT_H_MM = PAGE_H_MM - MARGIN_MM * 2;
+      const PX_PER_MM = 3.78; // ~96dpi
+      const PAGE_W_PX = Math.round(PAGE_W_MM * PX_PER_MM); // ~794
+      const CONTENT_W_PX = Math.round((PAGE_W_MM - MARGIN_MM * 2) * PX_PER_MM); // ~703
+      const CONTENT_H_PX = Math.round((PAGE_H_MM - MARGIN_MM * 2) * PX_PER_MM); // ~1043
 
-      // Capture each page block separately to avoid mid-element splits
-      const pageNodes = Array.from(node.querySelectorAll<HTMLElement>("[data-pdf-page]"));
-      if (pageNodes.length === 0) throw new Error("No pages to render");
+      const header = root.querySelector<HTMLElement>("[data-pdf-header]");
+      const items = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-item]"));
+      if (!header || items.length === 0) throw new Error("Nothing to render");
+
+      // Group items into pages based on cumulative height
+      const headerH = header.offsetHeight;
+      const pages: HTMLElement[][] = [];
+      let current: HTMLElement[] = [];
+      let used = headerH + 16; // first page reserves header
+      const GAP = 14;
+      for (const it of items) {
+        const h = it.offsetHeight + GAP;
+        if (used + h > CONTENT_H_PX && current.length > 0) {
+          pages.push(current);
+          current = [it];
+          used = h;
+        } else {
+          current.push(it);
+          used += h;
+        }
+      }
+      if (current.length > 0) pages.push(current);
+
+      // Build a temporary container to render each page individually
+      const stage = document.createElement("div");
+      stage.style.cssText = `position:fixed;top:0;left:-99999px;background:#ffffff;`;
+      document.body.appendChild(stage);
 
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
 
-      for (let i = 0; i < pageNodes.length; i++) {
-        const pageEl = pageNodes[i];
-        const canvas = await html2canvas(pageEl, {
-          scale: 2,
-          backgroundColor: "#ffffff",
-          useCORS: true,
-          logging: false,
-          windowWidth: pageEl.scrollWidth,
-        });
-        const imgData = canvas.toDataURL("image/jpeg", 0.92);
-        const ratio = canvas.height / canvas.width;
-        let drawW = CONTENT_W_MM;
-        let drawH = drawW * ratio;
-        // Safety clamp: if a single block is taller than a page, scale down to fit
-        if (drawH > CONTENT_H_MM) {
-          drawH = CONTENT_H_MM;
-          drawW = drawH / ratio;
+      try {
+        for (let p = 0; p < pages.length; p++) {
+          const pageEl = document.createElement("div");
+          pageEl.setAttribute("dir", "rtl");
+          pageEl.style.cssText = `width:${CONTENT_W_PX}px;padding:0;background:#ffffff;color:#0a0a0a;font-family:'Tajawal',sans-serif;`;
+
+          if (p === 0) {
+            const headerClone = header.cloneNode(true) as HTMLElement;
+            pageEl.appendChild(headerClone);
+            const sp = document.createElement("div");
+            sp.style.height = "12px";
+            pageEl.appendChild(sp);
+          }
+          for (const item of pages[p]) {
+            const clone = item.cloneNode(true) as HTMLElement;
+            clone.style.marginBottom = "12px";
+            pageEl.appendChild(clone);
+          }
+
+          stage.innerHTML = "";
+          stage.appendChild(pageEl);
+          // give KaTeX a beat
+          await new Promise(r => setTimeout(r, 30));
+
+          const canvas = await html2canvas(pageEl, {
+            scale: 2,
+            backgroundColor: "#ffffff",
+            useCORS: true,
+            logging: false,
+            windowWidth: CONTENT_W_PX,
+          });
+          const imgData = canvas.toDataURL("image/jpeg", 0.92);
+          const ratio = canvas.height / canvas.width;
+          let drawW = PAGE_W_MM - MARGIN_MM * 2;
+          let drawH = drawW * ratio;
+          if (drawH > PAGE_H_MM - MARGIN_MM * 2) {
+            drawH = PAGE_H_MM - MARGIN_MM * 2;
+            drawW = drawH / ratio;
+          }
+          if (p > 0) pdf.addPage("a4", "portrait");
+          const x = (PAGE_W_MM - drawW) / 2;
+          pdf.addImage(imgData, "JPEG", x, MARGIN_MM, drawW, drawH);
+          pdf.setFontSize(9);
+          pdf.setTextColor(120);
+          pdf.text(`${p + 1} / ${pages.length}`, PAGE_W_MM / 2, PAGE_H_MM - 6, { align: "center" });
         }
-        if (i > 0) pdf.addPage("a4", "portrait");
-        const x = (PAGE_W_MM - drawW) / 2;
-        const y = MARGIN_MM;
-        pdf.addImage(imgData, "JPEG", x, y, drawW, drawH);
-        // Footer page number
-        pdf.setFontSize(9);
-        pdf.setTextColor(120);
-        pdf.text(
-          `${i + 1} / ${pageNodes.length}`,
-          PAGE_W_MM / 2,
-          PAGE_H_MM - 6,
-          { align: "center" }
-        );
+      } finally {
+        document.body.removeChild(stage);
       }
 
       const filename = `${exam?.format?.toUpperCase() || "EXAM"}_${exam?.year || ""}_${exam?.session || ""}.pdf`
@@ -184,7 +231,7 @@ export default function ExamArchiveSolver() {
       console.error("PDF export failed", e);
       toast.error("فشل توليد ملف PDF");
     } finally {
-      node.style.cssText = prevStyle;
+      root.style.cssText = prevStyle;
       setIsExporting(false);
     }
   };
