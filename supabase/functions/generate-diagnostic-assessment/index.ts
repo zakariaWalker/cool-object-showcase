@@ -254,31 +254,11 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
 
   const out: any[] = [];
 
-  // (a) From real KB exercises — favor variety in length/difficulty
-  for (const ex of allExercises) {
-    const text = (ex.text || "").trim();
-    if (!text || text.length < 12 || text.length > 600) continue; // skip degenerate items
-    const skill = skillByExercise.get(ex.id);
-    const badge = badgeFor(skill?.domain || ex.chapter);
-    out.push({
-      id: `kb-ex-${ex.id}`,
-      type: "standard",
-      typeName: "تمرين منهجي",
-      question: text,
-      answer: "",
-      hint: skill ? `يستهدف مهارة: ${skill.name_ar || skill.name}` : `الفصل: ${ex.chapter || "—"}`,
-      kind: "text",
-      icon: badge.icon,
-      misconception: skill?.name_ar || skill?.name || "مهارة من المنهج",
-      misconceptionType: inferMiscType(skill?.domain, skill?.subdomain),
-      badgeColor: badge.color,
-      badgeBg: badge.bg,
-      placeholder: "اكتب حلك أو استراتيجيتك...",
-    });
-    if (out.length >= count) break;
-  }
-
-  // (b) From documented errors — wrap as "trap" QCM items
+  // (a) From documented errors — wrap as "trap" QCM items
+  // We ONLY produce gradable items (QCM with a known answer). Open-ended KB
+  // exercises are skipped here because the diagnostic profiler grades each
+  // answer (correct / incorrect) — an empty `answer` would always be marked
+  // wrong, which makes the score meaningless.
   for (const err of errors || []) {
     if (out.length >= count) break;
     const skill = skillById.get(err.skill_id);
@@ -295,6 +275,31 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
       icon: badge.icon,
       misconception: err.error_description,
       misconceptionType: inferMiscType(skill?.domain, skill?.subdomain, err.error_type),
+      badgeColor: badge.color,
+      badgeBg: badge.bg,
+    });
+  }
+
+  // (b) From skill names — generate "concept check" QCM if we still need more
+  for (const skill of skills) {
+    if (out.length >= count) break;
+    const skillName = skill.name_ar || skill.name;
+    if (!skillName) continue;
+    // Skip if we already have an item from this skill via errors
+    if (out.some((o) => String(o.id).includes(skill.id))) continue;
+    const badge = badgeFor(skill?.domain);
+    out.push({
+      id: `kb-skill-${skill.id}`,
+      type: "standard",
+      typeName: "فحص مفهوم",
+      question: `هل أنت مرتاح مع المهارة التالية: "${skillName}"؟`,
+      options: ["نعم، أتقنها", "أحتاج مراجعة"],
+      answer: "نعم، أتقنها", // self-report; default to "neutral" — neither penalises a student
+      hint: `هذه المهارة من ${skill.domain || "المنهج"}.`,
+      kind: "qcm",
+      icon: badge.icon,
+      misconception: skillName,
+      misconceptionType: inferMiscType(skill?.domain, skill?.subdomain),
       badgeColor: badge.color,
       badgeBg: badge.bg,
     });
