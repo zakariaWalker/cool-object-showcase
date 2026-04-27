@@ -420,6 +420,66 @@ export default function ExamArchiveSolver() {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Hidden printable A4 source — measured & sliced into pages by handleDownloadPdf */}
+      <div
+        ref={printRef}
+        dir="rtl"
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: "-99999px",
+          width: "703px", // A4 content width @ ~96dpi minus margins
+          background: "#ffffff",
+          color: "#0a0a0a",
+          fontFamily: "'Tajawal', sans-serif",
+          padding: 0,
+          display: "block",
+        }}
+      >
+        <div data-pdf-header style={{ borderBottom: "2px solid #000", paddingBottom: 10, marginBottom: 12, textAlign: "center" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#333" }}>
+            الجمهورية الجزائرية الديمقراطية الشعبية — وزارة التربية الوطنية
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 900, marginTop: 6 }}>
+            {exam.format.toUpperCase()} — {exam.year}
+          </div>
+          <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>
+            {gradeLabel} · المدة: {exam.format === "bac" ? "03 سا و 30 د" : exam.format === "bem" ? "02 سا" : "—"}
+            {exam.session ? ` · ${exam.session === "juin" ? "دورة جوان" : exam.session}` : ""}
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 900, marginTop: 8, paddingTop: 8, borderTop: "1px solid #ccc" }}>
+            اختبار في مادة: الرياضيات
+          </div>
+        </div>
+
+        {questions.map((q) => (
+          <div
+            key={q.id}
+            data-pdf-item
+            style={{
+              border: "1px solid #d4d4d4",
+              borderRadius: 6,
+              padding: 12,
+              marginBottom: 12,
+              background: "#fff",
+              breakInside: "avoid",
+              pageBreakInside: "avoid",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, fontSize: 11 }}>
+              <span style={{ fontWeight: 900, background: "#111", color: "#fff", padding: "2px 8px", borderRadius: 4 }}>
+                {q.section_label} — س{q.question_number}
+              </span>
+              <span style={{ fontWeight: 700, color: "#444" }}>{q.points} ن</span>
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.8 }}>
+              <MathExerciseRenderer text={q.text} />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
