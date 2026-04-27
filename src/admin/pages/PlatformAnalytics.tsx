@@ -249,42 +249,60 @@ const PlatformAnalytics = () => {
     let stopReason: string | null = null;
     for (let i = 0; i < cells.length; i++) {
       const cell = cells[i];
-      try {
-        const { data, error } = await (supabase as any).functions.invoke("generate-weak-area-exercises", {
-          body: {
-            country_code: country,
-            grade: cell.grade,
-            type: cell.type,
-            count: cell.needed,
-          },
-        });
-        // Detect billing/rate-limit errors from the edge function (non-2xx)
-        const raw = (error?.context && (await error.context.json?.().catch(() => null))) || null;
-        const code = raw?.error || data?.error;
-        if (code === "credits_exhausted") {
-          stopReason = "نفد رصيد Lovable AI. أضف رصيداً من Settings ← Workspace ← Usage ثم أعد المحاولة.";
-          setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "err", msg: stopReason! }]);
-          break;
+      let attempt = 0;
+      const MAX_ATTEMPTS = 3;
+      let cellDone = false;
+      while (attempt < MAX_ATTEMPTS && !cellDone) {
+        attempt++;
+        try {
+          const { data, error } = await (supabase as any).functions.invoke("generate-weak-area-exercises", {
+            body: {
+              country_code: country,
+              grade: cell.grade,
+              type: cell.type,
+              count: cell.needed,
+            },
+          });
+          // Read structured error body if the function returned non-2xx
+          const raw = (error?.context && (await error.context.json?.().catch(() => null))) || null;
+          const code: string | undefined = raw?.error || data?.error;
+          const status: number | undefined = error?.context?.status;
+
+          if (code === "key_invalid" || status === 401) {
+            stopReason = "مفتاح Gemini غير صالح. حدّث GEMINI_API_KEY في الأسرار.";
+            setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "err", msg: stopReason! }]);
+            cellDone = true; break;
+          }
+          if (code === "rate_limited" || status === 429) {
+            // Retry after short pause; if all attempts fail, log and continue
+            if (attempt < MAX_ATTEMPTS) { await new Promise(r => setTimeout(r, 1500 * attempt)); continue; }
+            setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "err", msg: "تم تجاوز حد الطلبات. تخطّي." }]);
+            cellDone = true; break;
+          }
+          if (code === "model_overloaded" || status === 503) {
+            // Transient — backoff and retry
+            if (attempt < MAX_ATTEMPTS) { await new Promise(r => setTimeout(r, 1200 * attempt)); continue; }
+            setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "err", msg: "النموذج مشغول حالياً (503). تخطّي بعد 3 محاولات." }]);
+            cellDone = true; break;
+          }
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+
+          const inserted = data?.inserted ?? 0;
+          totalInserted += inserted;
+          setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "ok", msg: `+${inserted} تمرين` }]);
+          cellDone = true;
+        } catch (err: any) {
+          const msg = err?.message || "فشل";
+          if (attempt < MAX_ATTEMPTS && /non-2xx|503|overload|fetch/i.test(msg)) {
+            await new Promise(r => setTimeout(r, 1200 * attempt));
+            continue;
+          }
+          setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "err", msg }]);
+          cellDone = true;
         }
-        if (code === "rate_limited") {
-          stopReason = "تم تجاوز حد الطلبات مؤقتاً. انتظر دقيقة ثم أعد المحاولة.";
-          setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "err", msg: stopReason! }]);
-          break;
-        }
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-        const inserted = data?.inserted ?? 0;
-        totalInserted += inserted;
-        setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "ok", msg: `+${inserted} تمرين` }]);
-      } catch (err: any) {
-        const msg = err?.message || "فشل";
-        // FunctionsHttpError on 402 surfaces as a generic message — translate it
-        const friendly = /non-2xx|402|credits/i.test(msg)
-          ? "نفد رصيد Lovable AI. أضف رصيداً من Settings ← Workspace ← Usage."
-          : msg;
-        setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "err", msg: friendly }]);
-        if (/credits|402/i.test(msg)) { stopReason = friendly; break; }
       }
+      if (stopReason) break;
       setGenProgress({ done: i + 1, total: cells.length, inserted: totalInserted });
       // gentle delay to avoid rate limits
       await new Promise(r => setTimeout(r, 800));
