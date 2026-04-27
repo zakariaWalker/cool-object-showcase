@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCountryGrades } from "@/hooks/useCountryGrades";
 import { ruleBasedDeconstruct } from "@/components/admin/ruleBasedDeconstructor";
 import type { Exercise, Pattern, Deconstruction } from "@/components/admin/useAdminKBStore";
-import { AlertTriangle, ChevronDown, ChevronUp, Download, Globe, Loader2, Sparkles, Target, Zap } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp, Download, Globe, Loader2, Sparkles, Target, Wand2, Zap } from "lucide-react";
 
 interface Country {
   code: string;
@@ -46,6 +46,12 @@ const PlatformAnalytics = () => {
   const [linkProgress, setLinkProgress] = useState({ done: 0, total: 0 });
   const [lastLinkResult, setLastLinkResult] = useState<string | null>(null);
   const [showWeakAreas, setShowWeakAreas] = useState(true);
+
+  // ── Weak-area generator state ───────────────────────────────────────────
+  const [genGrade, setGenGrade] = useState<string>("");
+  const [generating, setGenerating] = useState(false);
+  const [genProgress, setGenProgress] = useState({ done: 0, total: 0, inserted: 0 });
+  const [genLog, setGenLog] = useState<{ grade: string; type: string; status: "ok" | "err"; msg: string }[]>([]);
 
   // ── Load countries ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -224,7 +230,50 @@ const PlatformAnalytics = () => {
     URL.revokeObjectURL(url);
   };
 
-  // ── UI ───────────────────────────────────────────────────────────────────
+  // ── Action: AI-generate exercises for one grade's weak cells ─────────────
+  const generateForGrade = async () => {
+    if (generating) return;
+    const gradeToUse = genGrade || (grades[0]?.grade_code ?? "");
+    if (!gradeToUse) return;
+    const cells = weakAreas.filter(c => c.grade === gradeToUse && c.needed > 0);
+    if (cells.length === 0) {
+      setGenLog([{ grade: gradeToUse, type: "—", status: "ok", msg: "لا توجد ثغرات لهذا المستوى." }]);
+      return;
+    }
+
+    setGenerating(true);
+    setGenLog([]);
+    setGenProgress({ done: 0, total: cells.length, inserted: 0 });
+
+    let totalInserted = 0;
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i];
+      try {
+        const { data, error } = await (supabase as any).functions.invoke("generate-weak-area-exercises", {
+          body: {
+            country_code: country,
+            grade: cell.grade,
+            type: cell.type,
+            count: cell.needed,
+          },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        const inserted = data?.inserted ?? 0;
+        totalInserted += inserted;
+        setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "ok", msg: `+${inserted} تمرين` }]);
+      } catch (err: any) {
+        setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "err", msg: err?.message || "فشل" }]);
+      }
+      setGenProgress({ done: i + 1, total: cells.length, inserted: totalInserted });
+      // gentle delay to avoid rate limits
+      await new Promise(r => setTimeout(r, 800));
+    }
+
+    setGenerating(false);
+    await loadKB();
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with country selector */}
@@ -386,6 +435,79 @@ const PlatformAnalytics = () => {
               </>
             )}
           </>
+        )}
+      </section>
+
+      {/* ── AI Weak-Area Filler ────────────────────────────────────────── */}
+      <section className="bg-card rounded-2xl border border-border p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Wand2 className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-black text-foreground">🪄 توليد ذكي لتمارين المجالات الضعيفة</h3>
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">
+          اختر مستوى دراسياً وسيقوم الذكاء الاصطناعي بتوليد التمارين الناقصة لكل خلية ضعيفة لهذا المستوى وحفظها في قاعدة المعرفة.
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={genGrade}
+            onChange={(e) => setGenGrade(e.target.value)}
+            disabled={generating}
+            className="px-3 py-2 rounded-lg border border-border bg-background text-sm font-bold text-foreground outline-none cursor-pointer disabled:opacity-50"
+          >
+            <option value="">— اختر مستوى —</option>
+            {grades.map(g => {
+              const cellsForGrade = weakAreas.filter(c => c.grade === g.grade_code);
+              const need = cellsForGrade.reduce((s, c) => s + c.needed, 0);
+              return (
+                <option key={g.grade_code} value={g.grade_code}>
+                  {g.grade_label_ar} ({cellsForGrade.length} خلية · {need} تمرين)
+                </option>
+              );
+            })}
+          </select>
+
+          <button
+            onClick={generateForGrade}
+            disabled={generating || !genGrade}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+            {generating
+              ? `جارٍ التوليد... ${genProgress.done}/${genProgress.total} (+${genProgress.inserted})`
+              : "🪄 ولّد التمارين الناقصة"}
+          </button>
+
+          {!generating && genProgress.total > 0 && (
+            <span className="text-xs font-bold text-muted-foreground">
+              ✅ تم إدراج {genProgress.inserted} تمرين عبر {genProgress.done} خلية
+            </span>
+          )}
+        </div>
+
+        {genLog.length > 0 && (
+          <div className="mt-4 max-h-56 overflow-y-auto rounded-lg border border-border">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/50 sticky top-0">
+                <tr>
+                  <th className="text-right px-3 py-2 font-bold text-muted-foreground">المستوى</th>
+                  <th className="text-right px-3 py-2 font-bold text-muted-foreground">النوع</th>
+                  <th className="text-right px-3 py-2 font-bold text-muted-foreground">النتيجة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {genLog.map((row, i) => (
+                  <tr key={i} className="border-t border-border">
+                    <td className="px-3 py-2 font-bold text-foreground">{row.grade}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{row.type}</td>
+                    <td className={`px-3 py-2 font-bold ${row.status === "ok" ? "text-accent" : "text-destructive"}`}>
+                      {row.status === "ok" ? "✅" : "❌"} {row.msg}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 
