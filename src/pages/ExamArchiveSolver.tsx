@@ -1,23 +1,27 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
 import { Button } from "@/components/ui/button";
-import { 
-  ChevronRight, 
-  ChevronLeft, 
-  Clock, 
-  CheckCircle2, 
-  HelpCircle, 
+import {
+  ChevronRight,
+  ChevronLeft,
+  Clock,
+  CheckCircle2,
+  HelpCircle,
   ArrowLeft,
   Timer,
   Layout,
   Maximize2,
   PenTool,
-  FileText
+  FileText,
+  Download,
+  Loader2
 } from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { GRADE_OPTIONS } from "@/engine/exam-types";
 
@@ -51,6 +55,8 @@ export default function ExamArchiveSolver() {
   const [showFullPaper, setShowFullPaper] = useState(false);
   const [timeLeft, setTimeLeft] = useState(120 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (examId) loadExamData();
@@ -116,6 +122,120 @@ export default function ExamArchiveSolver() {
     handleNext();
   };
 
+  const handleDownloadPdf = async () => {
+    if (!printRef.current || isExporting) return;
+    setIsExporting(true);
+    const root = printRef.current;
+    // Make node visible off-screen for measurement & capture
+    const prevStyle = root.getAttribute("style") || "";
+    root.style.cssText = `${prevStyle};position:fixed;top:0;left:-99999px;display:block;`;
+    // wait one frame so KaTeX/layout settle
+    await new Promise(r => requestAnimationFrame(() => r(null)));
+    await new Promise(r => setTimeout(r, 50));
+
+    try {
+      // A4 portrait — use a fixed pixel canvas matching A4 ratio
+      const PAGE_W_MM = 210;
+      const PAGE_H_MM = 297;
+      const MARGIN_MM = 12;
+      const PX_PER_MM = 3.78; // ~96dpi
+      const PAGE_W_PX = Math.round(PAGE_W_MM * PX_PER_MM); // ~794
+      const CONTENT_W_PX = Math.round((PAGE_W_MM - MARGIN_MM * 2) * PX_PER_MM); // ~703
+      const CONTENT_H_PX = Math.round((PAGE_H_MM - MARGIN_MM * 2) * PX_PER_MM); // ~1043
+
+      const header = root.querySelector<HTMLElement>("[data-pdf-header]");
+      const items = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-item]"));
+      if (!header || items.length === 0) throw new Error("Nothing to render");
+
+      // Group items into pages based on cumulative height
+      const headerH = header.offsetHeight;
+      const pages: HTMLElement[][] = [];
+      let current: HTMLElement[] = [];
+      let used = headerH + 16; // first page reserves header
+      const GAP = 14;
+      for (const it of items) {
+        const h = it.offsetHeight + GAP;
+        if (used + h > CONTENT_H_PX && current.length > 0) {
+          pages.push(current);
+          current = [it];
+          used = h;
+        } else {
+          current.push(it);
+          used += h;
+        }
+      }
+      if (current.length > 0) pages.push(current);
+
+      // Build a temporary container to render each page individually
+      const stage = document.createElement("div");
+      stage.style.cssText = `position:fixed;top:0;left:-99999px;background:#ffffff;`;
+      document.body.appendChild(stage);
+
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+
+      try {
+        for (let p = 0; p < pages.length; p++) {
+          const pageEl = document.createElement("div");
+          pageEl.setAttribute("dir", "rtl");
+          pageEl.style.cssText = `width:${CONTENT_W_PX}px;padding:0;background:#ffffff;color:#0a0a0a;font-family:'Tajawal',sans-serif;`;
+
+          if (p === 0) {
+            const headerClone = header.cloneNode(true) as HTMLElement;
+            pageEl.appendChild(headerClone);
+            const sp = document.createElement("div");
+            sp.style.height = "12px";
+            pageEl.appendChild(sp);
+          }
+          for (const item of pages[p]) {
+            const clone = item.cloneNode(true) as HTMLElement;
+            clone.style.marginBottom = "12px";
+            pageEl.appendChild(clone);
+          }
+
+          stage.innerHTML = "";
+          stage.appendChild(pageEl);
+          // give KaTeX a beat
+          await new Promise(r => setTimeout(r, 30));
+
+          const canvas = await html2canvas(pageEl, {
+            scale: 2,
+            backgroundColor: "#ffffff",
+            useCORS: true,
+            logging: false,
+            windowWidth: CONTENT_W_PX,
+          });
+          const imgData = canvas.toDataURL("image/jpeg", 0.92);
+          const ratio = canvas.height / canvas.width;
+          let drawW = PAGE_W_MM - MARGIN_MM * 2;
+          let drawH = drawW * ratio;
+          if (drawH > PAGE_H_MM - MARGIN_MM * 2) {
+            drawH = PAGE_H_MM - MARGIN_MM * 2;
+            drawW = drawH / ratio;
+          }
+          if (p > 0) pdf.addPage("a4", "portrait");
+          const x = (PAGE_W_MM - drawW) / 2;
+          pdf.addImage(imgData, "JPEG", x, MARGIN_MM, drawW, drawH);
+          pdf.setFontSize(9);
+          pdf.setTextColor(120);
+          pdf.text(`${p + 1} / ${pages.length}`, PAGE_W_MM / 2, PAGE_H_MM - 6, { align: "center" });
+        }
+      } finally {
+        document.body.removeChild(stage);
+      }
+
+      const filename = `${exam?.format?.toUpperCase() || "EXAM"}_${exam?.year || ""}_${exam?.session || ""}.pdf`
+        .replace(/\s+/g, "_");
+      pdf.save(filename);
+      toast.success("تم تنزيل ملف PDF");
+    } catch (e) {
+      console.error("PDF export failed", e);
+      toast.error("فشل توليد ملف PDF");
+    } finally {
+      root.style.cssText = prevStyle;
+      setIsExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center space-y-4">
@@ -153,6 +273,17 @@ export default function ExamArchiveSolver() {
           <Button variant="ghost" size="sm" onClick={() => setShowFullPaper(!showFullPaper)} className="rounded-lg text-xs gap-1.5">
             {showFullPaper ? <Layout className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             {showFullPaper ? "حل تفاعلي" : "الورقة"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadPdf}
+            disabled={isExporting || questions.length === 0}
+            className="rounded-lg text-xs gap-1.5"
+            title="تحميل نسخة PDF بصيغة A4"
+          >
+            {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            {isExporting ? "جاري التحضير..." : "PDF"}
           </Button>
           <Button size="sm" className="rounded-lg font-black text-xs px-4 bg-primary">إنهاء</Button>
         </div>
@@ -288,6 +419,66 @@ export default function ExamArchiveSolver() {
             ) : null}
           </AnimatePresence>
         </main>
+      </div>
+
+      {/* Hidden printable A4 source — measured & sliced into pages by handleDownloadPdf */}
+      <div
+        ref={printRef}
+        dir="rtl"
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: "-99999px",
+          width: "703px", // A4 content width @ ~96dpi minus margins
+          background: "#ffffff",
+          color: "#0a0a0a",
+          fontFamily: "'Tajawal', sans-serif",
+          padding: 0,
+          display: "block",
+        }}
+      >
+        <div data-pdf-header style={{ borderBottom: "2px solid #000", paddingBottom: 10, marginBottom: 12, textAlign: "center" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#333" }}>
+            الجمهورية الجزائرية الديمقراطية الشعبية — وزارة التربية الوطنية
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 900, marginTop: 6 }}>
+            {exam.format.toUpperCase()} — {exam.year}
+          </div>
+          <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>
+            {gradeLabel} · المدة: {exam.format === "bac" ? "03 سا و 30 د" : exam.format === "bem" ? "02 سا" : "—"}
+            {exam.session ? ` · ${exam.session === "juin" ? "دورة جوان" : exam.session}` : ""}
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 900, marginTop: 8, paddingTop: 8, borderTop: "1px solid #ccc" }}>
+            اختبار في مادة: الرياضيات
+          </div>
+        </div>
+
+        {questions.map((q) => (
+          <div
+            key={q.id}
+            data-pdf-item
+            style={{
+              border: "1px solid #d4d4d4",
+              borderRadius: 6,
+              padding: 12,
+              marginBottom: 12,
+              background: "#fff",
+              breakInside: "avoid",
+              pageBreakInside: "avoid",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, fontSize: 11 }}>
+              <span style={{ fontWeight: 900, background: "#111", color: "#fff", padding: "2px 8px", borderRadius: 4 }}>
+                {q.section_label} — س{q.question_number}
+              </span>
+              <span style={{ fontWeight: 700, color: "#444" }}>{q.points} ن</span>
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.8 }}>
+              <MathExerciseRenderer text={q.text} />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
