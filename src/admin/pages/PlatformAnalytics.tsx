@@ -246,6 +246,7 @@ const PlatformAnalytics = () => {
     setGenProgress({ done: 0, total: cells.length, inserted: 0 });
 
     let totalInserted = 0;
+    let stopReason: string | null = null;
     for (let i = 0; i < cells.length; i++) {
       const cell = cells[i];
       try {
@@ -257,13 +258,32 @@ const PlatformAnalytics = () => {
             count: cell.needed,
           },
         });
+        // Detect billing/rate-limit errors from the edge function (non-2xx)
+        const raw = (error?.context && (await error.context.json?.().catch(() => null))) || null;
+        const code = raw?.error || data?.error;
+        if (code === "credits_exhausted") {
+          stopReason = "نفد رصيد Lovable AI. أضف رصيداً من Settings ← Workspace ← Usage ثم أعد المحاولة.";
+          setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "err", msg: stopReason! }]);
+          break;
+        }
+        if (code === "rate_limited") {
+          stopReason = "تم تجاوز حد الطلبات مؤقتاً. انتظر دقيقة ثم أعد المحاولة.";
+          setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "err", msg: stopReason! }]);
+          break;
+        }
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
         const inserted = data?.inserted ?? 0;
         totalInserted += inserted;
         setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "ok", msg: `+${inserted} تمرين` }]);
       } catch (err: any) {
-        setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "err", msg: err?.message || "فشل" }]);
+        const msg = err?.message || "فشل";
+        // FunctionsHttpError on 402 surfaces as a generic message — translate it
+        const friendly = /non-2xx|402|credits/i.test(msg)
+          ? "نفد رصيد Lovable AI. أضف رصيداً من Settings ← Workspace ← Usage."
+          : msg;
+        setGenLog(prev => [...prev, { grade: cell.grade, type: cell.type, status: "err", msg: friendly }]);
+        if (/credits|402/i.test(msg)) { stopReason = friendly; break; }
       }
       setGenProgress({ done: i + 1, total: cells.length, inserted: totalInserted });
       // gentle delay to avoid rate limits
