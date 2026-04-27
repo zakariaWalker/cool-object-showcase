@@ -227,6 +227,17 @@ export default function ExamArchiveSolver() {
             {showFullPaper ? <Layout className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             {showFullPaper ? "حل تفاعلي" : "الورقة"}
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadPdf}
+            disabled={isExporting || questions.length === 0}
+            className="rounded-lg text-xs gap-1.5"
+            title="تحميل نسخة PDF بصيغة A4"
+          >
+            {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            {isExporting ? "جاري التحضير..." : "PDF"}
+          </Button>
           <Button size="sm" className="rounded-lg font-black text-xs px-4 bg-primary">إنهاء</Button>
         </div>
       </div>
