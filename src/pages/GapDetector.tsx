@@ -738,14 +738,23 @@ export default function GapDetector() {
             <div className="p-5 rounded-xl border border-destructive/20 bg-destructive/5">
               <h3 className="text-sm font-bold text-destructive mb-1">🎯 المفاهيم الغائبة</h3>
               <p className="text-[10px] text-muted-foreground mb-3">
-                مرتّبة حسب الأهمية. اضغط "إعادة الاختبار" لاختبار مفهوم واحد بعمق.
+                {isAuthed
+                  ? "مرتّبة حسب الأهمية. اضغط \"إعادة الاختبار\" لاختبار مفهوم واحد بعمق."
+                  : `نعرض لك أهم ${FREE_GAPS_VISIBLE} ثغرات. أنشئ حسابك المجاني لرؤية الخطة الكاملة وإعادة الاختبار.`}
               </p>
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 {analysis.gaps.slice(0, 8).map((gap, i) => {
                   const enoughPool =
                     availableExercises.filter((e) => !usedExerciseIds.has(e.id)).length >= 3;
+                  const isLocked = !isAuthed && i >= FREE_GAPS_VISIBLE;
                   return (
-                    <div key={i} className="flex items-center gap-3">
+                    <div
+                      key={i}
+                      className={`flex items-center gap-3 transition-all ${
+                        isLocked ? "blur-sm select-none pointer-events-none opacity-60" : ""
+                      }`}
+                      aria-hidden={isLocked}
+                    >
                       <div className="w-7 h-7 rounded-full bg-destructive/20 text-destructive flex items-center justify-center text-xs font-bold flex-shrink-0">
                         {i + 1}
                       </div>
@@ -761,7 +770,7 @@ export default function GapDetector() {
                       </div>
                       <button
                         onClick={() => retestSingleGap(gap.concept)}
-                        disabled={!enoughPool}
+                        disabled={!enoughPool || isLocked}
                         className="text-[10px] font-bold px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
                         title="اختبار هذا المفهوم وحده"
                       >
@@ -771,10 +780,27 @@ export default function GapDetector() {
                   );
                 })}
               </div>
+
+              {!isAuthed && analysis.gaps.length > FREE_GAPS_VISIBLE && (
+                <div className="mt-4 p-4 rounded-lg border border-primary/30 bg-primary/5 text-center">
+                  <div className="text-xs font-bold text-foreground mb-1">
+                    🔒 +{analysis.gaps.length - FREE_GAPS_VISIBLE} ثغرات إضافية مخفية
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mb-3">
+                    أنشئ حسابك المجاني لتفتح خطتك الشخصية وتتبّع تقدّمك. لن تفقد نتائجك الحالية.
+                  </div>
+                  <a
+                    href="/auth?redirect=/diagnostic"
+                    className="inline-block px-5 py-2 rounded-lg text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-md"
+                  >
+                    🔓 افتح الخطة الكاملة (مجاني)
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
-          {analysis.weakPatterns.length > 0 && (
+          {analysis.weakPatterns.length > 0 && isAuthed && (
             <div className="p-5 rounded-xl border border-border bg-card">
               <h3 className="text-sm font-bold text-foreground mb-3">🧩 الأنماط الضعيفة</h3>
               <div className="grid grid-cols-2 gap-3">
@@ -791,13 +817,21 @@ export default function GapDetector() {
           )}
 
           <div className="flex gap-3">
-            {canContinue && analysis.failedCount > 0 && (
+            {canContinue && analysis.failedCount > 0 && isAuthed && (
               <button
                 onClick={continueAdaptive}
                 className="flex-1 py-4 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all shadow-lg"
               >
                 🔄 جولة تكيّفية (تركّز على ثغراتك)
               </button>
+            )}
+            {canContinue && analysis.failedCount > 0 && !isAuthed && (
+              <a
+                href="/auth?redirect=/diagnostic"
+                className="flex-1 py-4 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all shadow-lg text-center"
+              >
+                🔓 ابدأ جولة تكيّفية (يتطلب حساب مجاني)
+              </a>
             )}
             <button
               onClick={() => {
@@ -810,8 +844,6 @@ export default function GapDetector() {
               🔁 تقييم جديد
             </button>
           </div>
-
-          {!canContinue && analysis.failedCount > 0 && (
             <div className="text-center text-xs text-muted-foreground p-3 rounded-lg bg-muted/30">
               لا توجد تمارين إضافية كافية لجولة تكيّفية — جرّب تقييم جديد
             </div>
