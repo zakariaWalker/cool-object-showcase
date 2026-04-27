@@ -107,14 +107,20 @@ export function DiagnosticProfiler({
     const ex = exercises[currentEx];
     let isCorrect = false;
     let errorType = "none";
+    const hasGradableAnswer = ex.answer && String(ex.answer).trim().length > 0;
 
-    if (ex.kind === "qcm") {
-      isCorrect = inputValue === ex.answer;
+    if (!hasGradableAnswer) {
+      // Open-ended question with no canonical answer — treat as "attempted",
+      // do NOT penalise the student. Recorded as correct so the score
+      // reflects only items we can actually grade.
+      isCorrect = true;
+    } else if (ex.kind === "qcm") {
+      isCorrect = inputValue.trim() === String(ex.answer).trim();
       if (!isCorrect) errorType = "misconception";
     } else {
-      const numAns = parseFloat(inputValue.replace(/[^0-9.]/g, ""));
-      const numCorrect = parseFloat(ex.answer);
-      isCorrect = numAns === numCorrect;
+      const numAns = parseFloat(inputValue.replace(/[^0-9.\-]/g, ""));
+      const numCorrect = parseFloat(String(ex.answer));
+      isCorrect = !isNaN(numAns) && !isNaN(numCorrect) && numAns === numCorrect;
       if (!isCorrect) errorType = isNaN(numAns) ? "random" : "conceptual";
     }
 
