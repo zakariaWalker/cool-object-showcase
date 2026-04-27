@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      anonymous_gap_links: {
+        Row: {
+          anonymous_id: string
+          attempts_moved: number
+          gaps_moved: number
+          id: string
+          migrated_at: string
+          misconceptions_moved: number
+          user_id: string
+        }
+        Insert: {
+          anonymous_id: string
+          attempts_moved?: number
+          gaps_moved?: number
+          id?: string
+          migrated_at?: string
+          misconceptions_moved?: number
+          user_id: string
+        }
+        Update: {
+          anonymous_id?: string
+          attempts_moved?: number
+          gaps_moved?: number
+          id?: string
+          migrated_at?: string
+          misconceptions_moved?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       attempts: {
         Row: {
           answer: string | null
@@ -2191,6 +2221,7 @@ export type Database = {
           similarity: number
         }[]
       }
+      migrate_anonymous_data: { Args: { _anonymous_id: string }; Returns: Json }
     }
     Enums: {
       app_role:
