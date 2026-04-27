@@ -23,6 +23,10 @@ import {
   Brain,
   Zap,
   LineChart,
+  Trophy,
+  Timer,
+  Award,
+  PlayCircle,
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────
@@ -414,6 +418,106 @@ export default function Landing() {
                 </div>
               ))}
             </motion.div>
+          </div>
+        </section>
+
+
+        {/* ── EXAM SIMULATION HIGHLIGHT — Algerian market trend ── */}
+        <section className="relative bg-foreground text-background py-16 px-6 overflow-hidden border-y border-border/60">
+          <div className="absolute inset-0 qed-hero-grid opacity-[0.05] pointer-events-none" />
+          <div className="absolute -top-20 -right-20 w-96 h-96 bg-accent/15 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-[hsl(var(--algebra)/0.18)] rounded-full blur-[120px] pointer-events-none" />
+
+          <div className="relative z-10 max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-[1fr_auto] gap-10 items-end mb-10">
+              <div className="space-y-4">
+                <span className="font-mono text-xs font-bold text-[hsl(var(--probability))] uppercase tracking-widest inline-flex items-center gap-2">
+                  <Trophy className="w-3.5 h-3.5" />
+                  جديد · المواضيع السابقة
+                </span>
+                <h2 className="text-3xl md:text-5xl font-black text-background leading-[1.1] tracking-tight">
+                  حضّر <em className="not-italic text-accent">BAC / BEM</em>
+                  <br />
+                  بحلّ المواضيع السابقة — في البيت
+                </h2>
+                <p className="text-sm md:text-base text-background/70 max-w-xl leading-relaxed">
+                  بدل التنقّل لدروس الدعم، شغّل وضع المحاكاة. توقيت حقيقي، تصحيح آلي،
+                  وعلامة على 20 — كأنك في القاعة.
+                </p>
+              </div>
+
+              <Link
+                to="/exam-simulation"
+                className="group inline-flex items-center gap-2.5 bg-accent text-accent-foreground px-7 py-4 rounded-full font-black text-sm hover:gap-4 transition-all shadow-2xl shadow-accent/30 hover:shadow-accent/50 whitespace-nowrap shrink-0"
+              >
+                <PlayCircle className="w-5 h-5" />
+                ابدأ المحاكاة
+                <ArrowLeft className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {/* Feature triplet */}
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[
+                {
+                  icon: <Timer className="w-5 h-5" />,
+                  t: "توقيت حقيقي",
+                  d: "2س للBEM · 3س30 للBAC. لا غش، لا تمديد.",
+                  c: "hsl(var(--probability))",
+                },
+                {
+                  icon: <Award className="w-5 h-5" />,
+                  t: "تصحيح آلي",
+                  d: "علامة على 20 فوراً، مع تفصيل كل خطوة.",
+                  c: "hsl(var(--accent))",
+                },
+                {
+                  icon: <Brain className="w-5 h-5" />,
+                  t: "تحليل ذكي",
+                  d: "نبيّن المفاهيم اللي خسّرتك النقاط، مع تمارين علاج.",
+                  c: "hsl(var(--algebra))",
+                },
+              ].map((f, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 14 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                  className="bg-background/5 border border-background/15 backdrop-blur-sm rounded-2xl p-5 hover:bg-background/10 transition-all"
+                >
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                    style={{ background: `${f.c}26`, color: f.c }}
+                  >
+                    {f.icon}
+                  </div>
+                  <h3 className="text-sm font-black text-background mb-1.5">{f.t}</h3>
+                  <p className="text-xs text-background/60 leading-relaxed">{f.d}</p>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Bottom strip — quick stats */}
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-background/10">
+              <div className="flex items-center gap-6 text-xs text-background/60">
+                <span className="font-mono">
+                  <span className="text-background font-bold">17+</span> موضوع متوفر
+                </span>
+                <span className="hidden sm:inline w-px h-3 bg-background/20" />
+                <span className="font-mono hidden sm:inline">
+                  <span className="text-background font-bold">BAC</span> + <span className="text-background font-bold">BEM</span>
+                </span>
+                <span className="hidden md:inline w-px h-3 bg-background/20" />
+                <span className="font-mono hidden md:inline">دورات حقيقية من وزارة التربية</span>
+              </div>
+              <Link
+                to="/annales"
+                className="text-xs font-bold text-background/70 hover:text-background underline underline-offset-4 decoration-background/30 hover:decoration-accent transition-all"
+              >
+                أو تصفّح الأرشيف الكامل ←
+              </Link>
+            </div>
           </div>
         </section>
 
