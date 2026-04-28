@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
@@ -15,6 +15,8 @@ import {
 import { GeometryCanvas, type VerifyResult } from "@/components/geometry/GeometryCanvas";
 import { AlgebraEditor } from "@/components/AlgebraEditor";
 import { inferConstraints } from "@/engine/figures/construction-checks";
+import { CognitiveEntryHeader } from "@/components/solver/CognitiveEntryHeader";
+import { QuickInputBar } from "@/components/solver/QuickInputBar";
 
 export default function StudentSolver() {
   const { id } = useParams();
@@ -30,6 +32,7 @@ export default function StudentSolver() {
   const [stepStatus, setStepStatus] = useState<"typing" | "correct" | "partial" | "incorrect" | "hint_shown">("typing");
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [completed, setCompleted] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (id) loadData();
@@ -114,6 +117,49 @@ export default function StudentSolver() {
     () => (figureSpec ? analyzeStep(currentStepText, figureSpec) : {}),
     [figureSpec, currentStepText],
   );
+
+  // ---- Cognitive entry derivation ----
+  const cognitiveEntry = useMemo(() => {
+    if (!exercise) return null;
+    const grade = exercise.grade || "";
+    const levelMap: Record<string, string> = {
+      "1AS": "1 ثانوي", "2AS": "2 ثانوي", "3AS": "3 ثانوي",
+      "1AM": "1 متوسط", "2AM": "2 متوسط", "3AM": "3 متوسط", "4AM": "4 متوسط",
+    };
+    let level = grade;
+    Object.keys(levelMap).forEach((k) => { if (grade.includes(k)) level = levelMap[k]; });
+    if (/secondary/i.test(grade)) level = level || "ثانوي";
+    if (/middle/i.test(grade)) level = level || "متوسط";
+
+    const skill = pattern?.name || exercise.chapter || exercise.type || "تمرين";
+    const goal =
+      pattern?.goal ||
+      (exercise.chapter ? `إتقان: ${exercise.chapter}` : "حلّ التمرين خطوة بخطوة بفهم تامّ.");
+    const firstStepHint = deconstruction?.steps?.[0]
+      ? `ابدأ بهذه الخطوة: ${String(deconstruction.steps[0]).slice(0, 140)}`
+      : "اقرأ نص التمرين بتأنّ، ثم حدّد المعطيات والمطلوب قبل البدء.";
+
+    const stepsCount = deconstruction?.steps?.length || 1;
+    const durationMin = Math.max(2, Math.min(15, stepsCount * 2));
+    const xpReward = stepsCount * 10;
+
+    const difficulty: "facile" | "moyen" | "difficile" =
+      stepsCount <= 2 ? "facile" : stepsCount >= 5 ? "difficile" : "moyen";
+
+    const needs: string[] = Array.isArray(deconstruction?.needs) ? deconstruction.needs : [];
+    const hint = needs.length
+      ? `تذكّر المفاهيم: ${needs.join("، ")}.`
+      : pattern?.hint || "ابدأ بإعادة كتابة المعطيات بشكل منظّم.";
+    const similarExample = pattern?.example || (exercise.similar_example ?? "");
+    const method =
+      pattern?.method ||
+      (Array.isArray(deconstruction?.steps) && deconstruction.steps.length > 1
+        ? deconstruction.steps.map((s: string, i: number) => `${i + 1}. ${s}`).join("\n")
+        : "");
+
+    return { skill, level, goal, firstStepHint, durationMin, xpReward, difficulty, hint, similarExample, method };
+  }, [exercise, pattern, deconstruction]);
+
 
   const handleCheck = () => {
     if (!studentInput.trim()) return;
@@ -203,6 +249,11 @@ export default function StudentSolver() {
             style={{ width: `${completed ? 100 : ((currentStep) / steps.length) * 100}%` }}
           />
         </div>
+
+        {/* Cognitive entry — answers "what / why / where to start" before any latex */}
+        {cognitiveEntry && !completed && (
+          <CognitiveEntryHeader {...cognitiveEntry} />
+        )}
 
         {/* Exercise Context */}
         <div className="p-5 rounded-xl border border-border bg-card shadow-sm">
@@ -397,45 +448,61 @@ export default function StudentSolver() {
                   }}
                 />
               ) : (
-                <div className="relative">
-                  <textarea
+                <div className="space-y-2">
+                  <QuickInputBar
+                    targetRef={inputRef}
                     value={studentInput}
-                    onChange={(e) => {
-                      setStudentInput(e.target.value);
-                      if (stepStatus !== "typing") {
-                        setStepStatus("typing");
-                        setVerdict(null);
-                      }
+                    onChange={(v) => {
+                      setStudentInput(v);
+                      if (stepStatus !== "typing") { setStepStatus("typing"); setVerdict(null); }
                     }}
-                    disabled={stepStatus === "correct"}
-                    placeholder={
-                      schema.type === "range_filter" || schema.type === "number_list"
-                        ? "مثال: 7,32   7,34"
-                        : schema.type === "number"
-                          ? "مثال: 7,3"
-                          : "اكتب حلك لهذه الخطوة هنا..."
+                    variant={
+                      schema.type === "number" || schema.type === "number_list" || schema.type === "range_filter"
+                        ? "arithmetic"
+                        : "algebra"
                     }
-                    className={`w-full min-h-[120px] p-4 rounded-xl border-2 bg-card text-foreground focus:ring-4 transition-all resize-none text-lg ${
-                      stepStatus === "correct"
-                        ? "border-primary/50 focus:border-primary focus:ring-primary/10"
-                        : stepStatus === "incorrect"
-                          ? "border-destructive/60 focus:border-destructive focus:ring-destructive/10"
-                          : stepStatus === "partial"
-                            ? "border-amber-500/60 focus:border-amber-500 focus:ring-amber-500/10"
-                            : "border-border focus:border-primary focus:ring-primary/10"
-                    }`}
-                    dir="ltr"
                   />
+                  <div className="relative">
+                    <textarea
+                      ref={inputRef}
+                      value={studentInput}
+                      onChange={(e) => {
+                        setStudentInput(e.target.value);
+                        if (stepStatus !== "typing") {
+                          setStepStatus("typing");
+                          setVerdict(null);
+                        }
+                      }}
+                      disabled={stepStatus === "correct"}
+                      placeholder={
+                        schema.type === "range_filter" || schema.type === "number_list"
+                          ? "مثال: 7,32   7,34"
+                          : schema.type === "number"
+                            ? "مثال: 7,3"
+                            : "اكتب نتيجتك هنا — مثال: (9x + 5)²"
+                      }
+                      className={`w-full min-h-[110px] p-4 rounded-xl border-2 bg-card text-foreground focus:ring-4 transition-all resize-none text-lg ${
+                        stepStatus === "correct"
+                          ? "border-primary/50 focus:border-primary focus:ring-primary/10"
+                          : stepStatus === "incorrect"
+                            ? "border-destructive/60 focus:border-destructive focus:ring-destructive/10"
+                            : stepStatus === "partial"
+                              ? "border-amber-500/60 focus:border-amber-500 focus:ring-amber-500/10"
+                              : "border-border focus:border-primary focus:ring-primary/10"
+                      }`}
+                      dir="ltr"
+                    />
 
-                  {stepStatus === "correct" && (
-                    <div className="absolute top-4 right-4 text-primary text-xl font-bold">✓</div>
-                  )}
-                  {stepStatus === "incorrect" && (
-                    <div className="absolute top-4 right-4 text-destructive text-xl font-bold">✗</div>
-                  )}
-                  {stepStatus === "partial" && (
-                    <div className="absolute top-4 right-4 text-amber-500 text-xl font-bold">~</div>
-                  )}
+                    {stepStatus === "correct" && (
+                      <div className="absolute top-4 right-4 text-primary text-xl font-bold">✓</div>
+                    )}
+                    {stepStatus === "incorrect" && (
+                      <div className="absolute top-4 right-4 text-destructive text-xl font-bold">✗</div>
+                    )}
+                    {stepStatus === "partial" && (
+                      <div className="absolute top-4 right-4 text-amber-500 text-xl font-bold">~</div>
+                    )}
+                  </div>
                 </div>
               )}
 
