@@ -71,6 +71,19 @@ export default function GeometryStudio() {
   const [confidence, setConfidence] = useState<number | null>(null);
   const [analysisSource, setAnalysisSource] = useState<string>("");
 
+  // Student enrichment layer — extra constraints derived from guided answers.
+  const [enrichmentConstraints, setEnrichmentConstraints] = useState<Constraint[]>([]);
+  const mergedConstraints = useMemo(() => {
+    const seen = new Set<string>();
+    const all = [...constraints, ...enrichmentConstraints];
+    return all.filter((c) => {
+      const k = `${c.kind}|${(c.labels || []).join("-")}|${c.context || ""}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }, [constraints, enrichmentConstraints]);
+
   useEffect(() => {
     if (!committed.trim()) {
       setFigureSpec(null);
