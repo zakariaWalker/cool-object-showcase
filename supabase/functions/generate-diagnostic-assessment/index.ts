@@ -1,4 +1,3 @@
-import { callGemini, GeminiError, extractJSON } from "../_shared/gemini.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0";
 
 const corsHeaders = {
