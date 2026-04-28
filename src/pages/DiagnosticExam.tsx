@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { useCountryGrades } from "@/hooks/useCountryGrades";
 import { useAuth } from "@/hooks/useAuth";
+import { trackEvent } from "@/lib/funnelTracking";
 
 export default function DiagnosticExam() {
   const navigate = useNavigate();
@@ -28,6 +29,12 @@ export default function DiagnosticExam() {
   useEffect(() => {
     if (!pendingGrade && gradeCode) setPendingGrade(gradeCode);
   }, [gradeCode, pendingGrade]);
+
+  // Funnel: page view (once per mount)
+  useEffect(() => {
+    trackEvent("diagnostic_viewed", { authed: !!user });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (cLoading) {
     return (
@@ -163,6 +170,7 @@ export default function DiagnosticExam() {
                       await setCurriculum(countryCode, pendingGrade);
                     }
                     setPendingGrade(finalGrade);
+                    trackEvent("diagnostic_started", { grade: finalGrade, country: countryCode, authed: !!user });
                     setIsStarted(true);
                   }}
                   className="w-full max-w-md mx-auto flex items-center justify-center gap-3 px-8 py-5 rounded-2xl bg-gradient-to-r from-primary via-primary to-accent text-white font-black text-lg shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all"

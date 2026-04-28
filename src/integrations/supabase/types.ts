@@ -909,6 +909,42 @@ export type Database = {
         }
         Relationships: []
       }
+      funnel_events: {
+        Row: {
+          anonymous_id: string | null
+          created_at: string
+          event_name: string
+          id: string
+          path: string | null
+          properties: Json
+          referrer: string | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          anonymous_id?: string | null
+          created_at?: string
+          event_name: string
+          id?: string
+          path?: string | null
+          properties?: Json
+          referrer?: string | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          anonymous_id?: string | null
+          created_at?: string
+          event_name?: string
+          id?: string
+          path?: string | null
+          properties?: Json
+          referrer?: string | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       kb_course_skill_links: {
         Row: {
           course_id: string

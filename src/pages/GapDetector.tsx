@@ -7,6 +7,7 @@ import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
 import { recordExerciseCompletion, XPEvent, Badge } from "@/engine/gamification";
 import { XPPopup, BadgeUnlockOverlay } from "@/components/GamificationDashboard";
 import { AnimatePresence } from "framer-motion";
+import { trackEvent } from "@/lib/funnelTracking";
 
 interface Exercise {
   id: string;
@@ -390,6 +391,13 @@ export default function GapDetector() {
       const allAnswers = [...answers];
       setRoundHistory((prev) => [...prev, allAnswers]);
       setQuizState("results");
+      const correctCount = allAnswers.filter((a) => a.correct).length;
+      trackEvent("diagnostic_completed", {
+        total: allAnswers.length,
+        correct: correctCount,
+        score_pct: Math.round((correctCount / allAnswers.length) * 100),
+        round: roundHistory.length + 1,
+      });
     }
   };
 
@@ -682,6 +690,22 @@ export default function GapDetector() {
     );
   }
 
+  // Fire funnel events when results screen is shown
+  useEffect(() => {
+    if (quizState !== "results" || !analysis) return;
+    trackEvent("gaps_viewed", {
+      gap_count: analysis.gaps.length,
+      score_pct: Math.round((analysis.gaps.length === 0 ? 100 : (analysis.correctCount / Math.max(1, analysis.total)) * 100)),
+      authed: isAuthed,
+    });
+    if (!isAuthed && analysis.gaps.length > FREE_GAPS_VISIBLE) {
+      trackEvent("soft_gate_shown", {
+        hidden_gaps: analysis.gaps.length - FREE_GAPS_VISIBLE,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizState, analysis?.gaps.length, isAuthed]);
+
   if (quizState === "results" && analysis) {
     return (
       <div className="h-full overflow-y-auto bg-background" dir="rtl">
@@ -769,7 +793,10 @@ export default function GapDetector() {
                         />
                       </div>
                       <button
-                        onClick={() => retestSingleGap(gap.concept)}
+                        onClick={() => {
+                          trackEvent("gap_retest_clicked", { concept: gap.concept, locked: isLocked });
+                          retestSingleGap(gap.concept);
+                        }}
                         disabled={!enoughPool || isLocked}
                         className="text-[10px] font-bold px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
                         title="اختبار هذا المفهوم وحده"
@@ -791,6 +818,7 @@ export default function GapDetector() {
                   </div>
                   <a
                     href="/auth?redirect=/diagnostic"
+                    onClick={() => trackEvent("signup_cta_clicked", { source: "soft_gate_card", hidden_gaps: analysis.gaps.length - FREE_GAPS_VISIBLE })}
                     className="inline-block px-5 py-2 rounded-lg text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-md"
                   >
                     🔓 افتح الخطة الكاملة (مجاني)
@@ -819,7 +847,10 @@ export default function GapDetector() {
           <div className="flex gap-3">
             {canContinue && analysis.failedCount > 0 && isAuthed && (
               <button
-                onClick={continueAdaptive}
+                onClick={() => {
+                  trackEvent("adaptive_round_clicked", { failed_count: analysis.failedCount });
+                  continueAdaptive();
+                }}
                 className="flex-1 py-4 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all shadow-lg"
               >
                 🔄 جولة تكيّفية (تركّز على ثغراتك)
@@ -828,6 +859,7 @@ export default function GapDetector() {
             {canContinue && analysis.failedCount > 0 && !isAuthed && (
               <a
                 href="/auth?redirect=/diagnostic"
+                onClick={() => trackEvent("signup_cta_clicked", { source: "adaptive_round_locked" })}
                 className="flex-1 py-4 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all shadow-lg text-center"
               >
                 🔓 ابدأ جولة تكيّفية (يتطلب حساب مجاني)
