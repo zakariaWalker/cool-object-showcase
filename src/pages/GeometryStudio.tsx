@@ -176,9 +176,24 @@ export default function GeometryStudio() {
         </span>
       </div>
 
-      <div className="max-w-7xl mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 lg:gap-6 pb-24">
+      <div className="max-w-[1600px] mx-auto p-3 lg:p-4 grid grid-cols-1 lg:grid-cols-[340px_1fr_300px] gap-3 lg:gap-4 pb-6">
+        {/* === Left: Student enrichment (sticky) === */}
+        <aside className="hidden lg:block lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto">
+          {committed ? (
+            <StudentEnrichmentPanel
+              text={committed}
+              exerciseId={activeExId}
+              onApply={(e) => setEnrichmentConstraints(relationsToConstraints(e.relations))}
+            />
+          ) : (
+            <div className="rounded-xl border border-dashed border-border bg-card/50 p-6 text-center text-xs text-muted-foreground">
+              حمّل تمريناً لبدء ترتيب أفكارك خطوة بخطوة.
+            </div>
+          )}
+        </aside>
+
         {/* === Main column === */}
-        <div className="space-y-4 min-w-0">
+        <div className="space-y-3 min-w-0">
           {/* Task input */}
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
@@ -299,18 +314,20 @@ export default function GeometryStudio() {
             </div>
           )}
 
-          {/* Student enrichment layer */}
+          {/* Student enrichment — mobile only (sidebar handles desktop) */}
           {committed && (
-            <StudentEnrichmentPanel
-              text={committed}
-              exerciseId={activeExId}
-              onApply={(e) => setEnrichmentConstraints(relationsToConstraints(e.relations))}
-            />
+            <div className="lg:hidden">
+              <StudentEnrichmentPanel
+                text={committed}
+                exerciseId={activeExId}
+                onApply={(e) => setEnrichmentConstraints(relationsToConstraints(e.relations))}
+              />
+            </div>
           )}
         </div>
 
         {/* === Side: exercise library === */}
-        <aside className="rounded-xl border border-border bg-card flex flex-col h-[calc(100vh-140px)] sticky top-20">
+        <aside className="rounded-xl border border-border bg-card flex flex-col h-[calc(100vh-100px)] lg:sticky lg:top-20 lg:self-start">
           <div className="p-3 border-b border-border space-y-2">
             <div className="flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-primary" />
