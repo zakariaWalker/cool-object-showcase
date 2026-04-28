@@ -76,7 +76,7 @@ export default function AlgebraStudio() {
         const candidates = Array.from(new Set([code, GRADE_CODE_TO_KEY[code] || code]));
         let query = (supabase as any)
           .from("kb_exercises")
-          .select("id, text, chapter, source, type")
+          .select("id, text, chapter, source, type, grade")
           .eq("country_code", countryCode || "DZ")
           .order("chapter")
           .limit(800);
