@@ -90,6 +90,8 @@ export default function GapDetector() {
   const [answers, setAnswers] = useState<QuizAnswer[]>([]);
   const [showSolution, setShowSolution] = useState(false);
   const [roundHistory, setRoundHistory] = useState<QuizAnswer[][]>([]);
+  const [roundMode, setRoundMode] = useState<"standard" | "adaptive">("standard");
+  const [adaptiveTargetConcepts, setAdaptiveTargetConcepts] = useState<string[]>([]);
 
   // Answer input + grading state
   const [answerText, setAnswerText] = useState("");
