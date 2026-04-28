@@ -83,15 +83,15 @@
     --probability: 280 35% 32%;        /* aubergine */
     --functions:   352 58% 32%;        /* burgundy — same as accent */
 
-    /* Sidebar — deep ink, contrasts with light page */
-    --sidebar-background: 222 35% 10%;
-    --sidebar-foreground: 38 25% 92%;
-    --sidebar-primary: 38 35% 88%;
-    --sidebar-primary-foreground: 222 35% 8%;
-    --sidebar-accent: 222 22% 16%;
-    --sidebar-accent-foreground: 38 25% 92%;
-    --sidebar-border: 222 18% 20%;
-    --sidebar-ring: 38 35% 88%;
+    /* Sidebar — warm parchment, one shade deeper than page bg */
+    --sidebar-background: 38 28% 91%;
+    --sidebar-foreground: 222 35% 14%;
+    --sidebar-primary: 222 55% 18%;
+    --sidebar-primary-foreground: 38 30% 96%;
+    --sidebar-accent: 38 35% 85%;
+    --sidebar-accent-foreground: 222 35% 12%;
+    --sidebar-border: 38 20% 78%;
+    --sidebar-ring: 222 55% 18%;
   }
 
   /* ── DARK MODE — "evening study lamp" ── */
