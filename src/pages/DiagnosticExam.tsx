@@ -106,7 +106,7 @@ export default function DiagnosticExam() {
                     setPickedCountry(c);
                     setPickedGrade(g);
                   }}
-                  compact
+                  />
                 />
               </div>
 
