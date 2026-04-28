@@ -45,7 +45,23 @@ export async function migrateAnonymousDataIfNeeded(userId: string): Promise<Migr
     localStorage.setItem(FLAG_KEY, userId);
     clearAnonymousId();
     console.log("[migrate] anonymous data merged:", data);
-    return data as MigrationResult;
+    // Funnel: signup conversion (anonymous → authed with carried-over data)
+    const result = data as MigrationResult;
+    if (result?.ok && !result.skipped) {
+      trackEvent("anonymous_data_migrated", {
+        attempts_moved: result.attempts_moved ?? 0,
+        gaps_moved: result.gaps_moved ?? 0,
+        misconceptions_moved: result.misconceptions_moved ?? 0,
+      });
+      // If user actually had a diagnostic trail, this signup came from the gate
+      if ((result.attempts_moved ?? 0) > 0 || (result.gaps_moved ?? 0) > 0) {
+        trackEvent("signup_completed_from_gate", {
+          attempts: result.attempts_moved ?? 0,
+          gaps: result.gaps_moved ?? 0,
+        });
+      }
+    }
+    return result;
   } catch (e) {
     console.warn("[migrate] exception:", e);
     return { ok: false, error: e instanceof Error ? e.message : "unknown" };
