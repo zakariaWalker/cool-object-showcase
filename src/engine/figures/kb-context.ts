@@ -26,10 +26,31 @@ export interface KBGeometryContext {
   constraints: Constraint[];
   caption: string;
   confidence: number; // 0..1
-  source: "kb_figure" | "kb_enriched" | "regex" | "empty";
+  source: "kb_learned" | "kb_figure" | "kb_enriched" | "regex" | "empty";
   matchedSkills: string[]; // skill names
   matchedPatterns: string[]; // pattern names
+  learnedHash?: string; // exposed so caller can later record success
+  learnedSuccessCount?: number;
 }
+
+/**
+ * Stable hash of the exercise text used as the learned-figures key.
+ * Normalizes whitespace + Arabic diacritics so trivial variations collide.
+ */
+export function hashGeometryText(text: string): string {
+  const normalized = (text || "")
+    .replace(/[\u064B-\u0652\u0670]/g, "") // strip tashkeel
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+  // djb2 hash → hex
+  let h = 5381;
+  for (let i = 0; i < normalized.length; i++) {
+    h = ((h << 5) + h + normalized.charCodeAt(i)) | 0;
+  }
+  return "g_" + (h >>> 0).toString(16) + "_" + normalized.length.toString(36);
+}
+
 
 // Lightweight concept dictionary used to score skill/pattern relevance.
 // Keep it in sync with KIND_KEYWORDS in factory.ts.
