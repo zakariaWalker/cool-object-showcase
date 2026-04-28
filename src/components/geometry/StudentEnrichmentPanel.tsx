@@ -289,26 +289,6 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
             />
           )}
 
-          {step.id === "tags" && (
-            <div className="flex flex-wrap gap-1.5 max-h-[180px] overflow-y-auto">
-              {tagPool.map((t) => {
-                const on = enr.tags.includes(t);
-                return (
-                  <button
-                    key={t}
-                    onClick={() => toggleTag(t)}
-                    className={`text-[11px] px-3 py-1.5 rounded-full border transition-all ${
-                      on
-                        ? "bg-primary text-primary-foreground border-primary scale-105"
-                        : "bg-background border-border text-muted-foreground hover:border-primary"
-                    }`}
-                  >
-                    {on && "✓ "}{t}
-                  </button>
-                );
-              })}
-            </div>
-          )}
 
           {step.id === "review" && (
             <div className="space-y-1.5 text-[11px] max-h-[180px] overflow-y-auto pr-1">
