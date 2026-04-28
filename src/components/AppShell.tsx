@@ -16,7 +16,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const publicPaths = [
       "/", "/auth", "/onboarding", "/gaps", "/diagnostic",
-      "/annales", "/geometry-studio", "/algebra-studio", "/textbooks",
+      "/annales", "/exam-simulation",
+      "/geometry-studio", "/algebra-studio", "/textbooks",
     ];
     const isPublic =
       publicPaths.includes(currentPath) ||
