@@ -127,6 +127,8 @@ const App = () => (
             <Route path="/admin/analytics" element={<PlatformAnalytics />} />
             <Route path="/admin/config" element={<PlatformConfig />} />
             <Route path="/admin/exam-compare" element={<ExamCompare />} />
+            <Route path="/admin/diagnostic-qa" element={<DiagnosticQA />} />
+            <Route path="/admin/question-templates" element={<QuestionTemplates />} />
             <Route path="/gaps" element={<GapDetector />} />
             <Route
               path="/tutor"
