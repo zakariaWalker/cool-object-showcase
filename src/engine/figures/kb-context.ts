@@ -119,6 +119,34 @@ export async function analyzeGeometryFromKB(
     };
   }
 
+  const learnedHash = hashGeometryText(trimmed);
+
+  // 0. Learned figure: previously verified successfully → highest confidence.
+  try {
+    const { data: learned } = await (supabase as any)
+      .from("kb_geometry_learned")
+      .select("spec,constraints,caption,figure_kind,success_count")
+      .eq("text_hash", learnedHash)
+      .maybeSingle();
+    if (learned?.spec && typeof learned.spec === "object") {
+      const successCount = Number(learned.success_count || 1);
+      const confidence = Math.min(0.99, 0.9 + Math.log10(successCount + 1) * 0.05);
+      return {
+        spec: learned.spec as FigureSpec,
+        constraints: Array.isArray(learned.constraints) ? (learned.constraints as Constraint[]) : [],
+        caption: learned.caption || `معرفة مكتسبة (${successCount}× نجاح)`,
+        confidence,
+        source: "kb_learned",
+        matchedSkills: [],
+        matchedPatterns: [],
+        learnedHash,
+        learnedSuccessCount: successCount,
+      };
+    }
+  } catch {
+    /* fall through */
+  }
+
   // 1. Hand-authored figure for this exercise → trust it fully.
   if (opts.exerciseId) {
     try {
