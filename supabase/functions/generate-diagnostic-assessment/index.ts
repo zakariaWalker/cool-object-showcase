@@ -121,6 +121,38 @@ Deno.serve(async (req) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
+// Quality filter: a diagnostic item must be auto-gradable AND answerable
+// without paper. Reject anything that asks the student to draw, construct,
+// prove, sketch a figure, or produce a free-text justification — those
+// can't be checked by the QCM/numeric profiler and only confuse the user.
+// ─────────────────────────────────────────────────────────────────────────
+const NON_GRADABLE_RE =
+  /(ارسم|أرسم|اِرسم|أنشئ|اِنشئ|إنشئ|مثّل|مثل بيانيا|بيِّن|بيّن أنّ|برهن|أثبت|عيّن|اِستنتج|استنتج|اُكتب نصاً|اكتب نصا|اكتب فقرة|اكتب جملة|اشرح|علِّل|فسِّر|بالاعتماد على الشكل|اعتماداً على الشكل|الشكل المقابل|الرسم المقابل|أكمل الرسم|drawing|construct|sketch|prove|show that|justify)/i;
+
+function isGradableQuestion(q: string | undefined | null, kind?: string, type?: string): boolean {
+  if (!q || typeof q !== "string") return false;
+  const text = q.trim();
+  if (text.length < 8 || text.length > 600) return false;
+  if (kind && !["qcm", "numeric"].includes(kind)) return false;
+  if (type && ["open", "drawing", "construction", "proof"].includes(type)) return false;
+  if (NON_GRADABLE_RE.test(text)) return false;
+  return true;
+}
+
+function isGradableItem(it: any): boolean {
+  if (!it) return false;
+  if (!isGradableQuestion(it.question, it.kind, it.type)) return false;
+  // QCM must have options + an answer that appears in options
+  if (it.kind === "qcm") {
+    if (!Array.isArray(it.options) || it.options.length < 2) return false;
+    if (!it.answer || !it.options.includes(it.answer)) return false;
+  } else if (it.kind === "numeric") {
+    if (it.answer === undefined || it.answer === null || String(it.answer).trim() === "") return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // Picking: seeded shuffle ensures different students get different sets,
 // while same seed reproduces (useful for retries).
 // ─────────────────────────────────────────────────────────────────────────
@@ -134,8 +166,10 @@ function mulberry32(a: number) {
 }
 
 function pickFromPool(pool: any[], count: number, seed: number): any[] {
+  // Defensive: filter again at pick time so old cached pools don't leak bad items
+  const clean = pool.filter(isGradableItem);
   const rng = mulberry32(Math.floor((seed || Math.random()) * 1e9));
-  const arr = [...pool];
+  const arr = [...clean];
   // Fisher-Yates with seeded RNG
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
@@ -168,6 +202,7 @@ function dedupePool(items: any[]): any[] {
   const seen = new Set<string>();
   const out: any[] = [];
   for (const it of items) {
+    if (!isGradableItem(it)) continue;
     const key = (it.question || "").trim().slice(0, 120);
     if (!key || seen.has(key)) continue;
     seen.add(key);
@@ -254,58 +289,44 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
 
   const out: any[] = [];
 
-  // (a) From documented errors — wrap as "trap" QCM items
-  // We ONLY produce gradable items (QCM with a known answer). Open-ended KB
-  // exercises are skipped here because the diagnostic profiler grades each
-  // answer (correct / incorrect) — an empty `answer` would always be marked
-  // wrong, which makes the score meaningless.
+  // (a) From documented errors — wrap as "trap" QCM items.
+  // Only emit if the description is a complete, self-contained claim
+  // (i.e. makes sense out-of-context as a sentence to agree/disagree with).
   for (const err of errors || []) {
     if (out.length >= count) break;
+    const desc = (err.error_description || "").trim();
+    if (desc.length < 20 || desc.length > 180) continue;
+    // Skip fragments that obviously need surrounding context
+    if (/^(و|أو|ثم|لأنّ|لذلك|بالتالي|then|because)/i.test(desc)) continue;
+    if (NON_GRADABLE_RE.test(desc)) continue;
+
     const skill = skillById.get(err.skill_id);
     const badge = badgeFor(skill?.domain);
-    out.push({
+    const item = {
       id: `kb-err-${err.skill_id}-${out.length}`,
       type: "trap",
       typeName: "فخ موثَّق",
-      question: `طالب قال: "${err.error_description}". هل توافقه؟`,
+      question: `طالب قال: "${desc}". هل توافقه؟`,
       options: ["نعم، صحيح", "لا، خطأ شائع"],
       answer: "لا، خطأ شائع",
       hint: err.fix_hint || `راجع المهارة: ${skill?.name_ar || skill?.name || "—"}`,
       kind: "qcm",
       icon: badge.icon,
-      misconception: err.error_description,
+      misconception: desc,
       misconceptionType: inferMiscType(skill?.domain, skill?.subdomain, err.error_type),
       badgeColor: badge.color,
       badgeBg: badge.bg,
-    });
+    };
+    if (isGradableItem(item)) out.push(item);
   }
 
-  // (b) From skill names — generate "concept check" QCM if we still need more
-  for (const skill of skills) {
-    if (out.length >= count) break;
-    const skillName = skill.name_ar || skill.name;
-    if (!skillName) continue;
-    // Skip if we already have an item from this skill via errors
-    if (out.some((o) => String(o.id).includes(skill.id))) continue;
-    const badge = badgeFor(skill?.domain);
-    out.push({
-      id: `kb-skill-${skill.id}`,
-      type: "standard",
-      typeName: "فحص مفهوم",
-      question: `هل أنت مرتاح مع المهارة التالية: "${skillName}"؟`,
-      options: ["نعم، أتقنها", "أحتاج مراجعة"],
-      answer: "نعم، أتقنها", // self-report; default to "neutral" — neither penalises a student
-      hint: `هذه المهارة من ${skill.domain || "المنهج"}.`,
-      kind: "qcm",
-      icon: badge.icon,
-      misconception: skillName,
-      misconceptionType: inferMiscType(skill?.domain, skill?.subdomain),
-      badgeColor: badge.color,
-      badgeBg: badge.bg,
-    });
-  }
+  // (b) REMOVED: the previous "self-report concept check" branch produced
+  // fake diagnostic data ("هل أنت مرتاح؟" with answer always = "نعم"), so
+  // every student auto-scored 100% on those items. We no longer emit them.
+  // If the documented-errors pool is too small, the AI augment path (step 3)
+  // takes over to fill the gap with real gradable questions.
 
-  return out;
+  return out.filter(isGradableItem);
 }
 
 function inferMiscType(domain?: string, subdomain?: string, errorType?: string): Misc | undefined {
@@ -421,25 +442,39 @@ async function generateWithAI(
 ولّد ${count} أسئلة "تشخيص عادل" للمستوى ${level}. بصمة عشوائية: ${seed}.
 ${skillContext}${misconceptionContext}${exerciseContext}
 
-## مبادئ:
+## مبادئ صارمة:
 1. التفكير > النتيجة (اسأل "هل الطريقة صحيحة؟" بدل "احسب").
 2. استهدف الأخطاء الموثَّقة أعلاه.
-3. تنوّع: logic, trap, standard, open, strategic.
+3. تنوّع الأنواع: logic, trap, standard, strategic (لا تستعمل "open").
 4. التزم بمصطلحات منهج ${countryHint}.
 
+## ❌ ممنوع منعاً باتاً:
+- أي سؤال يطلب رسماً أو إنشاءً هندسياً (ارسم، أنشئ، مثّل بيانياً، أكمل الشكل…).
+- أي سؤال يعتمد على شكل غير مرفق ("بالاعتماد على الشكل المقابل…").
+- أي سؤال يحتاج برهاناً نصياً أو تعليلاً مفتوحاً (بيّن، برهن، علّل، اشرح…).
+- الأسئلة المفتوحة (kind="text" أو type="open").
+- الأسئلة الطويلة (> 400 حرف).
+
+## ✅ مسموح فقط:
+- kind="qcm" مع 2 إلى 4 خيارات + إجابة واحدة موجودة في الخيارات.
+- kind="numeric" مع إجابة عددية واحدة.
+- كل سؤال يجب أن يكون قابلاً للحل ذهنياً في أقل من دقيقة.
+
 ## JSON المطلوب فقط:
-{"exercises":[{"id":1,"type":"logic|trap|standard|open|strategic","typeName":"...","question":"...","options":["..."],"answer":"...","hint":"...","kind":"qcm|numeric|text","icon":"💡","misconception":"...","misconceptionType":"sign_error|distribution_error|exponent_error|inequality_flip|triangle_inequality|square_root_estimation|area_scaling|reverse_modeling|function_distribution","badgeColor":"var(--primary)","badgeBg":"rgba(...)"}]}
+{"exercises":[{"id":1,"type":"logic|trap|standard|strategic","typeName":"...","question":"...","options":["..."],"answer":"...","hint":"...","kind":"qcm|numeric","icon":"💡","misconception":"...","misconceptionType":"sign_error|distribution_error|exponent_error|inequality_flip|triangle_inequality|square_root_estimation|area_scaling|reverse_modeling|function_distribution","badgeColor":"var(--primary)","badgeBg":"rgba(...)"}]}
 
 قواعد JSON: أعد JSON خام فقط. هرّب \\\\sqrt و \\\\frac داخل النصوص.`;
 
   const response = await callGemini([{ role: "user", parts: [{ text: prompt }] }], {
-    systemInstruction: `أنت خبير في تقييمات تشخيصية وفق منهج ${countryHint}. JSON صالح فقط.`,
+    systemInstruction: `أنت خبير في تقييمات تشخيصية وفق منهج ${countryHint}. JSON صالح فقط. لا تنتج أبداً أسئلة رسم أو إنشاء أو برهان.`,
     temperature: 0.8,
     responseMimeType: "application/json",
   });
 
   const parsed = extractJSON(response.text);
-  return Array.isArray(parsed?.exercises) ? parsed.exercises : [];
+  const raw = Array.isArray(parsed?.exercises) ? parsed.exercises : [];
+  // Final guard: drop anything the AI generated that still slipped through
+  return raw.filter(isGradableItem);
 }
 
 // ─────────────────────────────────────────────────────────────────────────
