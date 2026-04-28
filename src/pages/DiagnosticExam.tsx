@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { useCountryGrades } from "@/hooks/useCountryGrades";
 import { useAuth } from "@/hooks/useAuth";
+import { trackEvent } from "@/lib/funnelTracking";
 
 export default function DiagnosticExam() {
   const navigate = useNavigate();
