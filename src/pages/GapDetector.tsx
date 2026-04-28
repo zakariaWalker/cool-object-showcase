@@ -451,8 +451,29 @@ export default function GapDetector() {
     return set;
   }, [analysis]);
 
-  const canContinue = availableExercises.filter((e) => !usedExerciseIds.has(e.id)).length >= QUIZ_SIZE;
-  const continueAdaptive = () => generateQuiz(weakConceptsFromHistory);
+  const ADAPTIVE_SIZE = 5;
+  const adaptivePool = useMemo(() => {
+    if (!analysis?.gaps.length) return [] as Exercise[];
+    const concepts = new Set(analysis.gaps.map((g) => g.concept));
+    return availableExercises.filter((e) => {
+      if (usedExerciseIds.has(e.id)) return false;
+      const decons = deconstructions.filter((d) => d.exercise_id === e.id);
+      return decons.some((d) => d.needs.some((n) => concepts.has(n)));
+    });
+  }, [analysis, availableExercises, usedExerciseIds, deconstructions]);
+
+  const canContinue = adaptivePool.length >= 3;
+
+  const continueAdaptive = () => {
+    if (!analysis?.gaps.length) return;
+    // Order gaps by frequency (most failures first) — these become the targeted concepts
+    const orderedConcepts = [...analysis.gaps]
+      .sort((a, b) => b.count - a.count)
+      .map((g) => g.concept);
+    setAdaptiveTargetConcepts(orderedConcepts);
+    setRoundMode("adaptive");
+    generateQuiz(weakConceptsFromHistory, ADAPTIVE_SIZE);
+  };
 
   /** Focused re-test: builds a mini-quiz that drills only ONE selected gap. */
   const retestSingleGap = useCallback(
