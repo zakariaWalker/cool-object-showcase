@@ -213,6 +213,20 @@ export default function QuestionTemplates() {
     finally { setGenerating(false); }
   }
 
+  async function generateAll(perTemplate = 30) {
+    if (!confirm(`توليد ${perTemplate} متغير لكل قالب نشط؟ قد يستغرق دقيقة.`)) return;
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-template-variants", {
+        body: { mode: "all", count: perTemplate },
+      });
+      if (error) throw error;
+      if (!data?.ok) toast.warning(data?.error || "فشل التوليد الكلي");
+      else toast.success(`تم توليد ${data.total_inserted} متغير عبر ${data.templates} قالب`);
+    } catch (e: any) { toast.error(String(e?.message || e)); }
+    finally { setGenerating(false); }
+  }
+
   async function browseVariants(tplId: string) {
     const { data, error } = await supabase
       .from("question_template_variants")
@@ -247,6 +261,9 @@ export default function QuestionTemplates() {
               {GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Button variant="outline" disabled={generating} onClick={() => generateAll(30)}>
+            <Sparkles className="ml-1 w-4 h-4" /> {generating ? "جارٍ…" : "ولّد للكل (30×)"}
+          </Button>
           <Button onClick={() => setEditing({ ...EMPTY })}><Plus className="ml-1 w-4 h-4" /> قالب جديد</Button>
         </div>
       </div>

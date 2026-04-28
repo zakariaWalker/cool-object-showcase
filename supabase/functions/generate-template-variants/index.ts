@@ -181,21 +181,140 @@ async function sha1(s: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+async function generateForTemplate(
+  supabase: any,
+  tpl: any,
+  count: number,
+): Promise<{ generated: number; inserted: number; attempts: number; error?: string }> {
+  const variables: any[] = Array.isArray(tpl.variables) ? tpl.variables : [];
+  const constraints: string[] = Array.isArray(tpl.constraints) ? tpl.constraints : [];
+  const distractorExpr: string[] = Array.isArray(tpl.distractor_expressions) ? tpl.distractor_expressions : [];
+
+  const target = Math.max(1, Math.min(200, Number(count)));
+  const seenHashes = new Set<string>();
+  const variants: any[] = [];
+
+  let attempts = 0;
+  const maxAttempts = target * 50;
+  const rnd = Math.random;
+
+  while (variants.length < target && attempts < maxAttempts) {
+    attempts++;
+    const vars: Record<string, number> = {};
+    for (const v of variables) vars[v.name] = sampleVar(v, rnd);
+
+    let ok = true;
+    for (const c of constraints) {
+      try { if (!safeEval(c, vars)) { ok = false; break; } }
+      catch { ok = false; break; }
+    }
+    if (!ok) continue;
+
+    let ansNum: number;
+    try { ansNum = safeEval(tpl.answer_expression || "0", vars); }
+    catch { continue; }
+    if (!Number.isFinite(ansNum)) continue;
+
+    const questionText = fillTemplate(tpl.template_text, vars);
+    const hash = (await sha1(questionText)).slice(0, 24);
+    if (seenHashes.has(hash)) continue;
+    seenHashes.add(hash);
+
+    let options: string[] = [];
+    if (tpl.kind === "qcm") {
+      const set = new Set<string>([fmtAnswer(ansNum)]);
+      for (const e of distractorExpr) {
+        try {
+          const n = safeEval(e, vars);
+          if (Number.isFinite(n)) set.add(fmtAnswer(n));
+        } catch { /* skip */ }
+        if (set.size >= 4) break;
+      }
+      options = Array.from(set);
+      if (options.length < 2) continue;
+      for (let i = options.length - 1; i > 0; i--) {
+        const j = Math.floor(rnd() * (i + 1));
+        [options[i], options[j]] = [options[j], options[i]];
+      }
+    }
+
+    variants.push({
+      template_id: tpl.id,
+      variant_hash: hash,
+      question_text: questionText,
+      kind: tpl.kind,
+      answer: fmtAnswer(ansNum) + (tpl.answer_unit ? ` ${tpl.answer_unit}` : ""),
+      options,
+      variables_used: vars,
+      grade_code: tpl.grade_code,
+      skill_id: tpl.skill_id,
+      difficulty: tpl.difficulty,
+      bloom_level: tpl.bloom_level,
+      is_active: true,
+    });
+  }
+
+  if (!variants.length) {
+    return { generated: 0, inserted: 0, attempts, error: "No valid variants produced." };
+  }
+
+  const { error: insErr, data: ins } = await supabase
+    .from("question_template_variants")
+    .upsert(variants, { onConflict: "template_id,variant_hash", ignoreDuplicates: true })
+    .select("id");
+
+  if (insErr) return { generated: variants.length, inserted: 0, attempts, error: insErr.message };
+  return { generated: variants.length, inserted: ins?.length ?? 0, attempts };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { template_id, count = 20 } = await req.json();
-    if (!template_id) {
-      return new Response(JSON.stringify({ error: "template_id required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const body = await req.json().catch(() => ({}));
+    const { template_id, count = 20, mode } = body;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+
+    // ── Bulk mode: generate variants for every active template ──
+    if (mode === "all") {
+      const { data: templates, error: tplErr } = await supabase
+        .from("question_templates")
+        .select("*")
+        .eq("is_active", true);
+      if (tplErr) {
+        return new Response(JSON.stringify({ error: tplErr.message }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const list = templates ?? [];
+      const perTemplate = Math.max(1, Math.min(50, Number(count) || 20));
+      const results: any[] = [];
+      let totalInserted = 0;
+      for (const tpl of list) {
+        const r = await generateForTemplate(supabase, tpl, perTemplate);
+        totalInserted += r.inserted;
+        results.push({
+          template_id: tpl.id,
+          template_text: String(tpl.template_text || "").slice(0, 60),
+          grade_code: tpl.grade_code,
+          ...r,
+        });
+      }
+      return new Response(JSON.stringify({
+        ok: true, mode: "all", templates: list.length, total_inserted: totalInserted, results,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ── Single-template mode (legacy) ──
+    if (!template_id) {
+      return new Response(JSON.stringify({ error: "template_id required (or mode='all')" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: tpl, error: tplErr } = await supabase
       .from("question_templates").select("*").eq("id", template_id).maybeSingle();
@@ -205,104 +324,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    const variables: any[] = Array.isArray(tpl.variables) ? tpl.variables : [];
-    const constraints: string[] = Array.isArray(tpl.constraints) ? tpl.constraints : [];
-    const distractorExpr: string[] = Array.isArray(tpl.distractor_expressions) ? tpl.distractor_expressions : [];
-
-    const target = Math.max(1, Math.min(200, Number(count)));
-    const seenHashes = new Set<string>();
-    const variants: any[] = [];
-
-    let attempts = 0;
-    const maxAttempts = target * 50;
-    const rnd = Math.random;
-
-    while (variants.length < target && attempts < maxAttempts) {
-      attempts++;
-      const vars: Record<string, number> = {};
-      for (const v of variables) vars[v.name] = sampleVar(v, rnd);
-
-      // constraints
-      let ok = true;
-      for (const c of constraints) {
-        try {
-          if (!safeEval(c, vars)) { ok = false; break; }
-        } catch { ok = false; break; }
-      }
-      if (!ok) continue;
-
-      // answer
-      let ansNum: number;
-      try { ansNum = safeEval(tpl.answer_expression || "0", vars); }
-      catch { continue; }
-      if (!Number.isFinite(ansNum)) continue;
-
-      const questionText = fillTemplate(tpl.template_text, vars);
-      const hash = (await sha1(questionText)).slice(0, 24);
-      if (seenHashes.has(hash)) continue;
-      seenHashes.add(hash);
-
-      // distractors
-      let options: string[] = [];
-      if (tpl.kind === "qcm") {
-        const set = new Set<string>([fmtAnswer(ansNum)]);
-        for (const e of distractorExpr) {
-          try {
-            const n = safeEval(e, vars);
-            if (Number.isFinite(n)) set.add(fmtAnswer(n));
-          } catch { /* skip bad distractor */ }
-          if (set.size >= 4) break;
-        }
-        options = Array.from(set);
-        if (options.length < 2) continue; // need at least one distractor
-        // shuffle
-        for (let i = options.length - 1; i > 0; i--) {
-          const j = Math.floor(rnd() * (i + 1));
-          [options[i], options[j]] = [options[j], options[i]];
-        }
-      }
-
-      variants.push({
-        template_id: tpl.id,
-        variant_hash: hash,
-        question_text: questionText,
-        kind: tpl.kind,
-        answer: fmtAnswer(ansNum) + (tpl.answer_unit ? ` ${tpl.answer_unit}` : ""),
-        options,
-        variables_used: vars,
-        grade_code: tpl.grade_code,
-        skill_id: tpl.skill_id,
-        difficulty: tpl.difficulty,
-        bloom_level: tpl.bloom_level,
-        is_active: true,
-      });
-    }
-
-    if (!variants.length) {
-      return new Response(JSON.stringify({
-        ok: false, generated: 0, attempts,
-        error: "No valid variants produced. Check variable ranges, constraints, and answer expression.",
-      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const { error: insErr, data: ins } = await supabase
-      .from("question_template_variants")
-      .upsert(variants, { onConflict: "template_id,variant_hash", ignoreDuplicates: true })
-      .select("id");
-
-    if (insErr) {
-      return new Response(JSON.stringify({ error: insErr.message }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(JSON.stringify({
-      ok: true, generated: variants.length, inserted: ins?.length ?? 0, attempts,
-      sample: variants.slice(0, 3),
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const r = await generateForTemplate(supabase, tpl, count);
+    return new Response(JSON.stringify({ ok: !r.error, ...r }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e?.message || e) }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
+
