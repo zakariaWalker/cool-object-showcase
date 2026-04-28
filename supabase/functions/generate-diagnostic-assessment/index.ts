@@ -106,12 +106,25 @@ Deno.serve(async (req) => {
       }
     }
 
-    const kbPool = dropFlagged(await buildFromKB(db, level, countryCode, POOL_SIZE), flagged);
-    if (kbPool.length >= count * 3) {
-      await writeCache(db, cacheKey, level, countryCode, kbPool, "kb");
-      const picked = pickFromPool(kbPool, count, seed);
+    // Rule-based template variants take priority — deterministic, admin-curated,
+    // already validated by the safe expression evaluator.
+    const tmplPool = dropFlagged(await buildFromTemplates(db, level, POOL_SIZE), flagged);
+    if (tmplPool.length >= count) {
+      await writeCache(db, cacheKey, level, countryCode, tmplPool, "templates");
+      const picked = pickFromPool(tmplPool, count, seed);
       return new Response(
-        JSON.stringify({ exercises: picked, source: "kb", poolSize: kbPool.length, flagged: flagged.size }),
+        JSON.stringify({ exercises: picked, source: "templates", poolSize: tmplPool.length, flagged: flagged.size }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const kbPool = dropFlagged(await buildFromKB(db, level, countryCode, POOL_SIZE), flagged);
+    const combined = dedupePool([...tmplPool, ...kbPool]);
+    if (combined.length >= count * 3) {
+      await writeCache(db, cacheKey, level, countryCode, combined, tmplPool.length ? "templates+kb" : "kb");
+      const picked = pickFromPool(combined, count, seed);
+      return new Response(
+        JSON.stringify({ exercises: picked, source: tmplPool.length ? "templates+kb" : "kb", poolSize: combined.length, flagged: flagged.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
