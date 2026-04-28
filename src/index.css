@@ -83,15 +83,15 @@
     --probability: 280 35% 32%;        /* aubergine */
     --functions:   352 58% 32%;        /* burgundy — same as accent */
 
-    /* Sidebar — cool soft slate */
-    --sidebar-background: 210 40% 96%;
-    --sidebar-foreground: 222 35% 14%;
-    --sidebar-primary: 222 55% 18%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 35% 90%;
-    --sidebar-accent-foreground: 222 35% 12%;
-    --sidebar-border: 210 25% 82%;
-    --sidebar-ring: 222 55% 18%;
+    /* Sidebar — deep ink #111622 */
+    --sidebar-background: 222 35% 10%;
+    --sidebar-foreground: 210 40% 92%;
+    --sidebar-primary: 210 40% 96%;
+    --sidebar-primary-foreground: 222 35% 10%;
+    --sidebar-accent: 222 25% 18%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 222 20% 22%;
+    --sidebar-ring: 210 40% 96%;
   }
 
   /* ── DARK MODE — "evening study lamp" ── */
