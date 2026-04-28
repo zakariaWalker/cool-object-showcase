@@ -893,6 +893,8 @@ export default function GapDetector() {
                 setQuizState("setup");
                 setUsedExerciseIds(new Set());
                 setRoundHistory([]);
+                setRoundMode("standard");
+                setAdaptiveTargetConcepts([]);
               }}
               className="flex-1 py-4 rounded-xl text-sm font-bold border border-border bg-card text-foreground hover:bg-accent transition-all"
             >
