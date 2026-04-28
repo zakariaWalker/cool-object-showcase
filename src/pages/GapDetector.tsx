@@ -793,7 +793,10 @@ export default function GapDetector() {
                         />
                       </div>
                       <button
-                        onClick={() => retestSingleGap(gap.concept)}
+                        onClick={() => {
+                          trackEvent("gap_retest_clicked", { concept: gap.concept, locked: isLocked });
+                          retestSingleGap(gap.concept);
+                        }}
                         disabled={!enoughPool || isLocked}
                         className="text-[10px] font-bold px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
                         title="اختبار هذا المفهوم وحده"
