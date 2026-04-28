@@ -206,7 +206,6 @@ function seededShuffle<T>(items: T[], seed: number): T[] {
 function pickFromPool(pool: any[], count: number, seed: number): any[] {
   // Defensive: filter again at pick time so old cached pools don't leak bad items
   const clean = pool.filter(isGradableItem);
-  const rng = mulberry32(Math.floor((seed || Math.random()) * 1e9));
   const arr = [...clean];
   seededShuffle(arr, seed);
   // Diversify by type: try to pick at most ceil(count/3) per type
