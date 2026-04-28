@@ -117,7 +117,7 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
     if (res.ok) {
       setSavedOnce(true);
       onApply?.(enr);
-      toast.success("شكراً لمساهمتك! تمّ إثراء قاعدة المعرفة");
+      toast.success("شكراً لمساهمتك!");
     } else {
       toast.error("سجّل دخولك لحفظ المساهمة");
     }
