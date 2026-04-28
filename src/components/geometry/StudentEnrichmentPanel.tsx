@@ -67,6 +67,12 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
 
   const step = steps[Math.min(stepIdx, steps.length - 1)];
 
+  // Auto-extract tags from text + shape hint via tagPool keyword matching.
+  const autoTags = useMemo(() => {
+    const hay = `${text} ${enr.shape_hint} ${enr.goal}`.toLowerCase();
+    return tagPool.filter((t) => hay.includes(t.toLowerCase()));
+  }, [text, enr.shape_hint, enr.goal, tagPool]);
+
   // Pre-fill from community enrichment.
   useEffect(() => {
     if (!text.trim()) { setEnr(EMPTY_ENRICHMENT); return; }
@@ -84,6 +90,15 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
+
+  // Sync auto-extracted tags into enrichment (without overriding manual ones).
+  useEffect(() => {
+    setEnr((e) => {
+      const merged = Array.from(new Set([...e.tags, ...autoTags]));
+      if (merged.length === e.tags.length && merged.every((t) => e.tags.includes(t))) return e;
+      return { ...e, tags: merged };
+    });
+  }, [autoTags]);
 
   const addGiven = () =>
     setEnr((e) => ({ ...e, givens: [...e.givens, { label: "", value: "", kind: "other" }] }));
