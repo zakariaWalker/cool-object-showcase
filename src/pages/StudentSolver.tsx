@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
@@ -15,6 +15,8 @@ import {
 import { GeometryCanvas, type VerifyResult } from "@/components/geometry/GeometryCanvas";
 import { AlgebraEditor } from "@/components/AlgebraEditor";
 import { inferConstraints } from "@/engine/figures/construction-checks";
+import { CognitiveEntryHeader } from "@/components/solver/CognitiveEntryHeader";
+import { QuickInputBar } from "@/components/solver/QuickInputBar";
 
 export default function StudentSolver() {
   const { id } = useParams();
