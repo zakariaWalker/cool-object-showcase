@@ -58,6 +58,8 @@ export default function AlgebraStudio() {
   const [steps, setSteps] = useState<string[]>([]);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [activeExId, setActiveExId] = useState<string | null>(null);
+  const [activeGrade, setActiveGrade] = useState<string | null>(null);
+  const [activeChapter, setActiveChapter] = useState<string | null>(null);
 
   // KB browser state — now always loaded into the side panel
   const [kbLoading, setKbLoading] = useState(true);
