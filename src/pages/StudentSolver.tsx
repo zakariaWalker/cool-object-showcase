@@ -448,45 +448,61 @@ export default function StudentSolver() {
                   }}
                 />
               ) : (
-                <div className="relative">
-                  <textarea
+                <div className="space-y-2">
+                  <QuickInputBar
+                    targetRef={inputRef}
                     value={studentInput}
-                    onChange={(e) => {
-                      setStudentInput(e.target.value);
-                      if (stepStatus !== "typing") {
-                        setStepStatus("typing");
-                        setVerdict(null);
-                      }
+                    onChange={(v) => {
+                      setStudentInput(v);
+                      if (stepStatus !== "typing") { setStepStatus("typing"); setVerdict(null); }
                     }}
-                    disabled={stepStatus === "correct"}
-                    placeholder={
-                      schema.type === "range_filter" || schema.type === "number_list"
-                        ? "مثال: 7,32   7,34"
-                        : schema.type === "number"
-                          ? "مثال: 7,3"
-                          : "اكتب حلك لهذه الخطوة هنا..."
+                    variant={
+                      schema.type === "number" || schema.type === "number_list" || schema.type === "range_filter"
+                        ? "arithmetic"
+                        : "algebra"
                     }
-                    className={`w-full min-h-[120px] p-4 rounded-xl border-2 bg-card text-foreground focus:ring-4 transition-all resize-none text-lg ${
-                      stepStatus === "correct"
-                        ? "border-primary/50 focus:border-primary focus:ring-primary/10"
-                        : stepStatus === "incorrect"
-                          ? "border-destructive/60 focus:border-destructive focus:ring-destructive/10"
-                          : stepStatus === "partial"
-                            ? "border-amber-500/60 focus:border-amber-500 focus:ring-amber-500/10"
-                            : "border-border focus:border-primary focus:ring-primary/10"
-                    }`}
-                    dir="ltr"
                   />
+                  <div className="relative">
+                    <textarea
+                      ref={inputRef}
+                      value={studentInput}
+                      onChange={(e) => {
+                        setStudentInput(e.target.value);
+                        if (stepStatus !== "typing") {
+                          setStepStatus("typing");
+                          setVerdict(null);
+                        }
+                      }}
+                      disabled={stepStatus === "correct"}
+                      placeholder={
+                        schema.type === "range_filter" || schema.type === "number_list"
+                          ? "مثال: 7,32   7,34"
+                          : schema.type === "number"
+                            ? "مثال: 7,3"
+                            : "اكتب نتيجتك هنا — مثال: (9x + 5)²"
+                      }
+                      className={`w-full min-h-[110px] p-4 rounded-xl border-2 bg-card text-foreground focus:ring-4 transition-all resize-none text-lg ${
+                        stepStatus === "correct"
+                          ? "border-primary/50 focus:border-primary focus:ring-primary/10"
+                          : stepStatus === "incorrect"
+                            ? "border-destructive/60 focus:border-destructive focus:ring-destructive/10"
+                            : stepStatus === "partial"
+                              ? "border-amber-500/60 focus:border-amber-500 focus:ring-amber-500/10"
+                              : "border-border focus:border-primary focus:ring-primary/10"
+                      }`}
+                      dir="ltr"
+                    />
 
-                  {stepStatus === "correct" && (
-                    <div className="absolute top-4 right-4 text-primary text-xl font-bold">✓</div>
-                  )}
-                  {stepStatus === "incorrect" && (
-                    <div className="absolute top-4 right-4 text-destructive text-xl font-bold">✗</div>
-                  )}
-                  {stepStatus === "partial" && (
-                    <div className="absolute top-4 right-4 text-amber-500 text-xl font-bold">~</div>
-                  )}
+                    {stepStatus === "correct" && (
+                      <div className="absolute top-4 right-4 text-primary text-xl font-bold">✓</div>
+                    )}
+                    {stepStatus === "incorrect" && (
+                      <div className="absolute top-4 right-4 text-destructive text-xl font-bold">✗</div>
+                    )}
+                    {stepStatus === "partial" && (
+                      <div className="absolute top-4 right-4 text-amber-500 text-xl font-bold">~</div>
+                    )}
+                  </div>
                 </div>
               )}
 
