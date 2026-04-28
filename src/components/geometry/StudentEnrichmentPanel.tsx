@@ -155,7 +155,7 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply, comp
 
       {/* Shape hint */}
       <div>
-        <label className="text-[10px] font-bold text-muted-foreground uppercase">الشكل</label>
+        <label className="text-[10px] font-bold text-muted-foreground uppercase">{shapeLabel}</label>
         <input
           value={enr.shape_hint}
           onChange={(e) => setEnr((s) => ({ ...s, shape_hint: e.target.value }))}
