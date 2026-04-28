@@ -23,6 +23,8 @@ import { ExerciseReportButton } from "./ExerciseReportButton";
 import { useMisconceptionTracker } from "@/hooks/useMisconceptionTracker";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { trackEvent } from "@/lib/funnelTracking";
 
 export function DiagnosticProfiler({
   level,
@@ -36,6 +38,7 @@ export function DiagnosticProfiler({
   const { setProfile } = useProfile();
   const { track } = useMisconceptionTracker();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [exercises, setExercises] = useState<DiagnosticExercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentEx, setCurrentEx] = useState(0);
@@ -373,15 +376,22 @@ export function DiagnosticProfiler({
           </motion.div>
         )}
 
-        {/* CTA — unlock next path */}
+        {/* CTA — unlock next path. Anonymous users hit signup soft-gate. */}
         {revealStep >= 3 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
             <button
-              onClick={() => navigate("/learn")}
+              onClick={() => {
+                if (!user) {
+                  trackEvent("signup_cta_clicked", { source: "result_unlock_plan" });
+                  navigate("/auth?redirect=/learn");
+                } else {
+                  navigate("/learn");
+                }
+              }}
               className="w-full bg-gradient-to-r from-primary to-accent text-white py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
               <TrendingUp className="w-5 h-5" />
-              افتح مسار التقوية المخصص
+              {user ? "افتح مسار التقوية المخصص" : "احفظ نتيجتك وافتح مسار التقوية"}
             </button>
             <button
               onClick={onClose}
