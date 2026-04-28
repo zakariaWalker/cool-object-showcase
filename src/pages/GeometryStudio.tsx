@@ -10,6 +10,8 @@ import { detectFigureKind } from "@/engine/figures/factory";
 import type { FigureSpec } from "@/engine/figures/types";
 import type { Constraint } from "@/engine/figures/construction-checks";
 import { analyzeGeometryFromKB, recordLearnedGeometry } from "@/engine/figures/kb-context";
+import { relationsToConstraints } from "@/engine/figures/enrichments";
+import { StudentEnrichmentPanel } from "@/components/geometry/StudentEnrichmentPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { Search, BookOpen, Loader2, Database } from "lucide-react";
