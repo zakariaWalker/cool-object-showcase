@@ -106,29 +106,42 @@ Deno.serve(async (req) => {
       }
     }
 
-    const kbPool = dropFlagged(await buildFromKB(db, level, countryCode, POOL_SIZE), flagged);
-    if (kbPool.length >= count * 3) {
-      await writeCache(db, cacheKey, level, countryCode, kbPool, "kb");
-      const picked = pickFromPool(kbPool, count, seed);
+    // Rule-based template variants take priority — deterministic, admin-curated,
+    // already validated by the safe expression evaluator.
+    const tmplPool = dropFlagged(await buildFromTemplates(db, level, POOL_SIZE), flagged);
+    if (tmplPool.length >= count) {
+      await writeCache(db, cacheKey, level, countryCode, tmplPool, "templates");
+      const picked = pickFromPool(tmplPool, count, seed);
       return new Response(
-        JSON.stringify({ exercises: picked, source: "kb", poolSize: kbPool.length, flagged: flagged.size }),
+        JSON.stringify({ exercises: picked, source: "templates", poolSize: tmplPool.length, flagged: flagged.size }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const kbPool = dropFlagged(await buildFromKB(db, level, countryCode, POOL_SIZE), flagged);
+    const combined = dedupePool([...tmplPool, ...kbPool]);
+    if (combined.length >= count * 3) {
+      await writeCache(db, cacheKey, level, countryCode, combined, tmplPool.length ? "templates+kb" : "kb");
+      const picked = pickFromPool(combined, count, seed);
+      return new Response(
+        JSON.stringify({ exercises: picked, source: tmplPool.length ? "templates+kb" : "kb", poolSize: combined.length, flagged: flagged.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     try {
       const aiExercises = await generateWithAI(db, level, countryCode, Math.max(count * 2, 10), seed);
-      const merged = dropFlagged(dedupePool([...kbPool, ...aiExercises]), flagged);
-      await writeCache(db, cacheKey, level, countryCode, merged, kbPool.length ? "hybrid" : "ai");
+      const merged = dropFlagged(dedupePool([...tmplPool, ...kbPool, ...aiExercises]), flagged);
+      await writeCache(db, cacheKey, level, countryCode, merged, kbPool.length || tmplPool.length ? "hybrid" : "ai");
       const picked = pickFromPool(merged, count, seed);
       return new Response(
-        JSON.stringify({ exercises: picked, source: kbPool.length ? "hybrid" : "ai", poolSize: merged.length, flagged: flagged.size }),
+        JSON.stringify({ exercises: picked, source: kbPool.length || tmplPool.length ? "hybrid" : "ai", poolSize: merged.length, flagged: flagged.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     } catch (aiErr) {
       console.warn("[diagnostic] AI failed, using KB+static fallback:", aiErr);
       const staticPool = getStaticFallbackPool();
-      const merged = dropFlagged(dedupePool([...kbPool, ...staticPool]), flagged);
+      const merged = dropFlagged(dedupePool([...tmplPool, ...kbPool, ...staticPool]), flagged);
       await writeCache(db, cacheKey, level, countryCode, merged, "fallback");
       const picked = pickFromPool(merged, count, seed);
       return new Response(
@@ -233,6 +246,32 @@ function dedupePool(items: any[]): any[] {
     out.push(it);
   }
   return out;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Rule-based builder: pulls pre-materialized variants from question_template_variants
+// ─────────────────────────────────────────────────────────────────────────
+async function buildFromTemplates(db: any, level: string, count: number): Promise<any[]> {
+  const { data, error } = await db
+    .from("question_template_variants")
+    .select("id,question_text,kind,answer,options,skill_id")
+    .eq("is_active", true)
+    .eq("grade_code", level)
+    .limit(count);
+  if (error || !data?.length) return [];
+  const out = data.map((v: any) => ({
+    id: `tmpl-${v.id}`,
+    type: v.kind === "qcm" ? "concept" : "calc",
+    typeName: v.kind === "qcm" ? "مفهوم" : "حساب",
+    question: v.question_text,
+    options: Array.isArray(v.options) ? v.options : [],
+    answer: String(v.answer ?? "").split(" ")[0],
+    kind: v.kind === "qcm" ? "qcm" : "numeric",
+    icon: "🧮",
+    badgeColor: "text-primary",
+    badgeBg: "bg-primary/10",
+  }));
+  return out.filter(isGradableItem);
 }
 
 // ─────────────────────────────────────────────────────────────────────────
