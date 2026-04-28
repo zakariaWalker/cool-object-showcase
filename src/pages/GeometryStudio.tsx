@@ -62,14 +62,102 @@ export default function GeometryStudio() {
     return () => { cancelled = true; };
   }, [countryCode]);
 
-  const figureSpec = useMemo(
+  // Regex-based fallback (instant, deterministic).
+  const fallbackSpec = useMemo(
     () => (committed ? buildAutoFigureSpec({ text: committed }) : null),
     [committed],
   );
-  const constraints = useMemo(
+  const fallbackConstraints = useMemo(
     () => (committed ? inferConstraints(committed) : []),
     [committed],
   );
+
+  // AI-enhanced spec/constraints (loaded on commit).
+  const [aiSpec, setAiSpec] = useState<FigureSpec | null>(null);
+  const [aiConstraints, setAiConstraints] = useState<Constraint[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiCaption, setAiCaption] = useState<string>("");
+  const [aiConfidence, setAiConfidence] = useState<number | null>(null);
+
+  // Whichever is best: AI when available & confident, otherwise regex.
+  const figureSpec = aiSpec ?? fallbackSpec;
+  const constraints = aiConstraints ?? fallbackConstraints;
+
+  // Call the AI analyzer whenever the committed text changes.
+  useEffect(() => {
+    if (!committed.trim()) {
+      setAiSpec(null); setAiConstraints(null); setAiCaption(""); setAiConfidence(null);
+      return;
+    }
+    let cancelled = false;
+    setAiLoading(true);
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          "analyze-geometry-context",
+          { body: { text: committed } },
+        );
+        if (cancelled) return;
+        if (error) throw error;
+        const r = data?.result;
+        if (!r || typeof r !== "object") {
+          setAiSpec(null); setAiConstraints(null); return;
+        }
+        // Build FigureSpec from AI output
+        let spec: FigureSpec | null = null;
+        if (r.kind && r.kind !== "point_set") {
+          const base = defaultFigureSpec(r.kind);
+          if (Array.isArray(r.vertices) && r.vertices.length > 0) {
+            const verts: Record<string, [number, number, number?]> = {};
+            for (const v of r.vertices) {
+              if (typeof v?.label === "string" && typeof v.x === "number" && typeof v.y === "number") {
+                verts[v.label] = typeof v.z === "number" ? [v.x, v.y, v.z] : [v.x, v.y];
+              }
+            }
+            spec = {
+              ...base,
+              kind: r.kind,
+              vertices: Object.keys(verts).length ? verts : base.vertices,
+              edges: Array.isArray(r.edges) && r.edges.length
+                ? r.edges as [string, string][]
+                : base.edges,
+              dims: r.dims || base.dims,
+              label: Array.isArray(r.labels) ? r.labels.join("") : base.label,
+            };
+          } else if (Array.isArray(r.labels) && r.labels.length) {
+            spec = relabelSpec(base, r.labels);
+          } else {
+            spec = base;
+          }
+        }
+        const cs: Constraint[] = Array.isArray(r.constraints)
+          ? r.constraints
+              .filter((c: any) => c && typeof c.kind === "string" && typeof c.description === "string")
+              .map((c: any) => ({
+                kind: c.kind,
+                labels: Array.isArray(c.labels) ? c.labels : [],
+                context: c.context,
+                description: c.description,
+              }))
+          : [];
+        setAiSpec(spec);
+        setAiConstraints(cs);
+        setAiCaption(typeof r.caption === "string" ? r.caption : "");
+        setAiConfidence(typeof r.confidence === "number" ? r.confidence : null);
+      } catch (err: any) {
+        if (cancelled) return;
+        console.error("[GeometryStudio] AI analyze failed:", err);
+        if (err?.message?.includes("429")) toast.error("الحدّ الزمني للذكاء الاصطناعي بلغ، حاول بعد قليل.");
+        else if (err?.message?.includes("402")) toast.error("نفذت أرصدة الذكاء الاصطناعي.");
+        // Silent regex fallback otherwise
+        setAiSpec(null); setAiConstraints(null);
+      } finally {
+        if (!cancelled) setAiLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [committed]);
+
 
   const filteredExercises = useMemo(() => {
     const q = search.trim().toLowerCase();
