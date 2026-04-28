@@ -131,17 +131,17 @@ Deno.serve(async (req) => {
 
     try {
       const aiExercises = await generateWithAI(db, level, countryCode, Math.max(count * 2, 10), seed);
-      const merged = dropFlagged(dedupePool([...kbPool, ...aiExercises]), flagged);
-      await writeCache(db, cacheKey, level, countryCode, merged, kbPool.length ? "hybrid" : "ai");
+      const merged = dropFlagged(dedupePool([...tmplPool, ...kbPool, ...aiExercises]), flagged);
+      await writeCache(db, cacheKey, level, countryCode, merged, kbPool.length || tmplPool.length ? "hybrid" : "ai");
       const picked = pickFromPool(merged, count, seed);
       return new Response(
-        JSON.stringify({ exercises: picked, source: kbPool.length ? "hybrid" : "ai", poolSize: merged.length, flagged: flagged.size }),
+        JSON.stringify({ exercises: picked, source: kbPool.length || tmplPool.length ? "hybrid" : "ai", poolSize: merged.length, flagged: flagged.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     } catch (aiErr) {
       console.warn("[diagnostic] AI failed, using KB+static fallback:", aiErr);
       const staticPool = getStaticFallbackPool();
-      const merged = dropFlagged(dedupePool([...kbPool, ...staticPool]), flagged);
+      const merged = dropFlagged(dedupePool([...tmplPool, ...kbPool, ...staticPool]), flagged);
       await writeCache(db, cacheKey, level, countryCode, merged, "fallback");
       const picked = pickFromPool(merged, count, seed);
       return new Response(
