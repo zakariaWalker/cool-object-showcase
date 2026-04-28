@@ -3,6 +3,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { clearAnonymousId } from "./anonymousId";
+import { trackEvent } from "./funnelTracking";
 
 const FLAG_KEY = "mathkb_anon_migrated_for";
 
