@@ -385,6 +385,42 @@ export type Database = {
         }
         Relationships: []
       }
+      diagnostic_question_flags: {
+        Row: {
+          country_code: string
+          created_at: string
+          flagged_by: string | null
+          grade_code: string
+          id: string
+          notes: string | null
+          question_hash: string
+          question_preview: string
+          reason: string
+        }
+        Insert: {
+          country_code?: string
+          created_at?: string
+          flagged_by?: string | null
+          grade_code: string
+          id?: string
+          notes?: string | null
+          question_hash: string
+          question_preview: string
+          reason?: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          flagged_by?: string | null
+          grade_code?: string
+          id?: string
+          notes?: string | null
+          question_hash?: string
+          question_preview?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       exam_analytics: {
         Row: {
           concept_frequency: Json | null
