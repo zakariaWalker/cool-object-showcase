@@ -32,6 +32,7 @@ export function useAuth() {
         // Defer to avoid running inside the auth callback (Supabase pattern)
         setTimeout(() => {
           migrateAnonymousDataIfNeeded(session.user.id).catch(() => { /* non-fatal */ });
+          flushPendingEnrichments().catch(() => { /* non-fatal */ });
         }, 0);
       }
     });
