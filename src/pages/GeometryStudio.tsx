@@ -314,13 +314,15 @@ export default function GeometryStudio() {
             </div>
           )}
 
-          {/* Student enrichment layer */}
+          {/* Student enrichment — mobile only (sidebar handles desktop) */}
           {committed && (
-            <StudentEnrichmentPanel
-              text={committed}
-              exerciseId={activeExId}
-              onApply={(e) => setEnrichmentConstraints(relationsToConstraints(e.relations))}
-            />
+            <div className="lg:hidden">
+              <StudentEnrichmentPanel
+                text={committed}
+                exerciseId={activeExId}
+                onApply={(e) => setEnrichmentConstraints(relationsToConstraints(e.relations))}
+              />
+            </div>
           )}
         </div>
 
