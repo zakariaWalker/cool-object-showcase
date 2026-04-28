@@ -856,6 +856,7 @@ export default function GapDetector() {
             {canContinue && analysis.failedCount > 0 && !isAuthed && (
               <a
                 href="/auth?redirect=/diagnostic"
+                onClick={() => trackEvent("signup_cta_clicked", { source: "adaptive_round_locked" })}
                 className="flex-1 py-4 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all shadow-lg text-center"
               >
                 🔓 ابدأ جولة تكيّفية (يتطلب حساب مجاني)
