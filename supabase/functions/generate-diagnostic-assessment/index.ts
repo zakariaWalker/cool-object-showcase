@@ -442,25 +442,39 @@ async function generateWithAI(
 ولّد ${count} أسئلة "تشخيص عادل" للمستوى ${level}. بصمة عشوائية: ${seed}.
 ${skillContext}${misconceptionContext}${exerciseContext}
 
-## مبادئ:
+## مبادئ صارمة:
 1. التفكير > النتيجة (اسأل "هل الطريقة صحيحة؟" بدل "احسب").
 2. استهدف الأخطاء الموثَّقة أعلاه.
-3. تنوّع: logic, trap, standard, open, strategic.
+3. تنوّع الأنواع: logic, trap, standard, strategic (لا تستعمل "open").
 4. التزم بمصطلحات منهج ${countryHint}.
 
+## ❌ ممنوع منعاً باتاً:
+- أي سؤال يطلب رسماً أو إنشاءً هندسياً (ارسم، أنشئ، مثّل بيانياً، أكمل الشكل…).
+- أي سؤال يعتمد على شكل غير مرفق ("بالاعتماد على الشكل المقابل…").
+- أي سؤال يحتاج برهاناً نصياً أو تعليلاً مفتوحاً (بيّن، برهن، علّل، اشرح…).
+- الأسئلة المفتوحة (kind="text" أو type="open").
+- الأسئلة الطويلة (> 400 حرف).
+
+## ✅ مسموح فقط:
+- kind="qcm" مع 2 إلى 4 خيارات + إجابة واحدة موجودة في الخيارات.
+- kind="numeric" مع إجابة عددية واحدة.
+- كل سؤال يجب أن يكون قابلاً للحل ذهنياً في أقل من دقيقة.
+
 ## JSON المطلوب فقط:
-{"exercises":[{"id":1,"type":"logic|trap|standard|open|strategic","typeName":"...","question":"...","options":["..."],"answer":"...","hint":"...","kind":"qcm|numeric|text","icon":"💡","misconception":"...","misconceptionType":"sign_error|distribution_error|exponent_error|inequality_flip|triangle_inequality|square_root_estimation|area_scaling|reverse_modeling|function_distribution","badgeColor":"var(--primary)","badgeBg":"rgba(...)"}]}
+{"exercises":[{"id":1,"type":"logic|trap|standard|strategic","typeName":"...","question":"...","options":["..."],"answer":"...","hint":"...","kind":"qcm|numeric","icon":"💡","misconception":"...","misconceptionType":"sign_error|distribution_error|exponent_error|inequality_flip|triangle_inequality|square_root_estimation|area_scaling|reverse_modeling|function_distribution","badgeColor":"var(--primary)","badgeBg":"rgba(...)"}]}
 
 قواعد JSON: أعد JSON خام فقط. هرّب \\\\sqrt و \\\\frac داخل النصوص.`;
 
   const response = await callGemini([{ role: "user", parts: [{ text: prompt }] }], {
-    systemInstruction: `أنت خبير في تقييمات تشخيصية وفق منهج ${countryHint}. JSON صالح فقط.`,
+    systemInstruction: `أنت خبير في تقييمات تشخيصية وفق منهج ${countryHint}. JSON صالح فقط. لا تنتج أبداً أسئلة رسم أو إنشاء أو برهان.`,
     temperature: 0.8,
     responseMimeType: "application/json",
   });
 
   const parsed = extractJSON(response.text);
-  return Array.isArray(parsed?.exercises) ? parsed.exercises : [];
+  const raw = Array.isArray(parsed?.exercises) ? parsed.exercises : [];
+  // Final guard: drop anything the AI generated that still slipped through
+  return raw.filter(isGradableItem);
 }
 
 // ─────────────────────────────────────────────────────────────────────────
