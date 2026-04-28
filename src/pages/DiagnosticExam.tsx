@@ -36,6 +36,23 @@ export default function DiagnosticExam() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Auto-start for non-admins: the user already clicked "ابدأ التشخيص" on /.
+  // No need for a second sales screen — drop them straight into question 1.
+  // Admins keep the intro because they need the grade switcher.
+  useEffect(() => {
+    if (cLoading || isStarted || isAdmin) return;
+    const finalGrade = gradeCode || "4AM";
+    if (!pendingGrade) setPendingGrade(finalGrade);
+    trackEvent("diagnostic_started", {
+      grade: finalGrade,
+      country: countryCode || "DZ",
+      authed: !!user,
+      auto: true,
+    });
+    setIsStarted(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cLoading, isAdmin, gradeCode]);
+
   if (cLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
