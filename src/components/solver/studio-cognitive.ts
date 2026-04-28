@@ -6,14 +6,30 @@ import type { CognitiveEntryProps } from "@/components/solver/CognitiveEntryHead
 
 export type StudioKind = "algebra" | "geometry";
 
+const LEVEL_LABELS: Record<string, string> = {
+  "1AS": "1 ثانوي", "2AS": "2 ثانوي", "3AS": "3 ثانوي",
+  "1AM": "1 متوسط", "2AM": "2 متوسط", "3AM": "3 متوسط", "4AM": "4 متوسط",
+};
+
+function prettyLevel(code?: string | null): string | undefined {
+  if (!code) return undefined;
+  if (LEVEL_LABELS[code]) return LEVEL_LABELS[code];
+  for (const k of Object.keys(LEVEL_LABELS)) if (code.includes(k)) return LEVEL_LABELS[k];
+  if (/secondary/i.test(code)) return "ثانوي";
+  if (/middle/i.test(code)) return "متوسط";
+  return code;
+}
+
 export function deriveStudioCognitive(
   text: string,
   kind: StudioKind,
   level?: string,
+  chapter?: string,
 ): CognitiveEntryProps | null {
   const t = (text || "").trim();
   if (!t) return null;
   const low = t.toLowerCase();
+  const niceLevel = prettyLevel(level);
 
   // ---- Trigonometric identity / proof detection (must come BEFORE generic "مثلث" geometry match) ----
   const isTrigIdentity =
