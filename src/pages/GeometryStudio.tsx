@@ -36,6 +36,8 @@ export default function GeometryStudio() {
   const [committed, setCommitted] = useState(seedText);
   const [lastResult, setLastResult] = useState<VerifyResult | null>(null);
   const [activeExId, setActiveExId] = useState<string | null>(null);
+  const [activeGrade, setActiveGrade] = useState<string | null>(null);
+  const [activeChapter, setActiveChapter] = useState<string | null>(null);
 
   // Exercise library (filtered to ones the canvas can seed)
   const [exercises, setExercises] = useState<KBEx[]>([]);
@@ -152,6 +154,8 @@ export default function GeometryStudio() {
     setCommitted(e.text);
     setLastResult(null);
     setActiveExId(e.id);
+    setActiveGrade(e.grade || null);
+    setActiveChapter(e.chapter || null);
   };
 
   return (
