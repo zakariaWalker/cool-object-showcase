@@ -30,6 +30,12 @@ export default function DiagnosticExam() {
     if (!pendingGrade && gradeCode) setPendingGrade(gradeCode);
   }, [gradeCode, pendingGrade]);
 
+  // Funnel: page view (once per mount)
+  useEffect(() => {
+    trackEvent("diagnostic_viewed", { authed: !!user });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (cLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
