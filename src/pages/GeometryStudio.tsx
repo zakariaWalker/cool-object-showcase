@@ -395,7 +395,9 @@ export default function GeometryStudio() {
                               : "border-transparent hover:bg-muted text-muted-foreground hover:text-foreground"
                           }`}
                         >
-                          <span className="line-clamp-3">{e.text}</span>
+                          <div className="line-clamp-3" dir="rtl">
+                            <MathExerciseRenderer text={e.text} className="text-[11px] leading-relaxed" />
+                          </div>
                           {e.type && (
                             <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                               {e.type}
