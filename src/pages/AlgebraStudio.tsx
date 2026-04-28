@@ -238,6 +238,9 @@ export default function AlgebraStudio() {
             )}
           </div>
 
+          {/* Cognitive entry — answers "what / why / where to start" */}
+          {committed && cognitive && <CognitiveEntryHeader {...cognitive} />}
+
           {/* Smart solving guide */}
           {committed && editorKind === "algebra" && (
             <AlgebraSolvingGuide problemText={committed} />
