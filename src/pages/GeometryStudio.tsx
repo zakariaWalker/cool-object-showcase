@@ -15,6 +15,8 @@ import { StudentEnrichmentPanel } from "@/components/geometry/StudentEnrichmentP
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { Search, BookOpen, Loader2, Database } from "lucide-react";
+import { CognitiveEntryHeader } from "@/components/solver/CognitiveEntryHeader";
+import { deriveStudioCognitive } from "@/components/solver/studio-cognitive";
 
 interface KBEx {
   id: string;
@@ -27,7 +29,7 @@ interface KBEx {
 export default function GeometryStudio() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { countryCode } = useUserCurriculum();
+  const { countryCode, gradeCode } = useUserCurriculum();
 
   const seedText = params.get("text") || "";
   const [task, setTask] = useState(seedText);
@@ -263,6 +265,12 @@ export default function GeometryStudio() {
               </div>
             )}
           </div>
+
+          {/* Cognitive entry — visible help + first step */}
+          {committed && (() => {
+            const c = deriveStudioCognitive(committed, "geometry", gradeCode || undefined);
+            return c ? <CognitiveEntryHeader {...c} /> : null;
+          })()}
 
           {/* Canvas */}
           <div className="rounded-xl border border-border bg-card p-4">

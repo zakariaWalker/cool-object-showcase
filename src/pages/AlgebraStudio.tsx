@@ -14,6 +14,8 @@ import { inferAnswerSchema, gradeAnswer, type Verdict } from "@/engine/answer-sc
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { Search, BookOpen, Loader2 } from "lucide-react";
+import { CognitiveEntryHeader } from "@/components/solver/CognitiveEntryHeader";
+import { deriveStudioCognitive } from "@/components/solver/studio-cognitive";
 
 const GRADE_CODE_TO_KEY: Record<string, string> = {
   "1AM": "middle_1", "2AM": "middle_2", "3AM": "middle_3", "4AM": "middle_4",
@@ -125,6 +127,10 @@ export default function AlgebraStudio() {
   );
 
   const editorKind = useMemo(() => detectEditorKind(committed), [committed]);
+  const cognitive = useMemo(
+    () => deriveStudioCognitive(committed, editorKind, gradeCode || undefined),
+    [committed, editorKind, gradeCode],
+  );
 
   const handleAlgebraSubmit = (newSteps: string[]) => {
     setSteps(newSteps);
@@ -231,6 +237,9 @@ export default function AlgebraStudio() {
               </div>
             )}
           </div>
+
+          {/* Cognitive entry — answers "what / why / where to start" */}
+          {committed && cognitive && <CognitiveEntryHeader {...cognitive} />}
 
           {/* Smart solving guide */}
           {committed && editorKind === "algebra" && (
