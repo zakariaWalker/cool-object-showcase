@@ -251,11 +251,9 @@ export default function GeometryStudio() {
           <div className="rounded-xl border border-border bg-card p-4">
             <GeometryCanvas
               seedSpec={figureSpec}
-              constraints={constraints}
+              constraints={mergedConstraints}
               onSubmit={(r) => {
                 setLastResult(r);
-                // Auto-learn: when ALL constraints pass, persist the figure so
-                // the KB analyzer recognizes this exercise instantly next time.
                 if (
                   r.total > 0 &&
                   r.passed === r.total &&
@@ -265,7 +263,7 @@ export default function GeometryStudio() {
                   recordLearnedGeometry({
                     text: committed,
                     spec: figureSpec,
-                    constraints,
+                    constraints: mergedConstraints,
                     caption,
                     exerciseId: activeExId,
                   }).catch(() => {});
