@@ -598,6 +598,22 @@ export default function GapDetector() {
           </span>
         </div>
 
+        {roundMode === "adaptive" && (
+          <div className="border-b border-border bg-gradient-to-l from-primary/10 via-primary/5 to-transparent px-6 py-3">
+            <div className="max-w-3xl mx-auto flex items-center gap-2">
+              <span className="text-base">🎯</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-black text-primary">جولة تكيّفية</div>
+                <div className="text-[10px] text-muted-foreground truncate">
+                  {adaptiveTargetConcepts.length > 0
+                    ? `تركّز على: ${adaptiveTargetConcepts.slice(0, 3).join(" · ")}${adaptiveTargetConcepts.length > 3 ? " …" : ""}`
+                    : "تمارين مختارة بناءً على ثغراتك"}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="max-w-3xl mx-auto p-6">
           <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
             {q.pattern && (
