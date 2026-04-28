@@ -36,7 +36,7 @@ interface Props {
   compact?: boolean;
 }
 
-type StepId = "shape" | "givens" | "relations" | "goal" | "tags" | "review";
+type StepId = "shape" | "givens" | "relations" | "goal" | "review";
 
 export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Props) {
   const [enr, setEnr] = useState<Enrichment>(EMPTY_ENRICHMENT);
