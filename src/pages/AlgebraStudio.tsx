@@ -191,8 +191,16 @@ export default function AlgebraStudio() {
         <div className="space-y-5 min-w-0">
           {/* Task description */}
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            {committed && (
+              <div className="rounded-lg bg-primary/5 border border-primary/20 p-3" dir="rtl">
+                <div className="text-[10px] font-black text-primary uppercase tracking-wider mb-1">
+                  📜 نص المسألة
+                </div>
+                <MathExerciseRenderer text={committed} className="text-sm leading-relaxed text-foreground" />
+              </div>
+            )}
             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-              نص المسألة
+              {committed ? "تعديل النص" : "نص المسألة"}
             </label>
             <textarea
               value={task}
