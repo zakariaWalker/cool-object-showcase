@@ -11,6 +11,8 @@ interface QEDLogoProps {
   compact?: boolean;
   /** Force inverted colors (for dark surfaces) */
   inverted?: boolean;
+  /** Render only the square mark (no wordmark/tagline) */
+  markOnly?: boolean;
 }
 
 const SIZES = {
@@ -20,7 +22,7 @@ const SIZES = {
   xl: { mark: 48, wordmark: 38, tagline: 13, gap: 14 },
 } as const;
 
-export function QEDLogo({ size = "md", className = "", compact = false, inverted = false }: QEDLogoProps) {
+export function QEDLogo({ size = "md", className = "", compact = false, inverted = false, markOnly = false }: QEDLogoProps) {
   const dims = SIZES[size];
   const ink = inverted ? "hsl(var(--background))" : "hsl(var(--primary))";
   const accent = "hsl(var(--accent))";
@@ -70,35 +72,37 @@ export function QEDLogo({ size = "md", className = "", compact = false, inverted
       </div>
 
       {/* Wordmark */}
-      <div className="flex flex-col" style={{ lineHeight: 1, direction: "ltr" }}>
-        <span
-          style={{
-            fontFamily: "'Fraunces', Georgia, serif",
-            fontWeight: 600,
-            fontSize: dims.wordmark,
-            color: ink,
-            letterSpacing: "-0.025em",
-            fontVariationSettings: '"opsz" 144',
-          }}
-        >
-          QED
-        </span>
-        {!compact && (
+      {!markOnly && (
+        <div className="flex flex-col" style={{ lineHeight: 1, direction: "ltr" }}>
           <span
             style={{
-              fontFamily: "'Tajawal', sans-serif",
-              fontWeight: 500,
-              fontSize: dims.tagline,
-              color: muted,
-              marginTop: 2,
-              direction: "rtl",
-              letterSpacing: 0,
+              fontFamily: "'Fraunces', Georgia, serif",
+              fontWeight: 600,
+              fontSize: dims.wordmark,
+              color: ink,
+              letterSpacing: "-0.025em",
+              fontVariationSettings: '"opsz" 144',
             }}
           >
-            المحرّك الرياضي
+            QED
           </span>
-        )}
-      </div>
+          {!compact && (
+            <span
+              style={{
+                fontFamily: "'Tajawal', sans-serif",
+                fontWeight: 500,
+                fontSize: dims.tagline,
+                color: muted,
+                marginTop: 2,
+                direction: "rtl",
+                letterSpacing: 0,
+              }}
+            >
+              المحرّك الرياضي
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
