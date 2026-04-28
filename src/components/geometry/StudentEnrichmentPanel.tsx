@@ -60,7 +60,7 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
     ];
     if (showRelations) s.push({ id: "relations", title: "العلاقات", question: "هل توجد علاقات هندسية؟", hint: "تعامد، توازي، منتصف…" });
     s.push({ id: "goal", title: "المطلوب", question: "ما المطلوب بالضبط؟", hint: "اكتب الهدف بجملة واحدة" });
-    s.push({ id: "tags", title: "وسوم", question: "اختر وسوماً تصف التمرين", hint: "تساعد على تنظيم أفكارك" });
+    // tags step removed — extracted automatically from text
     s.push({ id: "review", title: "مراجعة", question: "راجع ثم احفظ", hint: "" });
     return s;
   }, [shapeLabel, showRelations]);
