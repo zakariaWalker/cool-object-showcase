@@ -13,6 +13,7 @@ import { Domain } from "@/engine/types";
 import { getProgressRemote, getGapsRemote, syncLocalToSupabase } from "@/engine/progress-store";
 import { useProfile, PROFILES } from "@/engine/profile-store";
 import { DiagnosticProfiler } from "./DiagnosticProfiler";
+import { StudentEnrichmentPanel } from "./geometry/StudentEnrichmentPanel";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
