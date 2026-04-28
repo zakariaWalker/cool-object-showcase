@@ -132,8 +132,12 @@ export function deriveStudioCognitive(
   const durationMin = Math.max(2, Math.min(15, Math.round(len / 30)));
   const xpReward = difficulty === "facile" ? 10 : difficulty === "difficile" ? 30 : 20;
 
+  // If a chapter is known and the heuristic skill is generic, prefer the chapter name.
+  const isGenericSkill = skill === "حل جبري" || skill === "إنشاء هندسي";
+  const finalSkill = isGenericSkill && chapter ? chapter : skill;
+
   return {
-    skill,
+    skill: finalSkill,
     level: niceLevel,
     difficulty,
     durationMin,
