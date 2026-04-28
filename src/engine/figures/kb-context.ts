@@ -257,5 +257,68 @@ export async function analyzeGeometryFromKB(
     source: enriched ? "kb_enriched" : spec ? "regex" : "empty",
     matchedSkills,
     matchedPatterns,
+    learnedHash,
   };
 }
+
+/**
+ * Persist a successfully verified figure so future analyses recognize it
+ * with maximum confidence (auto-learning loop).
+ *
+ * Safe to call from the canvas onSubmit/onVerify callback. No-ops when not
+ * authenticated (RLS will reject the insert silently).
+ */
+export async function recordLearnedGeometry(opts: {
+  text: string;
+  spec: FigureSpec;
+  constraints: Constraint[];
+  caption?: string;
+  exerciseId?: string | null;
+}): Promise<void> {
+  const text = (opts.text || "").trim();
+  if (!text || !opts.spec) return;
+  const text_hash = hashGeometryText(text);
+  try {
+    // Try to bump success_count first (works if row already exists).
+    const { data: existing } = await (supabase as any)
+      .from("kb_geometry_learned")
+      .select("id,success_count")
+      .eq("text_hash", text_hash)
+      .maybeSingle();
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (existing?.id) {
+      await (supabase as any)
+        .from("kb_geometry_learned")
+        .update({
+          success_count: Number(existing.success_count || 0) + 1,
+          last_user_id: user?.id ?? null,
+          // Refresh spec/constraints in case the latest verified version is richer.
+          spec: opts.spec,
+          constraints: opts.constraints,
+          caption: opts.caption || "",
+          exercise_id: opts.exerciseId ?? null,
+          figure_kind: (opts.spec as any)?.kind ?? null,
+        })
+        .eq("id", existing.id);
+    } else {
+      await (supabase as any)
+        .from("kb_geometry_learned")
+        .insert({
+          text_hash,
+          text_sample: text.slice(0, 500),
+          exercise_id: opts.exerciseId ?? null,
+          figure_kind: (opts.spec as any)?.kind ?? null,
+          spec: opts.spec,
+          constraints: opts.constraints,
+          caption: opts.caption || "",
+          success_count: 1,
+          last_user_id: user?.id ?? null,
+        });
+    }
+  } catch (err) {
+    console.warn("[recordLearnedGeometry] skipped:", err);
+  }
+}
+
