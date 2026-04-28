@@ -121,6 +121,38 @@ Deno.serve(async (req) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
+// Quality filter: a diagnostic item must be auto-gradable AND answerable
+// without paper. Reject anything that asks the student to draw, construct,
+// prove, sketch a figure, or produce a free-text justification — those
+// can't be checked by the QCM/numeric profiler and only confuse the user.
+// ─────────────────────────────────────────────────────────────────────────
+const NON_GRADABLE_RE =
+  /(ارسم|أرسم|اِرسم|أنشئ|اِنشئ|إنشئ|مثّل|مثل بيانيا|بيِّن|بيّن أنّ|برهن|أثبت|عيّن|اِستنتج|استنتج|اُكتب نصاً|اكتب نصا|اكتب فقرة|اكتب جملة|اشرح|علِّل|فسِّر|بالاعتماد على الشكل|اعتماداً على الشكل|الشكل المقابل|الرسم المقابل|أكمل الرسم|drawing|construct|sketch|prove|show that|justify)/i;
+
+function isGradableQuestion(q: string | undefined | null, kind?: string, type?: string): boolean {
+  if (!q || typeof q !== "string") return false;
+  const text = q.trim();
+  if (text.length < 8 || text.length > 600) return false;
+  if (kind && !["qcm", "numeric"].includes(kind)) return false;
+  if (type && ["open", "drawing", "construction", "proof"].includes(type)) return false;
+  if (NON_GRADABLE_RE.test(text)) return false;
+  return true;
+}
+
+function isGradableItem(it: any): boolean {
+  if (!it) return false;
+  if (!isGradableQuestion(it.question, it.kind, it.type)) return false;
+  // QCM must have options + an answer that appears in options
+  if (it.kind === "qcm") {
+    if (!Array.isArray(it.options) || it.options.length < 2) return false;
+    if (!it.answer || !it.options.includes(it.answer)) return false;
+  } else if (it.kind === "numeric") {
+    if (it.answer === undefined || it.answer === null || String(it.answer).trim() === "") return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // Picking: seeded shuffle ensures different students get different sets,
 // while same seed reproduces (useful for retries).
 // ─────────────────────────────────────────────────────────────────────────
@@ -134,8 +166,10 @@ function mulberry32(a: number) {
 }
 
 function pickFromPool(pool: any[], count: number, seed: number): any[] {
+  // Defensive: filter again at pick time so old cached pools don't leak bad items
+  const clean = pool.filter(isGradableItem);
   const rng = mulberry32(Math.floor((seed || Math.random()) * 1e9));
-  const arr = [...pool];
+  const arr = [...clean];
   // Fisher-Yates with seeded RNG
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
@@ -168,6 +202,7 @@ function dedupePool(items: any[]): any[] {
   const seen = new Set<string>();
   const out: any[] = [];
   for (const it of items) {
+    if (!isGradableItem(it)) continue;
     const key = (it.question || "").trim().slice(0, 120);
     if (!key || seen.has(key)) continue;
     seen.add(key);
