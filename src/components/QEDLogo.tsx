@@ -11,6 +11,8 @@ interface QEDLogoProps {
   compact?: boolean;
   /** Force inverted colors (for dark surfaces) */
   inverted?: boolean;
+  /** Render only the square mark (no wordmark/tagline) */
+  markOnly?: boolean;
 }
 
 const SIZES = {
@@ -20,7 +22,7 @@ const SIZES = {
   xl: { mark: 48, wordmark: 38, tagline: 13, gap: 14 },
 } as const;
 
-export function QEDLogo({ size = "md", className = "", compact = false, inverted = false }: QEDLogoProps) {
+export function QEDLogo({ size = "md", className = "", compact = false, inverted = false, markOnly = false }: QEDLogoProps) {
   const dims = SIZES[size];
   const ink = inverted ? "hsl(var(--background))" : "hsl(var(--primary))";
   const accent = "hsl(var(--accent))";
