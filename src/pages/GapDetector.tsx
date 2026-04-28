@@ -391,6 +391,13 @@ export default function GapDetector() {
       const allAnswers = [...answers];
       setRoundHistory((prev) => [...prev, allAnswers]);
       setQuizState("results");
+      const correctCount = allAnswers.filter((a) => a.correct).length;
+      trackEvent("diagnostic_completed", {
+        total: allAnswers.length,
+        correct: correctCount,
+        score_pct: Math.round((correctCount / allAnswers.length) * 100),
+        round: roundHistory.length + 1,
+      });
     }
   };
 
