@@ -272,7 +272,7 @@ export default function GeometryStudio() {
 
           {/* Cognitive entry — visible help + first step */}
           {committed && (() => {
-            const c = deriveStudioCognitive(committed, "geometry", gradeCode || undefined);
+            const c = deriveStudioCognitive(committed, "geometry", activeGrade || gradeCode || undefined, activeChapter || undefined);
             return c ? <CognitiveEntryHeader {...c} /> : null;
           })()}
 
