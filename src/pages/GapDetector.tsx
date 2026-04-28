@@ -399,6 +399,8 @@ export default function GapDetector() {
         correct: correctCount,
         score_pct: Math.round((correctCount / allAnswers.length) * 100),
         round: roundHistory.length + 1,
+        mode: roundMode,
+        target_concepts: roundMode === "adaptive" ? adaptiveTargetConcepts : undefined,
       });
     }
   };
