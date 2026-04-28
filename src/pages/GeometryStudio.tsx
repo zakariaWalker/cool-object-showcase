@@ -6,11 +6,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { GeometryCanvas, type VerifyResult } from "@/components/geometry/GeometryCanvas";
-import { buildAutoFigureSpec, detectFigureKind } from "@/engine/figures/factory";
-import { inferConstraints } from "@/engine/figures/construction-checks";
+import { buildAutoFigureSpec, detectFigureKind, defaultFigureSpec, relabelSpec } from "@/engine/figures/factory";
+import type { FigureSpec } from "@/engine/figures/types";
+import { inferConstraints, type Constraint } from "@/engine/figures/construction-checks";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
-import { Search, BookOpen, Loader2 } from "lucide-react";
+import { Search, BookOpen, Loader2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 interface KBEx {
   id: string;
@@ -60,14 +62,102 @@ export default function GeometryStudio() {
     return () => { cancelled = true; };
   }, [countryCode]);
 
-  const figureSpec = useMemo(
+  // Regex-based fallback (instant, deterministic).
+  const fallbackSpec = useMemo(
     () => (committed ? buildAutoFigureSpec({ text: committed }) : null),
     [committed],
   );
-  const constraints = useMemo(
+  const fallbackConstraints = useMemo(
     () => (committed ? inferConstraints(committed) : []),
     [committed],
   );
+
+  // AI-enhanced spec/constraints (loaded on commit).
+  const [aiSpec, setAiSpec] = useState<FigureSpec | null>(null);
+  const [aiConstraints, setAiConstraints] = useState<Constraint[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiCaption, setAiCaption] = useState<string>("");
+  const [aiConfidence, setAiConfidence] = useState<number | null>(null);
+
+  // Whichever is best: AI when available & confident, otherwise regex.
+  const figureSpec = aiSpec ?? fallbackSpec;
+  const constraints = aiConstraints ?? fallbackConstraints;
+
+  // Call the AI analyzer whenever the committed text changes.
+  useEffect(() => {
+    if (!committed.trim()) {
+      setAiSpec(null); setAiConstraints(null); setAiCaption(""); setAiConfidence(null);
+      return;
+    }
+    let cancelled = false;
+    setAiLoading(true);
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          "analyze-geometry-context",
+          { body: { text: committed } },
+        );
+        if (cancelled) return;
+        if (error) throw error;
+        const r = data?.result;
+        if (!r || typeof r !== "object") {
+          setAiSpec(null); setAiConstraints(null); return;
+        }
+        // Build FigureSpec from AI output
+        let spec: FigureSpec | null = null;
+        if (r.kind && r.kind !== "point_set") {
+          const base = defaultFigureSpec(r.kind);
+          if (Array.isArray(r.vertices) && r.vertices.length > 0) {
+            const verts: Record<string, [number, number, number?]> = {};
+            for (const v of r.vertices) {
+              if (typeof v?.label === "string" && typeof v.x === "number" && typeof v.y === "number") {
+                verts[v.label] = typeof v.z === "number" ? [v.x, v.y, v.z] : [v.x, v.y];
+              }
+            }
+            spec = {
+              ...base,
+              kind: r.kind,
+              vertices: Object.keys(verts).length ? verts : base.vertices,
+              edges: Array.isArray(r.edges) && r.edges.length
+                ? r.edges as [string, string][]
+                : base.edges,
+              dims: r.dims || base.dims,
+              label: Array.isArray(r.labels) ? r.labels.join("") : base.label,
+            };
+          } else if (Array.isArray(r.labels) && r.labels.length) {
+            spec = relabelSpec(base, r.labels);
+          } else {
+            spec = base;
+          }
+        }
+        const cs: Constraint[] = Array.isArray(r.constraints)
+          ? r.constraints
+              .filter((c: any) => c && typeof c.kind === "string" && typeof c.description === "string")
+              .map((c: any) => ({
+                kind: c.kind,
+                labels: Array.isArray(c.labels) ? c.labels : [],
+                context: c.context,
+                description: c.description,
+              }))
+          : [];
+        setAiSpec(spec);
+        setAiConstraints(cs);
+        setAiCaption(typeof r.caption === "string" ? r.caption : "");
+        setAiConfidence(typeof r.confidence === "number" ? r.confidence : null);
+      } catch (err: any) {
+        if (cancelled) return;
+        console.error("[GeometryStudio] AI analyze failed:", err);
+        if (err?.message?.includes("429")) toast.error("الحدّ الزمني للذكاء الاصطناعي بلغ، حاول بعد قليل.");
+        else if (err?.message?.includes("402")) toast.error("نفذت أرصدة الذكاء الاصطناعي.");
+        // Silent regex fallback otherwise
+        setAiSpec(null); setAiConstraints(null);
+      } finally {
+        if (!cancelled) setAiLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [committed]);
+
 
   const filteredExercises = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -158,6 +248,35 @@ export default function GeometryStudio() {
                 </button>
               </div>
             </div>
+
+            {/* AI parsing status */}
+            {committed && (
+              <div className="flex items-center gap-2 text-[11px] border-t border-border/50 pt-3">
+                {aiLoading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                    <span className="text-muted-foreground">يحلّل الذكاء الاصطناعي السياق…</span>
+                  </>
+                ) : aiSpec || (aiConstraints && aiConstraints.length > 0) ? (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    <span className="font-bold text-foreground">تحليل ذكي:</span>
+                    <span className="text-muted-foreground line-clamp-1 flex-1">
+                      {aiCaption || `${constraints.length} قيد للتحقّق`}
+                    </span>
+                    {aiConfidence != null && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold">
+                        {Math.round(aiConfidence * 100)}%
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className="text-muted-foreground">تحليل سريع (بدون ذكاء اصطناعي).</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Canvas */}
