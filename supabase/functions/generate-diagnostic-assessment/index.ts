@@ -306,8 +306,10 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
   // (most KB exercises are NOT yet linked to skills, so this dramatically increases variety).
   const skillIdList = skills.map((s: any) => s.id);
 
-  const [{ data: linkedRows }, { data: gradeExs }] = await Promise.all([
-    db.from("kb_skill_exercise_links").select("skill_id, exercise_id").in("skill_id", skillIdList).limit(200),
+  const [linkedResult, { data: gradeExs }] = await Promise.all([
+    skillIdList.length
+      ? db.from("kb_skill_exercise_links").select("skill_id, exercise_id").in("skill_id", skillIdList).limit(200)
+      : Promise.resolve({ data: [] }),
     db
       .from("kb_exercises")
       .select("id, text, type, difficulty, bloom_level, chapter")
@@ -315,6 +317,7 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
       .eq("grade", level)
       .limit(Math.max(count * 6, 160)),
   ]);
+  const linkedRows = linkedResult.data || [];
 
   // Map exercise → skill (for linked ones)
   const skillByExercise = new Map<string, any>();
@@ -334,12 +337,14 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
   seededShuffle(allExercises, seed);
 
   // Pull documented misconceptions for these skills (highest-frequency first)
-  const { data: errors } = await db
-    .from("kb_skill_errors")
-    .select("skill_id, error_description, fix_hint, severity, error_type")
-    .in("skill_id", skillIdList)
-    .order("frequency", { ascending: false })
-    .limit(Math.max(count * 2, 20));
+  const { data: errors } = skillIdList.length
+    ? await db
+        .from("kb_skill_errors")
+        .select("skill_id, error_description, fix_hint, severity, error_type")
+        .in("skill_id", skillIdList)
+        .order("frequency", { ascending: false })
+        .limit(Math.max(count * 2, 20))
+    : { data: [] };
 
   const out: any[] = [];
   const errorRows = seededShuffle([...(errors || [])], seed);
