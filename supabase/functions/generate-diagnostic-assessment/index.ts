@@ -46,6 +46,29 @@ function badgeFor(domain?: string | null) {
   return TYPE_BADGES.algebra;
 }
 
+// Stable fingerprint used by both flag storage and de-dupe.
+function questionHash(q: string | undefined | null): string {
+  return (q || "").trim().slice(0, 120);
+}
+
+async function loadFlaggedHashes(db: any, country: string, grade: string): Promise<Set<string>> {
+  try {
+    const { data } = await db
+      .from("diagnostic_question_flags")
+      .select("question_hash")
+      .eq("country_code", country)
+      .eq("grade_code", grade);
+    return new Set((data || []).map((r: any) => r.question_hash));
+  } catch {
+    return new Set();
+  }
+}
+
+function dropFlagged(items: any[], flagged: Set<string>): any[] {
+  if (!flagged.size) return items;
+  return items.filter((it) => !flagged.has(questionHash(it?.question)));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -57,11 +80,12 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const db = createClient(supabaseUrl, supabaseKey);
 
-    // Cache the LARGE pool, not the served set. Slice + shuffle on every request.
-    const POOL_SIZE = Math.max(count * 6, 30); // build a big varied pool
+    // Load admin-flagged "bad" questions once — every code path filters against this.
+    const flagged = await loadFlaggedHashes(db, countryCode, level);
+
+    const POOL_SIZE = Math.max(count * 6, 30);
     const cacheKey = `diag:pool:${countryCode}:${level}`;
 
-    // ── 1) Cache lookup (pool of items, 6h TTL) ─────────────────────────
     if (!forceRefresh) {
       const { data: cached } = await db
         .from("diagnostic_cache")
@@ -70,45 +94,45 @@ Deno.serve(async (req) => {
         .gt("expires_at", new Date().toISOString())
         .maybeSingle();
 
-      if (cached?.exercises && Array.isArray(cached.exercises) && cached.exercises.length >= count) {
-        const picked = pickFromPool(cached.exercises, count, seed);
-        return new Response(
-          JSON.stringify({ exercises: picked, source: cached.source, cached: true, poolSize: cached.exercises.length }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+      if (cached?.exercises && Array.isArray(cached.exercises)) {
+        const clean = dropFlagged(cached.exercises, flagged);
+        if (clean.length >= count) {
+          const picked = pickFromPool(clean, count, seed);
+          return new Response(
+            JSON.stringify({ exercises: picked, source: cached.source, cached: true, poolSize: clean.length, flagged: flagged.size }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
       }
     }
 
-    // ── 2) KB-first: build a LARGE varied pool ──────────────────────────
-    const kbPool = await buildFromKB(db, level, countryCode, POOL_SIZE);
+    const kbPool = dropFlagged(await buildFromKB(db, level, countryCode, POOL_SIZE), flagged);
     if (kbPool.length >= count * 3) {
-      // Enough variety from KB alone
       await writeCache(db, cacheKey, level, countryCode, kbPool, "kb");
       const picked = pickFromPool(kbPool, count, seed);
       return new Response(
-        JSON.stringify({ exercises: picked, source: "kb", poolSize: kbPool.length }),
+        JSON.stringify({ exercises: picked, source: "kb", poolSize: kbPool.length, flagged: flagged.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // ── 3) AI augment / fallback ────────────────────────────────────────
     try {
       const aiExercises = await generateWithAI(db, level, countryCode, Math.max(count * 2, 10), seed);
-      const merged = dedupePool([...kbPool, ...aiExercises]);
+      const merged = dropFlagged(dedupePool([...kbPool, ...aiExercises]), flagged);
       await writeCache(db, cacheKey, level, countryCode, merged, kbPool.length ? "hybrid" : "ai");
       const picked = pickFromPool(merged, count, seed);
       return new Response(
-        JSON.stringify({ exercises: picked, source: kbPool.length ? "hybrid" : "ai", poolSize: merged.length }),
+        JSON.stringify({ exercises: picked, source: kbPool.length ? "hybrid" : "ai", poolSize: merged.length, flagged: flagged.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     } catch (aiErr) {
       console.warn("[diagnostic] AI failed, using KB+static fallback:", aiErr);
       const staticPool = getStaticFallbackPool();
-      const merged = dedupePool([...kbPool, ...staticPool]);
+      const merged = dropFlagged(dedupePool([...kbPool, ...staticPool]), flagged);
       await writeCache(db, cacheKey, level, countryCode, merged, "fallback");
       const picked = pickFromPool(merged, count, seed);
       return new Response(
-        JSON.stringify({ exercises: picked, source: "fallback", reason: (aiErr as any)?.code, poolSize: merged.length }),
+        JSON.stringify({ exercises: picked, source: "fallback", reason: (aiErr as any)?.code, poolSize: merged.length, flagged: flagged.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

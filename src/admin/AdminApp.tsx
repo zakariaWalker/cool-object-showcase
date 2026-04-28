@@ -8,6 +8,7 @@ import {
   BarChart3,
   Settings,
   Globe,
+  ShieldQuestion,
 } from "lucide-react";
 
 import AdminHome from "./pages/Dashboard";
@@ -17,11 +18,13 @@ import BillingPage from "./pages/Billing";
 import PlatformAnalytics from "./pages/PlatformAnalytics";
 import PlatformConfig from "./pages/PlatformConfig";
 import CurriculumManager from "./pages/CurriculumManager";
+import DiagnosticQA from "./pages/DiagnosticQA";
 
 const navItems = [
   { path: "/admin", label: "لوحة التحكم", icon: LayoutDashboard },
   { path: "/admin/users", label: "إدارة المستخدمين", icon: Users },
   { path: "/admin/content", label: "مراجعة المحتوى", icon: FileCheck },
+  { path: "/admin/diagnostic-qa", label: "جودة التشخيص", icon: ShieldQuestion },
   { path: "/admin/curricula", label: "المناهج والدول", icon: Globe },
   { path: "/admin/billing", label: "الفوترة والخطط", icon: CreditCard },
   { path: "/admin/analytics", label: "التحليلات", icon: BarChart3 },
@@ -40,6 +43,7 @@ const AdminApp = () => {
         <Route index element={<AdminHome />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="content" element={<ContentReview />} />
+        <Route path="diagnostic-qa" element={<DiagnosticQA />} />
         <Route path="curricula" element={<CurriculumManager />} />
         <Route path="billing" element={<BillingPage />} />
         <Route path="analytics" element={<PlatformAnalytics />} />
