@@ -156,59 +156,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {/* Right side: admin + user */}
           <div className="flex-shrink-0 flex items-center gap-4 mr-4">
             {isAdmin && (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/admin"
-                  className={`
-                    flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12px] font-black transition-all border-2
-                    ${
-                      currentPath === "/admin"
-                        ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20"
-                        : "border-border/40 text-muted-foreground hover:border-primary/40 hover:text-primary"
-                    }
-                  `}
-                >
-                  <Settings className="w-4 h-4" /> <span className="hidden lg:inline">قاعدة المعرفة</span>
-                </Link>
-                <Link
-                  to="/admin/exam-compare"
-                  className={`
-                    flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12px] font-black transition-all border-2
-                    ${
-                      currentPath === "/admin/exam-compare"
-                        ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20"
-                        : "border-border/40 text-muted-foreground hover:border-primary/40 hover:text-primary"
-                    }
-                  `}
-                >
-                  <ArrowLeftRight className="w-4 h-4" /> <span className="hidden lg:inline">مقارنة الامتحانات</span>
-                </Link>
-                <Link
-                  to="/admin/analytics"
-                  className={`
-                    flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12px] font-black transition-all border-2
-                    ${
-                      currentPath === "/admin/analytics"
-                        ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20"
-                        : "border-border/40 text-muted-foreground hover:border-primary/40 hover:text-primary"
-                    }
-                  `}
-                >
-                  <BarChart3 className="w-4 h-4" /> <span className="hidden lg:inline">التحليلات</span>
-                </Link>
-                <Link
-                  to="/admin/reports"
-                  className={`
-                    flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12px] font-black transition-all border-2
-                    ${
-                      currentPath === "/admin/reports"
-                        ? "bg-destructive/10 border-destructive/20 text-destructive shadow-lg shadow-destructive/5"
-                        : "border-border/40 text-muted-foreground hover:border-destructive/40 hover:text-destructive"
-                    }
-                  `}
-                >
-                  <Flag className="w-4 h-4" /> <span className="hidden lg:inline">البلاغات</span>
-                </Link>
+              <div className="flex items-center gap-1">
+                {[
+                  { to: "/admin", icon: Settings, label: "قاعدة المعرفة" },
+                  { to: "/admin/exam-compare", icon: ArrowLeftRight, label: "مقارنة الامتحانات" },
+                  { to: "/admin/analytics", icon: BarChart3, label: "التحليلات" },
+                  { to: "/admin/reports", icon: Flag, label: "البلاغات", danger: true },
+                ].map(({ to, icon: Icon, label, danger }) => {
+                  const isActive = currentPath === to;
+                  return (
+                    <Link
+                      key={to}
+                      to={to}
+                      className={`
+                        flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-[13px] font-black transition-all whitespace-nowrap
+                        ${
+                          isActive
+                            ? danger
+                              ? "bg-destructive text-destructive-foreground shadow-lg shadow-destructive/20 scale-105"
+                              : "bg-accent text-accent-foreground shadow-lg shadow-accent/20 scale-105"
+                            : danger
+                              ? "text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        }
+                      `}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="hidden xl:inline">{label}</span>
+                    </Link>
+                  );
+                })}
               </div>
             )}
 
