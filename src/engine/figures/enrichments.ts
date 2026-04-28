@@ -343,6 +343,6 @@ export async function loadBestEnrichment(text: string): Promise<Enrichment | nul
       notes: data.notes || "",
     };
   } catch {
-    return null;
+    return loadPendingLocal(trimmed);
   }
 }
