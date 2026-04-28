@@ -261,6 +261,9 @@ export default function QuestionTemplates() {
               {GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Button variant="outline" disabled={generating} onClick={() => generateAll(30)}>
+            <Sparkles className="ml-1 w-4 h-4" /> {generating ? "جارٍ…" : "ولّد للكل (30×)"}
+          </Button>
           <Button onClick={() => setEditing({ ...EMPTY })}><Plus className="ml-1 w-4 h-4" /> قالب جديد</Button>
         </div>
       </div>
