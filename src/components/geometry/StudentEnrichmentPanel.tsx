@@ -131,9 +131,9 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
     if (res.ok) {
       setSavedOnce(true);
       onApply?.(enr);
-      toast.success("شكراً لمساهمتك!");
+      toast.success("تمّ الحفظ");
     } else {
-      toast.error("سجّل دخولك لحفظ المساهمة");
+      toast.error("تعذّر الحفظ، حاول لاحقاً");
     }
   };
 
