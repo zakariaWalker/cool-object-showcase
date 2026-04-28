@@ -127,6 +127,10 @@ export default function AlgebraStudio() {
   );
 
   const editorKind = useMemo(() => detectEditorKind(committed), [committed]);
+  const cognitive = useMemo(
+    () => deriveStudioCognitive(committed, editorKind, gradeCode || undefined),
+    [committed, editorKind, gradeCode],
+  );
 
   const handleAlgebraSubmit = (newSteps: string[]) => {
     setSteps(newSteps);
