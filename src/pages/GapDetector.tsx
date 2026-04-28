@@ -818,6 +818,7 @@ export default function GapDetector() {
                   </div>
                   <a
                     href="/auth?redirect=/diagnostic"
+                    onClick={() => trackEvent("signup_cta_clicked", { source: "soft_gate_card", hidden_gaps: analysis.gaps.length - FREE_GAPS_VISIBLE })}
                     className="inline-block px-5 py-2 rounded-lg text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-md"
                   >
                     🔓 افتح الخطة الكاملة (مجاني)
