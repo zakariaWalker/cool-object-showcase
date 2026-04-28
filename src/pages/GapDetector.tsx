@@ -690,6 +690,22 @@ export default function GapDetector() {
     );
   }
 
+  // Fire funnel events when results screen is shown
+  useEffect(() => {
+    if (quizState !== "results" || !analysis) return;
+    trackEvent("gaps_viewed", {
+      gap_count: analysis.gaps.length,
+      score_pct: Math.round((analysis.gaps.length === 0 ? 100 : (analysis.correctCount / Math.max(1, analysis.total)) * 100)),
+      authed: isAuthed,
+    });
+    if (!isAuthed && analysis.gaps.length > FREE_GAPS_VISIBLE) {
+      trackEvent("soft_gate_shown", {
+        hidden_gaps: analysis.gaps.length - FREE_GAPS_VISIBLE,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizState, analysis?.gaps.length, isAuthed]);
+
   if (quizState === "results" && analysis) {
     return (
       <div className="h-full overflow-y-auto bg-background" dir="rtl">
