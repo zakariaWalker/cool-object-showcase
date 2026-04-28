@@ -847,7 +847,10 @@ export default function GapDetector() {
           <div className="flex gap-3">
             {canContinue && analysis.failedCount > 0 && isAuthed && (
               <button
-                onClick={continueAdaptive}
+                onClick={() => {
+                  trackEvent("adaptive_round_clicked", { failed_count: analysis.failedCount });
+                  continueAdaptive();
+                }}
                 className="flex-1 py-4 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:opacity-90 transition-all shadow-lg"
               >
                 🔄 جولة تكيّفية (تركّز على ثغراتك)
