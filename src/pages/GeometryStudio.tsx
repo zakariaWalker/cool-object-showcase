@@ -296,6 +296,15 @@ export default function GeometryStudio() {
               </ul>
             </div>
           )}
+
+          {/* Student enrichment layer */}
+          {committed && (
+            <StudentEnrichmentPanel
+              text={committed}
+              exerciseId={activeExId}
+              onApply={(e) => setEnrichmentConstraints(relationsToConstraints(e.relations))}
+            />
+          )}
         </div>
 
         {/* === Side: exercise library === */}
