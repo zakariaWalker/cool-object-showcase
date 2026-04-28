@@ -6,11 +6,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { GeometryCanvas, type VerifyResult } from "@/components/geometry/GeometryCanvas";
-import { buildAutoFigureSpec, detectFigureKind } from "@/engine/figures/factory";
-import { inferConstraints } from "@/engine/figures/construction-checks";
+import { buildAutoFigureSpec, detectFigureKind, defaultFigureSpec, relabelSpec } from "@/engine/figures/factory";
+import type { FigureSpec } from "@/engine/figures/types";
+import { inferConstraints, type Constraint } from "@/engine/figures/construction-checks";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
-import { Search, BookOpen, Loader2 } from "lucide-react";
+import { Search, BookOpen, Loader2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 interface KBEx {
   id: string;
