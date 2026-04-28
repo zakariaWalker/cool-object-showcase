@@ -346,7 +346,7 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
               className="flex-1 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 flex items-center justify-center gap-1 disabled:opacity-50"
             >
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : savedOnce ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
-              {savedOnce ? "محفوظ" : "حفظ وإثراء KB"}
+              {savedOnce ? "محفوظ" : "حفظ"}
             </button>
           </>
         )}
