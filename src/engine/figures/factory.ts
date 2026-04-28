@@ -49,9 +49,34 @@ const KIND_KEYWORDS: Array<{ kind: FigureKind; patterns: RegExp }> = [
  *     topics covered by the unit (e.g. "lines - triangles - quadrilaterals")
  *     which would otherwise force every exercise to render a triangle.
  */
+/**
+ * True when the text is a trigonometric / unit-circle / algebraic problem
+ * that mentions "circle" but is NOT solvable with ruler-and-compass.
+ * These must NOT be loaded into the Geometry Studio.
+ */
+export function isNonConstructible(text: string, type?: string | null): boolean {
+  const t = (text || "").toLowerCase();
+  const ty = (type || "").toLowerCase();
+  if (ty === "algebra" || ty === "functions" || ty === "trigonometry") return true;
+  // Trigonometric identity / proof
+  if (/(\\sin|\\cos|\\tan|\\cot|sin\(|cos\(|tan\(|جا\s*\(|جتا\s*\(|ظا\s*\()/.test(t) &&
+      /(أثبت|بيّن|برهن|démontr|montr|prouv|بسّط|simplif|احسب|calcul)/i.test(t)) return true;
+  // Unit / trigonometric circle
+  if (/(دائرة\s+مثلثية|cercle\s+trigonom|cercle\s+unit|الدائرة\s+الوحدوية)/i.test(t)) return true;
+  // π-only circles → algebraic
+  if (/(\\pi|\bπ\b)/.test(t) && /(cos|sin|tan|جا|جتا|ظا|إحداثيات|coordonn)/i.test(t)) return true;
+  // Pure algebraic equations / inequalities / functions / sequences
+  if (/(équation|inéquation|fonction|suite|polynôme|معادلة|متراجحة|دالة|متتالية|كثير\s*حدود)/i.test(t) &&
+      !/(ارسم|أنشئ|construire|tracer|dessiner|منصّ?ف|عمودي|متواز)/i.test(t)) return true;
+  return false;
+}
+
 export function detectFigureKind(ex: ExerciseLike): FigureKind | null {
   const text = ex.text || "";
   const type = ex.type || "";
+
+  // 0. Reject non-constructible (trig / algebra) before any keyword match
+  if (isNonConstructible(text, type)) return null;
 
   // 1. Try the question text — strongest signal
   for (const { kind, patterns } of KIND_KEYWORDS) {
