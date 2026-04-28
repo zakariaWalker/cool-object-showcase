@@ -15,6 +15,8 @@ import { StudentEnrichmentPanel } from "@/components/geometry/StudentEnrichmentP
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { Search, BookOpen, Loader2, Database } from "lucide-react";
+import { CognitiveEntryHeader } from "@/components/solver/CognitiveEntryHeader";
+import { deriveStudioCognitive } from "@/components/solver/studio-cognitive";
 
 interface KBEx {
   id: string;
