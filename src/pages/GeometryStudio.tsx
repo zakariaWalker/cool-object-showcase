@@ -266,6 +266,12 @@ export default function GeometryStudio() {
             )}
           </div>
 
+          {/* Cognitive entry — visible help + first step */}
+          {committed && (() => {
+            const c = deriveStudioCognitive(committed, "geometry", gradeCode || undefined);
+            return c ? <CognitiveEntryHeader {...c} /> : null;
+          })()}
+
           {/* Canvas */}
           <div className="rounded-xl border border-border bg-card p-4">
             <GeometryCanvas
