@@ -343,11 +343,12 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
     .limit(Math.max(count * 2, 20));
 
   const out: any[] = [];
+  const errorRows = seededShuffle([...(errors || [])], seed);
 
   // (a) From documented errors — wrap as "trap" QCM items.
   // Only emit if the description is a complete, self-contained claim
   // (i.e. makes sense out-of-context as a sentence to agree/disagree with).
-  for (const err of errors || []) {
+  for (const err of errorRows) {
     if (out.length >= count) break;
     const desc = (err.error_description || "").trim();
     if (desc.length < 20 || desc.length > 180) continue;
@@ -388,6 +389,49 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
   }
 
   return dedupePool(out);
+}
+
+function kbExerciseToDiagnosticItem(ex: any, skill?: any): any | null {
+  const raw = String(ex?.text || "").replace(/\s+/g, " ").trim();
+  if (!raw || raw.length < 12 || NON_GRADABLE_RE.test(raw)) return null;
+  const snippet = raw.length > 220 ? `${raw.slice(0, 220)}…` : raw;
+  const type = String(ex?.type || skill?.domain || "algebra");
+  const answer = domainLabel(type);
+  const options = uniqueOptions([answer, "حساب مباشر", "هندسة", "دوال ومتتاليات", "مقارنة وترتيب"]);
+  const badge = badgeFor(type);
+  return {
+    id: `kb-ex-${ex.id}`,
+    type: "standard",
+    typeName: "من بنك المعرفة",
+    question: `اقرأ هذا السؤال من بنك المعرفة: ${snippet}\nما المهارة الأقرب التي يقيسها؟`,
+    options,
+    answer,
+    hint: `ابحث عن الكلمات المفتاحية في السؤال: ${skill?.name_ar || skill?.name || answer}.`,
+    kind: "qcm",
+    icon: badge.icon,
+    misconception: `صعوبة في تصنيف مهارة: ${answer}`,
+    misconceptionType: inferMiscType(type, skill?.subdomain),
+    badgeColor: badge.color,
+    badgeBg: badge.bg,
+  };
+}
+
+function domainLabel(type: string): string {
+  const t = type.toLowerCase();
+  if (t.includes("geom") || t.includes("triangle") || t.includes("parallelogram")) return "هندسة";
+  if (t.includes("function") || t.includes("sequence") || t.includes("analytic")) return "دوال ومتتاليات";
+  if (t.includes("fraction") || t.includes("number") || t.includes("arithmetic")) return "مقارنة وترتيب";
+  if (t.includes("prob")) return "احتمالات";
+  return "جبر وحساب حرفي";
+}
+
+function uniqueOptions(values: string[]): string[] {
+  const seen = new Set<string>();
+  return values.filter((v) => {
+    if (seen.has(v)) return false;
+    seen.add(v);
+    return true;
+  }).slice(0, 4);
 }
 
 function inferMiscType(domain?: string, subdomain?: string, errorType?: string): Misc | undefined {
