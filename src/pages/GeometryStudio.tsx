@@ -44,6 +44,7 @@ export default function GeometryStudio() {
   const [exercises, setExercises] = useState<KBEx[]>([]);
   const [loadingEx, setLoadingEx] = useState(true);
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<"board" | "library">(seedText ? "board" : "library");
 
   useEffect(() => {
     let cancelled = false;
