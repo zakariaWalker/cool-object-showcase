@@ -16,43 +16,31 @@ export default function DiagnosticExam() {
 
   const { user, isAdmin } = useAuth();
   const { countryCode, gradeCode, isComplete, loading: cLoading, setCurriculum } = useUserCurriculum();
-  const { grades, labelOf } = useCountryGrades(countryCode || "DZ");
-  const [pendingGrade, setPendingGrade] = useState<string>("");
+
+  // Local picker state for anonymous users (and admin override)
+  const [pickedCountry, setPickedCountry] = useState<string>("");
+  const [pickedGrade, setPickedGrade] = useState<string>("");
+
+  const { grades, labelOf } = useCountryGrades(pickedCountry || countryCode || "DZ");
 
   // Authenticated users without a curriculum get sent to onboarding.
-  // Anonymous users default to DZ / 4AM and can try the diagnostic without signup.
   useEffect(() => {
     if (!cLoading && user && !isComplete) {
       navigate("/onboarding?redirect=/diagnostic");
     }
   }, [cLoading, user, isComplete, navigate]);
 
+  // Seed picker from existing curriculum once loaded
   useEffect(() => {
-    if (!pendingGrade && gradeCode) setPendingGrade(gradeCode);
-  }, [gradeCode, pendingGrade]);
+    if (!pickedCountry && countryCode) setPickedCountry(countryCode);
+    if (!pickedGrade && gradeCode) setPickedGrade(gradeCode);
+  }, [countryCode, gradeCode, pickedCountry, pickedGrade]);
 
   // Funnel: page view (once per mount)
   useEffect(() => {
     trackEvent("diagnostic_viewed", { authed: !!user });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Auto-start for non-admins: the user already clicked "ابدأ التشخيص" on /.
-  // No need for a second sales screen — drop them straight into question 1.
-  // Admins keep the intro because they need the grade switcher.
-  useEffect(() => {
-    if (cLoading || isStarted || isAdmin) return;
-    const finalGrade = gradeCode || "4AM";
-    if (!pendingGrade) setPendingGrade(finalGrade);
-    trackEvent("diagnostic_started", {
-      grade: finalGrade,
-      country: countryCode || "DZ",
-      authed: !!user,
-      auto: true,
-    });
-    setIsStarted(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cLoading, isAdmin, gradeCode]);
 
   if (cLoading) {
     return (
@@ -61,6 +49,11 @@ export default function DiagnosticExam() {
       </div>
     );
   }
+
+  const effectiveCountry = pickedCountry || countryCode;
+  const effectiveGrade = pickedGrade || gradeCode;
+  const canStart = !!effectiveCountry && !!effectiveGrade;
+
 
   return (
     <div className="h-full w-full bg-background overflow-y-auto" dir="rtl">
