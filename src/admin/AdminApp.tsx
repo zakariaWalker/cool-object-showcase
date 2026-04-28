@@ -47,6 +47,7 @@ const AdminApp = () => {
         <Route path="users" element={<UserManagement />} />
         <Route path="content" element={<ContentReview />} />
         <Route path="diagnostic-qa" element={<DiagnosticQA />} />
+        <Route path="question-templates" element={<QuestionTemplates />} />
         <Route path="curricula" element={<CurriculumManager />} />
         <Route path="billing" element={<BillingPage />} />
         <Route path="analytics" element={<PlatformAnalytics />} />
