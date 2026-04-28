@@ -1006,6 +1006,7 @@ const TABS = [
   { icon: "🕸️", label: "خريطة المفاهيم", shortLabel: "المفاهيم" },
   { icon: "🤖", label: "المدرّس الآلي", shortLabel: "المدرّس" },
   { icon: "📊", label: "لوحة الأستاذ", shortLabel: "الأستاذ" },
+  { icon: "💡", label: "نظّم أفكارك وأَثرِ KB", shortLabel: "أفكاري" },
 ];
 
 export function FeatureTabs({ exercise, parsed, kbPattern }: FeatureTabsProps) {
