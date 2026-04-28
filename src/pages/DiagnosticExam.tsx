@@ -170,6 +170,7 @@ export default function DiagnosticExam() {
                       await setCurriculum(countryCode, pendingGrade);
                     }
                     setPendingGrade(finalGrade);
+                    trackEvent("diagnostic_started", { grade: finalGrade, country: countryCode, authed: !!user });
                     setIsStarted(true);
                   }}
                   className="w-full max-w-md mx-auto flex items-center justify-center gap-3 px-8 py-5 rounded-2xl bg-gradient-to-r from-primary via-primary to-accent text-white font-black text-lg shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
