@@ -269,7 +269,7 @@ async function buildFromTemplates(db: any, level: string, count: number): Promis
 // ─────────────────────────────────────────────────────────────────────────
 // KB-first builder: synthesizes diagnostic items from kb_skills + kb_skill_errors
 // ─────────────────────────────────────────────────────────────────────────
-async function buildFromKB(db: any, level: string, countryCode: string, count: number): Promise<any[]> {
+async function buildFromKB(db: any, level: string, countryCode: string, count: number, seed: number): Promise<any[]> {
   // Resolve skills via curriculum_mappings, fall back to kb_skills.grade
   let skillIds: string[] = [];
   try {
@@ -310,7 +310,7 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
       .select("id, text, type, difficulty, bloom_level, chapter")
       .eq("country_code", countryCode)
       .eq("grade", level)
-      .limit(Math.max(count * 4, 80)),
+      .limit(Math.max(count * 6, 160)),
   ]);
 
   // Map exercise → skill (for linked ones)
@@ -328,11 +328,7 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
     ...(gradeExs || []).filter((e: any) => !linkedIds.has(e.id)),
   ];
 
-  // Shuffle once before sampling so different cache builds yield different orderings
-  for (let i = allExercises.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [allExercises[i], allExercises[j]] = [allExercises[j], allExercises[i]];
-  }
+  seededShuffle(allExercises, seed);
 
   // Pull documented misconceptions for these skills (highest-frequency first)
   const { data: errors } = await db
@@ -381,7 +377,13 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
   // If the documented-errors pool is too small, the AI augment path (step 3)
   // takes over to fill the gap with real gradable questions.
 
-  return out.filter(isGradableItem);
+  for (const ex of allExercises) {
+    if (out.length >= count) break;
+    const item = kbExerciseToDiagnosticItem(ex, skillByExercise.get(ex.id));
+    if (item && isGradableItem(item)) out.push(item);
+  }
+
+  return dedupePool(out);
 }
 
 function inferMiscType(domain?: string, subdomain?: string, errorType?: string): Misc | undefined {
