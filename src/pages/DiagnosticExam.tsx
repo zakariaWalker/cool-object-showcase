@@ -143,28 +143,26 @@ export default function DiagnosticExam() {
                 </div>
               </motion.div>
 
-              {/* Admin-only grade switcher */}
-              {isAdmin && (
-                <div className="max-w-xl mx-auto">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">المستوى</p>
+              {/* Country + Grade picker — required before starting */}
+              <div className="max-w-xl mx-auto bg-card border-2 border-border rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-black text-foreground uppercase tracking-wider">
+                    اختر بلدك ومستواك
+                  </p>
+                  {isAdmin && (
                     <span className="text-[10px] text-primary font-bold uppercase">وضع المشرف</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {grades.map(g => (
-                      <button
-                        key={g.grade_code}
-                        onClick={() => setPendingGrade(g.grade_code)}
-                        className={`px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all ${
-                          pendingGrade === g.grade_code ? "border-primary bg-primary/10 text-primary scale-105" : "border-border hover:border-primary/40 text-muted-foreground"
-                        }`}
-                      >
-                        {g.grade_label_ar}
-                      </button>
-                    ))}
-                  </div>
+                  )}
                 </div>
-              )}
+                <CountryGradePicker
+                  countryCode={effectiveCountry || "DZ"}
+                  gradeCode={effectiveGrade || ""}
+                  onChange={(c, g) => {
+                    setPickedCountry(c);
+                    setPickedGrade(g);
+                  }}
+                  compact
+                />
+              </div>
 
               {/* MAIN CTA — game-like, not "start test" */}
               <motion.div
@@ -174,17 +172,21 @@ export default function DiagnosticExam() {
                 className="space-y-3"
               >
                 <button
-                  disabled={!pendingGrade && !gradeCode}
+                  disabled={!canStart}
                   onClick={async () => {
-                    const finalGrade = isAdmin ? (pendingGrade || gradeCode) : gradeCode;
-                    if (isAdmin && pendingGrade && pendingGrade !== gradeCode) {
-                      await setCurriculum(countryCode, pendingGrade);
+                    if (!canStart) return;
+                    // Persist for authed users if changed
+                    if (user && (effectiveCountry !== countryCode || effectiveGrade !== gradeCode)) {
+                      await setCurriculum(effectiveCountry, effectiveGrade);
                     }
-                    setPendingGrade(finalGrade);
-                    trackEvent("diagnostic_started", { grade: finalGrade, country: countryCode, authed: !!user });
+                    trackEvent("diagnostic_started", {
+                      grade: effectiveGrade,
+                      country: effectiveCountry,
+                      authed: !!user,
+                    });
                     setIsStarted(true);
                   }}
-                  className="w-full max-w-md mx-auto flex items-center justify-center gap-3 px-8 py-5 rounded-2xl bg-gradient-to-r from-primary via-primary to-accent text-white font-black text-lg shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  className="w-full max-w-md mx-auto flex items-center justify-center gap-3 px-8 py-5 rounded-2xl bg-gradient-to-r from-primary via-primary to-accent text-white font-black text-lg shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100"
                 >
                   <Play className="w-5 h-5 fill-white" />
                   ابدأ التحدي الآن
@@ -193,9 +195,9 @@ export default function DiagnosticExam() {
                 <p className="text-center text-[11px] text-muted-foreground">
                   بدون تسجيل · بدون نقاط حقيقية · فقط متعة الاكتشاف
                 </p>
-                {!isAdmin && gradeCode && (
+                {effectiveGrade && (
                   <p className="text-center text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1">
-                    <Lock className="w-3 h-3" /> {labelOf(gradeCode) || gradeCode}
+                    <Lock className="w-3 h-3" /> {labelOf(effectiveGrade) || effectiveGrade}
                   </p>
                 )}
               </motion.div>
@@ -209,8 +211,8 @@ export default function DiagnosticExam() {
               className="max-w-2xl mx-auto w-full bg-card p-6 md:p-8 rounded-3xl border border-border shadow-2xl"
             >
               <DiagnosticProfiler
-                level={pendingGrade || gradeCode || "4AM"}
-                countryCode={countryCode || "DZ"}
+                level={effectiveGrade || "4AM"}
+                countryCode={effectiveCountry || "DZ"}
                 onClose={() => setIsStarted(false)}
               />
             </motion.div>
