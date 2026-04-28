@@ -194,16 +194,21 @@ function mulberry32(a: number) {
   };
 }
 
+function seededShuffle<T>(items: T[], seed: number): T[] {
+  const rng = mulberry32(Math.floor((seed || Math.random()) * 1e9));
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
+}
+
 function pickFromPool(pool: any[], count: number, seed: number): any[] {
   // Defensive: filter again at pick time so old cached pools don't leak bad items
   const clean = pool.filter(isGradableItem);
   const rng = mulberry32(Math.floor((seed || Math.random()) * 1e9));
   const arr = [...clean];
-  // Fisher-Yates with seeded RNG
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
+  seededShuffle(arr, seed);
   // Diversify by type: try to pick at most ceil(count/3) per type
   const byType: Record<string, any[]> = {};
   for (const it of arr) {
