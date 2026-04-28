@@ -130,7 +130,14 @@ Deno.serve(async (req) => {
     }
 
     try {
-      const aiExercises = await generateWithAI(db, level, countryCode, Math.max(count * 2, 10), seed);
+      // Hard cap: if Gemini takes >20s (overload/retries), bail to static fallback
+      // so the user never sees a 5xx from the edge function.
+      const aiExercises = await Promise.race([
+        generateWithAI(db, level, countryCode, Math.max(count * 2, 10), seed),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new GeminiError("TIMEOUT", "AI took too long", 504)), 20000),
+        ),
+      ]);
       const merged = dropFlagged(dedupePool([...tmplPool, ...kbPool, ...aiExercises]), flagged);
       await writeCache(db, cacheKey, level, countryCode, merged, kbPool.length || tmplPool.length ? "hybrid" : "ai");
       const picked = pickFromPool(merged, count, seed);
