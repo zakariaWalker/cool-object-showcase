@@ -29,7 +29,7 @@ interface KBEx {
 export default function GeometryStudio() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { countryCode } = useUserCurriculum();
+  const { countryCode, gradeCode } = useUserCurriculum();
 
   const seedText = params.get("text") || "";
   const [task, setTask] = useState(seedText);
