@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { GeometryCanvas, type VerifyResult } from "@/components/geometry/GeometryCanvas";
-import { detectFigureKind } from "@/engine/figures/factory";
+import { detectFigureKind, isNonConstructible } from "@/engine/figures/factory";
 import type { FigureSpec } from "@/engine/figures/types";
 import type { Constraint } from "@/engine/figures/construction-checks";
 import { analyzeGeometryFromKB, recordLearnedGeometry } from "@/engine/figures/kb-context";
