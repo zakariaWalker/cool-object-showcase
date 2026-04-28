@@ -9,6 +9,100 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Constraint } from "./construction-checks";
 import { hashGeometryText } from "./kb-context";
 
+// ===== Local (anonymous) enrichment cache =====
+// Stores contributions from signed-out users. They get silently flushed to the
+// DB the next time the same browser signs in (see flushPendingEnrichments).
+const LOCAL_KEY = "qed.pending_enrichments.v1";
+
+interface PendingEnrichment {
+  text_hash: string;
+  text_sample: string;
+  exercise_id: string | null;
+  enrichment: Enrichment;
+  saved_at: string;
+}
+
+function readPending(): Record<string, PendingEnrichment> {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+function writePending(map: Record<string, PendingEnrichment>) {
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(map)); } catch { /* noop */ }
+}
+
+function savePendingLocal(p: PendingEnrichment) {
+  const map = readPending();
+  map[p.text_hash] = p;
+  writePending(map);
+}
+
+export function loadPendingLocal(text: string): Enrichment | null {
+  const trimmed = (text || "").trim();
+  if (!trimmed) return null;
+  const h = hashGeometryText(trimmed);
+  const map = readPending();
+  return map[h]?.enrichment ?? null;
+}
+
+/** Flush all locally-cached enrichments into the DB once the user is signed in. */
+export async function flushPendingEnrichments(): Promise<number> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return 0;
+    const map = readPending();
+    const entries = Object.values(map);
+    if (entries.length === 0) return 0;
+    let flushed = 0;
+    for (const p of entries) {
+      const { data: existing } = await (supabase as any)
+        .from("kb_geometry_enrichments")
+        .select("id,upvotes")
+        .eq("text_hash", p.text_hash)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (existing?.id) {
+        await (supabase as any)
+          .from("kb_geometry_enrichments")
+          .update({
+            givens: p.enrichment.givens,
+            goal: p.enrichment.goal,
+            shape_hint: p.enrichment.shape_hint,
+            relations: p.enrichment.relations,
+            tags: p.enrichment.tags,
+            notes: p.enrichment.notes,
+            upvotes: Number(existing.upvotes || 1) + 1,
+            exercise_id: p.exercise_id ?? null,
+          })
+          .eq("id", existing.id);
+      } else {
+        await (supabase as any)
+          .from("kb_geometry_enrichments")
+          .insert({
+            text_hash: p.text_hash,
+            text_sample: p.text_sample,
+            exercise_id: p.exercise_id ?? null,
+            user_id: user.id,
+            givens: p.enrichment.givens,
+            goal: p.enrichment.goal,
+            shape_hint: p.enrichment.shape_hint,
+            relations: p.enrichment.relations,
+            tags: p.enrichment.tags,
+            notes: p.enrichment.notes,
+          });
+      }
+      flushed++;
+    }
+    writePending({});
+    return flushed;
+  } catch (err) {
+    console.warn("[flushPendingEnrichments] failed:", err);
+    return 0;
+  }
+}
+
 export interface Given {
   /** e.g. "AB", "A", "angle(BAC)" */
   label: string;
