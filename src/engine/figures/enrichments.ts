@@ -333,7 +333,7 @@ export async function loadBestEnrichment(text: string): Promise<Enrichment | nul
       .order("upvotes", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (!data) return null;
+    if (!data) return loadPendingLocal(trimmed);
     return {
       givens: Array.isArray(data.givens) ? data.givens : [],
       goal: data.goal || "",
