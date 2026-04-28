@@ -8,6 +8,7 @@ import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { useCountryGrades } from "@/hooks/useCountryGrades";
 import { useAuth } from "@/hooks/useAuth";
 import { trackEvent } from "@/lib/funnelTracking";
+import { CountryGradePicker } from "@/components/CountryGradePicker";
 
 export default function DiagnosticExam() {
   const navigate = useNavigate();
