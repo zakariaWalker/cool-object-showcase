@@ -6,13 +6,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { GeometryCanvas, type VerifyResult } from "@/components/geometry/GeometryCanvas";
-import { buildAutoFigureSpec, detectFigureKind, defaultFigureSpec, relabelSpec } from "@/engine/figures/factory";
+import { detectFigureKind } from "@/engine/figures/factory";
 import type { FigureSpec } from "@/engine/figures/types";
-import { inferConstraints, type Constraint } from "@/engine/figures/construction-checks";
+import type { Constraint } from "@/engine/figures/construction-checks";
+import { analyzeGeometryFromKB } from "@/engine/figures/kb-context";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
-import { Search, BookOpen, Loader2, Sparkles } from "lucide-react";
-import { toast } from "sonner";
+import { Search, BookOpen, Loader2, Database } from "lucide-react";
 
 interface KBEx {
   id: string;
@@ -62,101 +62,50 @@ export default function GeometryStudio() {
     return () => { cancelled = true; };
   }, [countryCode]);
 
-  // Regex-based fallback (instant, deterministic).
-  const fallbackSpec = useMemo(
-    () => (committed ? buildAutoFigureSpec({ text: committed }) : null),
-    [committed],
-  );
-  const fallbackConstraints = useMemo(
-    () => (committed ? inferConstraints(committed) : []),
-    [committed],
-  );
+  // KB-driven analysis (no AI calls — uses kb_figures, kb_skills, kb_patterns
+  // and the deterministic regex detectors).
+  const [figureSpec, setFigureSpec] = useState<FigureSpec | null>(null);
+  const [constraints, setConstraints] = useState<Constraint[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [caption, setCaption] = useState<string>("");
+  const [confidence, setConfidence] = useState<number | null>(null);
+  const [analysisSource, setAnalysisSource] = useState<string>("");
 
-  // AI-enhanced spec/constraints (loaded on commit).
-  const [aiSpec, setAiSpec] = useState<FigureSpec | null>(null);
-  const [aiConstraints, setAiConstraints] = useState<Constraint[] | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiCaption, setAiCaption] = useState<string>("");
-  const [aiConfidence, setAiConfidence] = useState<number | null>(null);
-
-  // Whichever is best: AI when available & confident, otherwise regex.
-  const figureSpec = aiSpec ?? fallbackSpec;
-  const constraints = aiConstraints ?? fallbackConstraints;
-
-  // Call the AI analyzer whenever the committed text changes.
   useEffect(() => {
     if (!committed.trim()) {
-      setAiSpec(null); setAiConstraints(null); setAiCaption(""); setAiConfidence(null);
+      setFigureSpec(null);
+      setConstraints([]);
+      setCaption("");
+      setConfidence(null);
+      setAnalysisSource("");
       return;
     }
     let cancelled = false;
-    setAiLoading(true);
+    setAnalyzing(true);
     (async () => {
       try {
-        const { data, error } = await supabase.functions.invoke(
-          "analyze-geometry-context",
-          { body: { text: committed } },
-        );
+        const ctx = await analyzeGeometryFromKB(committed, {
+          exerciseId: activeExId,
+          countryCode: countryCode || "DZ",
+        });
         if (cancelled) return;
-        if (error) throw error;
-        const r = data?.result;
-        if (!r || typeof r !== "object") {
-          setAiSpec(null); setAiConstraints(null); return;
-        }
-        // Build FigureSpec from AI output
-        let spec: FigureSpec | null = null;
-        if (r.kind && r.kind !== "point_set") {
-          const base = defaultFigureSpec(r.kind);
-          if (Array.isArray(r.vertices) && r.vertices.length > 0) {
-            const verts: Record<string, [number, number, number?]> = {};
-            for (const v of r.vertices) {
-              if (typeof v?.label === "string" && typeof v.x === "number" && typeof v.y === "number") {
-                verts[v.label] = typeof v.z === "number" ? [v.x, v.y, v.z] : [v.x, v.y];
-              }
-            }
-            spec = {
-              ...base,
-              kind: r.kind,
-              vertices: Object.keys(verts).length ? verts : base.vertices,
-              edges: Array.isArray(r.edges) && r.edges.length
-                ? r.edges as [string, string][]
-                : base.edges,
-              dims: r.dims || base.dims,
-              label: Array.isArray(r.labels) ? r.labels.join("") : base.label,
-            };
-          } else if (Array.isArray(r.labels) && r.labels.length) {
-            spec = relabelSpec(base, r.labels);
-          } else {
-            spec = base;
-          }
-        }
-        const cs: Constraint[] = Array.isArray(r.constraints)
-          ? r.constraints
-              .filter((c: any) => c && typeof c.kind === "string" && typeof c.description === "string")
-              .map((c: any) => ({
-                kind: c.kind,
-                labels: Array.isArray(c.labels) ? c.labels : [],
-                context: c.context,
-                description: c.description,
-              }))
-          : [];
-        setAiSpec(spec);
-        setAiConstraints(cs);
-        setAiCaption(typeof r.caption === "string" ? r.caption : "");
-        setAiConfidence(typeof r.confidence === "number" ? r.confidence : null);
-      } catch (err: any) {
+        setFigureSpec(ctx.spec);
+        setConstraints(ctx.constraints);
+        setCaption(ctx.caption);
+        setConfidence(ctx.confidence);
+        setAnalysisSource(ctx.source);
+      } catch (err) {
         if (cancelled) return;
-        console.error("[GeometryStudio] AI analyze failed:", err);
-        if (err?.message?.includes("429")) toast.error("الحدّ الزمني للذكاء الاصطناعي بلغ، حاول بعد قليل.");
-        else if (err?.message?.includes("402")) toast.error("نفذت أرصدة الذكاء الاصطناعي.");
-        // Silent regex fallback otherwise
-        setAiSpec(null); setAiConstraints(null);
+        console.error("[GeometryStudio] KB analyze failed:", err);
       } finally {
-        if (!cancelled) setAiLoading(false);
+        if (!cancelled) setAnalyzing(false);
       }
     })();
-    return () => { cancelled = true; };
-  }, [committed]);
+    return () => {
+      cancelled = true;
+    };
+  }, [committed, activeExId, countryCode]);
+
 
 
   const filteredExercises = useMemo(() => {
@@ -249,31 +198,35 @@ export default function GeometryStudio() {
               </div>
             </div>
 
-            {/* AI parsing status */}
+            {/* KB analysis status */}
             {committed && (
               <div className="flex items-center gap-2 text-[11px] border-t border-border/50 pt-3">
-                {aiLoading ? (
+                {analyzing ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                    <span className="text-muted-foreground">يحلّل الذكاء الاصطناعي السياق…</span>
+                    <span className="text-muted-foreground">يحلّل من قاعدة المعرفة…</span>
                   </>
-                ) : aiSpec || (aiConstraints && aiConstraints.length > 0) ? (
+                ) : figureSpec || constraints.length > 0 ? (
                   <>
-                    <Sparkles className="w-3.5 h-3.5 text-primary" />
-                    <span className="font-bold text-foreground">تحليل ذكي:</span>
-                    <span className="text-muted-foreground line-clamp-1 flex-1">
-                      {aiCaption || `${constraints.length} قيد للتحقّق`}
+                    <Database className="w-3.5 h-3.5 text-primary" />
+                    <span className="font-bold text-foreground">
+                      {analysisSource === "kb_figure"
+                        ? "شكل من KB:"
+                        : analysisSource === "kb_enriched"
+                        ? "تحليل مُعزَّز من KB:"
+                        : "تحليل آلي:"}
                     </span>
-                    {aiConfidence != null && (
+                    <span className="text-muted-foreground line-clamp-1 flex-1">
+                      {caption || `${constraints.length} قيد للتحقّق`}
+                    </span>
+                    {confidence != null && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold">
-                        {Math.round(aiConfidence * 100)}%
+                        {Math.round(confidence * 100)}%
                       </span>
                     )}
                   </>
                 ) : (
-                  <>
-                    <span className="text-muted-foreground">تحليل سريع (بدون ذكاء اصطناعي).</span>
-                  </>
+                  <span className="text-muted-foreground">لم يُتعرَّف على شكل في النص.</span>
                 )}
               </div>
             )}
