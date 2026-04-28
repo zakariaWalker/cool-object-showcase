@@ -194,7 +194,9 @@ export function useAdminKBStore() {
     deconstructed: countryDeconstructions.length,
     patternCount: patterns.length,
     cycleCounts: {} as Record<string, number>, // populated by the consumer (AdminDashboard) via useCountryGrades
-    progress: countryExercises.length ? Math.round((countryDeconstructions.length / countryExercises.length) * 100) : 0,
+    progress: countryExercises.length
+      ? Math.min(100, Math.round((countryDeconstructions.length / countryExercises.length) * 100))
+      : 0,
   };
 
   const filteredExercises = countryExercises.filter(e => {

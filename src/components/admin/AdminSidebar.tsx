@@ -87,11 +87,11 @@ export function AdminSidebar({ view, setView, stats, onImport, onExport }: Props
       <div className="px-5 py-3" style={{ borderBottom: "1px solid hsl(var(--primary-foreground) / 0.1)" }}>
         <div className="flex justify-between text-xs mb-2" style={{ color: "hsl(var(--primary-foreground) / 0.65)" }}>
           <span>تقدم التفكيك</span>
-          <span>{stats.progress}%</span>
+          <span>{Math.min(100, stats.progress)}%</span>
         </div>
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "hsl(var(--primary-foreground) / 0.18)" }}>
           <div className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${stats.progress}%`, background: "hsl(var(--accent))" }} />
+            style={{ width: `${Math.min(100, stats.progress)}%`, background: "hsl(var(--accent))" }} />
         </div>
       </div>
 
