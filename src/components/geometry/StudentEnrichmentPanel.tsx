@@ -107,7 +107,7 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply, comp
     }));
 
   const handleApply = () => {
-    onApply(enr);
+    onApply?.(enr);
     toast.success("تمّ تطبيق المعطيات على اللوحة");
   };
 
@@ -117,7 +117,7 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply, comp
     setSaving(false);
     if (res.ok) {
       setSavedOnce(true);
-      onApply(enr);
+      onApply?.(enr);
       toast.success("شكراً لمساهمتك! تمّ إثراء قاعدة المعرفة");
     } else {
       toast.error("سجّل دخولك لحفظ المساهمة");
