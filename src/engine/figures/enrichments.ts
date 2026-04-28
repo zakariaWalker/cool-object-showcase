@@ -81,11 +81,17 @@ export type ExerciseDomain = "geometry" | "algebra" | "functions" | "statistics"
 /** Detect the dominant domain of an exercise from its text. */
 export function detectDomain(text: string): ExerciseDomain {
   const t = (text || "").toLowerCase();
+  // Trigonometry / unit circle / functions of angle → algebra (calculation)
+  if (/(\\sin|\\cos|\\tan|\\cot|sin\(|cos\(|tan\(|جا\s*\(|جتا\s*\(|ظا\s*\()/.test(t)) return "algebra";
+  if (/(دائرة\s+مثلثية|cercle\s+trigonom|الدائرة\s+الوحدوية)/i.test(t)) return "algebra";
+  if (/(\\pi|\bπ\b)/.test(t) && /(cos|sin|tan|جا|جتا|ظا)/i.test(t)) return "algebra";
+  // Pure algebra signals (no construction verb)
+  if (/(معادلة|متراجحة|كثير\s*حدود|équation|inéquation|polynôme|développer|factoriser|simplifier|تحليل|نشر|بسّط)/i.test(t)
+      && !/(ارسم|أنشئ|construire|tracer|dessiner)/i.test(t)) return "algebra";
   if (/مثلث|دائرة|مستطيل|مربّ?ع|متوازي|منصّ?ف|عمودي|triangle|circle|cercle|carré|rectangle|losange/.test(t)) return "geometry";
   if (/دالة|منحنى|fonction|courbe/.test(t)) return "functions";
   if (/متوسّ?ط|وسيط|تكرار|متغير|moyenne|médiane|effectif|écart/.test(t)) return "statistics";
   if (/احتمال|probabilit/.test(t)) return "probability";
-  if (/معادلة|متراجحة|كثير حدود|عبارة|équation|inéquation|polynôme|développer|factoriser|simplifier/.test(t)) return "algebra";
   if (/جمع|طرح|ضرب|قسمة|نسبة|مضاعف|قاسم/.test(t)) return "arithmetic";
   return "general";
 }
