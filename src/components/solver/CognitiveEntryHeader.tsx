@@ -88,21 +88,20 @@ export function CognitiveEntryHeader(props: CognitiveEntryProps) {
         )}
       </div>
 
-      {/* Always-visible help bar */}
-      <div className="flex items-stretch border-t border-border">
-        <HelpButton
-          icon="💡" label="تلميح" active={open === "hint"}
-          onClick={() => toggle("hint")} disabled={!hint}
-        />
-        <HelpButton
-          icon="📘" label="مثال مشابه" active={open === "similar"}
-          onClick={() => toggle("similar")} disabled={!similarExample}
-        />
-        <HelpButton
-          icon="🎯" label="شرح الطريقة" active={open === "method"}
-          onClick={() => toggle("method")} disabled={!method}
-        />
-      </div>
+      {/* Always-visible help bar — hide buttons with no content instead of showing them faded */}
+      {(hint || similarExample || method) && (
+        <div className="flex items-stretch border-t border-border">
+          {hint && (
+            <HelpButton icon="💡" label="تلميح" active={open === "hint"} onClick={() => toggle("hint")} />
+          )}
+          {similarExample && (
+            <HelpButton icon="📘" label="مثال مشابه" active={open === "similar"} onClick={() => toggle("similar")} />
+          )}
+          {method && (
+            <HelpButton icon="🎯" label="شرح الطريقة" active={open === "method"} onClick={() => toggle("method")} />
+          )}
+        </div>
+      )}
 
       {/* Expanded help panel */}
       {open && (

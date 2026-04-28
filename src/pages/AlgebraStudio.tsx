@@ -29,14 +29,20 @@ interface KBExerciseLite {
   chapter: string | null;
   source: string | null;
   type: string | null;
+  grade?: string | null;
 }
 
 // Mirror of detectEditorType from StudentAnswerEditor — used to show
 // the user which editor will appear and to filter the algebra library.
 function detectEditorKind(text: string): "algebra" | "geometry" {
   const txt = (text || "").toLowerCase();
-  if (/ارسم|أنشئ|المثلث|الدائرة|المستقيم|قطعة|مستقيم|تحويل|دوران|انسحاب|تماثل|زاوية|منحنى/.test(txt)) return "geometry";
-  if (/triangle|circle|rectangle|parallelo|trapèze|losange|plot|curve/.test(txt)) return "geometry";
+  // Trig identities / function studies / proofs → algebra, even if they mention "مثلث" (مثلثية).
+  if (/\\sin|\\cos|\\tan|\\cot|sin\(|cos\(|tan\(|جا\s*\(|جتا\s*\(|ظا\s*\(|متطابقة|identité|fonction|دالة/.test(txt)) return "algebra";
+  if (/(أثبت|بيّن|برهن|démontr|montr|prouv)\s+(أن|que|صحة|l'égalité|l'identité)/i.test(txt)) return "algebra";
+  // Construction-only verbs trigger geometry.
+  if (/(ارسم|أنشئ|construire|tracer|dessiner)/.test(txt)) return "geometry";
+  // Pure shape names with no algebraic context.
+  if (/(الدائرة|المستقيم|قطعة|مستقيم|تحويل|دوران|انسحاب|تماثل|زاوية|منحنى)/.test(txt)) return "geometry";
   return "algebra";
 }
 
@@ -52,6 +58,8 @@ export default function AlgebraStudio() {
   const [steps, setSteps] = useState<string[]>([]);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [activeExId, setActiveExId] = useState<string | null>(null);
+  const [activeGrade, setActiveGrade] = useState<string | null>(null);
+  const [activeChapter, setActiveChapter] = useState<string | null>(null);
 
   // KB browser state — now always loaded into the side panel
   const [kbLoading, setKbLoading] = useState(true);
@@ -70,7 +78,7 @@ export default function AlgebraStudio() {
         const candidates = Array.from(new Set([code, GRADE_CODE_TO_KEY[code] || code]));
         let query = (supabase as any)
           .from("kb_exercises")
-          .select("id, text, chapter, source, type")
+          .select("id, text, chapter, source, type, grade")
           .eq("country_code", countryCode || "DZ")
           .order("chapter")
           .limit(800);
@@ -119,6 +127,8 @@ export default function AlgebraStudio() {
     setSteps([]);
     setVerdict(null);
     setActiveExId(it.id);
+    setActiveGrade(it.grade || null);
+    setActiveChapter(it.chapter || null);
   };
 
   const schema = useMemo(
@@ -128,8 +138,8 @@ export default function AlgebraStudio() {
 
   const editorKind = useMemo(() => detectEditorKind(committed), [committed]);
   const cognitive = useMemo(
-    () => deriveStudioCognitive(committed, editorKind, gradeCode || undefined),
-    [committed, editorKind, gradeCode],
+    () => deriveStudioCognitive(committed, editorKind, activeGrade || gradeCode || undefined, activeChapter || undefined),
+    [committed, editorKind, activeGrade, activeChapter, gradeCode],
   );
 
   const handleAlgebraSubmit = (newSteps: string[]) => {

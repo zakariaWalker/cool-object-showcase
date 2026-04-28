@@ -6,14 +6,36 @@ import type { CognitiveEntryProps } from "@/components/solver/CognitiveEntryHead
 
 export type StudioKind = "algebra" | "geometry";
 
+const LEVEL_LABELS: Record<string, string> = {
+  "1AS": "1 ثانوي", "2AS": "2 ثانوي", "3AS": "3 ثانوي",
+  "1AM": "1 متوسط", "2AM": "2 متوسط", "3AM": "3 متوسط", "4AM": "4 متوسط",
+};
+
+function prettyLevel(code?: string | null): string | undefined {
+  if (!code) return undefined;
+  if (LEVEL_LABELS[code]) return LEVEL_LABELS[code];
+  for (const k of Object.keys(LEVEL_LABELS)) if (code.includes(k)) return LEVEL_LABELS[k];
+  if (/secondary/i.test(code)) return "ثانوي";
+  if (/middle/i.test(code)) return "متوسط";
+  return code;
+}
+
 export function deriveStudioCognitive(
   text: string,
   kind: StudioKind,
   level?: string,
+  chapter?: string,
 ): CognitiveEntryProps | null {
   const t = (text || "").trim();
   if (!t) return null;
   const low = t.toLowerCase();
+  const niceLevel = prettyLevel(level);
+
+  // ---- Trigonometric identity / proof detection (must come BEFORE generic "مثلث" geometry match) ----
+  const isTrigIdentity =
+    /\\sin|\\cos|\\tan|\\cot|sin\(|cos\(|tan\(|sin\s*x|cos\s*x|جا\s*\(|جتا\s*\(|ظا\s*\(/.test(low) &&
+    /(أثبت|بيّن|برهن|démontr|montr|prouv)/i.test(low);
+  const isProof = /(أثبت|بيّن|برهن|démontr|montr|prouv)\s+(أن|que|صحة|l'égalité|l'identité|المتساوية)/i.test(low);
 
   // ---- Skill detection ----
   let skill = kind === "geometry" ? "إنشاء هندسي" : "حل جبري";
@@ -22,6 +44,23 @@ export function deriveStudioCognitive(
   let hint = "ابدأ بأبسط ما تراه وتقدّم تدريجياً.";
   let similarExample = "";
   let method = "";
+
+  // Trigonometric identity proof — handle FIRST so a word like "مثلثية" doesn't fall to geometry.
+  if (isTrigIdentity || (isProof && /sin|cos|جا|جتا/.test(low))) {
+    return {
+      skill: "إثبات متطابقة مثلثية",
+      level: niceLevel,
+      difficulty: "moyen",
+      durationMin: 6,
+      xpReward: 25,
+      goal: "البرهان على صحّة متطابقة مثلثية بتحويل أحد الطرفين حتى يصبح مطابقاً للآخر.",
+      firstStepHint: "ابدأ بالطرف الأكثر تعقيداً، ووحّد المقامات إن وجدت كسور.",
+      hint: "تذكّر: sin²(x) + cos²(x) = 1، وأن 1 + cos(x) = 2cos²(x/2)، و sin(x) = 2 sin(x/2) cos(x/2).",
+      similarExample: "أثبت أن: tan(x) + cot(x) = 1 / (sin(x)·cos(x)).",
+      method: "1. اختر طرفاً واحداً للتحويل (الأعقد عادةً).\n2. وحّد المقامات إن لزم الأمر.\n3. استبدل بالمتطابقات الأساسية (sin²+cos²=1، …).\n4. بسّط حتى تصل إلى الطرف الآخر.\n5. اذكر شرط وجود الحدود (المقامات ≠ 0).",
+    };
+  }
+
 
   if (kind === "algebra") {
     if (/factoris|تحليل/.test(low) && /مربّ?ع كامل|carré parfait|a²|b²|2ab/.test(low)) {
@@ -70,7 +109,7 @@ export function deriveStudioCognitive(
     } else if (/cercle circonscrit|دائرة محيطة/.test(low)) {
       skill = "الدائرة المحيطة بمثلث";
       firstStepHint = "مركز الدائرة المحيطة هو نقطة تقاطع المنصّفات العمودية لأضلاع المثلث.";
-    } else if (/triangle|مثلث/.test(low)) {
+    } else if (/(triangle|مثلث)/.test(low) && /(ارسم|أنشئ|construire|tracer|dessiner)/.test(low)) {
       skill = "إنشاء مثلث";
       goal = "رسم مثلث يحقّق المعطيات (أطوال أو زوايا).";
       firstStepHint = "ابدأ برسم أطول ضلع، ثم استعمل البركار لرسم القوسين.";
@@ -93,9 +132,13 @@ export function deriveStudioCognitive(
   const durationMin = Math.max(2, Math.min(15, Math.round(len / 30)));
   const xpReward = difficulty === "facile" ? 10 : difficulty === "difficile" ? 30 : 20;
 
+  // If a chapter is known and the heuristic skill is generic, prefer the chapter name.
+  const isGenericSkill = skill === "حل جبري" || skill === "إنشاء هندسي";
+  const finalSkill = isGenericSkill && chapter ? chapter : skill;
+
   return {
-    skill,
-    level,
+    skill: finalSkill,
+    level: niceLevel,
     difficulty,
     durationMin,
     xpReward,
