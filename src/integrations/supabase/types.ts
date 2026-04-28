@@ -1239,6 +1239,51 @@ export type Database = {
         }
         Relationships: []
       }
+      kb_geometry_learned: {
+        Row: {
+          caption: string | null
+          constraints: Json
+          created_at: string
+          exercise_id: string | null
+          figure_kind: string | null
+          id: string
+          last_user_id: string | null
+          spec: Json
+          success_count: number
+          text_hash: string
+          text_sample: string
+          updated_at: string
+        }
+        Insert: {
+          caption?: string | null
+          constraints?: Json
+          created_at?: string
+          exercise_id?: string | null
+          figure_kind?: string | null
+          id?: string
+          last_user_id?: string | null
+          spec?: Json
+          success_count?: number
+          text_hash: string
+          text_sample: string
+          updated_at?: string
+        }
+        Update: {
+          caption?: string | null
+          constraints?: Json
+          created_at?: string
+          exercise_id?: string | null
+          figure_kind?: string | null
+          id?: string
+          last_user_id?: string | null
+          spec?: Json
+          success_count?: number
+          text_hash?: string
+          text_sample?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kb_patterns: {
         Row: {
           concepts: Json | null
