@@ -250,6 +250,11 @@ export default function StudentSolver() {
           />
         </div>
 
+        {/* Cognitive entry — answers "what / why / where to start" before any latex */}
+        {cognitiveEntry && !completed && (
+          <CognitiveEntryHeader {...cognitiveEntry} />
+        )}
+
         {/* Exercise Context */}
         <div className="p-5 rounded-xl border border-border bg-card shadow-sm">
           <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wider">سياق التمرين</h3>
