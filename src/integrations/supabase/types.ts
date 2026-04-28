@@ -1239,6 +1239,57 @@ export type Database = {
         }
         Relationships: []
       }
+      kb_geometry_enrichments: {
+        Row: {
+          created_at: string
+          exercise_id: string | null
+          givens: Json
+          goal: string | null
+          id: string
+          notes: string | null
+          relations: Json
+          shape_hint: string | null
+          tags: string[]
+          text_hash: string
+          text_sample: string
+          updated_at: string
+          upvotes: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          exercise_id?: string | null
+          givens?: Json
+          goal?: string | null
+          id?: string
+          notes?: string | null
+          relations?: Json
+          shape_hint?: string | null
+          tags?: string[]
+          text_hash: string
+          text_sample: string
+          updated_at?: string
+          upvotes?: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string | null
+          givens?: Json
+          goal?: string | null
+          id?: string
+          notes?: string | null
+          relations?: Json
+          shape_hint?: string | null
+          tags?: string[]
+          text_hash?: string
+          text_sample?: string
+          updated_at?: string
+          upvotes?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       kb_geometry_learned: {
         Row: {
           caption: string | null

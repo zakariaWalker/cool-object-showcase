@@ -10,6 +10,8 @@ import { detectFigureKind } from "@/engine/figures/factory";
 import type { FigureSpec } from "@/engine/figures/types";
 import type { Constraint } from "@/engine/figures/construction-checks";
 import { analyzeGeometryFromKB, recordLearnedGeometry } from "@/engine/figures/kb-context";
+import { relationsToConstraints } from "@/engine/figures/enrichments";
+import { StudentEnrichmentPanel } from "@/components/geometry/StudentEnrichmentPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { Search, BookOpen, Loader2, Database } from "lucide-react";
@@ -70,6 +72,19 @@ export default function GeometryStudio() {
   const [caption, setCaption] = useState<string>("");
   const [confidence, setConfidence] = useState<number | null>(null);
   const [analysisSource, setAnalysisSource] = useState<string>("");
+
+  // Student enrichment layer — extra constraints derived from guided answers.
+  const [enrichmentConstraints, setEnrichmentConstraints] = useState<Constraint[]>([]);
+  const mergedConstraints = useMemo(() => {
+    const seen = new Set<string>();
+    const all = [...constraints, ...enrichmentConstraints];
+    return all.filter((c) => {
+      const k = `${c.kind}|${(c.labels || []).join("-")}|${c.context || ""}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }, [constraints, enrichmentConstraints]);
 
   useEffect(() => {
     if (!committed.trim()) {
@@ -238,11 +253,9 @@ export default function GeometryStudio() {
           <div className="rounded-xl border border-border bg-card p-4">
             <GeometryCanvas
               seedSpec={figureSpec}
-              constraints={constraints}
+              constraints={mergedConstraints}
               onSubmit={(r) => {
                 setLastResult(r);
-                // Auto-learn: when ALL constraints pass, persist the figure so
-                // the KB analyzer recognizes this exercise instantly next time.
                 if (
                   r.total > 0 &&
                   r.passed === r.total &&
@@ -252,7 +265,7 @@ export default function GeometryStudio() {
                   recordLearnedGeometry({
                     text: committed,
                     spec: figureSpec,
-                    constraints,
+                    constraints: mergedConstraints,
                     caption,
                     exerciseId: activeExId,
                   }).catch(() => {});
@@ -284,6 +297,15 @@ export default function GeometryStudio() {
                 ))}
               </ul>
             </div>
+          )}
+
+          {/* Student enrichment layer */}
+          {committed && (
+            <StudentEnrichmentPanel
+              text={committed}
+              exerciseId={activeExId}
+              onApply={(e) => setEnrichmentConstraints(relationsToConstraints(e.relations))}
+            />
           )}
         </div>
 
