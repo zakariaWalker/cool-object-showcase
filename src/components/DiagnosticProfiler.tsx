@@ -382,7 +382,7 @@ export function DiagnosticProfiler({
             <button
               onClick={() => {
                 if (!user) {
-                  trackEvent("diagnostic_signup_cta_click", { source: "result_unlock_plan" });
+                  trackEvent("signup_cta_clicked", { source: "result_unlock_plan" });
                   navigate("/auth?redirect=/learn");
                 } else {
                   navigate("/learn");
