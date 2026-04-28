@@ -74,74 +74,20 @@ export default function DiagnosticExam() {
                 <ArrowLeft className="w-4 h-4 ml-1" /> العودة
               </button>
 
-              {/* HERO — curiosity-driven, not "test" */}
-              <div className="text-center space-y-5">
+              {/* HERO — minimal */}
+              <div className="text-center space-y-4">
                 <motion.div
                   initial={{ scale: 0 }}
-                  animate={{ scale: 1, rotate: [0, -5, 5, 0] }}
-                  transition={{ duration: 0.6, type: "spring" }}
-                  className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-primary via-primary to-accent text-white shadow-2xl shadow-primary/30"
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.4, type: "spring" }}
+                  className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-primary via-primary to-accent text-white shadow-2xl shadow-primary/30"
                 >
-                  <Eye className="w-12 h-12" />
+                  <Eye className="w-10 h-10" />
                 </motion.div>
-
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 text-[10px] font-black uppercase tracking-wider">
-                    <Sparkles className="w-3 h-3" /> تحدي مجاني · 3 دقائق فقط
-                  </div>
-                  <h1 className="text-4xl md:text-6xl font-black text-foreground leading-tight">
-                    وين تقدر <span className="text-primary">توصل</span><br />في الرياضيات؟
-                  </h1>
-                  <p className="text-base md:text-lg text-muted-foreground max-w-md mx-auto leading-relaxed pt-2">
-                    شوف الحقيقة اللي ما يقولهالك حد —<br />
-                    <strong className="text-foreground">واش يخليك تخسر النقاط في الامتحان؟</strong>
-                  </p>
-                </div>
+                <h1 className="text-2xl md:text-3xl font-black text-foreground">
+                  التشخيص الذكي
+                </h1>
               </div>
-
-              {/* WHAT YOU GET — instant rewards, not vague benefits */}
-              <div className="grid grid-cols-3 gap-3 max-w-xl mx-auto">
-                {[
-                  { icon: Timer, label: "3 دقائق", sub: "بسرعة", color: "text-cyan-600", bg: "bg-cyan-500/10" },
-                  { icon: TrendingUp, label: "نتيجة فورية", sub: "مع تفسير", color: "text-emerald-600", bg: "bg-emerald-500/10" },
-                  { icon: Trophy, label: "+100 XP", sub: "هدية ضمان", color: "text-amber-600", bg: "bg-amber-500/10" },
-                ].map((item, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 + i * 0.1 }}
-                    className="bg-card border border-border rounded-2xl p-4 text-center"
-                  >
-                    <div className={`w-10 h-10 rounded-xl ${item.bg} ${item.color} flex items-center justify-center mx-auto mb-2`}>
-                      <item.icon className="w-5 h-5" />
-                    </div>
-                    <div className="text-sm font-black text-foreground">{item.label}</div>
-                    <div className="text-[10px] text-muted-foreground font-bold mt-0.5">{item.sub}</div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* SOCIAL PROOF — comparison hook */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 border border-primary/20 rounded-2xl p-5 max-w-xl mx-auto"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex -space-x-2 rtl:space-x-reverse">
-                    {["🎯", "🔥", "⚡", "💎"].map((e, i) => (
-                      <div key={i} className="w-8 h-8 rounded-full bg-card border-2 border-background flex items-center justify-center text-sm shadow">
-                        {e}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="text-xs text-foreground/80 font-bold">
-                    أكثر من <span className="text-primary font-black">2,400 تلميذ</span> اكتشفوا مستواهم هذا الأسبوع
-                  </div>
-                </div>
-              </motion.div>
 
               {/* Country + Grade picker — required before starting */}
               <div className="max-w-xl mx-auto bg-card border-2 border-border rounded-2xl p-5">
@@ -160,8 +106,7 @@ export default function DiagnosticExam() {
                     setPickedCountry(c);
                     setPickedGrade(g);
                   }}
-                  compact
-                />
+                  />
               </div>
 
               {/* MAIN CTA — game-like, not "start test" */}
