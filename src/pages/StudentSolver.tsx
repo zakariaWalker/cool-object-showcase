@@ -118,6 +118,49 @@ export default function StudentSolver() {
     [figureSpec, currentStepText],
   );
 
+  // ---- Cognitive entry derivation ----
+  const cognitiveEntry = useMemo(() => {
+    if (!exercise) return null;
+    const grade = exercise.grade || "";
+    const levelMap: Record<string, string> = {
+      "1AS": "1 ثانوي", "2AS": "2 ثانوي", "3AS": "3 ثانوي",
+      "1AM": "1 متوسط", "2AM": "2 متوسط", "3AM": "3 متوسط", "4AM": "4 متوسط",
+    };
+    let level = grade;
+    Object.keys(levelMap).forEach((k) => { if (grade.includes(k)) level = levelMap[k]; });
+    if (/secondary/i.test(grade)) level = level || "ثانوي";
+    if (/middle/i.test(grade)) level = level || "متوسط";
+
+    const skill = pattern?.name || exercise.chapter || exercise.type || "تمرين";
+    const goal =
+      pattern?.goal ||
+      (exercise.chapter ? `إتقان: ${exercise.chapter}` : "حلّ التمرين خطوة بخطوة بفهم تامّ.");
+    const firstStepHint = deconstruction?.steps?.[0]
+      ? `ابدأ بهذه الخطوة: ${String(deconstruction.steps[0]).slice(0, 140)}`
+      : "اقرأ نص التمرين بتأنّ، ثم حدّد المعطيات والمطلوب قبل البدء.";
+
+    const stepsCount = deconstruction?.steps?.length || 1;
+    const durationMin = Math.max(2, Math.min(15, stepsCount * 2));
+    const xpReward = stepsCount * 10;
+
+    const difficulty: "facile" | "moyen" | "difficile" =
+      stepsCount <= 2 ? "facile" : stepsCount >= 5 ? "difficile" : "moyen";
+
+    const needs: string[] = Array.isArray(deconstruction?.needs) ? deconstruction.needs : [];
+    const hint = needs.length
+      ? `تذكّر المفاهيم: ${needs.join("، ")}.`
+      : pattern?.hint || "ابدأ بإعادة كتابة المعطيات بشكل منظّم.";
+    const similarExample = pattern?.example || (exercise.similar_example ?? "");
+    const method =
+      pattern?.method ||
+      (Array.isArray(deconstruction?.steps) && deconstruction.steps.length > 1
+        ? deconstruction.steps.map((s: string, i: number) => `${i + 1}. ${s}`).join("\n")
+        : "");
+
+    return { skill, level, goal, firstStepHint, durationMin, xpReward, difficulty, hint, similarExample, method };
+  }, [exercise, pattern, deconstruction]);
+
+
   const handleCheck = () => {
     if (!studentInput.trim()) return;
     const v = gradeAnswer(studentInput, schema);
