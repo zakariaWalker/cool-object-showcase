@@ -11,37 +11,25 @@ import { useAuth } from "@/hooks/useAuth";
 export default function DiagnosticExam() {
   const navigate = useNavigate();
   const [isStarted, setIsStarted] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [signedIn, setSignedIn] = useState(false);
 
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { countryCode, gradeCode, isComplete, loading: cLoading, setCurriculum } = useUserCurriculum();
   const { grades, labelOf } = useCountryGrades(countryCode || "DZ");
   const [pendingGrade, setPendingGrade] = useState<string>("");
 
+  // Authenticated users without a curriculum get sent to onboarding.
+  // Anonymous users default to DZ / 4AM and can try the diagnostic without signup.
   useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/auth?redirect=/diagnostic");
-        return;
-      }
-      setSignedIn(true);
-      setIsCheckingAuth(false);
-    })();
-  }, [navigate]);
-
-  useEffect(() => {
-    if (!cLoading && signedIn && !isComplete) {
+    if (!cLoading && user && !isComplete) {
       navigate("/onboarding?redirect=/diagnostic");
     }
-  }, [cLoading, signedIn, isComplete, navigate]);
+  }, [cLoading, user, isComplete, navigate]);
 
   useEffect(() => {
     if (!pendingGrade && gradeCode) setPendingGrade(gradeCode);
   }, [gradeCode, pendingGrade]);
 
-  if (isCheckingAuth || cLoading) {
+  if (cLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
