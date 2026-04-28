@@ -157,7 +157,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ direction: "rtl" }}>
+    <div className="flex flex-col h-screen overflow-hidden" style={{ direction: "rtl" }}>
       <AdminSidebar
         view={store.view}
         setView={store.setView}
