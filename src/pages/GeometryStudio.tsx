@@ -14,7 +14,7 @@ import { relationsToConstraints } from "@/engine/figures/enrichments";
 import { StudentEnrichmentPanel } from "@/components/geometry/StudentEnrichmentPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
-import { Search, BookOpen, Loader2, Database } from "lucide-react";
+import { Search, BookOpen, Loader2, Database, LayoutPanelLeft, Library } from "lucide-react";
 import { CognitiveEntryHeader } from "@/components/solver/CognitiveEntryHeader";
 import { deriveStudioCognitive } from "@/components/solver/studio-cognitive";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
