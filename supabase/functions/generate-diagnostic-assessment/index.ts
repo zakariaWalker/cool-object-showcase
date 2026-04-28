@@ -249,6 +249,32 @@ function dedupePool(items: any[]): any[] {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// Rule-based builder: pulls pre-materialized variants from question_template_variants
+// ─────────────────────────────────────────────────────────────────────────
+async function buildFromTemplates(db: any, level: string, count: number): Promise<any[]> {
+  const { data, error } = await db
+    .from("question_template_variants")
+    .select("id,question_text,kind,answer,options,skill_id")
+    .eq("is_active", true)
+    .eq("grade_code", level)
+    .limit(count);
+  if (error || !data?.length) return [];
+  const out = data.map((v: any) => ({
+    id: `tmpl-${v.id}`,
+    type: v.kind === "qcm" ? "concept" : "calc",
+    typeName: v.kind === "qcm" ? "مفهوم" : "حساب",
+    question: v.question_text,
+    options: Array.isArray(v.options) ? v.options : [],
+    answer: String(v.answer ?? "").split(" ")[0],
+    kind: v.kind === "qcm" ? "qcm" : "numeric",
+    icon: "🧮",
+    badgeColor: "text-primary",
+    badgeBg: "bg-primary/10",
+  }));
+  return out.filter(isGradableItem);
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // KB-first builder: synthesizes diagnostic items from kb_skills + kb_skill_errors
 // ─────────────────────────────────────────────────────────────────────────
 async function buildFromKB(db: any, level: string, countryCode: string, count: number): Promise<any[]> {
