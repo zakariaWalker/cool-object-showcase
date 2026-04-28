@@ -61,6 +61,27 @@ export function deriveStudioCognitive(
     };
   }
 
+  // Trigonometric circle / coordinates of a point on the unit circle — common 2AS topic.
+  // Catch BEFORE generic "circle" geometry detection.
+  const isUnitCircle =
+    /(دائرة\s+مثلثية|cercle\s+trigonom|cercle\s+unit|الدائرة\s+الوحدوية)/i.test(low) ||
+    (/(\\frac\s*\{\s*\d*\s*\\?pi|\bπ\b|\\pi)/i.test(low) && /(cos|sin|tan|جا|جتا|ظا|إحداثيات|coordonn)/i.test(low));
+  if (isUnitCircle) {
+    return {
+      skill: "الدائرة المثلثية وإحداثيات نقطة",
+      level: niceLevel,
+      difficulty: "moyen",
+      durationMin: 7,
+      xpReward: 25,
+      goal: "تحديد إحداثيات نقطة على الدائرة المثلثية واستنتاج قيمتي الجيب وجيب التمام للزاوية المرتبطة بها.",
+      firstStepHint: "حدّد المركز (0,0) ونصف القطر 1، ثم ضع الزاوية x ابتداءً من المحور الموجب للسينات (عكس عقارب الساعة).",
+      hint: "إحداثيات النقطة M المرتبطة بالعدد x هي M(cos x, sin x). استعمل الزوايا المرجعية (π/6, π/4, π/3) وقواعد الإشارة في الأرباع.",
+      similarExample: "x = 2π/3 ⇒ M = (cos 2π/3, sin 2π/3) = (−1/2, √3/2).",
+      method: "1. حدّد الربع الذي تقع فيه الزاوية (5π/6 → الربع الثاني).\n2. احسب الزاوية المرجعية = π − x = π/6.\n3. cos(π/6) = √3/2 و sin(π/6) = 1/2.\n4. طبّق الإشارة حسب الربع: في الربع الثاني، cos < 0 و sin > 0.\n5. النتيجة: M(−√3/2, 1/2)، أي cos(5π/6) = −√3/2 و sin(5π/6) = 1/2.",
+    };
+  }
+
+
 
   if (kind === "algebra") {
     if (/factoris|تحليل/.test(low) && /مربّ?ع كامل|carré parfait|a²|b²|2ab/.test(low)) {

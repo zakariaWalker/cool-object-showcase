@@ -17,6 +17,7 @@ import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { Search, BookOpen, Loader2, Database } from "lucide-react";
 import { CognitiveEntryHeader } from "@/components/solver/CognitiveEntryHeader";
 import { deriveStudioCognitive } from "@/components/solver/studio-cognitive";
+import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 
 interface KBEx {
   id: string;
@@ -202,8 +203,16 @@ export default function GeometryStudio() {
         <div className="space-y-3 min-w-0">
           {/* Task input */}
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            {committed && (
+              <div className="rounded-lg bg-primary/5 border border-primary/20 p-3" dir="rtl">
+                <div className="text-[10px] font-black text-primary uppercase tracking-wider mb-1">
+                  📜 نص التمرين
+                </div>
+                <MathExerciseRenderer text={committed} className="text-sm leading-relaxed text-foreground" />
+              </div>
+            )}
             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-              نص التمرين أو ما تريد إنشاءه
+              {committed ? "تعديل النص" : "نص التمرين أو ما تريد إنشاءه"}
             </label>
             <textarea
               value={task}
@@ -386,7 +395,9 @@ export default function GeometryStudio() {
                               : "border-transparent hover:bg-muted text-muted-foreground hover:text-foreground"
                           }`}
                         >
-                          <span className="line-clamp-3">{e.text}</span>
+                          <div className="line-clamp-3" dir="rtl">
+                            <MathExerciseRenderer text={e.text} className="text-[11px] leading-relaxed" />
+                          </div>
                           {e.type && (
                             <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                               {e.type}
