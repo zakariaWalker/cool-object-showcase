@@ -29,6 +29,7 @@ interface KBExerciseLite {
   chapter: string | null;
   source: string | null;
   type: string | null;
+  grade?: string | null;
 }
 
 // Mirror of detectEditorType from StudentAnswerEditor — used to show
