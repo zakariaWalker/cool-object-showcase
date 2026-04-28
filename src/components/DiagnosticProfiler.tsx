@@ -237,7 +237,8 @@ export function DiagnosticProfiler({
   }
 
   function renderMath(text: string) {
-    return <MathExerciseRenderer text={stripFigureRefs(text)} showDiagram />;
+    // Diagnostic items must be answerable without a figure — never auto-draw.
+    return <MathExerciseRenderer text={stripFigureRefs(text)} showDiagram={false} />;
   }
 
   if (loading) {
