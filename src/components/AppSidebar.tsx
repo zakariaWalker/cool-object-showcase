@@ -120,11 +120,11 @@ export function AppSidebar() {
       <SidebarHeader className={collapsed ? "border-b border-border/40 p-2 flex items-center justify-center" : "border-b border-border/40 p-4"}>
         <Link to="/" className={collapsed ? "flex items-center justify-center" : "flex items-center gap-3 group"}>
           {collapsed ? (
-            <QEDLogo size="sm" markOnly inverted />
+            <QEDLogo size="sm" markOnly />
           ) : (
             <>
-              <QEDLogo size="sm" inverted />
-              <div className="text-[11px] font-bold text-sidebar-foreground/70 uppercase tracking-widest">
+              <QEDLogo size="sm" />
+              <div className="text-[11px] font-bold text-sidebar-foreground/60 uppercase tracking-widest">
                 منصّة الرياضيات
               </div>
             </>
