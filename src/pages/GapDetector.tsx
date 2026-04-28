@@ -90,6 +90,8 @@ export default function GapDetector() {
   const [answers, setAnswers] = useState<QuizAnswer[]>([]);
   const [showSolution, setShowSolution] = useState(false);
   const [roundHistory, setRoundHistory] = useState<QuizAnswer[][]>([]);
+  const [roundMode, setRoundMode] = useState<"standard" | "adaptive">("standard");
+  const [adaptiveTargetConcepts, setAdaptiveTargetConcepts] = useState<string[]>([]);
 
   // Answer input + grading state
   const [answerText, setAnswerText] = useState("");
@@ -226,7 +228,7 @@ export default function GapDetector() {
   }, [exercises, deconstructions, gradeFilter]);
 
   const generateQuiz = useCallback(
-    (weakConcepts?: Set<string>) => {
+    (weakConcepts?: Set<string>, size: number = QUIZ_SIZE) => {
       let pool = availableExercises.filter((e) => !usedExerciseIds.has(e.id));
 
       let prioritized: Exercise[] = [];
@@ -245,7 +247,7 @@ export default function GapDetector() {
 
       const shuffled = [...prioritized.sort(() => Math.random() - 0.5), ...rest.sort(() => Math.random() - 0.5)].slice(
         0,
-        QUIZ_SIZE,
+        size,
       );
 
       const questions: QuizQuestion[] = shuffled.map((exercise) => {
@@ -397,6 +399,8 @@ export default function GapDetector() {
         correct: correctCount,
         score_pct: Math.round((correctCount / allAnswers.length) * 100),
         round: roundHistory.length + 1,
+        mode: roundMode,
+        target_concepts: roundMode === "adaptive" ? adaptiveTargetConcepts : undefined,
       });
     }
   };
@@ -449,8 +453,29 @@ export default function GapDetector() {
     return set;
   }, [analysis]);
 
-  const canContinue = availableExercises.filter((e) => !usedExerciseIds.has(e.id)).length >= QUIZ_SIZE;
-  const continueAdaptive = () => generateQuiz(weakConceptsFromHistory);
+  const ADAPTIVE_SIZE = 5;
+  const adaptivePool = useMemo(() => {
+    if (!analysis?.gaps.length) return [] as Exercise[];
+    const concepts = new Set(analysis.gaps.map((g) => g.concept));
+    return availableExercises.filter((e) => {
+      if (usedExerciseIds.has(e.id)) return false;
+      const decons = deconstructions.filter((d) => d.exercise_id === e.id);
+      return decons.some((d) => d.needs.some((n) => concepts.has(n)));
+    });
+  }, [analysis, availableExercises, usedExerciseIds, deconstructions]);
+
+  const canContinue = adaptivePool.length >= 3;
+
+  const continueAdaptive = () => {
+    if (!analysis?.gaps.length) return;
+    // Order gaps by frequency (most failures first) — these become the targeted concepts
+    const orderedConcepts = [...analysis.gaps]
+      .sort((a, b) => b.count - a.count)
+      .map((g) => g.concept);
+    setAdaptiveTargetConcepts(orderedConcepts);
+    setRoundMode("adaptive");
+    generateQuiz(weakConceptsFromHistory, ADAPTIVE_SIZE);
+  };
 
   /** Focused re-test: builds a mini-quiz that drills only ONE selected gap. */
   const retestSingleGap = useCallback(
@@ -574,6 +599,22 @@ export default function GapDetector() {
             {q.exercise.grade}
           </span>
         </div>
+
+        {roundMode === "adaptive" && (
+          <div className="border-b border-border bg-gradient-to-l from-primary/10 via-primary/5 to-transparent px-6 py-3">
+            <div className="max-w-3xl mx-auto flex items-center gap-2">
+              <span className="text-base">🎯</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-black text-primary">جولة تكيّفية</div>
+                <div className="text-[10px] text-muted-foreground truncate">
+                  {adaptiveTargetConcepts.length > 0
+                    ? `تركّز على: ${adaptiveTargetConcepts.slice(0, 3).join(" · ")}${adaptiveTargetConcepts.length > 3 ? " …" : ""}`
+                    : "تمارين مختارة بناءً على ثغراتك"}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="max-w-3xl mx-auto p-6">
           <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
@@ -870,6 +911,8 @@ export default function GapDetector() {
                 setQuizState("setup");
                 setUsedExerciseIds(new Set());
                 setRoundHistory([]);
+                setRoundMode("standard");
+                setAdaptiveTargetConcepts([]);
               }}
               className="flex-1 py-4 rounded-xl text-sm font-bold border border-border bg-card text-foreground hover:bg-accent transition-all"
             >
