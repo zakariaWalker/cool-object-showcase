@@ -67,7 +67,7 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply, comp
         if (cancelled) return;
         if (found) {
           setEnr(found);
-          onApply(found);
+          onApply?.(found);
         } else {
           setEnr(EMPTY_ENRICHMENT);
         }
