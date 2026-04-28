@@ -210,7 +210,9 @@ export default function GeometryStudio() {
                   <>
                     <Database className="w-3.5 h-3.5 text-primary" />
                     <span className="font-bold text-foreground">
-                      {analysisSource === "kb_figure"
+                      {analysisSource === "kb_learned"
+                        ? "✓ معرفة مكتسبة:"
+                        : analysisSource === "kb_figure"
                         ? "شكل من KB:"
                         : analysisSource === "kb_enriched"
                         ? "تحليل مُعزَّز من KB:"
