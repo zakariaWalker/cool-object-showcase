@@ -83,7 +83,9 @@ Deno.serve(async (req) => {
     // Load admin-flagged "bad" questions once — every code path filters against this.
     const flagged = await loadFlaggedHashes(db, countryCode, level);
 
-    const POOL_SIZE = Math.max(count * 6, 30);
+    const safeSeed = Number.isFinite(Number(seed)) ? Number(seed) : Math.random();
+    const POOL_SIZE = Math.max(count * 8, 40);
+    const MIN_ROTATING_POOL = Math.max(count * 3, 12);
     const cacheKey = `diag:pool:${countryCode}:${level}`;
 
     if (!forceRefresh) {
@@ -96,8 +98,8 @@ Deno.serve(async (req) => {
 
       if (cached?.exercises && Array.isArray(cached.exercises)) {
         const clean = dropFlagged(cached.exercises, flagged);
-        if (clean.length >= count) {
-          const picked = pickFromPool(clean, count, seed);
+        if (clean.length >= MIN_ROTATING_POOL) {
+          const picked = pickFromPool(clean, count, safeSeed);
           return new Response(
             JSON.stringify({ exercises: picked, source: cached.source, cached: true, poolSize: clean.length, flagged: flagged.size }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -111,18 +113,18 @@ Deno.serve(async (req) => {
     const tmplPool = dropFlagged(await buildFromTemplates(db, level, POOL_SIZE), flagged);
     if (tmplPool.length >= count) {
       await writeCache(db, cacheKey, level, countryCode, tmplPool, "templates");
-      const picked = pickFromPool(tmplPool, count, seed);
+      const picked = pickFromPool(tmplPool, count, safeSeed);
       return new Response(
         JSON.stringify({ exercises: picked, source: "templates", poolSize: tmplPool.length, flagged: flagged.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const kbPool = dropFlagged(await buildFromKB(db, level, countryCode, POOL_SIZE), flagged);
+    const kbPool = dropFlagged(await buildFromKB(db, level, countryCode, POOL_SIZE, safeSeed), flagged);
     const combined = dedupePool([...tmplPool, ...kbPool]);
     if (combined.length >= count) {
       await writeCache(db, cacheKey, level, countryCode, combined, tmplPool.length ? "templates+kb" : "kb");
-      const picked = pickFromPool(combined, count, seed);
+      const picked = pickFromPool(combined, count, safeSeed);
       return new Response(
         JSON.stringify({ exercises: picked, source: tmplPool.length ? "templates+kb" : "kb", poolSize: combined.length, flagged: flagged.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -133,7 +135,7 @@ Deno.serve(async (req) => {
     const staticPool = getStaticFallbackPool();
     const merged = dropFlagged(dedupePool([...tmplPool, ...kbPool, ...staticPool]), flagged);
     await writeCache(db, cacheKey, level, countryCode, merged, "fallback");
-    const picked = pickFromPool(merged, count, seed);
+    const picked = pickFromPool(merged, count, safeSeed);
     return new Response(
       JSON.stringify({ exercises: picked, source: "fallback", poolSize: merged.length, flagged: flagged.size }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
