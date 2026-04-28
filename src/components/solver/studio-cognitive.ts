@@ -49,7 +49,7 @@ export function deriveStudioCognitive(
   if (isTrigIdentity || (isProof && /sin|cos|جا|جتا/.test(low))) {
     return {
       skill: "إثبات متطابقة مثلثية",
-      level,
+      level: niceLevel,
       difficulty: "moyen",
       durationMin: 6,
       xpReward: 25,
@@ -134,7 +134,7 @@ export function deriveStudioCognitive(
 
   return {
     skill,
-    level,
+    level: niceLevel,
     difficulty,
     durationMin,
     xpReward,
