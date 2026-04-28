@@ -27,12 +27,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (isGuest && !isPublic) navigate("/");
   }, [isGuest, currentPath, navigate]);
 
-  // Bare layout for landing/auth/onboarding/TMA
+  // Bare layout for landing/auth/onboarding/TMA, and for guests on /diagnostic
   if (
     currentPath === "/" ||
     currentPath === "/auth" ||
     currentPath === "/onboarding" ||
-    currentPath.startsWith("/tma")
+    currentPath.startsWith("/tma") ||
+    (isGuest && currentPath === "/diagnostic")
   ) {
     return <>{children}</>;
   }
