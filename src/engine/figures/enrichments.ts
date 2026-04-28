@@ -76,17 +76,75 @@ export function relationsToConstraints(rels: RelationHint[]): Constraint[] {
   return out;
 }
 
-/** Suggest follow-up questions based on the exercise text. */
-export function suggestQuestions(text: string): string[] {
+export type ExerciseDomain = "geometry" | "algebra" | "functions" | "statistics" | "probability" | "arithmetic" | "general";
+
+/** Detect the dominant domain of an exercise from its text. */
+export function detectDomain(text: string): ExerciseDomain {
   const t = (text || "").toLowerCase();
-  const qs: string[] = ["ما الشكل المطروح؟", "ما هي المعطيات الصريحة في النص؟", "ما المطلوب إثباته أو إنشاؤه؟"];
-  if (/مثلث|triangle/.test(t)) qs.push("هل المثلث قائم/متساوي الساقين/متساوي الأضلاع؟");
-  if (/دائرة|circle|cercle/.test(t)) qs.push("ما مركز الدائرة ونصف قطرها؟");
-  if (/منصّ?ف|médiatrice|bissectrice/.test(t)) qs.push("هل المنصّف عمودي أم منصّف زاوية؟");
-  if (/متوازي|parallèle/.test(t)) qs.push("ما المستقيمان المتوازيان؟");
-  if (/متعامد|perpendicul/.test(t)) qs.push("ما المستقيمان المتعامدان؟");
-  return qs;
+  if (/مثلث|دائرة|مستطيل|مربّ?ع|متوازي|منصّ?ف|عمودي|triangle|circle|cercle|carré|rectangle|losange/.test(t)) return "geometry";
+  if (/دالة|منحنى|fonction|courbe/.test(t)) return "functions";
+  if (/متوسّ?ط|وسيط|تكرار|متغير|moyenne|médiane|effectif|écart/.test(t)) return "statistics";
+  if (/احتمال|probabilit/.test(t)) return "probability";
+  if (/معادلة|متراجحة|كثير حدود|عبارة|équation|inéquation|polynôme|développer|factoriser|simplifier/.test(t)) return "algebra";
+  if (/جمع|طرح|ضرب|قسمة|نسبة|مضاعف|قاسم/.test(t)) return "arithmetic";
+  return "general";
 }
+
+/** Suggest domain-aware follow-up questions for any exercise. */
+export function suggestQuestions(text: string, domain?: ExerciseDomain): string[] {
+  const d = domain ?? detectDomain(text);
+  const t = (text || "").toLowerCase();
+  const base = ["ما هي المعطيات الصريحة في النص؟", "ما المطلوب بالضبط؟"];
+
+  if (d === "geometry") {
+    base.push("ما الشكل المطروح؟");
+    if (/مثلث|triangle/.test(t)) base.push("هل المثلث قائم/متساوي الساقين/متساوي الأضلاع؟");
+    if (/دائرة|circle|cercle/.test(t)) base.push("ما مركز الدائرة ونصف قطرها؟");
+    if (/منصّ?ف|médiatrice|bissectrice/.test(t)) base.push("هل المنصّف عمودي أم منصّف زاوية؟");
+    if (/متوازي|parallèle/.test(t)) base.push("ما المستقيمان المتوازيان؟");
+    if (/متعامد|perpendicul/.test(t)) base.push("ما المستقيمان المتعامدان؟");
+  } else if (d === "algebra") {
+    base.push("ما المتغيّرات والثوابت؟");
+    base.push("ما نوع المسألة؟ (تبسيط، تحليل، حل معادلة، …)");
+    if (/معادلة|équation/.test(t)) base.push("ما درجة المعادلة؟");
+    if (/متراجحة|inéquation/.test(t)) base.push("ما اتجاه المتراجحة؟");
+  } else if (d === "functions") {
+    base.push("ما تعبير الدالة؟ وما مجال تعريفها؟");
+    base.push("هل المطلوب دراسة التغيّرات أم رسم المنحنى أم حساب صورة؟");
+  } else if (d === "statistics") {
+    base.push("ما المتغيّر الإحصائي وما حجم العيّنة؟");
+    base.push("هل المعطيات في جدول تكراري؟");
+  } else if (d === "probability") {
+    base.push("ما الفضاء العيّني؟");
+    base.push("ما الحدث المطلوب احتماله؟");
+  } else if (d === "arithmetic") {
+    base.push("ما الأعداد المتدخّلة وما العملية المطلوبة؟");
+  } else {
+    base.push("ما الفكرة الرياضية الأساسية في هذا التمرين؟");
+  }
+  return base;
+}
+
+/** Domain-aware tag suggestions to help organize KB. */
+export function suggestTags(domain: ExerciseDomain): string[] {
+  switch (domain) {
+    case "geometry":
+      return ["فيثاغورس", "طاليس", "تشابه", "تطابق", "محور تناظر", "زاوية قائمة", "متوازي أضلاع", "دائرة محيطة"];
+    case "algebra":
+      return ["تبسيط", "تحليل", "نشر", "معادلة من الدرجة الأولى", "معادلة من الدرجة الثانية", "متراجحة", "هويات شهيرة"];
+    case "functions":
+      return ["دالة خطية", "دالة تآلفية", "تغيّرات", "صورة", "سابقة", "منحنى"];
+    case "statistics":
+      return ["متوسط حسابي", "وسيط", "تكرارات", "مدى", "تباين"];
+    case "probability":
+      return ["حدث", "فضاء عيّني", "احتمال متساوي", "أحداث متنافية"];
+    case "arithmetic":
+      return ["قسمة إقليدية", "PGCD", "PPCM", "نسبة", "تناسب"];
+    default:
+      return ["مفهوم أساسي", "تطبيق مباشر", "برهان", "حساب"];
+  }
+}
+
 
 /** Persist (or upvote) an enrichment for the given exercise text. */
 export async function saveEnrichment(opts: {

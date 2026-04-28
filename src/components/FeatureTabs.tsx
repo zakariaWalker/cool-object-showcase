@@ -13,6 +13,7 @@ import { Domain } from "@/engine/types";
 import { getProgressRemote, getGapsRemote, syncLocalToSupabase } from "@/engine/progress-store";
 import { useProfile, PROFILES } from "@/engine/profile-store";
 import { DiagnosticProfiler } from "./DiagnosticProfiler";
+import { StudentEnrichmentPanel } from "./geometry/StudentEnrichmentPanel";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1006,6 +1007,7 @@ const TABS = [
   { icon: "🕸️", label: "خريطة المفاهيم", shortLabel: "المفاهيم" },
   { icon: "🤖", label: "المدرّس الآلي", shortLabel: "المدرّس" },
   { icon: "📊", label: "لوحة الأستاذ", shortLabel: "الأستاذ" },
+  { icon: "💡", label: "نظّم أفكارك وأَثرِ KB", shortLabel: "أفكاري" },
 ];
 
 export function FeatureTabs({ exercise, parsed, kbPattern }: FeatureTabsProps) {
@@ -1076,6 +1078,13 @@ export function FeatureTabs({ exercise, parsed, kbPattern }: FeatureTabsProps) {
             {activeTab === 2 && <ConceptMapView domain={domain} />}
             {activeTab === 3 && <AITutor exercise={exercise} kbPattern={kbPattern} />}
             {activeTab === 4 && <TeacherPanel />}
+            {activeTab === 5 && (
+              <StudentEnrichmentPanel
+                text={(exercise as any)?.statement || ""}
+                exerciseId={(exercise as any)?._kb?.id || null}
+                domain={domain as any}
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
