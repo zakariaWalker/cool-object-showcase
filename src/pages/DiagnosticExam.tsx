@@ -107,7 +107,6 @@ export default function DiagnosticExam() {
                     setPickedGrade(g);
                   }}
                   />
-                />
               </div>
 
               {/* MAIN CTA — game-like, not "start test" */}
