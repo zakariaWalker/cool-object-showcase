@@ -93,7 +93,7 @@ export function deriveStudioCognitive(
     } else if (/cercle circonscrit|دائرة محيطة/.test(low)) {
       skill = "الدائرة المحيطة بمثلث";
       firstStepHint = "مركز الدائرة المحيطة هو نقطة تقاطع المنصّفات العمودية لأضلاع المثلث.";
-    } else if (/triangle|مثلث/.test(low)) {
+    } else if (/(triangle|مثلث)/.test(low) && /(ارسم|أنشئ|construire|tracer|dessiner)/.test(low)) {
       skill = "إنشاء مثلث";
       goal = "رسم مثلث يحقّق المعطيات (أطوال أو زوايا).";
       firstStepHint = "ابدأ برسم أطول ضلع، ثم استعمل البركار لرسم القوسين.";
