@@ -35,8 +35,13 @@ interface KBExerciseLite {
 // the user which editor will appear and to filter the algebra library.
 function detectEditorKind(text: string): "algebra" | "geometry" {
   const txt = (text || "").toLowerCase();
-  if (/ارسم|أنشئ|المثلث|الدائرة|المستقيم|قطعة|مستقيم|تحويل|دوران|انسحاب|تماثل|زاوية|منحنى/.test(txt)) return "geometry";
-  if (/triangle|circle|rectangle|parallelo|trapèze|losange|plot|curve/.test(txt)) return "geometry";
+  // Trig identities / function studies / proofs → algebra, even if they mention "مثلث" (مثلثية).
+  if (/\\sin|\\cos|\\tan|\\cot|sin\(|cos\(|tan\(|جا\s*\(|جتا\s*\(|ظا\s*\(|متطابقة|identité|fonction|دالة/.test(txt)) return "algebra";
+  if (/(أثبت|بيّن|برهن|démontr|montr|prouv)\s+(أن|que|صحة|l'égalité|l'identité)/i.test(txt)) return "algebra";
+  // Construction-only verbs trigger geometry.
+  if (/(ارسم|أنشئ|construire|tracer|dessiner)/.test(txt)) return "geometry";
+  // Pure shape names with no algebraic context.
+  if (/(الدائرة|المستقيم|قطعة|مستقيم|تحويل|دوران|انسحاب|تماثل|زاوية|منحنى)/.test(txt)) return "geometry";
   return "algebra";
 }
 
