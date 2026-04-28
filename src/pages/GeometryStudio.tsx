@@ -158,6 +158,7 @@ export default function GeometryStudio() {
     setActiveExId(e.id);
     setActiveGrade(e.grade || null);
     setActiveChapter(e.chapter || null);
+    setActiveTab("board");
   };
 
   return (
