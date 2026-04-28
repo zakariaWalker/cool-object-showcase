@@ -63,11 +63,13 @@ export function DiagnosticProfiler({
   const [revealStep, setRevealStep] = useState(0);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const loadedOnceRef = useRef(false);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const data = await generateDiagnosticExercises(level, countryCode);
+      const data = await generateDiagnosticExercises(level, countryCode, loadedOnceRef.current);
+      loadedOnceRef.current = true;
       // Defensive: filter out any open-ended items that have no gradable answer.
       // These would always be marked wrong by submitAnswer() and skew the diagnostic.
       const gradable = (data || []).filter(

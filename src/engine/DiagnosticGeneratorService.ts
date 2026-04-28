@@ -26,6 +26,7 @@ export interface DiagnosticExercise {
 export async function generateDiagnosticExercises(
   level: string,
   countryCode: string = "DZ",
+  forceRefresh: boolean = false,
 ): Promise<DiagnosticExercise[]> {
   try {
     const { data, error } = await supabase.functions.invoke("generate-diagnostic-assessment", {
@@ -35,6 +36,7 @@ export async function generateDiagnosticExercises(
         purpose: "fair_diagnostic",
         count: 5,
         seed: Math.random(),
+        forceRefresh,
       },
     });
 

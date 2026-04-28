@@ -1,4 +1,3 @@
-import { callGemini, GeminiError, extractJSON } from "../_shared/gemini.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0";
 
 const corsHeaders = {
@@ -83,7 +82,9 @@ Deno.serve(async (req) => {
     // Load admin-flagged "bad" questions once — every code path filters against this.
     const flagged = await loadFlaggedHashes(db, countryCode, level);
 
-    const POOL_SIZE = Math.max(count * 6, 30);
+    const safeSeed = Number.isFinite(Number(seed)) ? Number(seed) : Math.random();
+    const POOL_SIZE = Math.max(count * 8, 40);
+    const MIN_ROTATING_POOL = Math.max(count * 3, 12);
     const cacheKey = `diag:pool:${countryCode}:${level}`;
 
     if (!forceRefresh) {
@@ -96,8 +97,8 @@ Deno.serve(async (req) => {
 
       if (cached?.exercises && Array.isArray(cached.exercises)) {
         const clean = dropFlagged(cached.exercises, flagged);
-        if (clean.length >= count) {
-          const picked = pickFromPool(clean, count, seed);
+        if (clean.length >= MIN_ROTATING_POOL) {
+          const picked = pickFromPool(clean, count, safeSeed);
           return new Response(
             JSON.stringify({ exercises: picked, source: cached.source, cached: true, poolSize: clean.length, flagged: flagged.size }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -111,18 +112,18 @@ Deno.serve(async (req) => {
     const tmplPool = dropFlagged(await buildFromTemplates(db, level, POOL_SIZE), flagged);
     if (tmplPool.length >= count) {
       await writeCache(db, cacheKey, level, countryCode, tmplPool, "templates");
-      const picked = pickFromPool(tmplPool, count, seed);
+      const picked = pickFromPool(tmplPool, count, safeSeed);
       return new Response(
         JSON.stringify({ exercises: picked, source: "templates", poolSize: tmplPool.length, flagged: flagged.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const kbPool = dropFlagged(await buildFromKB(db, level, countryCode, POOL_SIZE), flagged);
+    const kbPool = dropFlagged(await buildFromKB(db, level, countryCode, POOL_SIZE, safeSeed), flagged);
     const combined = dedupePool([...tmplPool, ...kbPool]);
     if (combined.length >= count) {
       await writeCache(db, cacheKey, level, countryCode, combined, tmplPool.length ? "templates+kb" : "kb");
-      const picked = pickFromPool(combined, count, seed);
+      const picked = pickFromPool(combined, count, safeSeed);
       return new Response(
         JSON.stringify({ exercises: picked, source: tmplPool.length ? "templates+kb" : "kb", poolSize: combined.length, flagged: flagged.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -133,7 +134,7 @@ Deno.serve(async (req) => {
     const staticPool = getStaticFallbackPool();
     const merged = dropFlagged(dedupePool([...tmplPool, ...kbPool, ...staticPool]), flagged);
     await writeCache(db, cacheKey, level, countryCode, merged, "fallback");
-    const picked = pickFromPool(merged, count, seed);
+    const picked = pickFromPool(merged, count, safeSeed);
     return new Response(
       JSON.stringify({ exercises: picked, source: "fallback", poolSize: merged.length, flagged: flagged.size }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -192,16 +193,20 @@ function mulberry32(a: number) {
   };
 }
 
+function seededShuffle<T>(items: T[], seed: number): T[] {
+  const rng = mulberry32(Math.floor((seed || Math.random()) * 1e9));
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
+}
+
 function pickFromPool(pool: any[], count: number, seed: number): any[] {
   // Defensive: filter again at pick time so old cached pools don't leak bad items
   const clean = pool.filter(isGradableItem);
-  const rng = mulberry32(Math.floor((seed || Math.random()) * 1e9));
   const arr = [...clean];
-  // Fisher-Yates with seeded RNG
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
+  seededShuffle(arr, seed);
   // Diversify by type: try to pick at most ceil(count/3) per type
   const byType: Record<string, any[]> = {};
   for (const it of arr) {
@@ -267,7 +272,7 @@ async function buildFromTemplates(db: any, level: string, count: number): Promis
 // ─────────────────────────────────────────────────────────────────────────
 // KB-first builder: synthesizes diagnostic items from kb_skills + kb_skill_errors
 // ─────────────────────────────────────────────────────────────────────────
-async function buildFromKB(db: any, level: string, countryCode: string, count: number): Promise<any[]> {
+async function buildFromKB(db: any, level: string, countryCode: string, count: number, seed: number): Promise<any[]> {
   // Resolve skills via curriculum_mappings, fall back to kb_skills.grade
   let skillIds: string[] = [];
   try {
@@ -301,15 +306,18 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
   // (most KB exercises are NOT yet linked to skills, so this dramatically increases variety).
   const skillIdList = skills.map((s: any) => s.id);
 
-  const [{ data: linkedRows }, { data: gradeExs }] = await Promise.all([
-    db.from("kb_skill_exercise_links").select("skill_id, exercise_id").in("skill_id", skillIdList).limit(200),
+  const [linkedResult, { data: gradeExs }] = await Promise.all([
+    skillIdList.length
+      ? db.from("kb_skill_exercise_links").select("skill_id, exercise_id").in("skill_id", skillIdList).limit(200)
+      : Promise.resolve({ data: [] }),
     db
       .from("kb_exercises")
       .select("id, text, type, difficulty, bloom_level, chapter")
       .eq("country_code", countryCode)
       .eq("grade", level)
-      .limit(Math.max(count * 4, 80)),
+      .limit(Math.max(count * 6, 160)),
   ]);
+  const linkedRows = linkedResult.data || [];
 
   // Map exercise → skill (for linked ones)
   const skillByExercise = new Map<string, any>();
@@ -326,26 +334,25 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
     ...(gradeExs || []).filter((e: any) => !linkedIds.has(e.id)),
   ];
 
-  // Shuffle once before sampling so different cache builds yield different orderings
-  for (let i = allExercises.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [allExercises[i], allExercises[j]] = [allExercises[j], allExercises[i]];
-  }
+  seededShuffle(allExercises, seed);
 
   // Pull documented misconceptions for these skills (highest-frequency first)
-  const { data: errors } = await db
-    .from("kb_skill_errors")
-    .select("skill_id, error_description, fix_hint, severity, error_type")
-    .in("skill_id", skillIdList)
-    .order("frequency", { ascending: false })
-    .limit(Math.max(count * 2, 20));
+  const { data: errors } = skillIdList.length
+    ? await db
+        .from("kb_skill_errors")
+        .select("skill_id, error_description, fix_hint, severity, error_type")
+        .in("skill_id", skillIdList)
+        .order("frequency", { ascending: false })
+        .limit(Math.max(count * 2, 20))
+    : { data: [] };
 
   const out: any[] = [];
+  const errorRows = seededShuffle([...(errors || [])], seed);
 
   // (a) From documented errors — wrap as "trap" QCM items.
   // Only emit if the description is a complete, self-contained claim
   // (i.e. makes sense out-of-context as a sentence to agree/disagree with).
-  for (const err of errors || []) {
+  for (const err of errorRows) {
     if (out.length >= count) break;
     const desc = (err.error_description || "").trim();
     if (desc.length < 20 || desc.length > 180) continue;
@@ -376,10 +383,58 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
   // (b) REMOVED: the previous "self-report concept check" branch produced
   // fake diagnostic data ("هل أنت مرتاح؟" with answer always = "نعم"), so
   // every student auto-scored 100% on those items. We no longer emit them.
-  // If the documented-errors pool is too small, the AI augment path (step 3)
-  // takes over to fill the gap with real gradable questions.
+  // If the documented-errors pool is too small, KB exercises below fill the gap.
 
-  return out.filter(isGradableItem);
+  for (const ex of allExercises) {
+    if (out.length >= count) break;
+    const item = kbExerciseToDiagnosticItem(ex, skillByExercise.get(ex.id));
+    if (item && isGradableItem(item)) out.push(item);
+  }
+
+  return dedupePool(out);
+}
+
+function kbExerciseToDiagnosticItem(ex: any, skill?: any): any | null {
+  const raw = String(ex?.text || "").replace(/\s+/g, " ").trim();
+  if (!raw || raw.length < 12 || NON_GRADABLE_RE.test(raw)) return null;
+  const snippet = raw.length > 220 ? `${raw.slice(0, 220)}…` : raw;
+  const type = String(ex?.type || skill?.domain || "algebra");
+  const answer = domainLabel(type);
+  const options = uniqueOptions([answer, "حساب مباشر", "هندسة", "دوال ومتتاليات", "مقارنة وترتيب"]);
+  const badge = badgeFor(type);
+  return {
+    id: `kb-ex-${ex.id}`,
+    type: "standard",
+    typeName: "من بنك المعرفة",
+    question: `اقرأ هذا السؤال من بنك المعرفة: ${snippet}\nما المهارة الأقرب التي يقيسها؟`,
+    options,
+    answer,
+    hint: `ابحث عن الكلمات المفتاحية في السؤال: ${skill?.name_ar || skill?.name || answer}.`,
+    kind: "qcm",
+    icon: badge.icon,
+    misconception: `صعوبة في تصنيف مهارة: ${answer}`,
+    misconceptionType: inferMiscType(type, skill?.subdomain),
+    badgeColor: badge.color,
+    badgeBg: badge.bg,
+  };
+}
+
+function domainLabel(type: string): string {
+  const t = type.toLowerCase();
+  if (t.includes("geom") || t.includes("triangle") || t.includes("parallelogram")) return "هندسة";
+  if (t.includes("function") || t.includes("sequence") || t.includes("analytic")) return "دوال ومتتاليات";
+  if (t.includes("fraction") || t.includes("number") || t.includes("arithmetic")) return "مقارنة وترتيب";
+  if (t.includes("prob")) return "احتمالات";
+  return "جبر وحساب حرفي";
+}
+
+function uniqueOptions(values: string[]): string[] {
+  const seen = new Set<string>();
+  return values.filter((v) => {
+    if (seen.has(v)) return false;
+    seen.add(v);
+    return true;
+  }).slice(0, 4);
 }
 
 function inferMiscType(domain?: string, subdomain?: string, errorType?: string): Misc | undefined {
@@ -422,112 +477,6 @@ async function writeCache(
   } catch (e) {
     console.warn("cache write failed (non-fatal):", e);
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// AI generator (used only when KB returns < count items)
-// ─────────────────────────────────────────────────────────────────────────
-async function generateWithAI(
-  db: any,
-  level: string,
-  countryCode: string,
-  count: number,
-  seed: number,
-): Promise<any[]> {
-  // Build context
-  let skillContext = "";
-  let misconceptionContext = "";
-  let exerciseContext = "";
-  try {
-    const { data: maps } = await db
-      .from("curriculum_mappings")
-      .select("skill_id")
-      .eq("country_code", countryCode)
-      .eq("grade_code", level);
-    let skillIds = (maps || []).map((m: any) => m.skill_id);
-    if (skillIds.length === 0) {
-      const { data: gs } = await db.from("kb_skills").select("id").eq("grade", level).limit(40);
-      skillIds = (gs || []).map((s: any) => s.id);
-    }
-    if (skillIds.length > 0) {
-      const { data: skills } = await db
-        .from("kb_skills")
-        .select("id, name_ar, name, domain, subdomain, difficulty, bloom_level")
-        .in("id", skillIds.slice(0, 30));
-      if (skills?.length) {
-        skillContext =
-          `\n## مهارات منهج ${COUNTRY_NAMES[countryCode] || countryCode} (${level}):\n` +
-          skills
-            .map((s: any) => `- ${s.name_ar || s.name} [${s.domain}/${s.subdomain || "—"}]`)
-            .join("\n");
-
-        const { data: errs } = await db
-          .from("kb_skill_errors")
-          .select("error_description, fix_hint")
-          .in("skill_id", skills.map((s: any) => s.id))
-          .order("frequency", { ascending: false })
-          .limit(10);
-        if (errs?.length) {
-          misconceptionContext =
-            `\n## أخطاء شائعة موثَّقة (استهدفها):\n` +
-            errs.map((e: any) => `- ${e.error_description}`).join("\n");
-        }
-      }
-    }
-
-    const { data: exs } = await db
-      .from("kb_exercises")
-      .select("text, type")
-      .eq("country_code", countryCode)
-      .eq("grade", level)
-      .limit(5);
-    if (exs?.length) {
-      exerciseContext =
-        `\n## أمثلة على الأسلوب (لا تنسخها):\n` +
-        exs.map((e: any, i: number) => `${i + 1}. ${(e.text || "").slice(0, 200)}`).join("\n");
-    }
-  } catch {
-    /* non-fatal */
-  }
-
-  const countryHint = COUNTRY_NAMES[countryCode] || countryCode;
-  const prompt = `أنت خبير بيداغوجي في الرياضيات وفق منهاج ${countryHint}.
-ولّد ${count} أسئلة "تشخيص عادل" للمستوى ${level}. بصمة عشوائية: ${seed}.
-${skillContext}${misconceptionContext}${exerciseContext}
-
-## مبادئ صارمة:
-1. التفكير > النتيجة (اسأل "هل الطريقة صحيحة؟" بدل "احسب").
-2. استهدف الأخطاء الموثَّقة أعلاه.
-3. تنوّع الأنواع: logic, trap, standard, strategic (لا تستعمل "open").
-4. التزم بمصطلحات منهج ${countryHint}.
-
-## ❌ ممنوع منعاً باتاً:
-- أي سؤال يطلب رسماً أو إنشاءً هندسياً (ارسم، أنشئ، مثّل بيانياً، أكمل الشكل…).
-- أي سؤال يعتمد على شكل غير مرفق ("بالاعتماد على الشكل المقابل…").
-- أي سؤال يحتاج برهاناً نصياً أو تعليلاً مفتوحاً (بيّن، برهن، علّل، اشرح…).
-- الأسئلة المفتوحة (kind="text" أو type="open").
-- الأسئلة الطويلة (> 400 حرف).
-
-## ✅ مسموح فقط:
-- kind="qcm" مع 2 إلى 4 خيارات + إجابة واحدة موجودة في الخيارات.
-- kind="numeric" مع إجابة عددية واحدة.
-- كل سؤال يجب أن يكون قابلاً للحل ذهنياً في أقل من دقيقة.
-
-## JSON المطلوب فقط:
-{"exercises":[{"id":1,"type":"logic|trap|standard|strategic","typeName":"...","question":"...","options":["..."],"answer":"...","hint":"...","kind":"qcm|numeric","icon":"💡","misconception":"...","misconceptionType":"sign_error|distribution_error|exponent_error|inequality_flip|triangle_inequality|square_root_estimation|area_scaling|reverse_modeling|function_distribution","badgeColor":"var(--primary)","badgeBg":"rgba(...)"}]}
-
-قواعد JSON: أعد JSON خام فقط. هرّب \\\\sqrt و \\\\frac داخل النصوص.`;
-
-  const response = await callGemini([{ role: "user", parts: [{ text: prompt }] }], {
-    systemInstruction: `أنت خبير في تقييمات تشخيصية وفق منهج ${countryHint}. JSON صالح فقط. لا تنتج أبداً أسئلة رسم أو إنشاء أو برهان.`,
-    temperature: 0.8,
-    responseMimeType: "application/json",
-  });
-
-  const parsed = extractJSON(response.text);
-  const raw = Array.isArray(parsed?.exercises) ? parsed.exercises : [];
-  // Final guard: drop anything the AI generated that still slipped through
-  return raw.filter(isGradableItem);
 }
 
 // ─────────────────────────────────────────────────────────────────────────
