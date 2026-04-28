@@ -378,8 +378,7 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
   // (b) REMOVED: the previous "self-report concept check" branch produced
   // fake diagnostic data ("هل أنت مرتاح؟" with answer always = "نعم"), so
   // every student auto-scored 100% on those items. We no longer emit them.
-  // If the documented-errors pool is too small, the AI augment path (step 3)
-  // takes over to fill the gap with real gradable questions.
+  // If the documented-errors pool is too small, KB exercises below fill the gap.
 
   for (const ex of allExercises) {
     if (out.length >= count) break;
