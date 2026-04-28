@@ -36,7 +36,7 @@ interface Props {
   compact?: boolean;
 }
 
-type StepId = "shape" | "givens" | "relations" | "goal" | "tags" | "review";
+type StepId = "shape" | "givens" | "relations" | "goal" | "review";
 
 export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Props) {
   const [enr, setEnr] = useState<Enrichment>(EMPTY_ENRICHMENT);
@@ -60,12 +60,18 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
     ];
     if (showRelations) s.push({ id: "relations", title: "العلاقات", question: "هل توجد علاقات هندسية؟", hint: "تعامد، توازي، منتصف…" });
     s.push({ id: "goal", title: "المطلوب", question: "ما المطلوب بالضبط؟", hint: "اكتب الهدف بجملة واحدة" });
-    s.push({ id: "tags", title: "وسوم", question: "اختر وسوماً تصف التمرين", hint: "تساعد على تنظيم أفكارك" });
+    // tags step removed — extracted automatically from text
     s.push({ id: "review", title: "مراجعة", question: "راجع ثم احفظ", hint: "" });
     return s;
   }, [shapeLabel, showRelations]);
 
   const step = steps[Math.min(stepIdx, steps.length - 1)];
+
+  // Auto-extract tags from text + shape hint via tagPool keyword matching.
+  const autoTags = useMemo(() => {
+    const hay = `${text} ${enr.shape_hint} ${enr.goal}`.toLowerCase();
+    return tagPool.filter((t) => hay.includes(t.toLowerCase()));
+  }, [text, enr.shape_hint, enr.goal, tagPool]);
 
   // Pre-fill from community enrichment.
   useEffect(() => {
@@ -85,6 +91,15 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
 
+  // Sync auto-extracted tags into enrichment (without overriding manual ones).
+  useEffect(() => {
+    setEnr((e) => {
+      const merged = Array.from(new Set([...e.tags, ...autoTags]));
+      if (merged.length === e.tags.length && merged.every((t) => e.tags.includes(t))) return e;
+      return { ...e, tags: merged };
+    });
+  }, [autoTags]);
+
   const addGiven = () =>
     setEnr((e) => ({ ...e, givens: [...e.givens, { label: "", value: "", kind: "other" }] }));
   const updateGiven = (i: number, patch: Partial<Given>) =>
@@ -101,12 +116,6 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
     setEnr((e) => ({ ...e, relations: e.relations.map((r, j) => (j === i ? { ...r, ...patch } : r)) }));
   const removeRelation = (i: number) =>
     setEnr((e) => ({ ...e, relations: e.relations.filter((_, j) => j !== i) }));
-
-  const toggleTag = (tag: string) =>
-    setEnr((e) => ({
-      ...e,
-      tags: e.tags.includes(tag) ? e.tags.filter((t) => t !== tag) : [...e.tags, tag],
-    }));
 
   const handleApply = () => { onApply?.(enr); toast.success("تمّ تطبيق المعطيات على اللوحة"); };
 
@@ -134,7 +143,6 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
       case "givens": return { done: enr.givens.some((g) => g.label.trim()), count: enr.givens.filter((g) => g.label.trim()).length };
       case "relations": return { done: enr.relations.length > 0, count: enr.relations.length };
       case "goal": return { done: !!enr.goal.trim() };
-      case "tags": return { done: enr.tags.length > 0, count: enr.tags.length };
       case "review": return { done: savedOnce };
     }
   };
@@ -290,26 +298,6 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
             />
           )}
 
-          {step.id === "tags" && (
-            <div className="flex flex-wrap gap-1.5 max-h-[180px] overflow-y-auto">
-              {tagPool.map((t) => {
-                const on = enr.tags.includes(t);
-                return (
-                  <button
-                    key={t}
-                    onClick={() => toggleTag(t)}
-                    className={`text-[11px] px-3 py-1.5 rounded-full border transition-all ${
-                      on
-                        ? "bg-primary text-primary-foreground border-primary scale-105"
-                        : "bg-background border-border text-muted-foreground hover:border-primary"
-                    }`}
-                  >
-                    {on && "✓ "}{t}
-                  </button>
-                );
-              })}
-            </div>
-          )}
 
           {step.id === "review" && (
             <div className="space-y-1.5 text-[11px] max-h-[180px] overflow-y-auto pr-1">
@@ -358,7 +346,7 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
               className="flex-1 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 flex items-center justify-center gap-1 disabled:opacity-50"
             >
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : savedOnce ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
-              {savedOnce ? "محفوظ" : "حفظ وإثراء KB"}
+              {savedOnce ? "محفوظ" : "حفظ"}
             </button>
           </>
         )}
