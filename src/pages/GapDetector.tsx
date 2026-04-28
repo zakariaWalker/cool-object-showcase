@@ -228,7 +228,7 @@ export default function GapDetector() {
   }, [exercises, deconstructions, gradeFilter]);
 
   const generateQuiz = useCallback(
-    (weakConcepts?: Set<string>) => {
+    (weakConcepts?: Set<string>, size: number = QUIZ_SIZE) => {
       let pool = availableExercises.filter((e) => !usedExerciseIds.has(e.id));
 
       let prioritized: Exercise[] = [];
@@ -247,7 +247,7 @@ export default function GapDetector() {
 
       const shuffled = [...prioritized.sort(() => Math.random() - 0.5), ...rest.sort(() => Math.random() - 0.5)].slice(
         0,
-        QUIZ_SIZE,
+        size,
       );
 
       const questions: QuizQuestion[] = shuffled.map((exercise) => {
