@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
 
     const kbPool = dropFlagged(await buildFromKB(db, level, countryCode, POOL_SIZE), flagged);
     const combined = dedupePool([...tmplPool, ...kbPool]);
-    if (combined.length >= count * 3) {
+    if (combined.length >= count) {
       await writeCache(db, cacheKey, level, countryCode, combined, tmplPool.length ? "templates+kb" : "kb");
       const picked = pickFromPool(combined, count, seed);
       return new Response(
@@ -129,33 +129,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    try {
-      // Hard cap: if Gemini takes >20s (overload/retries), bail to static fallback
-      // so the user never sees a 5xx from the edge function.
-      const aiExercises = await Promise.race([
-        generateWithAI(db, level, countryCode, Math.max(count * 2, 10), seed),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new GeminiError("TIMEOUT", "AI took too long", 504)), 20000),
-        ),
-      ]);
-      const merged = dropFlagged(dedupePool([...tmplPool, ...kbPool, ...aiExercises]), flagged);
-      await writeCache(db, cacheKey, level, countryCode, merged, kbPool.length || tmplPool.length ? "hybrid" : "ai");
-      const picked = pickFromPool(merged, count, seed);
-      return new Response(
-        JSON.stringify({ exercises: picked, source: kbPool.length || tmplPool.length ? "hybrid" : "ai", poolSize: merged.length, flagged: flagged.size }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    } catch (aiErr) {
-      console.warn("[diagnostic] AI failed, using KB+static fallback:", aiErr);
-      const staticPool = getStaticFallbackPool();
-      const merged = dropFlagged(dedupePool([...tmplPool, ...kbPool, ...staticPool]), flagged);
-      await writeCache(db, cacheKey, level, countryCode, merged, "fallback");
-      const picked = pickFromPool(merged, count, seed);
-      return new Response(
-        JSON.stringify({ exercises: picked, source: "fallback", reason: (aiErr as any)?.code, poolSize: merged.length, flagged: flagged.size }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    // No AI: fall back to static curated pool merged with whatever we have.
+    const staticPool = getStaticFallbackPool();
+    const merged = dropFlagged(dedupePool([...tmplPool, ...kbPool, ...staticPool]), flagged);
+    await writeCache(db, cacheKey, level, countryCode, merged, "fallback");
+    const picked = pickFromPool(merged, count, seed);
+    return new Response(
+      JSON.stringify({ exercises: picked, source: "fallback", poolSize: merged.length, flagged: flagged.size }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+
   } catch (err) {
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
