@@ -9,7 +9,7 @@ import { GeometryCanvas, type VerifyResult } from "@/components/geometry/Geometr
 import { detectFigureKind } from "@/engine/figures/factory";
 import type { FigureSpec } from "@/engine/figures/types";
 import type { Constraint } from "@/engine/figures/construction-checks";
-import { analyzeGeometryFromKB } from "@/engine/figures/kb-context";
+import { analyzeGeometryFromKB, recordLearnedGeometry } from "@/engine/figures/kb-context";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
 import { Search, BookOpen, Loader2, Database } from "lucide-react";
@@ -210,7 +210,9 @@ export default function GeometryStudio() {
                   <>
                     <Database className="w-3.5 h-3.5 text-primary" />
                     <span className="font-bold text-foreground">
-                      {analysisSource === "kb_figure"
+                      {analysisSource === "kb_learned"
+                        ? "✓ معرفة مكتسبة:"
+                        : analysisSource === "kb_figure"
                         ? "شكل من KB:"
                         : analysisSource === "kb_enriched"
                         ? "تحليل مُعزَّز من KB:"
@@ -237,7 +239,25 @@ export default function GeometryStudio() {
             <GeometryCanvas
               seedSpec={figureSpec}
               constraints={constraints}
-              onSubmit={(r) => setLastResult(r)}
+              onSubmit={(r) => {
+                setLastResult(r);
+                // Auto-learn: when ALL constraints pass, persist the figure so
+                // the KB analyzer recognizes this exercise instantly next time.
+                if (
+                  r.total > 0 &&
+                  r.passed === r.total &&
+                  figureSpec &&
+                  committed.trim()
+                ) {
+                  recordLearnedGeometry({
+                    text: committed,
+                    spec: figureSpec,
+                    constraints,
+                    caption,
+                    exerciseId: activeExId,
+                  }).catch(() => {});
+                }
+              }}
             />
           </div>
 

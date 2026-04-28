@@ -26,10 +26,31 @@ export interface KBGeometryContext {
   constraints: Constraint[];
   caption: string;
   confidence: number; // 0..1
-  source: "kb_figure" | "kb_enriched" | "regex" | "empty";
+  source: "kb_learned" | "kb_figure" | "kb_enriched" | "regex" | "empty";
   matchedSkills: string[]; // skill names
   matchedPatterns: string[]; // pattern names
+  learnedHash?: string; // exposed so caller can later record success
+  learnedSuccessCount?: number;
 }
+
+/**
+ * Stable hash of the exercise text used as the learned-figures key.
+ * Normalizes whitespace + Arabic diacritics so trivial variations collide.
+ */
+export function hashGeometryText(text: string): string {
+  const normalized = (text || "")
+    .replace(/[\u064B-\u0652\u0670]/g, "") // strip tashkeel
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+  // djb2 hash → hex
+  let h = 5381;
+  for (let i = 0; i < normalized.length; i++) {
+    h = ((h << 5) + h + normalized.charCodeAt(i)) | 0;
+  }
+  return "g_" + (h >>> 0).toString(16) + "_" + normalized.length.toString(36);
+}
+
 
 // Lightweight concept dictionary used to score skill/pattern relevance.
 // Keep it in sync with KIND_KEYWORDS in factory.ts.
@@ -96,6 +117,34 @@ export async function analyzeGeometryFromKB(
       matchedSkills: [],
       matchedPatterns: [],
     };
+  }
+
+  const learnedHash = hashGeometryText(trimmed);
+
+  // 0. Learned figure: previously verified successfully → highest confidence.
+  try {
+    const { data: learned } = await (supabase as any)
+      .from("kb_geometry_learned")
+      .select("spec,constraints,caption,figure_kind,success_count")
+      .eq("text_hash", learnedHash)
+      .maybeSingle();
+    if (learned?.spec && typeof learned.spec === "object") {
+      const successCount = Number(learned.success_count || 1);
+      const confidence = Math.min(0.99, 0.9 + Math.log10(successCount + 1) * 0.05);
+      return {
+        spec: learned.spec as FigureSpec,
+        constraints: Array.isArray(learned.constraints) ? (learned.constraints as Constraint[]) : [],
+        caption: learned.caption || `معرفة مكتسبة (${successCount}× نجاح)`,
+        confidence,
+        source: "kb_learned",
+        matchedSkills: [],
+        matchedPatterns: [],
+        learnedHash,
+        learnedSuccessCount: successCount,
+      };
+    }
+  } catch {
+    /* fall through */
   }
 
   // 1. Hand-authored figure for this exercise → trust it fully.
@@ -208,5 +257,68 @@ export async function analyzeGeometryFromKB(
     source: enriched ? "kb_enriched" : spec ? "regex" : "empty",
     matchedSkills,
     matchedPatterns,
+    learnedHash,
   };
 }
+
+/**
+ * Persist a successfully verified figure so future analyses recognize it
+ * with maximum confidence (auto-learning loop).
+ *
+ * Safe to call from the canvas onSubmit/onVerify callback. No-ops when not
+ * authenticated (RLS will reject the insert silently).
+ */
+export async function recordLearnedGeometry(opts: {
+  text: string;
+  spec: FigureSpec;
+  constraints: Constraint[];
+  caption?: string;
+  exerciseId?: string | null;
+}): Promise<void> {
+  const text = (opts.text || "").trim();
+  if (!text || !opts.spec) return;
+  const text_hash = hashGeometryText(text);
+  try {
+    // Try to bump success_count first (works if row already exists).
+    const { data: existing } = await (supabase as any)
+      .from("kb_geometry_learned")
+      .select("id,success_count")
+      .eq("text_hash", text_hash)
+      .maybeSingle();
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (existing?.id) {
+      await (supabase as any)
+        .from("kb_geometry_learned")
+        .update({
+          success_count: Number(existing.success_count || 0) + 1,
+          last_user_id: user?.id ?? null,
+          // Refresh spec/constraints in case the latest verified version is richer.
+          spec: opts.spec,
+          constraints: opts.constraints,
+          caption: opts.caption || "",
+          exercise_id: opts.exerciseId ?? null,
+          figure_kind: (opts.spec as any)?.kind ?? null,
+        })
+        .eq("id", existing.id);
+    } else {
+      await (supabase as any)
+        .from("kb_geometry_learned")
+        .insert({
+          text_hash,
+          text_sample: text.slice(0, 500),
+          exercise_id: opts.exerciseId ?? null,
+          figure_kind: (opts.spec as any)?.kind ?? null,
+          spec: opts.spec,
+          constraints: opts.constraints,
+          caption: opts.caption || "",
+          success_count: 1,
+          last_user_id: user?.id ?? null,
+        });
+    }
+  } catch (err) {
+    console.warn("[recordLearnedGeometry] skipped:", err);
+  }
+}
+
