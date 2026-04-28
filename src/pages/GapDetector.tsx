@@ -7,6 +7,7 @@ import { StudentAnswerEditor } from "@/components/StudentAnswerEditor";
 import { recordExerciseCompletion, XPEvent, Badge } from "@/engine/gamification";
 import { XPPopup, BadgeUnlockOverlay } from "@/components/GamificationDashboard";
 import { AnimatePresence } from "framer-motion";
+import { trackEvent } from "@/lib/funnelTracking";
 
 interface Exercise {
   id: string;
