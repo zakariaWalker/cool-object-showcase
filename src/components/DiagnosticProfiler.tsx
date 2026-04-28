@@ -23,6 +23,8 @@ import { ExerciseReportButton } from "./ExerciseReportButton";
 import { useMisconceptionTracker } from "@/hooks/useMisconceptionTracker";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { trackEvent } from "@/lib/funnelTracking";
 
 export function DiagnosticProfiler({
   level,
