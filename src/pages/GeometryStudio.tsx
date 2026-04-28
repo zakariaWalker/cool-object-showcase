@@ -222,45 +222,57 @@ export default function GeometryStudio() {
 
 
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-            {committed && (
-              <div className="rounded-lg bg-primary/5 border border-primary/20 p-3" dir="rtl">
-                <div className="text-[10px] font-black text-primary uppercase tracking-wider mb-1">
-                  📜 نص التمرين
+            {committed ? (
+              <>
+                <div className="rounded-lg bg-primary/5 border border-primary/20 p-3" dir="rtl">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[10px] font-black text-primary uppercase tracking-wider">
+                      📜 نص التمرين
+                    </div>
+                    <button
+                      onClick={() => {
+                        setTask(""); setCommitted(""); setLastResult(null); setActiveExId(null);
+                      }}
+                      className="text-[10px] font-bold text-muted-foreground hover:text-foreground underline underline-offset-2"
+                    >
+                      تمرين جديد
+                    </button>
+                  </div>
+                  <MathExerciseRenderer text={committed} className="text-sm leading-relaxed text-foreground" />
                 </div>
-                <MathExerciseRenderer text={committed} className="text-sm leading-relaxed text-foreground" />
-              </div>
+                <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 flex items-start gap-2" dir="rtl">
+                  <span className="text-lg shrink-0">👇</span>
+                  <div className="text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed">
+                    <span className="font-bold">ابدأ من هنا:</span> اقرأ التمرين أعلاه، ثم استعمل اللوحة التفاعلية أدناه لرسم الشكل خطوة بخطوة. ستجد على اليسار لوحة «رتّب أفكارك» لتساعدك على التفكير قبل الرسم.
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
+                  نص التمرين أو ما تريد إنشاءه
+                </label>
+                <textarea
+                  value={task}
+                  onChange={(e) => setTask(e.target.value)}
+                  placeholder="مثال: ارسم مثلثاً ABC، ثم أنشئ المنصّف العمودي للضلع [BC]."
+                  rows={3}
+                  className="w-full p-3 rounded-lg border border-border bg-background text-sm focus:border-primary outline-none transition-all resize-none"
+                />
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <p className="text-[11px] text-muted-foreground flex-1 min-w-[200px]">
+                    اللوحة تُبذَر بالشكل المناسب وتُستخرج قيود التحقّق تلقائياً.
+                  </p>
+                  <button
+                    onClick={() => { setCommitted(task.trim()); setLastResult(null); }}
+                    disabled={!task.trim()}
+                    className="px-5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    تحميل ←
+                  </button>
+                </div>
+              </>
             )}
-            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-              {committed ? "تعديل النص" : "نص التمرين أو ما تريد إنشاءه"}
-            </label>
-            <textarea
-              value={task}
-              onChange={(e) => setTask(e.target.value)}
-              placeholder="مثال: ارسم مثلثاً ABC، ثم أنشئ المنصّف العمودي للضلع [BC]."
-              rows={3}
-              className="w-full p-3 rounded-lg border border-border bg-background text-sm focus:border-primary outline-none transition-all resize-none"
-            />
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <p className="text-[11px] text-muted-foreground flex-1 min-w-[200px]">
-                اللوحة تُبذَر بالشكل المناسب وتُستخرج قيود التحقّق تلقائياً.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setTask(""); setCommitted(""); setLastResult(null); setActiveExId(null);
-                  }}
-                  className="px-4 py-2 rounded-lg border border-border text-xs font-bold text-muted-foreground hover:bg-muted transition-colors"
-                >
-                  إفراغ
-                </button>
-                <button
-                  onClick={() => { setCommitted(task.trim()); setLastResult(null); }}
-                  className="px-5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-md hover:opacity-90 transition-opacity"
-                >
-                  تحميل ←
-                </button>
-              </div>
-            </div>
 
             {/* KB analysis status */}
             {committed && (
