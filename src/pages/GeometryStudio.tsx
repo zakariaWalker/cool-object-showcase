@@ -237,7 +237,25 @@ export default function GeometryStudio() {
             <GeometryCanvas
               seedSpec={figureSpec}
               constraints={constraints}
-              onSubmit={(r) => setLastResult(r)}
+              onSubmit={(r) => {
+                setLastResult(r);
+                // Auto-learn: when ALL constraints pass, persist the figure so
+                // the KB analyzer recognizes this exercise instantly next time.
+                if (
+                  r.total > 0 &&
+                  r.passed === r.total &&
+                  figureSpec &&
+                  committed.trim()
+                ) {
+                  recordLearnedGeometry({
+                    text: committed,
+                    spec: figureSpec,
+                    constraints,
+                    caption,
+                    exerciseId: activeExId,
+                  }).catch(() => {});
+                }
+              }}
             />
           </div>
 
