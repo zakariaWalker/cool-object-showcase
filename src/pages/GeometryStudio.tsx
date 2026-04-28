@@ -327,7 +327,7 @@ export default function GeometryStudio() {
         </div>
 
         {/* === Side: exercise library === */}
-        <aside className="rounded-xl border border-border bg-card flex flex-col h-[calc(100vh-140px)] sticky top-20">
+        <aside className="rounded-xl border border-border bg-card flex flex-col h-[calc(100vh-100px)] lg:sticky lg:top-20 lg:self-start">
           <div className="p-3 border-b border-border space-y-2">
             <div className="flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-primary" />
