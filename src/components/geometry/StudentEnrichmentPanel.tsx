@@ -134,7 +134,6 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
       case "givens": return { done: enr.givens.some((g) => g.label.trim()), count: enr.givens.filter((g) => g.label.trim()).length };
       case "relations": return { done: enr.relations.length > 0, count: enr.relations.length };
       case "goal": return { done: !!enr.goal.trim() };
-      case "tags": return { done: enr.tags.length > 0, count: enr.tags.length };
       case "review": return { done: savedOnce };
     }
   };
