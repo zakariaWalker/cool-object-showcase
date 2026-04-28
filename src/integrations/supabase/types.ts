@@ -1682,6 +1682,151 @@ export type Database = {
           },
         ]
       }
+      question_template_variants: {
+        Row: {
+          answer: string
+          bloom_level: number
+          created_at: string
+          difficulty: number
+          grade_code: string
+          id: string
+          is_active: boolean
+          kind: string
+          options: Json
+          question_text: string
+          skill_id: string | null
+          template_id: string
+          variables_used: Json
+          variant_hash: string
+        }
+        Insert: {
+          answer: string
+          bloom_level?: number
+          created_at?: string
+          difficulty?: number
+          grade_code?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          options?: Json
+          question_text: string
+          skill_id?: string | null
+          template_id: string
+          variables_used?: Json
+          variant_hash: string
+        }
+        Update: {
+          answer?: string
+          bloom_level?: number
+          created_at?: string
+          difficulty?: number
+          grade_code?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          options?: Json
+          question_text?: string
+          skill_id?: string | null
+          template_id?: string
+          variables_used?: Json
+          variant_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_template_variants_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "question_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_templates: {
+        Row: {
+          answer_expression: string
+          answer_unit: string | null
+          bloom_level: number
+          constraints: Json
+          country_code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          difficulty: number
+          distractor_expressions: Json
+          domain: string
+          grade_code: string
+          hint: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          skill_id: string | null
+          solution_template: string | null
+          subdomain: string | null
+          template_text: string
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          answer_expression?: string
+          answer_unit?: string | null
+          bloom_level?: number
+          constraints?: Json
+          country_code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: number
+          distractor_expressions?: Json
+          domain?: string
+          grade_code?: string
+          hint?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name: string
+          skill_id?: string | null
+          solution_template?: string | null
+          subdomain?: string | null
+          template_text: string
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          answer_expression?: string
+          answer_unit?: string | null
+          bloom_level?: number
+          constraints?: Json
+          country_code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: number
+          distractor_expressions?: Json
+          domain?: string
+          grade_code?: string
+          hint?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          skill_id?: string | null
+          solution_template?: string | null
+          subdomain?: string | null
+          template_text?: string
+          updated_at?: string
+          variables?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_templates_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "kb_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_activity_log: {
         Row: {
           action: string
