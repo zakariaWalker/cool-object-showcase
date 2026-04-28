@@ -72,35 +72,37 @@ export function QEDLogo({ size = "md", className = "", compact = false, inverted
       </div>
 
       {/* Wordmark */}
-      <div className="flex flex-col" style={{ lineHeight: 1, direction: "ltr" }}>
-        <span
-          style={{
-            fontFamily: "'Fraunces', Georgia, serif",
-            fontWeight: 600,
-            fontSize: dims.wordmark,
-            color: ink,
-            letterSpacing: "-0.025em",
-            fontVariationSettings: '"opsz" 144',
-          }}
-        >
-          QED
-        </span>
-        {!compact && (
+      {!markOnly && (
+        <div className="flex flex-col" style={{ lineHeight: 1, direction: "ltr" }}>
           <span
             style={{
-              fontFamily: "'Tajawal', sans-serif",
-              fontWeight: 500,
-              fontSize: dims.tagline,
-              color: muted,
-              marginTop: 2,
-              direction: "rtl",
-              letterSpacing: 0,
+              fontFamily: "'Fraunces', Georgia, serif",
+              fontWeight: 600,
+              fontSize: dims.wordmark,
+              color: ink,
+              letterSpacing: "-0.025em",
+              fontVariationSettings: '"opsz" 144',
             }}
           >
-            المحرّك الرياضي
+            QED
           </span>
-        )}
-      </div>
+          {!compact && (
+            <span
+              style={{
+                fontFamily: "'Tajawal', sans-serif",
+                fontWeight: 500,
+                fontSize: dims.tagline,
+                color: muted,
+                marginTop: 2,
+                direction: "rtl",
+                letterSpacing: 0,
+              }}
+            >
+              المحرّك الرياضي
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
