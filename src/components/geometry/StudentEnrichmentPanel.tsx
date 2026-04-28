@@ -200,53 +200,55 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply, comp
         ))}
       </div>
 
-      {/* Relations */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-[10px] font-bold text-muted-foreground uppercase">العلاقات</label>
-          <button
-            onClick={addRelation}
-            className="text-[10px] flex items-center gap-1 text-primary hover:underline"
-          >
-            <Plus className="w-3 h-3" /> إضافة
-          </button>
-        </div>
-        {enr.relations.map((r, i) => (
-          <div key={i} className="flex gap-1 flex-wrap">
-            <select
-              value={r.kind}
-              onChange={(e) => updateRelation(i, { kind: e.target.value as RelationHint["kind"] })}
-              className="p-1.5 rounded-md border border-border bg-background text-xs"
-            >
-              {RELATION_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-            <input
-              value={(r.labels || []).join(",")}
-              onChange={(e) =>
-                updateRelation(i, {
-                  labels: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-                })
-              }
-              placeholder="A,B,C,D"
-              className="flex-1 min-w-[100px] p-1.5 rounded-md border border-border bg-background text-xs font-mono"
-            />
+      {/* Relations — only relevant for geometry */}
+      {showRelations && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase">العلاقات</label>
             <button
-              onClick={() => removeRelation(i)}
-              className="px-2 text-muted-foreground hover:text-destructive"
+              onClick={addRelation}
+              className="text-[10px] flex items-center gap-1 text-primary hover:underline"
             >
-              <X className="w-3 h-3" />
+              <Plus className="w-3 h-3" /> إضافة
             </button>
           </div>
-        ))}
-      </div>
+          {enr.relations.map((r, i) => (
+            <div key={i} className="flex gap-1 flex-wrap">
+              <select
+                value={r.kind}
+                onChange={(e) => updateRelation(i, { kind: e.target.value as RelationHint["kind"] })}
+                className="p-1.5 rounded-md border border-border bg-background text-xs"
+              >
+                {RELATION_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+              <input
+                value={(r.labels || []).join(",")}
+                onChange={(e) =>
+                  updateRelation(i, {
+                    labels: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                  })
+                }
+                placeholder="A,B,C,D"
+                className="flex-1 min-w-[100px] p-1.5 rounded-md border border-border bg-background text-xs font-mono"
+              />
+              <button
+                onClick={() => removeRelation(i)}
+                className="px-2 text-muted-foreground hover:text-destructive"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Tags */}
       <div>
         <label className="text-[10px] font-bold text-muted-foreground uppercase">وسوم</label>
         <div className="flex flex-wrap gap-1 mt-1">
-          {COMMON_TAGS.map((t) => {
+          {tagPool.map((t) => {
             const on = enr.tags.includes(t);
             return (
               <button
@@ -267,12 +269,14 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply, comp
 
       {/* Actions */}
       <div className="flex gap-2 pt-2 border-t border-border/50">
-        <button
-          onClick={handleApply}
-          className="flex-1 px-3 py-2 rounded-lg border border-border text-xs font-bold hover:bg-muted transition-colors"
-        >
-          تطبيق على اللوحة
-        </button>
+        {onApply && (
+          <button
+            onClick={handleApply}
+            className="flex-1 px-3 py-2 rounded-lg border border-border text-xs font-bold hover:bg-muted transition-colors"
+          >
+            تطبيق على اللوحة
+          </button>
+        )}
         <button
           onClick={handleSave}
           disabled={saving}
