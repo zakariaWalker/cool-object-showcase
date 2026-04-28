@@ -289,58 +289,44 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
 
   const out: any[] = [];
 
-  // (a) From documented errors — wrap as "trap" QCM items
-  // We ONLY produce gradable items (QCM with a known answer). Open-ended KB
-  // exercises are skipped here because the diagnostic profiler grades each
-  // answer (correct / incorrect) — an empty `answer` would always be marked
-  // wrong, which makes the score meaningless.
+  // (a) From documented errors — wrap as "trap" QCM items.
+  // Only emit if the description is a complete, self-contained claim
+  // (i.e. makes sense out-of-context as a sentence to agree/disagree with).
   for (const err of errors || []) {
     if (out.length >= count) break;
+    const desc = (err.error_description || "").trim();
+    if (desc.length < 20 || desc.length > 180) continue;
+    // Skip fragments that obviously need surrounding context
+    if (/^(و|أو|ثم|لأنّ|لذلك|بالتالي|then|because)/i.test(desc)) continue;
+    if (NON_GRADABLE_RE.test(desc)) continue;
+
     const skill = skillById.get(err.skill_id);
     const badge = badgeFor(skill?.domain);
-    out.push({
+    const item = {
       id: `kb-err-${err.skill_id}-${out.length}`,
       type: "trap",
       typeName: "فخ موثَّق",
-      question: `طالب قال: "${err.error_description}". هل توافقه؟`,
+      question: `طالب قال: "${desc}". هل توافقه؟`,
       options: ["نعم، صحيح", "لا، خطأ شائع"],
       answer: "لا، خطأ شائع",
       hint: err.fix_hint || `راجع المهارة: ${skill?.name_ar || skill?.name || "—"}`,
       kind: "qcm",
       icon: badge.icon,
-      misconception: err.error_description,
+      misconception: desc,
       misconceptionType: inferMiscType(skill?.domain, skill?.subdomain, err.error_type),
       badgeColor: badge.color,
       badgeBg: badge.bg,
-    });
+    };
+    if (isGradableItem(item)) out.push(item);
   }
 
-  // (b) From skill names — generate "concept check" QCM if we still need more
-  for (const skill of skills) {
-    if (out.length >= count) break;
-    const skillName = skill.name_ar || skill.name;
-    if (!skillName) continue;
-    // Skip if we already have an item from this skill via errors
-    if (out.some((o) => String(o.id).includes(skill.id))) continue;
-    const badge = badgeFor(skill?.domain);
-    out.push({
-      id: `kb-skill-${skill.id}`,
-      type: "standard",
-      typeName: "فحص مفهوم",
-      question: `هل أنت مرتاح مع المهارة التالية: "${skillName}"؟`,
-      options: ["نعم، أتقنها", "أحتاج مراجعة"],
-      answer: "نعم، أتقنها", // self-report; default to "neutral" — neither penalises a student
-      hint: `هذه المهارة من ${skill.domain || "المنهج"}.`,
-      kind: "qcm",
-      icon: badge.icon,
-      misconception: skillName,
-      misconceptionType: inferMiscType(skill?.domain, skill?.subdomain),
-      badgeColor: badge.color,
-      badgeBg: badge.bg,
-    });
-  }
+  // (b) REMOVED: the previous "self-report concept check" branch produced
+  // fake diagnostic data ("هل أنت مرتاح؟" with answer always = "نعم"), so
+  // every student auto-scored 100% on those items. We no longer emit them.
+  // If the documented-errors pool is too small, the AI augment path (step 3)
+  // takes over to fill the gap with real gradable questions.
 
-  return out;
+  return out.filter(isGradableItem);
 }
 
 function inferMiscType(domain?: string, subdomain?: string, errorType?: string): Misc | undefined {
