@@ -67,16 +67,16 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
 
   const step = steps[Math.min(stepIdx, steps.length - 1)];
 
-  // Auto-extract tags from STUDENT step inputs only (not from raw exercise text).
+  // Auto-extract tags from BOTH the exercise text and the student's step inputs.
   const autoTags = useMemo(() => {
     const givensStr = enr.givens.map((g) => `${g.label} ${g.value}`).join(" ");
     const relationsStr = enr.relations
       .map((r) => `${r.kind} ${(r.labels || []).join(" ")}`)
       .join(" ");
-    const hay = `${enr.shape_hint} ${givensStr} ${relationsStr} ${enr.goal}`.toLowerCase();
+    const hay = `${text} ${enr.shape_hint} ${givensStr} ${relationsStr} ${enr.goal}`.toLowerCase();
     if (!hay.trim()) return [];
     return tagPool.filter((t) => hay.includes(t.toLowerCase()));
-  }, [enr.shape_hint, enr.givens, enr.relations, enr.goal, tagPool]);
+  }, [text, enr.shape_hint, enr.givens, enr.relations, enr.goal, tagPool]);
 
   // Pre-fill from community enrichment.
   useEffect(() => {
