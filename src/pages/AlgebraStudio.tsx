@@ -1,6 +1,8 @@
-// ===== Algebra Studio — Smart workspace that auto-picks the right editor =====
-// Describe a problem; the studio infers the answer schema AND auto-switches
-// between the AlgebraEditor and the GeometryCanvas (via StudentAnswerEditor).
+// ===== Algebra Studio — Smart workspace adapted to all exercises =====
+// Side library lists every algebra exercise from the KB (filtered to ones the
+// algebra editor can handle). Click any exercise to load it; the studio
+// auto-routes to the algebra editor (or geometry canvas when needed) and
+// auto-grades the final line.
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -11,6 +13,7 @@ import { AlgebraSolvingGuide } from "@/components/AlgebraSolvingGuide";
 import { inferAnswerSchema, gradeAnswer, type Verdict } from "@/engine/answer-schema";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserCurriculum } from "@/hooks/useUserCurriculum";
+import { Search, BookOpen, Loader2 } from "lucide-react";
 
 const GRADE_CODE_TO_KEY: Record<string, string> = {
   "1AM": "middle_1", "2AM": "middle_2", "3AM": "middle_3", "4AM": "middle_4",
@@ -23,10 +26,11 @@ interface KBExerciseLite {
   text: string;
   chapter: string | null;
   source: string | null;
+  type: string | null;
 }
 
-// Mirror of detectEditorType from StudentAnswerEditor — used only to show
-// the user which editor will appear after committing the task.
+// Mirror of detectEditorType from StudentAnswerEditor — used to show
+// the user which editor will appear and to filter the algebra library.
 function detectEditorKind(text: string): "algebra" | "geometry" {
   const txt = (text || "").toLowerCase();
   if (/ارسم|أنشئ|المثلث|الدائرة|المستقيم|قطعة|مستقيم|تحويل|دوران|انسحاب|تماثل|زاوية|منحنى/.test(txt)) return "geometry";
@@ -45,16 +49,16 @@ export default function AlgebraStudio() {
   const [committed, setCommitted] = useState(seedText);
   const [steps, setSteps] = useState<string[]>([]);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
+  const [activeExId, setActiveExId] = useState<string | null>(null);
 
-  // KB browser state
-  const [kbOpen, setKbOpen] = useState(false);
-  const [kbLoading, setKbLoading] = useState(false);
+  // KB browser state — now always loaded into the side panel
+  const [kbLoading, setKbLoading] = useState(true);
   const [kbError, setKbError] = useState<string | null>(null);
   const [kbItems, setKbItems] = useState<KBExerciseLite[]>([]);
   const [kbQuery, setKbQuery] = useState("");
+  const [showAllGrades, setShowAllGrades] = useState(false);
 
   useEffect(() => {
-    if (!kbOpen) return;
     let cancelled = false;
     (async () => {
       setKbLoading(true);
@@ -62,16 +66,21 @@ export default function AlgebraStudio() {
       try {
         const code = gradeCode || "4AM";
         const candidates = Array.from(new Set([code, GRADE_CODE_TO_KEY[code] || code]));
-        const { data, error } = await (supabase as any)
+        let query = (supabase as any)
           .from("kb_exercises")
-          .select("id, text, chapter, source")
+          .select("id, text, chapter, source, type")
           .eq("country_code", countryCode || "DZ")
-          .in("grade", candidates)
           .order("chapter")
-          .limit(200);
+          .limit(800);
+        if (!showAllGrades) query = query.in("grade", candidates);
+        const { data, error } = await query;
         if (error) throw error;
         if (cancelled) return;
-        setKbItems((data || []) as KBExerciseLite[]);
+        // Keep only algebra-leaning exercises (i.e. NOT geometry construction)
+        const list = ((data || []) as KBExerciseLite[]).filter(
+          (it) => detectEditorKind(it.text) === "algebra",
+        );
+        setKbItems(list);
       } catch (e: any) {
         if (!cancelled) setKbError(e.message || "تعذّر تحميل المسائل");
       } finally {
@@ -79,33 +88,35 @@ export default function AlgebraStudio() {
       }
     })();
     return () => { cancelled = true; };
-  }, [kbOpen, gradeCode, countryCode]);
+  }, [gradeCode, countryCode, showAllGrades]);
 
   const filteredKb = useMemo(() => {
     const q = kbQuery.trim().toLowerCase();
     if (!q) return kbItems;
-    return kbItems.filter(it =>
-      (it.text || "").toLowerCase().includes(q) ||
-      (it.chapter || "").toLowerCase().includes(q),
+    return kbItems.filter(
+      (it) =>
+        (it.text || "").toLowerCase().includes(q) ||
+        (it.chapter || "").toLowerCase().includes(q) ||
+        (it.type || "").toLowerCase().includes(q),
     );
   }, [kbItems, kbQuery]);
 
   const groupedKb = useMemo(() => {
     const map = new Map<string, KBExerciseLite[]>();
     for (const it of filteredKb) {
-      const key = (it.chapter || "بدون فصل").trim();
+      const key = (it.chapter || "متفرّقات").trim();
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(it);
     }
     return Array.from(map.entries());
   }, [filteredKb]);
 
-  const loadProblem = (text: string) => {
-    setTask(text);
-    setCommitted(text.trim());
+  const loadProblem = (it: KBExerciseLite) => {
+    setTask(it.text);
+    setCommitted(it.text.trim());
     setSteps([]);
     setVerdict(null);
-    setKbOpen(false);
+    setActiveExId(it.id);
   };
 
   const schema = useMemo(
@@ -150,8 +161,7 @@ export default function AlgebraStudio() {
           <div>
             <h1 className="text-lg font-bold text-foreground">استوديو الجبر</h1>
             <p className="text-[11px] text-muted-foreground">
-              صف المسألة، وسيختار الاستوديو تلقائياً المحرر الجبري أو الهندسي
-              المناسب.
+              محرر ذكي يتأقلم مع كل مسائل المنهاج — جبر وهندسة.
             </p>
           </div>
         </div>
@@ -160,231 +170,220 @@ export default function AlgebraStudio() {
         </span>
       </div>
 
-      <div className="max-w-5xl mx-auto p-6 space-y-5 pb-24">
-        {/* Task description */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-            صف المسألة (اختياري)
-          </label>
-          <textarea
-            value={task}
-            onChange={(e) => setTask(e.target.value)}
-            placeholder="مثال: حل المعادلة 2x + 3 = 7، أو ارسم مثلثاً ABC قائماً في A."
-            rows={2}
-            className="w-full p-3 rounded-lg border border-border bg-background text-sm focus:border-primary outline-none transition-all resize-none"
-          />
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[11px] text-muted-foreground">
-              عند الضغط على "تحميل المسألة"، يحلّل النظام النص ويفعّل المحرر
-              المناسب مع التصحيح التلقائي.
-            </p>
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => setKbOpen(true)}
-                className="px-4 py-2 rounded-lg border border-primary/30 bg-primary/5 text-primary text-xs font-bold hover:bg-primary/10 transition-colors"
-              >
-                📚 اختر من المكتبة
-              </button>
-              <button
-                onClick={() => {
-                  setTask("");
-                  setCommitted("");
-                  setSteps([]);
-                  setVerdict(null);
-                }}
-                className="px-4 py-2 rounded-lg border border-border text-xs font-bold text-muted-foreground hover:bg-muted transition-colors"
-              >
-                إفراغ
-              </button>
-              <button
-                onClick={() => {
-                  setCommitted(task.trim());
-                  setVerdict(null);
-                  setSteps([]);
-                }}
-                className="px-5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-md hover:opacity-90 transition-opacity"
-              >
-                تحميل المسألة ←
-              </button>
+      <div className="max-w-7xl mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 lg:gap-6 pb-24">
+        {/* === Main column === */}
+        <div className="space-y-5 min-w-0">
+          {/* Task description */}
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
+              نص المسألة
+            </label>
+            <textarea
+              value={task}
+              onChange={(e) => setTask(e.target.value)}
+              placeholder="مثال: حل المعادلة 2x + 3 = 7، أو ارسم مثلثاً ABC قائماً في A."
+              rows={3}
+              className="w-full p-3 rounded-lg border border-border bg-background text-sm focus:border-primary outline-none transition-all resize-none"
+            />
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-[11px] text-muted-foreground flex-1 min-w-[200px]">
+                يحلّل النظام النص ويفعّل المحرر المناسب مع التصحيح التلقائي.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setTask(""); setCommitted(""); setSteps([]); setVerdict(null); setActiveExId(null);
+                  }}
+                  className="px-4 py-2 rounded-lg border border-border text-xs font-bold text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  إفراغ
+                </button>
+                <button
+                  onClick={() => {
+                    setCommitted(task.trim()); setVerdict(null); setSteps([]);
+                  }}
+                  className="px-5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-md hover:opacity-90 transition-opacity"
+                >
+                  تحميل ←
+                </button>
+              </div>
             </div>
+
+            {committed && (
+              <div className="text-[11px] text-muted-foreground border-t border-border/50 pt-3 flex items-center gap-3 flex-wrap">
+                <span>
+                  المحرر النشط:{" "}
+                  <span className="font-bold text-foreground">
+                    {editorKind === "geometry" ? "هندسي 📐" : "جبري 🧮"}
+                  </span>
+                </span>
+                {schema && (
+                  <>
+                    <span className="opacity-40">•</span>
+                    <span>
+                      نوع الإجابة:{" "}
+                      <span className="font-bold text-foreground">
+                        {schema.type}
+                      </span>
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
-          {committed && (
-            <div className="text-[11px] text-muted-foreground border-t border-border/50 pt-3 flex items-center gap-3 flex-wrap">
-              <span>
-                المحرر النشط:{" "}
-                <span className="font-bold text-foreground">
-                  {editorKind === "geometry" ? "هندسي 📐" : "جبري 🧮"}
-                </span>
-              </span>
-              {schema && (
-                <>
-                  <span className="opacity-40">•</span>
-                  <span>
-                    نوع الإجابة:{" "}
-                    <span className="font-bold text-foreground">
-                      {schema.type}
-                    </span>
-                  </span>
-                </>
+          {/* Smart solving guide */}
+          {committed && editorKind === "algebra" && (
+            <AlgebraSolvingGuide problemText={committed} />
+          )}
+
+          {/* Smart editor — auto-routes algebra ↔ geometry */}
+          <StudentAnswerEditor
+            exerciseText={committed || ""}
+            onSubmitAlgebra={handleAlgebraSubmit}
+            onSubmitGeometry={handleGeometrySubmit}
+          />
+
+          {/* Verdict */}
+          {verdict && (
+            <div
+              className={`p-4 rounded-xl border ${
+                verdict.status === "correct"
+                  ? "border-primary/30 bg-primary/5 text-primary"
+                  : verdict.status === "partial"
+                    ? "border-amber-500/30 bg-amber-500/5 text-amber-700"
+                    : verdict.status === "incorrect"
+                      ? "border-destructive/30 bg-destructive/5 text-destructive"
+                      : "border-border bg-muted/30 text-muted-foreground"
+              }`}
+            >
+              <div className="text-sm font-bold mb-1">
+                {verdict.status === "correct"
+                  ? "✓ إجابة صحيحة"
+                  : verdict.status === "partial"
+                    ? "~ إجابة جزئية"
+                    : verdict.status === "incorrect"
+                      ? "✗ إجابة غير صحيحة"
+                      : "تم استلام إجابتك"}
+              </div>
+              <div className="text-xs opacity-90">{verdict.message}</div>
+              {verdict.expected && (
+                <div className="text-xs mt-2 opacity-80">
+                  الإجابة المتوقعة:{" "}
+                  <span className="font-mono font-bold">{verdict.expected}</span>
+                </div>
               )}
+            </div>
+          )}
+
+          {/* Submitted algebra steps recap */}
+          {editorKind === "algebra" && steps.length > 0 && (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+              <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
+                خطوات الحل المُرسلة
+              </div>
+              <ol className="space-y-2">
+                {steps.map((s, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start gap-3 p-2 rounded-lg bg-muted/30"
+                  >
+                    <span className="text-[10px] font-bold text-muted-foreground w-5 text-center pt-1">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1">
+                      <LatexRenderer
+                        latex={s}
+                        className="text-sm text-foreground"
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ol>
             </div>
           )}
         </div>
 
-        {/* Smart solving guide — explains the method, steps, symbols & pitfalls */}
-        {committed && editorKind === "algebra" && (
-          <AlgebraSolvingGuide problemText={committed} />
-        )}
-
-        {/* Smart editor — auto-routes algebra ↔ geometry */}
-        <StudentAnswerEditor
-          exerciseText={committed || ""}
-          onSubmitAlgebra={handleAlgebraSubmit}
-          onSubmitGeometry={handleGeometrySubmit}
-        />
-
-        {/* Verdict */}
-        {verdict && (
-          <div
-            className={`p-4 rounded-xl border ${
-              verdict.status === "correct"
-                ? "border-primary/30 bg-primary/5 text-primary"
-                : verdict.status === "partial"
-                  ? "border-amber-500/30 bg-amber-500/5 text-amber-700"
-                  : verdict.status === "incorrect"
-                    ? "border-destructive/30 bg-destructive/5 text-destructive"
-                    : "border-border bg-muted/30 text-muted-foreground"
-            }`}
-          >
-            <div className="text-sm font-bold mb-1">
-              {verdict.status === "correct"
-                ? "✓ إجابة صحيحة"
-                : verdict.status === "partial"
-                  ? "~ إجابة جزئية"
-                  : verdict.status === "incorrect"
-                    ? "✗ إجابة غير صحيحة"
-                    : "تم استلام إجابتك"}
+        {/* === Side: exercise library === */}
+        <aside className="rounded-xl border border-border bg-card flex flex-col h-[calc(100vh-140px)] sticky top-20">
+          <div className="p-3 border-b border-border space-y-2">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-bold text-foreground">مسائل المنهاج</h2>
+              <span className="text-[10px] text-muted-foreground mr-auto">
+                {filteredKb.length}
+              </span>
             </div>
-            <div className="text-xs opacity-90">{verdict.message}</div>
-            {verdict.expected && (
-              <div className="text-xs mt-2 opacity-80">
-                الإجابة المتوقعة:{" "}
-                <span className="font-mono font-bold">{verdict.expected}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Submitted algebra steps recap */}
-        {editorKind === "algebra" && steps.length > 0 && (
-          <div className="rounded-xl border border-border bg-card p-4 space-y-2">
-            <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-              خطوات الحل المُرسلة
-            </div>
-            <ol className="space-y-2">
-              {steps.map((s, i) => (
-                <li
-                  key={i}
-                  className="flex items-start gap-3 p-2 rounded-lg bg-muted/30"
-                >
-                  <span className="text-[10px] font-bold text-muted-foreground w-5 text-center pt-1">
-                    {i + 1}
-                  </span>
-                  <div className="flex-1">
-                    <LatexRenderer
-                      latex={s}
-                      className="text-sm text-foreground"
-                    />
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
-      </div>
-
-      {/* KB picker modal */}
-      {kbOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setKbOpen(false)}
-        >
-          <div
-            className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-black text-foreground">📚 مكتبة المسائل</h2>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  اختر مسألة من منهجك ({gradeCode || "—"} / {countryCode || "DZ"}) لتحميلها مباشرة في الاستوديو.
-                </p>
-              </div>
-              <button
-                onClick={() => setKbOpen(false)}
-                className="w-8 h-8 rounded-full hover:bg-muted text-muted-foreground"
-                aria-label="إغلاق"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="px-5 py-3 border-b border-border">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={kbQuery}
                 onChange={(e) => setKbQuery(e.target.value)}
-                placeholder="بحث في النص أو الفصل..."
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:border-primary outline-none"
+                placeholder="ابحث عن مسألة…"
+                className="w-full pr-8 pl-3 py-1.5 text-xs rounded-md border border-border bg-background outline-none focus:border-primary"
               />
             </div>
-
-            <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
-              {kbLoading && (
-                <div className="text-center py-10 text-sm text-muted-foreground">⏳ جاري تحميل المسائل...</div>
-              )}
-              {kbError && (
-                <div className="text-center py-10 text-sm text-destructive">⚠️ {kbError}</div>
-              )}
-              {!kbLoading && !kbError && groupedKb.length === 0 && (
-                <div className="text-center py-10 text-sm text-muted-foreground">
-                  لا توجد مسائل متاحة لهذا المستوى بعد.
-                </div>
-              )}
-              {!kbLoading && !kbError && groupedKb.map(([chapter, items]) => (
-                <div key={chapter} className="space-y-2">
-                  <div className="text-[10px] font-black uppercase tracking-wider text-primary border-b border-primary/20 pb-1">
-                    {chapter} <span className="text-muted-foreground/70 font-normal">({items.length})</span>
-                  </div>
-                  <div className="space-y-2">
-                    {items.map((it) => (
-                      <button
-                        key={it.id}
-                        onClick={() => loadProblem(it.text)}
-                        className="w-full text-right p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all group"
-                      >
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <span className="text-[10px] font-bold text-muted-foreground">
-                            {it.source || "تمرين"}
-                          </span>
-                          <span className="text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                            تحميل ←
-                          </span>
-                        </div>
-                        <MathContent
-                          text={(it.text || "").slice(0, 220) + ((it.text || "").length > 220 ? "..." : "")}
-                          className="text-xs"
-                          autoHighlightNumbers={false}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <label className="flex items-center gap-2 text-[10px] text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showAllGrades}
+                onChange={(e) => setShowAllGrades(e.target.checked)}
+                className="accent-primary"
+              />
+              عرض كل المستويات
+            </label>
           </div>
-        </div>
-      )}
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+            {kbLoading ? (
+              <div className="flex items-center justify-center py-10 text-muted-foreground gap-2 text-xs">
+                <Loader2 className="w-4 h-4 animate-spin" /> جارٍ التحميل…
+              </div>
+            ) : kbError ? (
+              <div className="text-center text-xs text-destructive py-10 px-4">⚠️ {kbError}</div>
+            ) : groupedKb.length === 0 ? (
+              <div className="text-center text-xs text-muted-foreground py-10 px-4">
+                لا توجد مسائل جبرية متاحة الآن.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {groupedKb.map(([chapter, items]) => (
+                  <div key={chapter}>
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-1">
+                      {chapter}{" "}
+                      <span className="text-muted-foreground/60">({items.length})</span>
+                    </div>
+                    <div className="space-y-1">
+                      {items.slice(0, 30).map((it) => (
+                        <button
+                          key={it.id}
+                          onClick={() => loadProblem(it)}
+                          className={`w-full text-right p-2 rounded-md text-[11px] leading-relaxed transition-colors border ${
+                            activeExId === it.id
+                              ? "bg-primary/10 border-primary/40 text-foreground"
+                              : "border-transparent hover:bg-muted text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <MathContent
+                            text={(it.text || "").slice(0, 180) + ((it.text || "").length > 180 ? "…" : "")}
+                            className="text-[11px]"
+                            autoHighlightNumbers={false}
+                          />
+                          {it.type && (
+                            <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                              {it.type}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
