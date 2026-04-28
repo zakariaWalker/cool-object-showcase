@@ -137,7 +137,11 @@ export function deriveStudioCognitive(
     } else if (/cercle|دائرة/.test(low)) {
       skill = "إنشاء دائرة";
       firstStepHint = "حدّد المركز ونصف القطر قبل الرسم.";
-    } else if (/parallèle|متوازي/.test(low)) {
+    } else if (/parallélogramme|متوازي\s*(ال)?أضلاع|متوازي\s*أضلع/.test(low)) {
+      skill = "خصائص متوازي الأضلاع";
+      goal = "استعمال خصائص متوازي الأضلاع (الأضلاع، الزوايا، الأقطار) لإيجاد المطلوب.";
+      firstStepHint = "تذكّر: في متوازي الأضلاع، الزوايا المتقابلة متقايسة والمتتالية متكاملة (مجموعها 180°).";
+    } else if (/(parallèle|مواز[ٍي]|توازي)(?!.*أضلاع)/.test(low) && /(ارسم|أنشئ|construire|tracer|اِرسم)/.test(low)) {
       skill = "إنشاء مستقيم موازٍ";
       firstStepHint = "استعمل الكوس لنقل الميل من المستقيم الأصلي إلى نقطة جديدة.";
     } else if (/perpendicul|عمودي/.test(low)) {
