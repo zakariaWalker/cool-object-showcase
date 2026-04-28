@@ -117,12 +117,6 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
   const removeRelation = (i: number) =>
     setEnr((e) => ({ ...e, relations: e.relations.filter((_, j) => j !== i) }));
 
-  const toggleTag = (tag: string) =>
-    setEnr((e) => ({
-      ...e,
-      tags: e.tags.includes(tag) ? e.tags.filter((t) => t !== tag) : [...e.tags, tag],
-    }));
-
   const handleApply = () => { onApply?.(enr); toast.success("تمّ تطبيق المعطيات على اللوحة"); };
 
   const handleSave = async () => {
