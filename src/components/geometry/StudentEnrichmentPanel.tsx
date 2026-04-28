@@ -9,10 +9,13 @@ import {
   type Enrichment,
   type Given,
   type RelationHint,
+  type ExerciseDomain,
   EMPTY_ENRICHMENT,
   saveEnrichment,
   loadBestEnrichment,
   suggestQuestions,
+  suggestTags,
+  detectDomain,
 } from "@/engine/figures/enrichments";
 
 const RELATION_OPTIONS: { value: RelationHint["kind"]; label: string }[] = [
@@ -25,24 +28,31 @@ const RELATION_OPTIONS: { value: RelationHint["kind"]; label: string }[] = [
   { value: "tangent", label: "مماس" },
 ];
 
-const COMMON_TAGS = [
-  "فيثاغورس", "طاليس", "تشابه", "تطابق", "محور تناظر",
-  "زاوية قائمة", "متوازي أضلاع", "دائرة محيطة",
-];
-
 interface Props {
   text: string;
   exerciseId: string | null;
-  onApply: (e: Enrichment) => void;
+  /** Optional: caller may force the domain. Defaults to auto-detect. */
+  domain?: ExerciseDomain;
+  /** When the learner clicks "تطبيق على اللوحة". */
+  onApply?: (e: Enrichment) => void;
+  /** Compact rendering for embedding in tabs/sidebars. */
+  compact?: boolean;
 }
 
-export function StudentEnrichmentPanel({ text, exerciseId, onApply }: Props) {
+export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply, compact }: Props) {
   const [enr, setEnr] = useState<Enrichment>(EMPTY_ENRICHMENT);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedOnce, setSavedOnce] = useState(false);
 
-  const questions = useMemo(() => suggestQuestions(text), [text]);
+  const resolvedDomain = useMemo<ExerciseDomain>(
+    () => domain ?? detectDomain(text),
+    [domain, text],
+  );
+  const questions = useMemo(() => suggestQuestions(text, resolvedDomain), [text, resolvedDomain]);
+  const tagPool = useMemo(() => suggestTags(resolvedDomain), [resolvedDomain]);
+  const showRelations = resolvedDomain === "geometry";
+  const shapeLabel = resolvedDomain === "geometry" ? "الشكل" : "النوع/الموضوع";
 
   // Pre-fill from existing community enrichment.
   useEffect(() => {
