@@ -60,7 +60,7 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
     ];
     if (showRelations) s.push({ id: "relations", title: "العلاقات", question: "هل توجد علاقات هندسية؟", hint: "تعامد، توازي، منتصف…" });
     s.push({ id: "goal", title: "المطلوب", question: "ما المطلوب بالضبط؟", hint: "اكتب الهدف بجملة واحدة" });
-    s.push({ id: "tags", title: "وسوم", question: "اختر وسوماً تصف التمرين", hint: "تساعد في تنظيم قاعدة المعرفة" });
+    s.push({ id: "tags", title: "وسوم", question: "اختر وسوماً تصف التمرين", hint: "تساعد على تنظيم أفكارك" });
     s.push({ id: "review", title: "مراجعة", question: "راجع ثم احفظ", hint: "" });
     return s;
   }, [shapeLabel, showRelations]);
@@ -117,7 +117,7 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
     if (res.ok) {
       setSavedOnce(true);
       onApply?.(enr);
-      toast.success("شكراً لمساهمتك! تمّ إثراء قاعدة المعرفة");
+      toast.success("شكراً لمساهمتك!");
     } else {
       toast.error("سجّل دخولك لحفظ المساهمة");
     }
@@ -150,7 +150,7 @@ export function StudentEnrichmentPanel({ text, exerciseId, domain, onApply }: Pr
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-bold text-foreground leading-tight">رتّب أفكارك خطوة بخطوة</h3>
-          <p className="text-[10px] text-muted-foreground leading-tight">إجاباتك تُغذّي العمل وتُثري قاعدة المعرفة</p>
+          <p className="text-[10px] text-muted-foreground leading-tight">رتّب أفكارك قبل الرسم</p>
         </div>
         <span className="text-[10px] font-bold text-muted-foreground tabular-nums">
           {stepIdx + 1}/{steps.length}

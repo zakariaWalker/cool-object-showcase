@@ -243,7 +243,7 @@ export default function GeometryStudio() {
                 <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 flex items-start gap-2" dir="rtl">
                   <span className="text-lg shrink-0">👇</span>
                   <div className="text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed">
-                    <span className="font-bold">ابدأ من هنا:</span> اقرأ التمرين أعلاه، ثم استعمل اللوحة التفاعلية أدناه لرسم الشكل خطوة بخطوة. ستجد على اليسار لوحة «رتّب أفكارك» لتساعدك على التفكير قبل الرسم.
+                    <span className="font-bold">ابدأ من هنا:</span> اقرأ التمرين أعلاه، ثم استعمل اللوحة التفاعلية أدناه لرسم الشكل خطوة بخطوة. ستجد على اليمين لوحة «رتّب أفكارك» لتساعدك على التفكير قبل الرسم.
                   </div>
                 </div>
               </>
@@ -274,37 +274,23 @@ export default function GeometryStudio() {
               </>
             )}
 
-            {/* KB analysis status */}
+            {/* Silent readiness indicator */}
             {committed && (
               <div className="flex items-center gap-2 text-[11px] border-t border-border/50 pt-3">
                 {analyzing ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                    <span className="text-muted-foreground">يحلّل من قاعدة المعرفة…</span>
+                    <span className="text-muted-foreground">جارٍ تجهيز اللوحة…</span>
                   </>
                 ) : figureSpec || constraints.length > 0 ? (
                   <>
-                    <Database className="w-3.5 h-3.5 text-primary" />
-                    <span className="font-bold text-foreground">
-                      {analysisSource === "kb_learned"
-                        ? "✓ معرفة مكتسبة:"
-                        : analysisSource === "kb_figure"
-                        ? "شكل من KB:"
-                        : analysisSource === "kb_enriched"
-                        ? "تحليل مُعزَّز من KB:"
-                        : "تحليل آلي:"}
-                    </span>
+                    <Database className="w-3.5 h-3.5 text-emerald-600" />
                     <span className="text-muted-foreground line-clamp-1 flex-1">
-                      {caption || `${constraints.length} قيد للتحقّق`}
+                      {caption || "اللوحة جاهزة — ابدأ الإنشاء"}
                     </span>
-                    {confidence != null && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold">
-                        {Math.round(confidence * 100)}%
-                      </span>
-                    )}
                   </>
                 ) : (
-                  <span className="text-muted-foreground">لم يُتعرَّف على شكل في النص.</span>
+                  <span className="text-muted-foreground">اللوحة جاهزة — ابدأ الإنشاء.</span>
                 )}
               </div>
             )}
