@@ -243,7 +243,7 @@ export default function GeometryStudio() {
                 <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 flex items-start gap-2" dir="rtl">
                   <span className="text-lg shrink-0">👇</span>
                   <div className="text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed">
-                    <span className="font-bold">ابدأ من هنا:</span> اقرأ التمرين أعلاه، ثم استعمل اللوحة التفاعلية أدناه لرسم الشكل خطوة بخطوة. ستجد على اليسار لوحة «رتّب أفكارك» لتساعدك على التفكير قبل الرسم.
+                    <span className="font-bold">ابدأ من هنا:</span> اقرأ التمرين أعلاه، ثم استعمل اللوحة التفاعلية أدناه لرسم الشكل خطوة بخطوة. ستجد على اليمين لوحة «رتّب أفكارك» لتساعدك على التفكير قبل الرسم.
                   </div>
                 </div>
               </>
