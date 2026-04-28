@@ -1077,6 +1077,13 @@ export function FeatureTabs({ exercise, parsed, kbPattern }: FeatureTabsProps) {
             {activeTab === 2 && <ConceptMapView domain={domain} />}
             {activeTab === 3 && <AITutor exercise={exercise} kbPattern={kbPattern} />}
             {activeTab === 4 && <TeacherPanel />}
+            {activeTab === 5 && (
+              <StudentEnrichmentPanel
+                text={(exercise as any)?.statement || ""}
+                exerciseId={(exercise as any)?._kb?.id || null}
+                domain={domain as any}
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
