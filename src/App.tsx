@@ -41,6 +41,8 @@ import TextbooksIndex from "./pages/TextbooksIndex";
 import TextbookBlog from "./pages/TextbookBlog";
 import Onboarding from "./pages/Onboarding";
 import ExamCompare from "./admin/pages/ExamCompare";
+import DiagnosticQA from "./admin/pages/DiagnosticQA";
+import QuestionTemplates from "./admin/pages/QuestionTemplates";
 import GeometryStudio from "./pages/GeometryStudio";
 import AlgebraStudio from "./pages/AlgebraStudio";
 
