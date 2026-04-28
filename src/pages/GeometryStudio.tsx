@@ -198,31 +198,35 @@ export default function GeometryStudio() {
               </div>
             </div>
 
-            {/* AI parsing status */}
+            {/* KB analysis status */}
             {committed && (
               <div className="flex items-center gap-2 text-[11px] border-t border-border/50 pt-3">
-                {aiLoading ? (
+                {analyzing ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                    <span className="text-muted-foreground">يحلّل الذكاء الاصطناعي السياق…</span>
+                    <span className="text-muted-foreground">يحلّل من قاعدة المعرفة…</span>
                   </>
-                ) : aiSpec || (aiConstraints && aiConstraints.length > 0) ? (
+                ) : figureSpec || constraints.length > 0 ? (
                   <>
-                    <Sparkles className="w-3.5 h-3.5 text-primary" />
-                    <span className="font-bold text-foreground">تحليل ذكي:</span>
-                    <span className="text-muted-foreground line-clamp-1 flex-1">
-                      {aiCaption || `${constraints.length} قيد للتحقّق`}
+                    <Database className="w-3.5 h-3.5 text-primary" />
+                    <span className="font-bold text-foreground">
+                      {analysisSource === "kb_figure"
+                        ? "شكل من KB:"
+                        : analysisSource === "kb_enriched"
+                        ? "تحليل مُعزَّز من KB:"
+                        : "تحليل آلي:"}
                     </span>
-                    {aiConfidence != null && (
+                    <span className="text-muted-foreground line-clamp-1 flex-1">
+                      {caption || `${constraints.length} قيد للتحقّق`}
+                    </span>
+                    {confidence != null && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold">
-                        {Math.round(aiConfidence * 100)}%
+                        {Math.round(confidence * 100)}%
                       </span>
                     )}
                   </>
                 ) : (
-                  <>
-                    <span className="text-muted-foreground">تحليل سريع (بدون ذكاء اصطناعي).</span>
-                  </>
+                  <span className="text-muted-foreground">لم يُتعرَّف على شكل في النص.</span>
                 )}
               </div>
             )}
