@@ -38,6 +38,7 @@ export function DiagnosticProfiler({
   const { setProfile } = useProfile();
   const { track } = useMisconceptionTracker();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [exercises, setExercises] = useState<DiagnosticExercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentEx, setCurrentEx] = useState(0);
