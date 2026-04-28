@@ -127,6 +127,8 @@ export default function AlgebraStudio() {
     setSteps([]);
     setVerdict(null);
     setActiveExId(it.id);
+    setActiveGrade(it.grade || null);
+    setActiveChapter(it.chapter || null);
   };
 
   const schema = useMemo(
