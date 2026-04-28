@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 import { migrateAnonymousDataIfNeeded } from "@/lib/migrateAnonymousData";
+import { flushPendingEnrichments } from "@/engine/figures/enrichments";
 
 interface Profile {
   id: string;
