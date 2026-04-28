@@ -201,7 +201,26 @@ export default function GeometryStudio() {
 
         {/* === Main column === */}
         <div className="space-y-3 min-w-0">
-          {/* Task input */}
+          {/* Wrong studio guard */}
+          {committed && isNonConstructible(committed, exercises.find(e => e.id === activeExId)?.type || null) && (
+            <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-4 flex items-start gap-3" dir="rtl">
+              <span className="text-2xl shrink-0">⚠️</span>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">هذا التمرين ليس إنشاءً هندسياً</h3>
+                <p className="text-xs text-amber-800/80 dark:text-amber-200/80 mt-1">
+                  يبدو أنه تمرين جبري أو مثلثاتي يُحلّ بالحساب وليس بالبركار والمسطرة. ننصح بفتحه في استوديو الجبر.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate(`/algebra-studio?text=${encodeURIComponent(committed)}`)}
+                className="px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-bold shadow hover:opacity-90 shrink-0"
+              >
+                فتح في استوديو الجبر ←
+              </button>
+            </div>
+          )}
+
+
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             {committed && (
               <div className="rounded-lg bg-primary/5 border border-primary/20 p-3" dir="rtl">
