@@ -394,29 +394,132 @@ async function buildFromKB(db: any, level: string, countryCode: string, count: n
   return dedupePool(out);
 }
 
+// Try to derive a real, gradable diagnostic item from a KB exercise.
+// Philosophy: ASK THE EXERCISE ITSELF (not "what skill does this measure?").
+// We only emit items where we can extract a verifiable numeric answer from the
+// exercise text via simple algebraic patterns. Otherwise → return null and skip.
 function kbExerciseToDiagnosticItem(ex: any, skill?: any): any | null {
   const raw = String(ex?.text || "").replace(/\s+/g, " ").trim();
-  if (!raw || raw.length < 12 || NON_GRADABLE_RE.test(raw)) return null;
-  const snippet = raw.length > 220 ? `${raw.slice(0, 220)}…` : raw;
+  if (!raw || raw.length < 8 || NON_GRADABLE_RE.test(raw)) return null;
+
   const type = String(ex?.type || skill?.domain || "algebra");
-  const answer = domainLabel(type);
-  const options = uniqueOptions([answer, "حساب مباشر", "هندسة", "دوال ومتتاليات", "مقارنة وترتيب"]);
   const badge = badgeFor(type);
-  return {
+  const subject = skill?.name_ar || skill?.name || "تمرين من بنك المعرفة";
+
+  const derived = deriveAnswerFromText(raw);
+  if (!derived) return null; // skip — we will NOT invent a skill-classification question
+
+  const base = {
     id: `kb-ex-${ex.id}`,
     type: "standard",
-    typeName: "من بنك المعرفة",
-    question: `اقرأ هذا السؤال من بنك المعرفة: ${snippet}\nما المهارة الأقرب التي يقيسها؟`,
-    options,
-    answer,
-    hint: `ابحث عن الكلمات المفتاحية في السؤال: ${skill?.name_ar || skill?.name || answer}.`,
-    kind: "qcm",
+    typeName: subject,
+    question: derived.question,
+    hint: derived.hint || `راجع: ${subject}.`,
     icon: badge.icon,
-    misconception: `صعوبة في تصنيف مهارة: ${answer}`,
+    misconception: `خطأ في: ${subject}`,
     misconceptionType: inferMiscType(type, skill?.subdomain),
     badgeColor: badge.color,
     badgeBg: badge.bg,
   };
+
+  if (derived.kind === "qcm") {
+    return { ...base, kind: "qcm", options: derived.options!, answer: derived.answer };
+  }
+  return { ...base, kind: "numeric", answer: String(derived.answer), placeholder: "اكتب القيمة العددية..." };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Lightweight algebraic answer extractor.
+// Handles the most common BEM/AS patterns:
+//   • linear equation: ax + b = c   →  x = (c−b)/a
+//   • numeric expression: 2 + 3 × 4 → eval safely
+//   • "احسب N% من M"
+//   • simple comparison: which is bigger A or B
+// Returns null when the text is too ambiguous — caller will skip the exercise.
+// ─────────────────────────────────────────────────────────────────────────
+function deriveAnswerFromText(text: string):
+  | { question: string; kind: "qcm" | "numeric"; answer: string; options?: string[]; hint?: string }
+  | null {
+  const t = text.replace(/\s+/g, " ").trim();
+  const snippet = t.length > 220 ? `${t.slice(0, 220)}…` : t;
+
+  // 1) Linear equation:  ax + b = c   (b can be negative, missing)
+  const lin = t.match(/(-?\d+)\s*[xX]\s*([+\-]\s*\d+)?\s*=\s*(-?\d+)/);
+  if (lin) {
+    const a = parseInt(lin[1], 10);
+    const b = lin[2] ? parseInt(lin[2].replace(/\s+/g, ""), 10) : 0;
+    const c = parseInt(lin[3], 10);
+    if (a !== 0) {
+      const x = (c - b) / a;
+      if (Number.isFinite(x)) {
+        return {
+          question: `حلّ المعادلة التالية: ${a}x ${b >= 0 ? "+" : "−"} ${Math.abs(b)} = ${c}`,
+          kind: "numeric",
+          answer: prettyNum(x),
+          hint: "اعزل x بنقل الثوابت ثم القسمة على معامل x.",
+        };
+      }
+    }
+  }
+
+  // 2) "احسب N% من M"
+  const pct = t.match(/(\d+(?:[.,]\d+)?)\s*%\s*(?:من|of)\s*(\d+(?:[.,]\d+)?)/i);
+  if (pct) {
+    const p = parseFloat(pct[1].replace(",", "."));
+    const m = parseFloat(pct[2].replace(",", "."));
+    const v = (p * m) / 100;
+    if (Number.isFinite(v)) {
+      return {
+        question: `احسب: ${p}% من ${m}`,
+        kind: "numeric",
+        answer: prettyNum(v),
+        hint: "اضرب القيمة في النسبة مقسومة على 100.",
+      };
+    }
+  }
+
+  // 3) Pure numeric expression on its own line (احسب: ...)
+  const calc = t.match(/(?:احسب|calcul[eé]r?)\s*[:：]?\s*([0-9+\-*×÷/().,\s\^²³]+?)(?:[=؟?]|$)/i);
+  if (calc) {
+    const expr = calc[1].trim();
+    const v = safeEval(expr);
+    if (v !== null && Number.isFinite(v)) {
+      return {
+        question: `احسب: ${expr}`,
+        kind: "numeric",
+        answer: prettyNum(v),
+        hint: "احترم أولوية العمليات (الأقواس، ثم القوى، ثم × ÷، ثم + −).",
+      };
+    }
+  }
+
+  return null; // not recognized → caller skips this exercise
+}
+
+function prettyNum(n: number): string {
+  if (Number.isInteger(n)) return String(n);
+  return String(Math.round(n * 1000) / 1000);
+}
+
+function safeEval(expr: string): number | null {
+  // Whitelist: digits, operators, parens, decimal point. Replace × ÷ ² ³ ^.
+  let s = expr
+    .replace(/×/g, "*")
+    .replace(/÷/g, "/")
+    .replace(/²/g, "**2")
+    .replace(/³/g, "**3")
+    .replace(/\^/g, "**")
+    .replace(/,/g, ".")
+    .replace(/\s+/g, "");
+  if (!/^[-+*/().0-9*]+$/.test(s)) return null;
+  if (s.length === 0 || s.length > 80) return null;
+  try {
+    // eslint-disable-next-line no-new-func
+    const v = Function(`"use strict"; return (${s});`)();
+    return typeof v === "number" ? v : null;
+  } catch {
+    return null;
+  }
 }
 
 function domainLabel(type: string): string {
