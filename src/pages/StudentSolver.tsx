@@ -32,6 +32,7 @@ export default function StudentSolver() {
   const [stepStatus, setStepStatus] = useState<"typing" | "correct" | "partial" | "incorrect" | "hint_shown">("typing");
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [completed, setCompleted] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (id) loadData();
