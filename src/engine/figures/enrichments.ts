@@ -258,7 +258,17 @@ export async function saveEnrichment(opts: {
 
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { ok: false };
+    if (!user) {
+      // Silent local save for anonymous users — flushed on next sign-in.
+      savePendingLocal({
+        text_hash,
+        text_sample: text.slice(0, 500),
+        exercise_id: opts.exerciseId ?? null,
+        enrichment: opts.enrichment,
+        saved_at: new Date().toISOString(),
+      });
+      return { ok: true, id: `local:${text_hash}` };
+    }
 
     // One row per (user, text_hash) — upsert by hand.
     const { data: existing } = await (supabase as any)
