@@ -15,6 +15,12 @@ export function deriveStudioCognitive(
   if (!t) return null;
   const low = t.toLowerCase();
 
+  // ---- Trigonometric identity / proof detection (must come BEFORE generic "مثلث" geometry match) ----
+  const isTrigIdentity =
+    /\\sin|\\cos|\\tan|\\cot|sin\(|cos\(|tan\(|sin\s*x|cos\s*x|جا\s*\(|جتا\s*\(|ظا\s*\(/.test(low) &&
+    /(أثبت|بيّن|برهن|démontr|montr|prouv)/i.test(low);
+  const isProof = /(أثبت|بيّن|برهن|démontr|montr|prouv)\s+(أن|que|صحة|l'égalité|l'identité|المتساوية)/i.test(low);
+
   // ---- Skill detection ----
   let skill = kind === "geometry" ? "إنشاء هندسي" : "حل جبري";
   let goal = "افهم المعطيات والمطلوب، ثم تقدّم خطوة بخطوة.";
@@ -22,6 +28,23 @@ export function deriveStudioCognitive(
   let hint = "ابدأ بأبسط ما تراه وتقدّم تدريجياً.";
   let similarExample = "";
   let method = "";
+
+  // Trigonometric identity proof — handle FIRST so a word like "مثلثية" doesn't fall to geometry.
+  if (isTrigIdentity || (isProof && /sin|cos|جا|جتا/.test(low))) {
+    return {
+      skill: "إثبات متطابقة مثلثية",
+      level,
+      difficulty: "moyen",
+      durationMin: 6,
+      xpReward: 25,
+      goal: "البرهان على صحّة متطابقة مثلثية بتحويل أحد الطرفين حتى يصبح مطابقاً للآخر.",
+      firstStepHint: "ابدأ بالطرف الأكثر تعقيداً، ووحّد المقامات إن وجدت كسور.",
+      hint: "تذكّر: sin²(x) + cos²(x) = 1، وأن 1 + cos(x) = 2cos²(x/2)، و sin(x) = 2 sin(x/2) cos(x/2).",
+      similarExample: "أثبت أن: tan(x) + cot(x) = 1 / (sin(x)·cos(x)).",
+      method: "1. اختر طرفاً واحداً للتحويل (الأعقد عادةً).\n2. وحّد المقامات إن لزم الأمر.\n3. استبدل بالمتطابقات الأساسية (sin²+cos²=1، …).\n4. بسّط حتى تصل إلى الطرف الآخر.\n5. اذكر شرط وجود الحدود (المقامات ≠ 0).",
+    };
+  }
+
 
   if (kind === "algebra") {
     if (/factoris|تحليل/.test(low) && /مربّ?ع كامل|carré parfait|a²|b²|2ab/.test(low)) {
