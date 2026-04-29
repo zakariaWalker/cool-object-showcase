@@ -186,20 +186,13 @@ export async function generateAIOnlyExam(
   template: ExamTemplate,
   grade: string,
   patterns?: ExamStructuralPattern,
-  style?: ExamStyleProfile
+  style?: ExamStyleProfile,
+  country: string = "DZ",
 ): Promise<GenerationResult> {
   const { data, error } = await supabase.functions.invoke("generate-automated-exam", {
-    body: {
-      mode: "synthetic",
-      template,
-      grade,
-      patterns,
-      style
-    }
+    body: { mode: "synthetic", template, grade, patterns, style, country }
   });
-
   if (error) throw error;
-
   return {
     engine: "ai_only",
     exam: data.exam,
@@ -208,30 +201,19 @@ export async function generateAIOnlyExam(
 }
 
 /**
- * Engine 3: Hybrid (Blend)
- * Takes KB questions and refines them via AI.
+ * Engine 3: Hybrid (Blend) — KB baseline refined by AI.
  */
 export async function generateHybridExam(
   template: ExamTemplate,
   grade: string,
-  patterns?: ExamStructuralPattern
+  patterns?: ExamStructuralPattern,
+  country: string = "DZ",
 ): Promise<GenerationResult> {
-  // 1. Get KB baseline
-  const kbResult = await generateKBOnlyExam(template, grade);
-  
-  // 2. Refine via AI
+  const kbResult = await generateKBOnlyExam(template, grade, country);
   const { data, error } = await supabase.functions.invoke("generate-automated-exam", {
-    body: {
-      mode: "hybrid",
-      template,
-      grade,
-      kbExam: kbResult.exam,
-      patterns
-    }
+    body: { mode: "hybrid", template, grade, kbExam: kbResult.exam, patterns, country }
   });
-
   if (error) throw error;
-
   return {
     engine: "hybrid",
     exam: data.exam,
