@@ -340,24 +340,28 @@ Deno.serve(async (req) => {
 
     const response = await callGemini([{ role: "user", parts: [{ text: prompt }] }], {
       systemInstruction,
-      temperature: 0.3,
-      // Increase output budget so long exams don't get truncated
-      maxOutputTokens: 8192,
+      temperature: 0.55,
+      maxOutputTokens: 16384,
     });
 
     const parsed = extractJSON(response.text);
 
-    // ── Post-generation validation (lightweight) ──────────────
+    // ── Post-generation validation ────────────────────────────
     const exam = (parsed as Record<string, unknown>).exam as Record<string, unknown> | undefined;
     const sections = (exam?.sections as unknown[]) ?? [];
     const warnings: string[] = [];
 
     let totalSubQ = 0;
+    let totalBloom = 0;
+    let bloomCount = 0;
+    let highBloomQs = 0;
+    const allText: string[] = [];
+
     for (const sec of sections as Array<Record<string, unknown>>) {
       const exs = (sec.exercises as Array<Record<string, unknown>>) ?? [];
       for (const ex of exs) {
         const text = (ex.text as string) ?? "";
-        // Count numbered sub-questions like "1)" or "1."
+        allText.push(text);
         const matches = text.match(/^\s*\d+[\)\.]/gm);
         const count = matches?.length ?? 0;
         totalSubQ += count;
@@ -365,11 +369,36 @@ Deno.serve(async (req) => {
         if (count < 3) {
           warnings.push(`تمرين ${ex.id}: يحتوي على ${count} أسئلة فرعية فقط (الحد الأدنى 3)`);
         }
+        const b = Number(ex.bloomLevel) || 3;
+        totalBloom += b * Math.max(count, 1);
+        bloomCount += Math.max(count, 1);
+        if (b >= 5) highBloomQs += count;
       }
     }
 
-    if (totalSubQ < 12) {
-      warnings.push(`إجمالي الأسئلة الفرعية ${totalSubQ} أقل من الحد الأدنى المتوقع (12).`);
+    const avgBloom = bloomCount ? totalBloom / bloomCount : 0;
+    const fullText = allText.join("\n");
+
+    if (currKey === "3AS") {
+      const checks: Array<[RegExp, string]> = [
+        [/متتالي(ة|ات).*هندسي|q\^|q\s*=|أساس(ها)?\s*[qـ]/, "المتتاليات الهندسية"],
+        [/بالتراجع|التراجع|recurrence/i, "البرهان بالتراجع"],
+        [/مقارب\s*مائل|y\s*=\s*[a-z]?x\s*\+/, "المقارب المائل"],
+        [/جدول\s*التغير|جدول\s*تغيرات/, "جدول التغيرات"],
+        [/مناقش(ة|).*بياني|عدد\s*الحلول.*=\s*m|f\(x\)\s*=\s*m/, "المناقشة البيانية"],
+        [/متراجح(ة|ات).*(لوغاريتم|ln|أس|exp|e\^)/, "متراجحة لوغاريتمية/أسية"],
+        [/معادل(ة|ات)\s*تفاضلي|y'\s*\+|y'\s*=\s*[a-z]?y/, "المعادلة التفاضلية"],
+        [/تكامل|∫|بدائي(ة|)|مساحة/, "التكامل/المساحة"],
+      ];
+      for (const [re, label] of checks) {
+        if (!re.test(fullText)) warnings.push(`مفهوم مفقود (3AS): ${label}`);
+      }
+      if (avgBloom < 3.5) warnings.push(`متوسط بلوم ${avgBloom.toFixed(2)} منخفض (المستهدف ≥ 3.6)`);
+      if (highBloomQs < 5) warnings.push(`أسئلة B5/B6 = ${highBloomQs} (المستهدف ≥ 5)`);
+    }
+
+    if (totalSubQ < 18) {
+      warnings.push(`إجمالي الأسئلة الفرعية ${totalSubQ} أقل من الحد الأدنى للبكالوريا (18).`);
     }
 
     return new Response(
