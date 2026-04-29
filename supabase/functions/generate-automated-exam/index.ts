@@ -486,26 +486,27 @@ Deno.serve(async (req) => {
     const avgBloom = bloomCount ? totalBloom / bloomCount : 0;
     const fullText = allText.join("\n");
 
-    if (currKey === "3AS") {
-      const checks: Array<[RegExp, string]> = [
-        [/متتالي(ة|ات).*هندسي|q\^|q\s*=|أساس(ها)?\s*[qـ]/, "المتتاليات الهندسية"],
-        [/بالتراجع|التراجع|recurrence/i, "البرهان بالتراجع"],
-        [/مقارب\s*مائل|y\s*=\s*[a-z]?x\s*\+/, "المقارب المائل"],
-        [/جدول\s*التغير|جدول\s*تغيرات/, "جدول التغيرات"],
-        [/مناقش(ة|).*بياني|عدد\s*الحلول.*=\s*m|f\(x\)\s*=\s*m/, "المناقشة البيانية"],
-        [/متراجح(ة|ات).*(لوغاريتم|ln|أس|exp|e\^)/, "متراجحة لوغاريتمية/أسية"],
-        [/معادل(ة|ات)\s*تفاضلي|y'\s*\+|y'\s*=\s*[a-z]?y/, "المعادلة التفاضلية"],
-        [/تكامل|∫|بدائي(ة|)|مساحة/, "التكامل/المساحة"],
-      ];
-      for (const [re, label] of checks) {
-        if (!re.test(fullText)) warnings.push(`مفهوم مفقود (3AS): ${label}`);
-      }
-      if (avgBloom < 3.5) warnings.push(`متوسط بلوم ${avgBloom.toFixed(2)} منخفض (المستهدف ≥ 3.6)`);
-      if (highBloomQs < 5) warnings.push(`أسئلة B5/B6 = ${highBloomQs} (المستهدف ≥ 5)`);
+    // Per-curriculum mandatory concept checks (data-driven, all levels)
+    const mandatory = curr.mandatoryConcepts ?? [];
+    for (const { re, label } of mandatory) {
+      if (!re.test(fullText)) warnings.push(`مفهوم مفقود (${currKey}): ${label}`);
     }
 
-    if (totalSubQ < 18) {
-      warnings.push(`إجمالي الأسئلة الفرعية ${totalSubQ} أقل من الحد الأدنى للبكالوريا (18).`);
+    // Bloom targets (per curriculum)
+    const bloom = curr.bloomTarget;
+    if (bloom) {
+      if (avgBloom < bloom.avgMin) {
+        warnings.push(`متوسط بلوم ${avgBloom.toFixed(2)} منخفض (المستهدف ≥ ${bloom.avgMin})`);
+      }
+      if (highBloomQs < bloom.highMin) {
+        warnings.push(`أسئلة B5/B6 = ${highBloomQs} (المستهدف ≥ ${bloom.highMin})`);
+      }
+    }
+
+    // Per-curriculum minimum sub-question count, derived from blueprint
+    const minSubQ = curr.sectionBlueprint.reduce((s, x) => s + x.subQMin, 0);
+    if (totalSubQ < minSubQ) {
+      warnings.push(`إجمالي الأسئلة الفرعية ${totalSubQ} أقل من الحد الأدنى لـ ${currKey} (${minSubQ}).`);
     }
 
     return new Response(
