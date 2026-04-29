@@ -437,12 +437,19 @@ Deno.serve(async (req) => {
       prompt = buildEnhancePrompt(kbExam, currKey);
     }
 
+    const countryLabel =
+      country === "DZ" ? "الجزائر" :
+      country === "TN" ? "تونس" :
+      country === "MA" ? "المغرب" :
+      country === "FR" ? "فرنسا" : country;
+
     const systemInstruction = [
-      `أنت مفتش رياضيات معتمد متخصص في منهاج ${curr.labelAr}.`,
+      `أنت مفتش رياضيات معتمد متخصص في منهاج ${curr.labelAr} في ${countryLabel}.`,
       "أجب بـ JSON صالح فقط.",
       "لا markdown، لا ```json، لا أي نص خارج JSON الخام.",
       "كل سؤال فرعي يجب أن يكون جملة عربية كاملة غير مقطوعة.",
       `الامتحان يجب أن يتضمن مواضيع ${currKey} الرسمية فقط، لا مواضيع من سنوات أدنى.`,
+      `أمثلة السياق الإدماجي يجب أن تستخدم أسماء وعملة وأماكن من ${countryLabel}.`,
     ].join(" ");
 
     const response = await callGemini([{ role: "user", parts: [{ text: prompt }] }], {
