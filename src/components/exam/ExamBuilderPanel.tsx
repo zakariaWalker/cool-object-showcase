@@ -86,7 +86,8 @@ type Step = "template" | "configure" | "exercises" | "preview";
 export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
   const [step, setStep] = useState<Step>(exam ? "exercises" : "template");
   const [format, setFormat] = useState<ExamFormat>(exam?.format || "regular");
-  const [grade, setGrade] = useState(exam?.grade || "middle_4");
+  const [grade, setGrade] = useState(exam?.grade || "4AM");
+  const [country, setCountry] = useState<string>((exam as any)?.country || "DZ");
   const [title, setTitle] = useState(exam?.title || "");
   const [duration, setDuration] = useState(exam?.duration || 60);
   const [totalPoints, setTotalPoints] = useState(exam?.totalPoints || 20);
@@ -198,9 +199,9 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
     setIsComparing(true);
     try {
       const results: GenerationResult[] = [];
-      try { results.push(await generateKBOnlyExam(template, grade)); } catch {}
-      try { results.push(await generateAIOnlyExam(template, grade, structuralPatterns, styleProfile)); } catch {}
-      try { results.push(await generateHybridExam(template, grade, structuralPatterns)); } catch {}
+      try { results.push(await generateKBOnlyExam(template, grade, country)); } catch {}
+      try { results.push(await generateAIOnlyExam(template, grade, structuralPatterns, styleProfile, country)); } catch {}
+      try { results.push(await generateHybridExam(template, grade, structuralPatterns, country)); } catch {}
       const valid = results.filter(r => r?.exam?.sections);
       setComparisonResults(valid);
 
