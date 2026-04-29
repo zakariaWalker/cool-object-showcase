@@ -426,7 +426,7 @@ Deno.serve(async (req) => {
   try {
     const { mode, template, grade, patterns, kbExam, style, country = "DZ" } = await req.json();
 
-    const currKey = resolveCurriculumKey(grade ?? "");
+    const currKey = resolveCurriculumKey(grade ?? "", country);
     const curr = CURRICULUM[currKey];
 
     let prompt: string;
