@@ -402,7 +402,16 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ ...parsed, _meta: { curriculumKey: currKey, totalSubQuestions: totalSubQ, warnings } }),
+      JSON.stringify({
+        ...parsed,
+        _meta: {
+          curriculumKey: currKey,
+          totalSubQuestions: totalSubQ,
+          avgBloom: Number(avgBloom.toFixed(2)),
+          highBloomQuestions: highBloomQs,
+          warnings,
+        },
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
