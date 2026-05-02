@@ -49,26 +49,13 @@ function buildExamFromExtraction(extracted: any): Exam {
   const sections: ExamSection[] = sectionsRaw.map((s, idx) => {
     const sectionId = generateSectionId();
     const subs: any[] = Array.isArray(s.sub_questions) ? s.sub_questions : [];
-
-    // If we have sub-questions, fold them into a single exercise text + subQuestions list
-    const mainText = [
-      s.instruction || "",
-      ...(s.tables || []).map(
-        (t: any) =>
-          "\n\n📊 جدول:\n" +
-          [t.headers, ...(t.rows || [])]
-            .map((row: string[]) => "| " + (Array.isArray(row) ? row.join(" | ") : "") + " |")
-            .join("\n"),
-      ),
-      ...(s.figures || []).map((f: any) => `\n\n🖼️ شكل: ${f.description || ""}`),
-    ]
-      .filter(Boolean)
-      .join("\n");
+    const tables: any[] = Array.isArray(s.tables) ? s.tables : [];
+    const figures: any[] = Array.isArray(s.figures) ? s.figures : [];
 
     const exercise: ExamExercise = {
       id: `ex_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
       sectionId,
-      text: mainText.trim() || s.title || `التمرين ${idx + 1}`,
+      text: (s.instruction || "").trim(),
       points: typeof s.points === "number" ? s.points : 1,
       type: "unclassified",
       grade: extracted?.grade || "",
@@ -77,7 +64,20 @@ function buildExamFromExtraction(extracted: any): Exam {
         id: `sq_${Date.now()}_${idx}_${j}`,
         text: `${sq.label ? sq.label + ") " : ""}${sq.text || ""}`,
         points: typeof sq.points === "number" ? sq.points : 0,
+        answerSpace: (sq.answer_space as AnswerSpaceKind) || "lines",
+        answerLines: typeof sq.answer_lines === "number" ? sq.answer_lines : 2,
       })),
+      tables: tables
+        .map((t: any) => ({
+          headers: Array.isArray(t.headers) ? t.headers.map(String) : undefined,
+          rows: Array.isArray(t.rows) ? t.rows.map((r: any) => (Array.isArray(r) ? r.map(String) : [])) : [],
+        }))
+        .filter((t) => t.rows.length > 0 || (t.headers && t.headers.length > 0)),
+      figures: figures
+        .map((f: any) => ({ description: String(f?.description || "") }))
+        .filter((f) => f.description),
+      answerSpace: subs.length === 0 ? "lines" : "none",
+      answerLines: 3,
     };
 
     return {
