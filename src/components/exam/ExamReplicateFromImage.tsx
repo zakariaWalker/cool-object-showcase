@@ -10,6 +10,7 @@ import {
   type ExamSection,
   type ExamExercise,
   type ExamFormat,
+  type AnswerSpaceKind,
   generateExamId,
   generateSectionId,
 } from "@/engine/exam-types";
