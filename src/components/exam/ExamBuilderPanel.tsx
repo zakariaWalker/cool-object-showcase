@@ -73,6 +73,7 @@ import { toast } from "sonner";
 
 import { ExamPreview } from "./ExamPreview";
 import { ExamKBPicker } from "./ExamKBPicker";
+import { ExamReplicateFromImage } from "./ExamReplicateFromImage";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
