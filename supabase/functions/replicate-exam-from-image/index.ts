@@ -1,7 +1,6 @@
 // ===== Replicate Exam From Image — Vision-based clean extraction =====
-// Takes one or more exam page images and returns a clean, structured exam JSON
-// IGNORING all handwriting, student notes, stamps (cachet), corrections, and bleed-through.
-// The output is fully editable in the Exam Builder.
+// Returns a clean structured exam JSON IGNORING handwriting, stamps, corrections, bleed-through.
+// Preserves tables, figures, and answer-space hints for faithful PDF replication.
 
 import { callGemini, GeminiError, extractJSON } from "../_shared/gemini.ts";
 
@@ -17,64 +16,82 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { images, hint_grade, hint_format } = await req.json();
+    const { images } = await req.json();
     if (!Array.isArray(images) || images.length === 0) {
       return new Response(JSON.stringify({ error: "Missing images array (base64 strings)" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const prompt = `أنت ناسخ امتحانات رياضيات جزائرية محترف. مهمتك: إعادة كتابة هذا الامتحان بشكل نظيف ومنظّم.
+    const prompt = `أنت ناسخ امتحانات رياضيات جزائرية محترف. مهمتك: إعادة كتابة هذا الامتحان نظيفاً ومنظماً ومطابقاً للأصل المطبوع.
 
 🚫 تجاهل تماماً (لا تنسخ أبداً):
-- خط اليد للتلميذ (الأرقام والإجابات المكتوبة بالقلم)
-- الأختام الدائرية (الكاشي / cachet)
+- خط اليد للتلميذ (الأرقام والإجابات والحسابات المكتوبة بالقلم)
+- الأختام الدائرية (الكاشي / cachet / الخواتم الإدارية)
 - علامات التصحيح (✓ ✗ نقاط حمراء)
-- الكتابة الباهتة من الورقة الخلفية (bleed-through)
-- الشطب أو الخدوش
-- أي تعليقات هامشية بخط اليد
+- الكتابة الباهتة من الورقة الخلفية (bleed-through / النص المعكوس)
+- الشطب أو الخدوش أو التصحيحات
+- التعليقات الهامشية بخط اليد
+- الأرقام الصغيرة المكتوبة فوق الأرقام المطبوعة
 
-✅ انسخ فقط (بدقة كاملة):
-- نص الأسئلة المطبوعة
-- الجداول الفارغة الأصلية (بدون ما كتبه التلميذ بداخلها)
-- الصيغ الرياضية (استخدم LaTeX بين $...$)
-- الأرقام والكسور المطبوعة
-- الأشكال الهندسية (وصفها نصياً)
-- النقاط المخصصة لكل تمرين
+✅ انسخ بدقة كاملة (وأعد بناءها فارغة كما كانت أصلاً):
+- نص الأسئلة المطبوعة كاملاً
+- **الجداول** (بكل أعمدتها وصفوفها) — أعدها فارغة كما طُبعت أصلاً، مع رؤوس الأعمدة والصفوف فقط، بدون ما كتبه التلميذ
+- **حقول الإجابة** (السطور المنقطة ......، المربعات الفارغة، الإطارات الفارغة)
+- الصيغ الرياضية (LaTeX بين $...$)
+- الكسور المطبوعة (استخدم \\frac{a}{b})
+- الأشكال الهندسية (وصف نصي دقيق)
+- النقاط المخصصة لكل تمرين/سؤال
 
-📋 الهيكل المطلوب JSON فقط:
+📋 الصيغة المطلوبة (JSON فقط):
 {
-  "title": "عنوان الامتحان كما يظهر مطبوعاً",
-  "school": "اسم المؤسسة إن ظهر",
-  "grade": "المستوى (مثل: 4 ابتدائي, 4AM, 3AS)",
-  "year": "السنة الدراسية مثل 2024/2025",
-  "semester": "الفصل الأول/الثاني/الثالث إن ذُكر",
+  "title": "العنوان كما يظهر مطبوعاً",
+  "school": "اسم المؤسسة",
+  "grade": "4 ابتدائي | 4AM | 3AS ...",
+  "year": "2024/2025",
+  "semester": "الفصل الأول/الثاني/الثالث",
   "duration_min": 60,
   "total_points": 10,
   "sections": [
     {
       "title": "التمرين الأول",
       "points": 1,
-      "instruction": "نص التعليمة الرئيسية للتمرين",
+      "instruction": "نص التعليمة الرئيسية فقط (بدون نص الأسئلة الفرعية)",
       "sub_questions": [
-        { "label": "أ", "text": "نص السؤال الفرعي مع الصيغ الرياضية بـ LaTeX", "points": 0.5, "answer_space": "table|lines|box|short" }
+        {
+          "label": "أ" | "ب" | "1" | "2" | null,
+          "text": "نص السؤال الفرعي مع الصيغ بـ LaTeX",
+          "points": 0.5,
+          "answer_space": "lines" | "box" | "short" | "table" | "none",
+          "answer_lines": 3
+        }
       ],
       "tables": [
-        { "headers": ["العمود1","العمود2"], "rows": [["خلية","خلية"]] }
+        {
+          "headers": ["العمود1", "العمود2", "العمود3"],
+          "rows": [
+            ["خلية مطبوعة أو فارغة", "", ""],
+            ["", "", ""]
+          ]
+        }
       ],
       "figures": [
-        { "description": "وصف الشكل الهندسي مثل: هرم رباعي قاعدته مربعة" }
+        { "description": "وصف الشكل: هرم رباعي قاعدته مربعة ABCD ورأسه S" }
       ]
     }
   ]
 }
 
-⚠️ مهم:
-- إذا كان هناك "وضعية إدماجية" اجعلها قسماً منفصلاً بعنوان "الوضعية الإدماجية"
-- حافظ على ترقيم التمارين الأصلي
-- استخرج النقاط من بين الأقواس مثل (1ن) أو (1.5ن)
+⚠️ قواعد صارمة:
+- أي خانة في الجدول كانت مخصصة لإجابة التلميذ → أعدها كنص فارغ "" (لا تضع ما كتبه)
+- إذا كان السؤال يحتوي على سطور منقطة للإجابة → answer_space: "lines" مع answer_lines = عدد السطور التقريبي
+- إذا كان السؤال يحتوي على إطار/مربع فارغ → answer_space: "box"
+- إذا كان السؤال قصيراً جداً (= ، أو فراغ صغير) → answer_space: "short"
+- إذا كانت الإجابة في جدول → answer_space: "table" واترك tables ضمن نفس القسم
+- "الوضعية الإدماجية" = قسم منفصل بنفس العنوان
+- استخرج النقاط من (1ن) أو (1.5ن) أو (3 نقاط)
 - لا تخترع محتوى غير موجود
-- أعد JSON فقط بدون أي نص قبله أو بعده`;
+- أعد JSON صالحاً فقط، بدون أي نص قبله أو بعده`;
 
     const parts: any[] = images.map((b64: string) => ({
       inlineData: { mimeType: "image/jpeg", data: b64 },
