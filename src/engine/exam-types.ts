@@ -55,6 +55,26 @@ export interface ExamSectionTemplate {
   allowedTypes?: string[];
 }
 
+export interface ExamTable {
+  headers?: string[];
+  rows: string[][];
+}
+
+export interface ExamFigure {
+  description: string;
+  imageUrl?: string;
+}
+
+export type AnswerSpaceKind = "lines" | "box" | "short" | "table" | "none";
+
+export interface ExamSubQuestion {
+  id: string;
+  text: string;
+  points: number;
+  answerSpace?: AnswerSpaceKind;
+  answerLines?: number;
+}
+
 export interface ExamExercise {
   id: string;
   sectionId: string;
@@ -62,7 +82,11 @@ export interface ExamExercise {
   points: number;
   type: string;
   grade: string;
-  subQuestions?: { id: string; text: string; points: number }[];
+  subQuestions?: ExamSubQuestion[];
+  tables?: ExamTable[];
+  figures?: ExamFigure[];
+  answerSpace?: AnswerSpaceKind;
+  answerLines?: number;
   solution?: string;
   source?: "kb" | "manual" | "ai";
 }
