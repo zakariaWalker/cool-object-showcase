@@ -73,6 +73,7 @@ import { toast } from "sonner";
 
 import { ExamPreview } from "./ExamPreview";
 import { ExamKBPicker } from "./ExamKBPicker";
+import { ExamReplicateFromImage } from "./ExamReplicateFromImage";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
@@ -422,6 +423,25 @@ export function ExamBuilderPanel({ exam, onSave, onCancel }: Props) {
             className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 transition-all">
             متابعة ←
           </button>
+
+          {/* Replicate from image — bypass template flow */}
+          <div className="pt-6 border-t border-border">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs font-bold text-muted-foreground">— أو —</span>
+            </div>
+            <ExamReplicateFromImage
+              onReplicated={(exam) => {
+                setFormat(exam.format);
+                setGrade(exam.grade);
+                setTitle(exam.title);
+                setDuration(exam.duration);
+                setTotalPoints(exam.totalPoints);
+                setSections(exam.sections);
+                setMetadata(exam.metadata || {});
+                setStep("exercises");
+              }}
+            />
+          </div>
         </motion.div>
       )}
 
