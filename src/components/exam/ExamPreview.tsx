@@ -242,12 +242,21 @@ export function ExamPreview({ exam, onClose }: Props) {
       >
         {/* Action bar */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between no-print z-10">
-          <button
-            onClick={handlePrint}
-            className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90"
-          >
-            🖨️ طباعة / PDF
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportPDF}
+              disabled={exporting}
+              className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 disabled:opacity-60"
+            >
+              {exporting ? "⏳ جاري التصدير..." : "📥 تحميل PDF (نسخة كاملة)"}
+            </button>
+            <button
+              onClick={handlePrint}
+              className="px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-50"
+            >
+              🖨️ طباعة
+            </button>
+          </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">
             ✕
           </button>
