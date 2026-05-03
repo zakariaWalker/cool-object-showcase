@@ -1,5 +1,9 @@
 // ===== Exam Preview — Print-ready view with tables, sub-questions, answer spaces =====
 import { motion } from "framer-motion";
+import { useState } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { toast } from "sonner";
 import { Exam, GRADE_OPTIONS, ExamTable, ExamSubQuestion, AnswerSpaceKind } from "@/engine/exam-types";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 
