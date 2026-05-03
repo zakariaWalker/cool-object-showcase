@@ -269,7 +269,7 @@ export function ExamPreview({ exam, onClose }: Props) {
           style={{ lineHeight: 1.7, fontFamily: '"Tajawal", sans-serif' }}
         >
           {/* Header */}
-          <div className="border-2 border-black p-3 mb-6">
+          <div data-pdf-block className="border-2 border-black p-3 mb-6">
             <div className="flex justify-between items-start text-[11px] font-bold gap-3">
               <div className="text-right space-y-1 flex-1">
                 <div>{exam.metadata?.school || "المؤسسة: ...................."}</div>
