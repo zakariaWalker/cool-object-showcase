@@ -1,5 +1,9 @@
 // ===== Exam Preview — Print-ready view with tables, sub-questions, answer spaces =====
 import { motion } from "framer-motion";
+import { useState } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { toast } from "sonner";
 import { Exam, GRADE_OPTIONS, ExamTable, ExamSubQuestion, AnswerSpaceKind } from "@/engine/exam-types";
 import { MathExerciseRenderer } from "@/components/MathExerciseRenderer";
 
@@ -112,11 +116,63 @@ export function ExamPreview({ exam, onClose }: Props) {
       : "اختبار";
 
   const handlePrint = () => window.print();
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPDF = async () => {
+    const root = document.getElementById("exam-paper");
+    if (!root) return;
+    setExporting(true);
+    try {
+      const A4_W = 210, A4_H = 297, M = 12;
+      const CW = A4_W - M * 2;
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      let y = M;
+
+      const blocks = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-block]"));
+      const targets = blocks.length > 0 ? blocks : [root];
+
+      for (let i = 0; i < targets.length; i++) {
+        const el = targets[i];
+        const canvas = await html2canvas(el, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+        });
+        const imgH = (canvas.height * CW) / canvas.width;
+        const remaining = A4_H - M - y;
+        if (imgH > remaining && y > M) {
+          pdf.addPage();
+          y = M;
+        }
+        // If single block taller than full page, fit onto its own page(s) by slicing
+        if (imgH > A4_H - M * 2) {
+          // simple: scale down to fit one page
+          const scale = (A4_H - M * 2) / imgH;
+          const w = CW * scale;
+          pdf.addImage(canvas.toDataURL("image/png"), "PNG", M + (CW - w) / 2, y, w, A4_H - M * 2);
+          y += A4_H - M * 2 + 4;
+        } else {
+          pdf.addImage(canvas.toDataURL("image/png"), "PNG", M, y, CW, imgH);
+          y += imgH + 4;
+        }
+      }
+
+      const safeTitle = (exam.title || "exam").replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 60);
+      pdf.save(`${safeTitle}.pdf`);
+      toast.success("✅ تم تصدير الامتحان كـ PDF كامل النسخة");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("فشل التصدير: " + (e?.message || "خطأ"));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const renderSection = (section: any, si: number) => {
     const sectionPoints = section.exercises.reduce((s: number, e: any) => s + (e.points || 0), 0);
     return (
-      <div key={section.id} className="exam-section relative mb-8">
+      <div key={section.id} data-pdf-block className="exam-section relative mb-8">
         <div className="flex items-center gap-3 mb-4">
           <div className="text-xs font-black border-2 border-black px-3 py-1 rounded-sm">
             {section.title || `التمرين ${si + 1}`}
@@ -186,12 +242,21 @@ export function ExamPreview({ exam, onClose }: Props) {
       >
         {/* Action bar */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between no-print z-10">
-          <button
-            onClick={handlePrint}
-            className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90"
-          >
-            🖨️ طباعة / PDF
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportPDF}
+              disabled={exporting}
+              className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 disabled:opacity-60"
+            >
+              {exporting ? "⏳ جاري التصدير..." : "📥 تحميل PDF (نسخة كاملة)"}
+            </button>
+            <button
+              onClick={handlePrint}
+              className="px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-50"
+            >
+              🖨️ طباعة
+            </button>
+          </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">
             ✕
           </button>
@@ -204,7 +269,7 @@ export function ExamPreview({ exam, onClose }: Props) {
           style={{ lineHeight: 1.7, fontFamily: '"Tajawal", sans-serif' }}
         >
           {/* Header */}
-          <div className="border-2 border-black p-3 mb-6">
+          <div data-pdf-block className="border-2 border-black p-3 mb-6">
             <div className="flex justify-between items-start text-[11px] font-bold gap-3">
               <div className="text-right space-y-1 flex-1">
                 <div>{exam.metadata?.school || "المؤسسة: ...................."}</div>
