@@ -168,7 +168,11 @@ export function ExamPreview({ exam, onClose }: Props) {
       setExporting(false);
     }
   };
-      <div key={section.id} className="exam-section relative mb-8">
+
+  const renderSection = (section: any, si: number) => {
+    const sectionPoints = section.exercises.reduce((s: number, e: any) => s + (e.points || 0), 0);
+    return (
+      <div key={section.id} data-pdf-block className="exam-section relative mb-8">
         <div className="flex items-center gap-3 mb-4">
           <div className="text-xs font-black border-2 border-black px-3 py-1 rounded-sm">
             {section.title || `التمرين ${si + 1}`}
