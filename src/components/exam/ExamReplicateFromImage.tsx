@@ -60,23 +60,29 @@ function buildExamFromExtraction(extracted: any): Exam {
       type: "unclassified",
       grade: extracted?.grade || "",
       source: "manual",
+      layout: (s.layout as any) || "default",
       subQuestions: subs.map((sq: any, j: number) => ({
         id: `sq_${Date.now()}_${idx}_${j}`,
         text: `${sq.label ? sq.label + ") " : ""}${sq.text || ""}`,
         points: typeof sq.points === "number" ? sq.points : 0,
         answerSpace: (sq.answer_space as AnswerSpaceKind) || "lines",
         answerLines: typeof sq.answer_lines === "number" ? sq.answer_lines : 2,
+        inlineBoxContent: sq.inline_box_content || undefined,
       })),
       tables: tables
         .map((t: any) => ({
           headers: Array.isArray(t.headers) ? t.headers.map(String) : undefined,
           rows: Array.isArray(t.rows) ? t.rows.map((r: any) => (Array.isArray(r) ? r.map(String) : [])) : [],
+          borders: t.borders || "all",
         }))
         .filter((t) => t.rows.length > 0 || (t.headers && t.headers.length > 0)),
       figures: figures
-        .map((f: any) => ({ description: String(f?.description || "") }))
+        .map((f: any) => ({
+          description: String(f?.description || ""),
+          position: f?.position || "center",
+        }))
         .filter((f) => f.description),
-      answerSpace: subs.length === 0 ? "lines" : "none",
+      answerSpace: subs.length === 0 && (!tables || tables.length === 0) ? "lines" : "none",
       answerLines: 3,
     };
 
