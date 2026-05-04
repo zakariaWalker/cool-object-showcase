@@ -158,21 +158,34 @@ Deno.serve(async (req) => {
     }));
     parts.push({ text: prompt });
 
-    let response;
-    try {
-      response = await callGemini(
-        [{ role: "user", parts }],
-        {
-          model: "gemini-2.5-pro", // upgraded for better vision fidelity on tables/handwriting separation
-          temperature: 0.05,
-          responseMimeType: "application/json",
-          maxOutputTokens: 24000,
-        }
-      );
-    } catch (err) {
-      const msg = err instanceof GeminiError ? err.message : (err as Error).message;
+    // Try pro first for better fidelity, fall back to flash on rate-limit
+    const modelChain = ["gemini-2.5-flash", "gemini-2.5-pro"];
+    let response: any = null;
+    let lastErr: any = null;
+    for (const model of modelChain) {
+      try {
+        response = await callGemini(
+          [{ role: "user", parts }],
+          {
+            model,
+            temperature: 0.05,
+            responseMimeType: "application/json",
+            maxOutputTokens: 24000,
+          }
+        );
+        break;
+      } catch (err) {
+        lastErr = err;
+        const status = err instanceof GeminiError ? err.status : 500;
+        // only fall through to next model on rate-limit / overload
+        if (status !== 429 && status !== 503) break;
+      }
+    }
+    if (!response) {
+      const msg = lastErr instanceof GeminiError ? lastErr.message : (lastErr as Error)?.message || "AI call failed";
+      const status = lastErr instanceof GeminiError ? lastErr.status : 500;
       return new Response(JSON.stringify({ error: msg }), {
-        status: err instanceof GeminiError ? err.status : 500,
+        status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
