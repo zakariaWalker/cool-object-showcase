@@ -56,14 +56,23 @@ export interface ExamSectionTemplate {
 }
 
 export interface ExamTable {
-  headers?: string[];
+  headers?: string[] | null;
   rows: string[][];
+  borders?: "all" | "outer" | "none";
 }
 
 export interface ExamFigure {
   description: string;
   imageUrl?: string;
+  position?: "left" | "right" | "center";
 }
+
+export type ExerciseLayout =
+  | "default"
+  | "table_only"
+  | "figure_left_table_right"
+  | "figure_right_table_left"
+  | "inline_list";
 
 export type AnswerSpaceKind = "lines" | "box" | "short" | "table" | "none";
 
@@ -73,6 +82,7 @@ export interface ExamSubQuestion {
   points: number;
   answerSpace?: AnswerSpaceKind;
   answerLines?: number;
+  inlineBoxContent?: string;
 }
 
 export interface ExamExercise {
@@ -82,6 +92,7 @@ export interface ExamExercise {
   points: number;
   type: string;
   grade: string;
+  layout?: ExerciseLayout;
   subQuestions?: ExamSubQuestion[];
   tables?: ExamTable[];
   figures?: ExamFigure[];

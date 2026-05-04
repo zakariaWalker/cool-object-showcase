@@ -61,6 +61,15 @@ function AnswerArea({ kind, lines }: { kind?: AnswerSpaceKind; lines?: number })
   return <DottedLines count={lines || 2} />;
 }
 
+function renderCell(content: string) {
+  const v = (content || "").trim();
+  // Empty answer cells from extractor
+  if (v === "___" || v === "..." || v === "" || /^\.{3,}$/.test(v)) {
+    return <span className="inline-block w-full border-b border-dotted border-black h-4" />;
+  }
+  return <MathExerciseRenderer text={v} examMode mathFont="serif" showDiagram={false} />;
+}
+
 function TableRender({ table }: { table: ExamTable }) {
   const headers = table.headers || [];
   const rows = table.rows || [];
@@ -81,7 +90,7 @@ function TableRender({ table }: { table: ExamTable }) {
         {rows.map((row, ri) => (
           <tr key={ri}>
             {Array.from({ length: colCount }).map((_, ci) => (
-              <td key={ci}>{row[ci] || ""}</td>
+              <td key={ci}>{renderCell(row[ci] || "")}</td>
             ))}
           </tr>
         ))}
@@ -90,7 +99,15 @@ function TableRender({ table }: { table: ExamTable }) {
   );
 }
 
-function SubQuestionRender({ sq }: { sq: ExamSubQuestion }) {
+function FigureRender({ fig }: { fig: any }) {
+  return (
+    <div className="my-2 p-2 border border-dashed border-gray-400 rounded text-[11px] italic text-gray-700 text-center min-h-[100px] flex items-center justify-center bg-gray-50">
+      🖼️ {fig.description}
+    </div>
+  );
+}
+
+function SubQuestionRender({ sq }: { sq: ExamSubQuestion & { inlineBoxContent?: string } }) {
   return (
     <div className="mb-3">
       <div className="flex items-baseline gap-2">
@@ -101,7 +118,13 @@ function SubQuestionRender({ sq }: { sq: ExamSubQuestion }) {
           <span className="text-[10px] font-bold text-gray-700 whitespace-nowrap">({sq.points}ن)</span>
         )}
       </div>
-      <AnswerArea kind={sq.answerSpace} lines={sq.answerLines} />
+      {sq.inlineBoxContent ? (
+        <div className="my-2 border border-black rounded px-3 py-2 text-[13px] text-center">
+          <MathExerciseRenderer text={sq.inlineBoxContent} examMode mathFont="serif" showDiagram={false} />
+        </div>
+      ) : (
+        <AnswerArea kind={sq.answerSpace} lines={sq.answerLines} />
+      )}
     </div>
   );
 }
@@ -181,45 +204,61 @@ export function ExamPreview({ exam, onClose }: Props) {
         </div>
 
         <div className="space-y-4 pr-3">
-          {section.exercises.map((ex: any) => (
-            <div key={ex.id} className="exercise-block">
-              {/* instruction text */}
-              {ex.text && (
-                <div className="text-[13px] leading-relaxed mb-2">
-                  <MathExerciseRenderer text={ex.text} examMode mathFont="serif" showDiagram={false} />
-                </div>
-              )}
+          {section.exercises.map((ex: any) => {
+            const layout = ex.layout || "default";
+            const figures = Array.isArray(ex.figures) ? ex.figures : [];
+            const tables = Array.isArray(ex.tables) ? ex.tables : [];
+            const sideBySide =
+              (layout === "figure_left_table_right" || layout === "figure_right_table_left") &&
+              figures.length > 0 &&
+              tables.length > 0;
 
-              {/* figures */}
-              {Array.isArray(ex.figures) &&
-                ex.figures.map((f: any, fi: number) => (
-                  <div
-                    key={fi}
-                    className="my-3 p-3 border border-dashed border-gray-400 rounded text-[11px] italic text-gray-700 text-center"
-                  >
-                    🖼️ {f.description}
+            return (
+              <div key={ex.id} className="exercise-block">
+                {ex.text && (
+                  <div className="text-[13px] leading-relaxed mb-2">
+                    <MathExerciseRenderer text={ex.text} examMode mathFont="serif" showDiagram={false} />
                   </div>
-                ))}
+                )}
 
-              {/* sub-questions */}
-              {Array.isArray(ex.subQuestions) && ex.subQuestions.length > 0 && (
-                <div className="mt-2">
-                  {ex.subQuestions.map((sq: ExamSubQuestion) => (
-                    <SubQuestionRender key={sq.id} sq={sq} />
-                  ))}
-                </div>
-              )}
+                {sideBySide ? (
+                  <div className="grid grid-cols-2 gap-4 items-start my-3">
+                    <div>
+                      {figures.map((f: any, fi: number) => (
+                        <FigureRender key={fi} fig={f} />
+                      ))}
+                    </div>
+                    <div>
+                      {tables.map((t: ExamTable, ti: number) => (
+                        <TableRender key={ti} table={t} />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {figures.map((f: any, fi: number) => (
+                      <FigureRender key={fi} fig={f} />
+                    ))}
+                    {tables.map((t: ExamTable, ti: number) => (
+                      <TableRender key={ti} table={t} />
+                    ))}
+                  </>
+                )}
 
-              {/* tables */}
-              {Array.isArray(ex.tables) &&
-                ex.tables.map((t: ExamTable, ti: number) => <TableRender key={ti} table={t} />)}
+                {Array.isArray(ex.subQuestions) && ex.subQuestions.length > 0 && (
+                  <div className="mt-2">
+                    {ex.subQuestions.map((sq: ExamSubQuestion) => (
+                      <SubQuestionRender key={sq.id} sq={sq} />
+                    ))}
+                  </div>
+                )}
 
-              {/* exercise-level answer space (only when no sub-questions) */}
-              {(!ex.subQuestions || ex.subQuestions.length === 0) && (
-                <AnswerArea kind={ex.answerSpace} lines={ex.answerLines} />
-              )}
-            </div>
-          ))}
+                {(!ex.subQuestions || ex.subQuestions.length === 0) && tables.length === 0 && (
+                  <AnswerArea kind={ex.answerSpace} lines={ex.answerLines} />
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     );
