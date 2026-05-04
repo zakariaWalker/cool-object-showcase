@@ -82,6 +82,7 @@ export interface ExamSubQuestion {
   points: number;
   answerSpace?: AnswerSpaceKind;
   answerLines?: number;
+  inlineBoxContent?: string;
 }
 
 export interface ExamExercise {
@@ -91,6 +92,7 @@ export interface ExamExercise {
   points: number;
   type: string;
   grade: string;
+  layout?: ExerciseLayout;
   subQuestions?: ExamSubQuestion[];
   tables?: ExamTable[];
   figures?: ExamFigure[];
